@@ -408,17 +408,25 @@ class ReportsAnalyticsService:
 
     @classmethod
     def get_customer_geography(cls):
-        """Customer Geographic Distribution - 100% Real DB Query."""
-        geo_qs = Address.objects.values('state').annotate(count=Count('id')).order_by('-count')[:5]
-        total_addrs = sum(g['count'] for g in geo_qs) or 1
+        """Customer Geographic Distribution - 100% Real DB Query with Title-Case Normalization."""
+        total_addrs = Address.objects.count() or 1
+
+        from collections import defaultdict
+        state_counts = defaultdict(int)
+        for a in Address.objects.all():
+            if a.state and a.state.strip():
+                normalized_state = a.state.strip().title()
+                state_counts[normalized_state] += 1
+
+        sorted_states = sorted(state_counts.items(), key=lambda x: x[1], reverse=True)[:5]
 
         colors = ['bg-[#005F63]', 'bg-sky-600', 'bg-indigo-600', 'bg-emerald-600', 'bg-amber-600']
         geography = []
-        for idx, g in enumerate(geo_qs):
-            state_name = g['state'] or 'Unknown Region'
-            share = round((g['count'] / total_addrs) * 100.0, 1)
+        for idx, (state_name, count) in enumerate(sorted_states):
+            share = round((count / total_addrs) * 100.0, 1)
             geography.append({
                 'location': state_name,
+                'count': count,
                 'share': share,
                 'color': colors[idx % len(colors)]
             })

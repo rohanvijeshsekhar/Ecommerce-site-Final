@@ -92,6 +92,7 @@ export interface CustomerAnalyticsData {
 
 export interface CustomerGeographyItem {
   location: string;
+  count?: number;
   share: number;
   color: string;
 }

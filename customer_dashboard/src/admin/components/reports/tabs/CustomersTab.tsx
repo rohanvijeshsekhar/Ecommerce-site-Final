@@ -45,13 +45,20 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ data, geography = []
         ) : (
           <div className="space-y-3 mt-4 text-xs">
             {geography.map((item, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between font-bold text-slate-800">
-                  <span>{item.location}</span>
-                  <span>{item.share}%</span>
+              <div key={idx} className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-900">{item.location}</span>
+                    {item.count !== undefined && (
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {item.count} {item.count === 1 ? 'client' : 'clients'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono font-black text-[#005F63]">{item.share}%</span>
                 </div>
-                <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.share}%` }} />
+                <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden shadow-inner p-0.5">
+                  <div className={`h-full rounded-full ${item.color} transition-all duration-500`} style={{ width: `${item.share}%` }} />
                 </div>
               </div>
             ))}
