@@ -309,7 +309,7 @@ class ReportsAnalyticsService:
 
         total_cat_rev = float(sum(c['revenue'] or 0 for c in cat_qs)) or 0.0
 
-        colors = ['#005F63', '#0EA5E9', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#64748B']
+        colors = ['#0D9488', '#0EA5E9', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#64748B']
 
         categories_data = []
         for idx, cat in enumerate(cat_qs):
