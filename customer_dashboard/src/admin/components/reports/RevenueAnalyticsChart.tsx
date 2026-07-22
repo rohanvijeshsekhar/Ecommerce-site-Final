@@ -170,10 +170,10 @@ export const RevenueAnalyticsChart: React.FC<RevenueAnalyticsChartProps> = ({ da
       {/* SVG Interactive Chart Canvas */}
       <div className="relative mt-2 pt-8 pb-4 px-2 overflow-x-auto">
         <div className="min-w-[720px] relative">
-          {/* Smart Floating 3D Tooltip Badge (Flips BELOW point when near top to guarantee ZERO clipping!) */}
+          {/* Smart Floating 3D Light Tooltip Badge (Flips BELOW point when near top to guarantee ZERO clipping!) */}
           {activePoint && (
             <div
-              className={`absolute bg-slate-900 text-white rounded-2xl px-4 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.25)] pointer-events-none transform -translate-x-1/2 font-black z-30 transition-all duration-150 ${
+              className={`absolute bg-white/95 backdrop-blur-xl border border-slate-200/90 text-slate-900 rounded-2xl px-4 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.12)] pointer-events-none transform -translate-x-1/2 font-black z-30 transition-all duration-150 ${
                 isNearTop ? 'translate-y-0' : '-translate-y-full'
               }`}
               style={{
@@ -182,18 +182,18 @@ export const RevenueAnalyticsChart: React.FC<RevenueAnalyticsChartProps> = ({ da
               }}
             >
               {isNearTop && (
-                <div className="w-2.5 h-2.5 bg-slate-900 border-l border-t border-slate-700 rotate-45 mx-auto -mt-3.5 mb-1" />
+                <div className="w-2.5 h-2.5 bg-white border-l border-t border-slate-200/90 rotate-45 mx-auto -mt-3.5 mb-1" />
               )}
-              <div className="text-[10px] font-bold text-slate-300 uppercase tracking-wider text-center">
+              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider text-center">
                 {data.labels[activeIdx]}
               </div>
-              <div className="text-xs font-black text-emerald-400 text-center mt-0.5 whitespace-nowrap">
+              <div className="text-xs font-black text-[#005F63] text-center mt-0.5 whitespace-nowrap">
                 {chartMode === 'orders'
                   ? `${activePoint.val} orders`
                   : `₹${activePoint.val.toLocaleString('en-IN')}`}
               </div>
               {!isNearTop && (
-                <div className="w-2.5 h-2.5 bg-slate-900 border-r border-b border-slate-700 rotate-45 mx-auto -mb-3.5 mt-1" />
+                <div className="w-2.5 h-2.5 bg-white border-r border-b border-slate-200/90 rotate-45 mx-auto -mb-3.5 mt-1" />
               )}
             </div>
           )}
