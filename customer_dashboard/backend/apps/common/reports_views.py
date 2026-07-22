@@ -47,6 +47,9 @@ class ReportsOverviewView(APIView):
         support = ReportsAnalyticsService.get_support_analytics()
         activities = ReportsAnalyticsService.get_recent_activities()
         insights = ReportsAnalyticsService.generate_business_insights(kpis, inventory, dealers, products)
+        sales_channel = ReportsAnalyticsService.get_sales_channel_breakdown(date_info)
+        weekly_heatmap = ReportsAnalyticsService.get_weekly_sales_heatmap(date_info)
+        customer_geography = ReportsAnalyticsService.get_customer_geography()
 
         payload = {
             'date_info': {
@@ -61,10 +64,13 @@ class ReportsOverviewView(APIView):
             'category_analytics': categories,
             'dealer_analytics': dealers,
             'customer_analytics': customers,
+            'customer_geography': customer_geography,
             'inventory_intelligence': inventory,
             'payment_analytics': payments,
             'warranty_analytics': warranty,
             'support_analytics': support,
+            'sales_channel': sales_channel,
+            'weekly_heatmap': weekly_heatmap,
             'recent_activities': activities,
             'business_insights': insights
         }

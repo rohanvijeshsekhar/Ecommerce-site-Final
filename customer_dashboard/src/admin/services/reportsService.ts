@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FAAZO Enterprise Reports & Business Intelligence Service Layer
-// Dedicated lazy-loading service consuming DRF analytics endpoints.
+// 100% Real Database Query Payload Types
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { api } from '../../services/api';
@@ -90,6 +90,12 @@ export interface CustomerAnalyticsData {
   avg_orders_per_customer: number;
 }
 
+export interface CustomerGeographyItem {
+  location: string;
+  share: number;
+  color: string;
+}
+
 export interface InventoryMovementItem {
   type: string;
   product: string;
@@ -122,6 +128,20 @@ export interface PaymentAnalyticsData {
   online_payments: number;
   cod_orders: number;
   methods_breakdown: PaymentMethodBreakdown[];
+}
+
+export interface SalesChannelBreakdown {
+  customer_revenue: number;
+  customer_share: number;
+  dealer_revenue: number;
+  dealer_share: number;
+  total_revenue: number;
+}
+
+export interface WeeklySalesHeatmapItem {
+  day: string;
+  count: number;
+  level: string;
 }
 
 export interface WarrantyAnalyticsData {
@@ -169,10 +189,13 @@ export interface FullReportsOverviewPayload {
   category_analytics: CategoryAnalyticsData;
   dealer_analytics: DealerAnalyticsItem[];
   customer_analytics: CustomerAnalyticsData;
+  customer_geography: CustomerGeographyItem[];
   inventory_intelligence: InventoryIntelligenceData;
   payment_analytics: PaymentAnalyticsData;
   warranty_analytics: WarrantyAnalyticsData;
   support_analytics: SupportAnalyticsData;
+  sales_channel: SalesChannelBreakdown;
+  weekly_heatmap: WeeklySalesHeatmapItem[];
   recent_activities: ReportActivityItem[];
   business_insights: BusinessInsightItem[];
 }

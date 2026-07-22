@@ -178,9 +178,9 @@ export const ReportsPage: React.FC = () => {
       ) : (
         <>
           {activeTab === 'overview' && overviewData && <OverviewTab data={overviewData} />}
-          {activeTab === 'sales' && <SalesTab revenueData={revenueData || overviewData?.revenue_analytics} productsData={productsData || overviewData?.products_intelligence} />}
+          {activeTab === 'sales' && <SalesTab revenueData={revenueData || overviewData?.revenue_analytics} productsData={productsData || overviewData?.products_intelligence} salesChannel={overviewData?.sales_channel} weeklyHeatmap={overviewData?.weekly_heatmap} />}
           {activeTab === 'products' && <ProductsTab productsData={productsData || overviewData?.products_intelligence} categoryData={categoriesData || overviewData?.category_analytics} />}
-          {activeTab === 'customers' && <CustomersTab data={customersData || overviewData?.customer_analytics} />}
+          {activeTab === 'customers' && <CustomersTab data={customersData || overviewData?.customer_analytics} geography={overviewData?.customer_geography} />}
           {activeTab === 'dealers' && <DealersTab dealersData={dealersData || overviewData?.dealer_analytics} />}
           {activeTab === 'inventory' && <InventoryTab data={inventoryData || overviewData?.inventory_intelligence} />}
           {activeTab === 'finance' && <FinanceTab paymentData={paymentData || overviewData?.payment_analytics} />}
