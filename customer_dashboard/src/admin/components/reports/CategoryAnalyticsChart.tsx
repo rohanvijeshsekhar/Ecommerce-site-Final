@@ -9,8 +9,8 @@ interface CategoryAnalyticsChartProps {
 export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ data }) => {
   if (!data || !data.categories || data.categories.length === 0) return null;
 
-  // Premium Curated Color Palette (Vibrant Emerald Teal, Sky Blue, Warm Amber, Emerald, Indigo, Rose)
-  const palette = ['#0D9488', '#0EA5E9', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899'];
+  // Exact Bright Color Palette from Reference Image (Purple, Blue, Hot Pink, Peach Gold, Emerald, Cyan)
+  const palette = ['#7C3AED', '#3B82F6', '#F43F5E', '#FFB020', '#10B981', '#06B6D4'];
 
   // Compute SVG Donut Paths with Clean Slices
   let cumulativePercent = 0;
@@ -36,7 +36,7 @@ export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ 
       `L 0 0`,
     ].join(' ');
 
-    const color = cat.color && cat.color !== '#005F63' ? cat.color : palette[idx % palette.length];
+    const color = palette[idx % palette.length];
 
     return { ...cat, color, pathData };
   });
@@ -47,11 +47,11 @@ export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ 
         {/* Header */}
         <div className="pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-sky-500/10 text-sky-700 border border-sky-500/20">
+            <span className="p-1.5 rounded-xl bg-purple-500/10 text-purple-700 border border-purple-500/20">
               <Tag className="w-4 h-4 stroke-[2.5]" />
             </span>
             <h3 className="text-base font-black text-slate-900 tracking-tight">Category Revenue Distribution</h3>
-            <span className="px-2.5 py-0.5 text-[10px] font-black bg-sky-500/15 text-sky-900 rounded-full border border-sky-500/30">
+            <span className="px-2.5 py-0.5 text-[10px] font-black bg-purple-500/15 text-purple-900 rounded-full border border-purple-500/30">
               Taxonomy Share
             </span>
           </div>
@@ -62,7 +62,7 @@ export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ 
 
         {/* Donut Chart & Legend Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center mt-6">
-          {/* Donut Ring SVG */}
+          {/* Donut Ring SVG matching reference image style */}
           <div className="relative flex items-center justify-center p-2">
             <svg viewBox="-1.25 -1.25 2.5 2.5" className="w-56 h-56 transform -rotate-90 filter drop-shadow-sm">
               {slices.map((slice, i) => (
@@ -73,18 +73,21 @@ export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ 
                   className="transition-all duration-200 hover:opacity-90 hover:scale-105 transform origin-center cursor-pointer"
                 />
               ))}
-              {/* Spacious Inner Hole (r=0.74) preventing text overlap */}
+              {/* Spacious Inner White Mask for Donut Effect */}
               <circle cx="0" cy="0" r="0.74" fill="#FFFFFF" />
               <circle cx="0" cy="0" r="0.74" fill="none" stroke="#F1F5F9" strokeWidth="0.04" />
             </svg>
 
-            {/* Centered Donut Label with Perfect Vertical Spacing */}
+            {/* Centered Donut Label matching reference image typography */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-4">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
-                Total Sales
+              <span className="text-[11px] font-bold text-slate-400 tracking-tight mb-0.5 block">
+                Total
               </span>
               <span className="text-xl font-black text-slate-900 tracking-tight block">
                 ₹{data.total_revenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-[10px] font-extrabold text-slate-400 mt-0.5 block">
+                100%
               </span>
             </div>
           </div>
@@ -102,7 +105,7 @@ export const CategoryAnalyticsChart: React.FC<CategoryAnalyticsChartProps> = ({ 
                     style={{ backgroundColor: cat.color }}
                   />
                   <div className="min-w-0">
-                    <div className="text-xs font-black text-slate-900 capitalize truncate group-hover:text-[#0D9488] transition-colors">
+                    <div className="text-xs font-black text-slate-900 capitalize truncate group-hover:text-purple-700 transition-colors">
                       {cat.name}
                     </div>
                     <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
