@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FAAZO Enterprise Reports & Business Intelligence Service Layer
+// Dedicated lazy-loading service consuming DRF analytics endpoints.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { api } from '../../services/api';
@@ -187,12 +188,109 @@ export const reportsService = {
         data: response.data.data
       };
     } catch (err: any) {
-      console.warn('Reports Overview API failed, falling back to dynamic calculation', err);
-      // Clean fallback object matching full interface
       return {
         success: false,
-        message: err?.response?.data?.message || 'Failed to fetch enterprise reports'
+        message: err?.response?.data?.message || 'Failed to fetch enterprise reports overview'
       };
+    }
+  },
+
+  getKpis: async (period = '30d'): Promise<ServiceResponse<ExecutiveKpisData>> => {
+    try {
+      const response = await api.get('/admin/reports/kpis/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch KPIs' };
+    }
+  },
+
+  getRevenue: async (period = '30d'): Promise<ServiceResponse<RevenueAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/revenue/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch revenue analytics' };
+    }
+  },
+
+  getProducts: async (period = '30d'): Promise<ServiceResponse<ProductIntelligenceItem[]>> => {
+    try {
+      const response = await api.get('/admin/reports/products/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch product intelligence' };
+    }
+  },
+
+  getCategories: async (period = '30d'): Promise<ServiceResponse<CategoryAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/categories/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch category analytics' };
+    }
+  },
+
+  getDealers: async (period = '30d'): Promise<ServiceResponse<DealerAnalyticsItem[]>> => {
+    try {
+      const response = await api.get('/admin/reports/dealers/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch dealer analytics' };
+    }
+  },
+
+  getCustomers: async (period = '30d'): Promise<ServiceResponse<CustomerAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/customers/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch customer analytics' };
+    }
+  },
+
+  getInventory: async (): Promise<ServiceResponse<InventoryIntelligenceData>> => {
+    try {
+      const response = await api.get('/admin/reports/inventory/');
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch inventory intelligence' };
+    }
+  },
+
+  getPayments: async (period = '30d'): Promise<ServiceResponse<PaymentAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/payments/', { params: { period } });
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch payment analytics' };
+    }
+  },
+
+  getWarranty: async (): Promise<ServiceResponse<WarrantyAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/warranty/');
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch warranty analytics' };
+    }
+  },
+
+  getSupport: async (): Promise<ServiceResponse<SupportAnalyticsData>> => {
+    try {
+      const response = await api.get('/admin/reports/support/');
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch support analytics' };
+    }
+  },
+
+  getRecentActivities: async (): Promise<ServiceResponse<ReportActivityItem[]>> => {
+    try {
+      const response = await api.get('/admin/reports/recent-activities/');
+      return { success: true, data: response.data.data };
+    } catch (err: any) {
+      return { success: false, message: 'Failed to fetch recent activities' };
     }
   }
 };
