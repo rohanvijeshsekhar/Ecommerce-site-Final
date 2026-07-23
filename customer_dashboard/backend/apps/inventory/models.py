@@ -57,6 +57,10 @@ class ProductInventory(AuditedModel):
                 check=models.Q(reserved_stock__gte=0),
                 name="product_inventory_reserved_stock_non_negative",
             ),
+            models.CheckConstraint(
+                check=models.Q(allow_backorders=True) | models.Q(reserved_stock__lte=models.F("current_stock")),
+                name="product_inventory_no_oversell_without_backorder",
+            ),
         ]
 
     # ── Core relationship ─────────────────────────────────────────────────────

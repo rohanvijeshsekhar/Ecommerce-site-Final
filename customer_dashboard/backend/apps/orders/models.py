@@ -149,43 +149,64 @@ class Order(BaseModel):
         return f"Order {self.order_number or self.id} - {self.status}"
 
     def save(self, *args, **kwargs):
-        # Auto-generate unique order_number and invoice_number
         is_new = self._state.adding
-        if is_new or not self.order_number:
-            now = timezone.now()
-            date_prefix = f"FAAZO-{now.strftime('%Y%m')}-"
-            
-            # Find all existing order numbers with the current year-month prefix
-            existing_numbers = Order.objects.filter(
-                order_number__startswith=date_prefix
-            ).values_list("order_number", flat=True)
-
-            max_seq = 0
-            for num_str in existing_numbers:
-                if num_str and num_str.startswith(date_prefix):
-                    parts = num_str.split("-")
-                    if len(parts) >= 3 and parts[-1].isdigit():
-                        seq = int(parts[-1])
-                        if seq > max_seq:
-                            max_seq = seq
-
-            next_seq = max_seq + 1
-            candidate = f"{date_prefix}{next_seq:04d}"
-            # Safety loop to guarantee uniqueness against any race conditions
-            while Order.objects.filter(order_number=candidate).exists():
-                next_seq += 1
-                candidate = f"{date_prefix}{next_seq:04d}"
-
-            self.order_number = candidate
-
-        if not self.invoice_number:
-            self.invoice_number = f"INV-{self.order_number}"
-
-        # Populate estimated delivery date if not set (default 4 days out)
         if not self.estimated_delivery_date:
             self.estimated_delivery_date = (timezone.now() + timezone.timedelta(days=4)).date()
 
-        super().save(*args, **kwargs)
+        if not (is_new or not self.order_number):
+            if not self.invoice_number:
+                self.invoice_number = f"INV-{self.order_number}"
+            return super().save(*args, **kwargs)
+
+        from django.db import transaction, IntegrityError
+        import uuid
+
+        now = timezone.now()
+        date_prefix = f"FAAZO-{now.strftime('%Y%m')}-"
+
+        existing_numbers = Order.objects.filter(
+            order_number__startswith=date_prefix
+        ).values_list("order_number", flat=True)
+
+        max_seq = 0
+        for num_str in existing_numbers:
+            if num_str and num_str.startswith(date_prefix):
+                parts = num_str.split("-")
+                if len(parts) >= 3 and parts[-1].isdigit():
+                    seq = int(parts[-1])
+                    if seq > max_seq:
+                        max_seq = seq
+
+        next_seq = max_seq + 1
+        candidate = f"{date_prefix}{next_seq:04d}"
+        while Order.objects.filter(order_number=candidate).exists():
+            next_seq += 1
+            candidate = f"{date_prefix}{next_seq:04d}"
+
+        # Concurrency safety: handle savepoint collision if parallel transactions attempt same candidate
+        save_success = False
+        retries = 0
+        while not save_success and retries < 5:
+            self.order_number = candidate
+            self.invoice_number = f"INV-{self.order_number}"
+            try:
+                sid = transaction.savepoint()
+                super().save(*args, **kwargs)
+                transaction.savepoint_commit(sid)
+                save_success = True
+            except IntegrityError as ie:
+                transaction.savepoint_rollback(sid)
+                if "order_number" in str(ie) or "orders_order" in str(ie) or "unique" in str(ie).lower():
+                    next_seq += 1
+                    candidate = f"{date_prefix}{next_seq:04d}"
+                    retries += 1
+                else:
+                    raise ie
+
+        if not save_success:
+            self.order_number = f"{date_prefix}{next_seq:04d}-{uuid.uuid4().hex[:4].upper()}"
+            self.invoice_number = f"INV-{self.order_number}"
+            super().save(*args, **kwargs)
 
 
 class OrderItem(BaseModel):
