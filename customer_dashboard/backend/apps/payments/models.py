@@ -140,6 +140,9 @@ class Payment(BaseModel):
     class Meta(BaseModel.Meta):
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
+        indexes = [
+            models.Index(fields=["user", "status"], name="payment_user_status_idx"),
+        ]
 
     def __str__(self):
         return f"Payment {self.razorpay_order_id} – {self.status} – ₹{self.amount}"

@@ -48,6 +48,16 @@ class ProductInventory(AuditedModel):
         verbose_name = "Product Inventory"
         verbose_name_plural = "Product Inventory"
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(current_stock__gte=0),
+                name="product_inventory_current_stock_non_negative",
+            ),
+            models.CheckConstraint(
+                check=models.Q(reserved_stock__gte=0),
+                name="product_inventory_reserved_stock_non_negative",
+            ),
+        ]
 
     # ── Core relationship ─────────────────────────────────────────────────────
 
