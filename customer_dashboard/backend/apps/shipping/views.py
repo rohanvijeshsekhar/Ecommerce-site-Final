@@ -2,7 +2,9 @@
 FAAZO – Shipping & Fulfillment Views
 
 Admin endpoints:
-  POST   /api/v1/shipping/admin/shipments/                → create shipment
+  POST   /api/v1/shipping/admin/shipments/                → create packing record (internal)
+  POST   /api/v1/shipping/admin/shipments/<pk>/courier/   → push to courier (Delhivery)
+  PATCH  /api/v1/shipping/admin/shipments/<pk>/packing/   → update packing status
   GET    /api/v1/shipping/admin/shipments/                → list all shipments
   GET    /api/v1/shipping/admin/shipments/<pk>/           → shipment detail
   POST   /api/v1/shipping/admin/shipments/<pk>/sync/      → sync tracking
@@ -25,9 +27,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.common.responses import success_response, error_response
 from apps.common.permissions import IsAdmin
-from apps.orders.models import Order, OrderStatus
+from apps.orders.models import Order, OrderStatus, OrderStatusHistory
 
-from .models import Shipment, ShipmentStatus
+from .models import Shipment, ShipmentStatus, PackingStatus, ShipmentEvent
 from .serializers import ShipmentSerializer, ShipmentListSerializer
 from .services import DelhiveryService, DelhiveryAPIError, DelhiveryValidationError
 
@@ -35,19 +37,25 @@ logger = logging.getLogger("faazo")
 
 
 # ============================================================
-# Admin — Create Shipment
+# Admin — Create Packing Record
 # ============================================================
 
 class AdminShipmentCreateView(APIView):
     """
     POST /api/v1/shipping/admin/shipments/
 
+    Creates a WAREHOUSE-ONLY fulfilment record for packing workflow tracking.
+    Does NOT call Delhivery. Sets packing_status=PENDING, courier_status=NOT_CREATED.
+
+    To create the actual Delhivery shipment once packing is complete, call:
+      POST /api/v1/shipping/admin/shipments/<pk>/create-courier/
+
     Body:
       order_id (UUID): required
       weight (float): kg
       length, breadth, height (float): cm
-      payment_mode (str): 'Prepaid' | 'COD'
-      pickup_date (str): YYYY-MM-DD (optional)
+      warehouse (str): optional
+      dispatch_location (str): optional
     """
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -61,85 +69,284 @@ class AdminShipmentCreateView(APIView):
         except Order.DoesNotExist:
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        # Only allow shipment creation for packed (or processing) orders
-        if order.status not in [OrderStatus.PACKED, OrderStatus.PROCESSING]:
+        allowed_order_statuses = [
+            OrderStatus.CONFIRMED,
+            OrderStatus.PROCESSING,
+            OrderStatus.PACKED,
+        ]
+        if order.status not in allowed_order_statuses:
             return error_response(
-                f"Cannot create shipment for order in '{order.status}' status. "
-                f"Order must be in 'packed' or 'processing' status.",
+                f"Cannot initiate fulfilment for order in '{order.status}' status. "
+                f"Order must be confirmed, processing, or packed.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        if hasattr(order, "shipment"):
+        if order.shipments.filter(is_deleted=False).exists():
             return error_response(
-                "A shipment already exists for this order.",
+                "A fulfilment record already exists for this order.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
+
+        from .models import ShipmentEvent
+        with transaction.atomic():
+            shipment = Shipment.objects.create(
+                order=order,
+                created_by=request.user,
+                packing_status=PackingStatus.PENDING,
+                shipment_status=ShipmentStatus.NOT_CREATED,
+                weight=float(request.data.get("weight", 1.0)),
+                length=float(request.data.get("length", 10.0)),
+                width=float(request.data.get("breadth", 10.0)),
+                height=float(request.data.get("height", 10.0)),
+                warehouse=request.data.get("warehouse", "FAAZO Central Warehouse - Hub 1"),
+                dispatch_location=request.data.get("dispatch_location", "Mumbai Fulfillment Hub"),
+            )
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                event_code="WAREHOUSE_INITIATED",
+                event_label="Warehouse Fulfilment Record Created",
+                status_mapped=ShipmentStatus.NOT_CREATED,
+                description=f"Fulfilment record initialised. Packing workflow started.",
+                event_source="manual",
+                created_by=request.user,
+            )
+            if order.status == OrderStatus.CONFIRMED:
+                order.status = OrderStatus.PROCESSING
+                order.save(update_fields=["status"])
+                OrderStatusHistory.objects.create(
+                    order=order,
+                    status=OrderStatus.PROCESSING,
+                    changed_by=request.user,
+                    notes="Fulfilment record created. Order moved to processing.",
+                )
+
+        serializer = ShipmentSerializer(shipment)
+        return success_response(
+            data=serializer.data,
+            message="Warehouse fulfilment record created. Progress through packing workflow, "
+                    "then create the courier shipment.",
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+# ============================================================
+# Admin — Update Packing Status
+# ============================================================
+
+class AdminUpdatePackingStatusView(APIView):
+    """
+    PATCH /api/v1/shipping/admin/shipments/<pk>/packing/
+
+    Advances the warehouse packing state along the approved forward-only path:
+      pending → packing → packed → qc_passed → ready_for_pickup
+
+    Body:
+      status (str): target packing status  [optional — auto-advances to next if omitted]
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    # Allowed forward-only transitions
+    TRANSITIONS = {
+        PackingStatus.PENDING:          PackingStatus.PACKING,
+        PackingStatus.PACKING:          PackingStatus.PACKED,
+        PackingStatus.PACKED:           PackingStatus.QC_PASSED,
+        PackingStatus.QC_PASSED:        PackingStatus.READY_FOR_PICKUP,
+        PackingStatus.READY_FOR_PICKUP: None,
+    }
+    EVENT_LABELS = {
+        PackingStatus.PACKING:          "Packing Started",
+        PackingStatus.PACKED:           "Packing Completed",
+        PackingStatus.QC_PASSED:        "QC Inspection Passed",
+        PackingStatus.READY_FOR_PICKUP: "Package Ready for Courier Pickup",
+    }
+
+    def patch(self, request, pk):
+        try:
+            shipment = Shipment.objects.filter(is_deleted=False).get(pk=pk)
+        except Shipment.DoesNotExist:
+            return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        requested = request.data.get("status")
+        current   = shipment.packing_status
+
+        if requested:
+            valid = [c[0] for c in PackingStatus.choices]
+            if requested not in valid:
+                return error_response(
+                    f"Invalid packing status '{requested}'. Allowed: {valid}",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            target = requested
+        else:
+            target = self.TRANSITIONS.get(current)
+            if target is None:
+                return error_response(
+                    "Packing is already at the terminal state 'ready_for_pickup'.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Enforce forward-only order
+        status_order = list(PackingStatus.values)
+        if status_order.index(target) <= status_order.index(current):
+            return error_response(
+                f"Invalid packing transition: '{current}' → '{target}'. "
+                "Only forward transitions are permitted.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from .models import ShipmentEvent
+        from django.utils import timezone
+        with transaction.atomic():
+            shipment.packing_status = target
+            if target == PackingStatus.PACKED:
+                shipment.packed_by = request.user
+                shipment.packed_at = timezone.now()
+            elif target == PackingStatus.QC_PASSED:
+                shipment.qc_by  = request.user
+                shipment.qc_at  = timezone.now()
+            shipment.save(update_fields=[
+                "packing_status", "packed_by", "packed_at",
+                "qc_by", "qc_at", "updated_at",
+            ])
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                event_code=f"PACKING_{target.upper()}",
+                event_label=self.EVENT_LABELS.get(target, f"Packing: {target}"),
+                status_mapped=shipment.shipment_status,
+                description=f"Packing status advanced to '{target}' by {request.user}.",
+                event_source="manual",
+                created_by=request.user,
+            )
+
+        shipment.refresh_from_db()
+        serializer = ShipmentSerializer(shipment)
+        return success_response(
+            data=serializer.data,
+            message=f"Packing status updated to '{target}'.",
+        )
+
+
+# ============================================================
+# Admin — Create Courier Shipment
+# ============================================================
+
+class AdminCreateCourierShipmentView(APIView):
+    """
+    POST /api/v1/shipping/admin/shipments/<pk>/create-courier/
+
+    *** BUSINESS RULE ***
+    Only allowed when packing_status == READY_FOR_PICKUP.
+    Calls Delhivery, receives AWB, transitions shipment_status → CREATED.
+
+    Body:
+      weight (float): kg  [optional — overrides stored default]
+      length, breadth, height (float): cm
+      payment_mode (str): 'Prepaid' | 'COD'
+      pickup_date (str): YYYY-MM-DD (optional — auto-schedules pickup)
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        try:
+            shipment = Shipment.objects.filter(is_deleted=False).select_related(
+                "order__user", "order__shipping_address"
+            ).prefetch_related("order__items__product").get(pk=pk)
+        except Shipment.DoesNotExist:
+            return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        # ── Business Rule: packing must be complete ───────────────────────────
+        if shipment.packing_status != PackingStatus.READY_FOR_PICKUP:
+            return error_response(
+                "Cannot create Delhivery shipment: packing is not complete. "
+                f"Current packing status: '{shipment.packing_status}'. "
+                "Advance through the warehouse workflow to 'ready_for_pickup' first.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        if shipment.shipment_status != ShipmentStatus.NOT_CREATED:
+            return error_response(
+                f"Courier shipment already exists "
+                f"(status: '{shipment.shipment_status}', AWB: '{shipment.awb_number}').",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        # ──────────────────────────────────────────────────────────────────
 
         package_info = {
-            "weight": float(request.data.get("weight", 0.5)),
-            "length": float(request.data.get("length", 10)),
-            "breadth": float(request.data.get("breadth", 10)),
-            "height": float(request.data.get("height", 10)),
+            "weight":       float(request.data.get("weight",  shipment.weight)),
+            "length":       float(request.data.get("length",  shipment.length)),
+            "breadth":      float(request.data.get("breadth", shipment.width)),
+            "height":       float(request.data.get("height",  shipment.height)),
             "payment_mode": request.data.get("payment_mode", "Prepaid"),
         }
 
         try:
             with transaction.atomic():
-                svc = DelhiveryService()
-                shipment = svc.create_shipment(order, package_info, created_by=request.user)
+                order  = shipment.order
+                svc    = DelhiveryService()
 
-                # Move order to shipped status if it was packed
-                if order.status in [OrderStatus.PACKED, OrderStatus.PROCESSING]:
-                    from apps.orders.models import OrderStatusHistory
-                    order.status = OrderStatus.SHIPPED
-                    order.tracking_number = shipment.awb_number
-                    order.shipping_carrier = shipment.courier_name
-                    order.shipped_at = shipment.created_at
-                    order.save(update_fields=["status", "tracking_number", "shipping_carrier", "shipped_at"])
-                    OrderStatusHistory.objects.create(
-                        order=order,
-                        status=OrderStatus.SHIPPED,
-                        changed_by=request.user,
-                        notes=f"Shipment created via Delhivery. AWB: {shipment.awb_number}",
-                    )
+                # Call Delhivery via create_shipment_for_existing (updates the
+                # pre-existing Shipment record rather than creating a new one)
+                shipment = svc.create_shipment(
+                    order       = order,
+                    package_info= package_info,
+                    created_by  = request.user,
+                    existing_shipment = shipment,
+                )
 
-                    # Inventory: deduct physical stock
-                    for item in order.items.all():
-                        inventory = getattr(item.product, "inventory", None)
-                        if inventory:
-                            inventory.current_stock = max(0, inventory.current_stock - item.quantity)
-                            inventory.reserved_stock = max(0, inventory.reserved_stock - item.quantity)
-                            inventory.save()
+                # Move order to SHIPPED
+                order.status          = OrderStatus.SHIPPED
+                order.tracking_number = shipment.awb_number
+                order.shipping_carrier= shipment.courier_name
+                from django.utils import timezone
+                order.shipped_at = timezone.now()
+                order.save(update_fields=[
+                    "status", "tracking_number", "shipping_carrier", "shipped_at",
+                ])
+                OrderStatusHistory.objects.create(
+                    order=order,
+                    status=OrderStatus.SHIPPED,
+                    changed_by=request.user,
+                    notes=f"Courier shipment created via Delhivery. AWB: {shipment.awb_number}",
+                )
 
-                # Auto-schedule pickup if pickup_date provided
+                # Deduct inventory
+                for item in order.items.all():
+                    inv = getattr(item.product, "inventory", None)
+                    if inv:
+                        inv.current_stock  = max(0, inv.current_stock  - item.quantity)
+                        inv.reserved_stock = max(0, inv.reserved_stock - item.quantity)
+                        inv.save()
+
+                # Auto-schedule pickup if date provided
                 pickup_date_str = request.data.get("pickup_date")
                 if pickup_date_str:
-                    from datetime import date
-                    try:
-                        from django.utils.dateparse import parse_date
-                        pd = parse_date(pickup_date_str)
-                        if pd:
+                    from django.utils.dateparse import parse_date
+                    pd = parse_date(pickup_date_str)
+                    if pd:
+                        try:
                             svc.schedule_pickup(shipment, pickup_date=pd)
-                    except Exception as e:
-                        logger.warning("Failed to schedule pickup: %s", e)
+                        except Exception as exc:
+                            logger.warning("Auto-pickup scheduling failed: %s", exc)
 
         except DelhiveryValidationError as e:
-            # Return structured validation errors (user-friendly list)
             return error_response(
-                "Shipment validation failed. Please fix the issues below.",
+                "Courier shipment validation failed.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=e.errors,
             )
         except DelhiveryAPIError as e:
             return error_response(str(e), status_code=status.HTTP_502_BAD_GATEWAY)
         except Exception as e:
-            logger.exception("Unexpected error creating shipment: %s", e)
-            return error_response("Failed to create shipment.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception("Unexpected error creating courier shipment: %s", e)
+            return error_response(
+                "Failed to create courier shipment.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
+        shipment.refresh_from_db()
         serializer = ShipmentSerializer(shipment)
         return success_response(
             data=serializer.data,
-            message=f"Shipment created successfully. AWB: {shipment.awb_number}",
+            message=f"Courier shipment created with Delhivery. AWB: {shipment.awb_number}",
             status_code=status.HTTP_201_CREATED,
         )
 
@@ -521,6 +728,16 @@ class AdminFulfillmentStatsView(APIView):
         stats = {
             "total_shipments":  base.count(),
             "created":          base.filter(shipment_status=ShipmentStatus.CREATED).count(),
+            # ── Warehouse dual-workflow metrics ───────────────────────────────────────
+            # Courier not yet contacted for any of these records
+            "not_created":      base.filter(shipment_status=ShipmentStatus.NOT_CREATED).count(),
+            # Packing done + courier not yet created — action required
+            "ready_for_pickup_count": base.filter(
+                packing_status=PackingStatus.READY_FOR_PICKUP,
+                shipment_status=ShipmentStatus.NOT_CREATED,
+            ).count(),
+            # Admin attention required (AWB exists but packing mismatch)
+            "needs_review":     base.filter(needs_review=True).count(),
             "pickup_scheduled": base.filter(shipment_status=ShipmentStatus.PICKUP_SCHEDULED).count(),
             "picked_up":        base.filter(shipment_status=ShipmentStatus.PICKED_UP).count(),
             "reached_hub":      base.filter(shipment_status=ShipmentStatus.REACHED_HUB).count(),
@@ -537,7 +754,7 @@ class AdminFulfillmentStatsView(APIView):
             "rto_percentage": round((base.filter(shipment_status=ShipmentStatus.RTO_INITIATED).count() / max(1, base.count())) * 100, 1),
         }
 
-        # Pending packing — orders in processing or packed without a shipment
+        # Pending packing — orders without any fulfilment record yet
         from apps.orders.models import Order
         pending_packing = Order.objects.filter(
             status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED],

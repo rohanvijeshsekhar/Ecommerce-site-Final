@@ -25,6 +25,7 @@ export interface ShipmentTrackingEvent {
 }
 
 export type ShipmentStatus =
+  | 'not_created'       // Warehouse record created, Delhivery NOT yet called
   | 'created'
   | 'pickup_scheduled'
   | 'picked_up'
@@ -109,6 +110,8 @@ export interface Shipment {
   last_synced_at: string | null;
   is_cancellable: boolean;
   is_delivered: boolean;
+  courier_submitted: boolean;   // true when Delhivery has been contacted
+  needs_review: boolean;        // true when AWB/packing mismatch detected
   tracking_events: ShipmentTrackingEvent[];
   created_at: string;
   updated_at: string;
@@ -134,11 +137,15 @@ export interface ShipmentListItem {
   pickup_scheduled_date: string | null;
   last_synced_at: string | null;
   is_cancellable: boolean;
+  courier_submitted: boolean;
+  needs_review: boolean;
   created_at: string;
 }
 
 export interface FulfillmentStats {
   total_shipments: number;
+  // Courier workflow
+  not_created: number;          // no Delhivery call yet
   created: number;
   pickup_scheduled: number;
   picked_up: number;
@@ -149,7 +156,11 @@ export interface FulfillmentStats {
   failed_delivery: number;
   cancelled: number;
   rto_initiated: number;
+  // Warehouse metrics
   pending_packing: number;
+  ready_for_pickup_count: number;  // packing done, courier not yet created
+  needs_review: number;
+  // Operational
   todays_dispatches: number;
   todays_deliveries: number;
   delivery_success_rate: number;
@@ -201,10 +212,37 @@ export const adminShippingService = {
     length?: number;
     breadth?: number;
     height?: number;
-    payment_mode?: 'Prepaid' | 'COD';
-    pickup_date?: string;
+    warehouse?: string;
+    dispatch_location?: string;
   }): Promise<APIResponse<Shipment>> => {
     const res = await api.post('/shipping/admin/shipments/create/', payload);
+    return res.data;
+  },
+
+  /** Update warehouse packing status (forward-only: pending→packing→packed→qc_passed→ready_for_pickup) */
+  updatePackingStatus: async (
+    shipmentId: string,
+    targetStatus?: PackingStatus  // omit to auto-advance to next step
+  ): Promise<APIResponse<Shipment>> => {
+    const res = await api.patch(`/shipping/admin/shipments/${shipmentId}/packing/`, {
+      status: targetStatus,
+    });
+    return res.data;
+  },
+
+  /** Create Delhivery courier shipment (only when packing_status == ready_for_pickup) */
+  createCourierShipment: async (
+    shipmentId: string,
+    payload?: {
+      weight?: number;
+      length?: number;
+      breadth?: number;
+      height?: number;
+      payment_mode?: 'Prepaid' | 'COD';
+      pickup_date?: string;
+    }
+  ): Promise<APIResponse<Shipment>> => {
+    const res = await api.post(`/shipping/admin/shipments/${shipmentId}/create-courier/`, payload || {});
     return res.data;
   },
 
@@ -308,6 +346,7 @@ export const customerShippingService = {
 // ── Status Helpers ────────────────────────────────────────────────────────────
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
+  not_created:       'Awaiting Shipment Creation',
   created:           'Shipment Created',
   pickup_scheduled:  'Pickup Scheduled',
   picked_up:         'Picked Up',
@@ -341,6 +380,7 @@ export const PICKUP_STATUS_LABELS: Record<PickupStatus, string> = {
 
 /** Ordered lifecycle for the tracking timeline */
 export const SHIPMENT_LIFECYCLE: ShipmentStatus[] = [
+  'not_created',
   'created',
   'pickup_scheduled',
   'picked_up',

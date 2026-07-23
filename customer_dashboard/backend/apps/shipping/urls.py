@@ -12,6 +12,8 @@ from .views import (
     AdminShipmentExportView,
     AdminFulfillmentStatsView,
     AdminProviderHealthCheckView,
+    AdminUpdatePackingStatusView,
+    AdminCreateCourierShipmentView,
     CustomerShipmentTrackingView,
     DelhiveryWebhookView,
 )
@@ -74,6 +76,16 @@ urlpatterns = [
         name="admin-shipment-manifest",
     ),
     path(
+        "shipping/admin/shipments/<uuid:pk>/update-packing/",
+        AdminUpdatePackingStatusView.as_view(),
+        name="admin-shipment-update-packing",
+    ),
+    path(
+        "shipping/admin/shipments/<uuid:pk>/create-courier/",
+        AdminCreateCourierShipmentView.as_view(),
+        name="admin-shipment-create-courier",
+    ),
+    path(
         "shipping/admin/stats/",
         AdminFulfillmentStatsView.as_view(),
         name="admin-fulfillment-stats",
@@ -93,4 +105,3 @@ urlpatterns = [
         name="delhivery-webhook",
     ),
 ]
-

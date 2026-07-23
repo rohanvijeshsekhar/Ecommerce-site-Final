@@ -19,9 +19,15 @@ from apps.orders.models import Order
 
 class ShipmentStatus(models.TextChoices):
     """
-    Mirrors Delhivery's shipment status codes, normalised for FAAZO.
-    Covers the full lifecycle from creation to final delivery/cancellation.
+    Courier-side workflow status for Delhivery shipments.
+    NOT_CREATED is the initial state — it means Delhivery has not yet been called.
+    Delhivery operations are only permitted once the Warehouse Workflow (packing_status)
+    reaches READY_FOR_PICKUP and an admin explicitly triggers 'Create Courier Shipment'.
     """
+    # ── Warehouse gate (pre-Delhivery) ──────────────────────────────────────
+    NOT_CREATED       = "not_created",       "Not Created"
+
+    # ── Delhivery lifecycle ─────────────────────────────────────────────────
     CREATED           = "created",           "Shipment Created"
     PICKUP_SCHEDULED  = "pickup_scheduled",  "Pickup Scheduled"
     PICKED_UP         = "picked_up",         "Picked Up"
@@ -258,12 +264,15 @@ class Shipment(BaseModel):
         verbose_name="Delivery Type",
     )
 
-    # ── Shipment State ───────────────────────────────────────
+    # ── Courier Shipment State ───────────────────────────────
+    # NOT_CREATED = no Delhivery call has been made yet.
+    # Transitions to CREATED only after packing_status == READY_FOR_PICKUP
+    # and admin explicitly triggers 'Create Courier Shipment'.
     shipment_status = models.CharField(
         max_length=30,
         choices=ShipmentStatus.choices,
-        default=ShipmentStatus.CREATED,
-        verbose_name="Shipment Status",
+        default=ShipmentStatus.NOT_CREATED,
+        verbose_name="Courier Status",
         db_index=True,
     )
     pickup_status = models.CharField(
@@ -271,6 +280,15 @@ class Shipment(BaseModel):
         choices=PickupStatus.choices,
         default=PickupStatus.PENDING,
         verbose_name="Pickup Status",
+    )
+
+    # ── Admin Review Flag ────────────────────────────────────
+    # Set by the data migration when a record has a valid AWB but packing
+    # was not complete — requires manual admin review before continuing.
+    needs_review = models.BooleanField(
+        default=False,
+        verbose_name="Needs Admin Review",
+        db_index=True,
     )
     current_location = models.CharField(
         max_length=500,
@@ -344,11 +362,21 @@ class Shipment(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.shipment_number} ({self.awb_number or 'No AWB'}) — {self.shipment_status}"
+        courier = self.awb_number or self.shipment_status
+        return f"{self.shipment_number} ({courier}) — packing:{self.packing_status}"
+
+    @property
+    def courier_submitted(self) -> bool:
+        """True if Delhivery has been contacted (AWB exists)."""
+        return self.shipment_status != ShipmentStatus.NOT_CREATED
 
     @property
     def is_cancellable(self) -> bool:
-        """True if shipment can still be cancelled (before pickup)."""
+        """
+        True if shipment can still be cancelled with Delhivery (before pickup).
+        NOT_CREATED records cannot be 'cancelled' with courier — they haven't been
+        submitted yet. Use warehouse workflow controls to revert packing instead.
+        """
         return self.shipment_status in [
             ShipmentStatus.CREATED,
             ShipmentStatus.PICKUP_SCHEDULED,

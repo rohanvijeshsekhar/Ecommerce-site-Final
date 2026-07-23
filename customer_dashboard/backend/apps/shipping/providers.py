@@ -142,7 +142,7 @@ class BaseShippingProvider(ABC):
             raise DelhiveryValidationError(errors)
 
     @abstractmethod
-    def create_shipment(self, order: Order, package_info: dict, created_by=None) -> Shipment:
+    def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
         pass
 
     @abstractmethod
@@ -172,11 +172,14 @@ class OfflineShippingProvider(BaseShippingProvider):
     Zero external HTTP calls. Generates local AWBs and handles instant tracking simulation.
     """
 
-    def create_shipment(self, order: Order, package_info: dict, created_by=None) -> Shipment:
-        # Idempotency check: if shipment exists, return existing shipment
-        if hasattr(order, "shipment") and order.shipment:
-            logger.info("[OFFLINE_PROVIDER] Order %s already has shipment %s (Idempotent return).", order.order_number, order.shipment.awb_number)
-            return order.shipment
+    def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
+        """
+        Creates or updates a simulated offline shipment.
+        If existing_shipment is provided, updates that record instead of creating a new one.
+        """
+        # Idempotency: return existing if AWB already present
+        if existing_shipment and existing_shipment.awb_number:
+            return existing_shipment
 
         self.validate_for_shipment(order, package_info)
 
@@ -196,29 +199,53 @@ class OfflineShippingProvider(BaseShippingProvider):
         resp_time = timezone.now()
         exec_ms = round((resp_time - req_time).total_seconds() * 1000, 2)
 
-        shipment = Shipment.objects.create(
-            order=order,
-            created_by=created_by,
-            provider="offline",
-            courier_name="Delhivery (Offline Simulation)",
-            delhivery_shipment_id=fake_awb,
-            awb_number=fake_awb,
-            tracking_number=fake_awb,
-            tracking_url=f"http://localhost:5173/orders/{order.id}",
-            shipment_status=ShipmentStatus.CREATED,
-            pickup_status=PickupStatus.PENDING,
-            current_location="FAAZO Central Warehouse, Mumbai",
-            request_payload={"mode": "offline", "order_number": order_ref, "package": package_info},
-            response_payload=fake_raw,
-            raw_response=fake_raw,
-            request_timestamp=req_time,
-            response_timestamp=resp_time,
-            api_status_code=200,
-            execution_time_ms=exec_ms,
-            last_synced_at=resp_time,
-        )
+        if existing_shipment:
+            # Update the pre-existing warehouse record
+            shipment = existing_shipment
+            shipment.provider = "offline"
+            shipment.courier_name = "Delhivery (Offline Simulation)"
+            shipment.delhivery_shipment_id = fake_awb
+            shipment.awb_number = fake_awb
+            shipment.tracking_number = fake_awb
+            shipment.tracking_url = f"http://localhost:5173/orders/{order.id}"
+            shipment.shipment_status = ShipmentStatus.CREATED
+            shipment.pickup_status = PickupStatus.PENDING
+            shipment.current_location = "FAAZO Central Warehouse, Mumbai"
+            shipment.request_payload = {"mode": "offline", "order_number": order_ref, "package": package_info}
+            shipment.response_payload = fake_raw
+            shipment.raw_response = fake_raw
+            shipment.request_timestamp = req_time
+            shipment.response_timestamp = resp_time
+            shipment.api_status_code = 200
+            shipment.execution_time_ms = exec_ms
+            shipment.last_synced_at = resp_time
+            if created_by:
+                shipment.created_by = created_by
+            shipment.save()
+        else:
+            shipment = Shipment.objects.create(
+                order=order,
+                created_by=created_by,
+                provider="offline",
+                courier_name="Delhivery (Offline Simulation)",
+                delhivery_shipment_id=fake_awb,
+                awb_number=fake_awb,
+                tracking_number=fake_awb,
+                tracking_url=f"http://localhost:5173/orders/{order.id}",
+                shipment_status=ShipmentStatus.CREATED,
+                pickup_status=PickupStatus.PENDING,
+                current_location="FAAZO Central Warehouse, Mumbai",
+                request_payload={"mode": "offline", "order_number": order_ref, "package": package_info},
+                response_payload=fake_raw,
+                raw_response=fake_raw,
+                request_timestamp=req_time,
+                response_timestamp=resp_time,
+                api_status_code=200,
+                execution_time_ms=exec_ms,
+                last_synced_at=resp_time,
+            )
 
-        # Create initial tracking event
+        # Create tracking event
         ShipmentTrackingEvent.objects.create(
             shipment=shipment,
             event_code="MANIFEST_CREATED",
@@ -304,11 +331,14 @@ class DelhiverySandboxProvider(BaseShippingProvider):
         self.provider_mode = "sandbox"
         self.client = DelhiveryAPIClient(self.base_url, self.token, self.client_name)
 
-    def create_shipment(self, order: Order, package_info: dict, created_by=None) -> Shipment:
-        # Idempotency Check: return existing shipment if present
-        if hasattr(order, "shipment") and order.shipment:
-            logger.info("[SANDBOX_PROVIDER] Order %s already has shipment %s (Idempotent return).", order.order_number, order.shipment.awb_number)
-            return order.shipment
+    def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
+        """
+        Creates or updates a Delhivery courier shipment via the Sandbox API.
+        If existing_shipment is provided, updates that warehouse record (no new DB row).
+        """
+        # Idempotency: return if AWB already present
+        if existing_shipment and existing_shipment.awb_number:
+            return existing_shipment
 
         self.validate_for_shipment(order, package_info)
 
@@ -362,7 +392,6 @@ class DelhiverySandboxProvider(BaseShippingProvider):
             res_data, status_code, exec_ms = self.client.create_shipment_api(payload)
             resp_time = timezone.now()
 
-            # Parse Delhivery response JSON
             packages = res_data.get("packages", [])
             pkg = packages[0] if packages else {}
             awb = pkg.get("waybill") or pkg.get("upload_wbn") or ""
@@ -373,9 +402,7 @@ class DelhiverySandboxProvider(BaseShippingProvider):
                 errMsg = ", ".join(pkg.get("remarks", [])) or res_data.get("rmk") or "Delhivery API returned failure status."
                 raise DelhiveryAPIError(f"Delhivery Shipment Creation Failed: {errMsg}", status_code=status_code, details=res_data)
 
-            shipment = Shipment.objects.create(
-                order=order,
-                created_by=created_by,
+            common_fields = dict(
                 provider=self.provider_mode,
                 courier_name=f"Delhivery ({self.provider_mode.title()})",
                 delhivery_shipment_id=awb,
@@ -395,6 +422,21 @@ class DelhiverySandboxProvider(BaseShippingProvider):
                 execution_time_ms=exec_ms,
                 last_synced_at=resp_time,
             )
+
+            if existing_shipment:
+                # Update the pre-existing warehouse record
+                for field, value in common_fields.items():
+                    setattr(existing_shipment, field, value)
+                if created_by:
+                    existing_shipment.created_by = created_by
+                existing_shipment.save()
+                shipment = existing_shipment
+            else:
+                shipment = Shipment.objects.create(
+                    order=order,
+                    created_by=created_by,
+                    **common_fields,
+                )
 
             ShipmentTrackingEvent.objects.create(
                 shipment=shipment,

@@ -28,8 +28,8 @@ class DelhiveryService:
     def validate_for_shipment(self, order: Order, package_info: dict) -> None:
         return self.provider.validate_for_shipment(order, package_info)
 
-    def create_shipment(self, order: Order, package_info: dict, created_by=None) -> Shipment:
-        return self.provider.create_shipment(order, package_info, created_by=created_by)
+    def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
+        return self.provider.create_shipment(order, package_info, created_by=created_by, existing_shipment=existing_shipment)
 
     def track_shipment(self, shipment: Shipment) -> dict:
         return self.provider.track_shipment(shipment)

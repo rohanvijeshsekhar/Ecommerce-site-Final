@@ -42,6 +42,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source="created_by.full_name", read_only=True, default="")
     is_cancellable = serializers.BooleanField(read_only=True)
     is_delivered = serializers.BooleanField(read_only=True)
+    courier_submitted = serializers.BooleanField(read_only=True)
+    needs_review = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Shipment
@@ -82,6 +84,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "cod_amount",
             "delivery_type",
             "shipment_status",
+            "packing_status",
             "pickup_status",
             "current_location",
             "current_hub",
@@ -92,6 +95,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "last_synced_at",
             "is_cancellable",
             "is_delivered",
+            "courier_submitted",
+            "needs_review",
             "tracking_events",
             "created_at",
             "updated_at",
@@ -136,6 +141,8 @@ class ShipmentListSerializer(serializers.ModelSerializer):
     state = serializers.CharField(source="order.shipping_address.state", read_only=True, default="")
     city = serializers.CharField(source="order.shipping_address.city", read_only=True, default="")
     is_cancellable = serializers.BooleanField(read_only=True)
+    courier_submitted = serializers.BooleanField(read_only=True)
+    needs_review = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Shipment
@@ -159,6 +166,8 @@ class ShipmentListSerializer(serializers.ModelSerializer):
             "pickup_scheduled_date",
             "last_synced_at",
             "is_cancellable",
+            "courier_submitted",
+            "needs_review",
             "created_at",
         ]
 

@@ -33,12 +33,13 @@ const getShipmentVariant = (status: ShipmentStatus): 'success' | 'info' | 'warni
     case 'failed_delivery':  return 'error';
     case 'cancelled':        return 'error';
     case 'rto_initiated':    return 'error';
+    case 'not_created':      return 'neutral';
     default:                 return 'neutral';
   }
 };
 
 const ALL_STATUSES: ShipmentStatus[] = [
-  'created', 'pickup_scheduled', 'picked_up', 'reached_hub',
+  'not_created', 'created', 'pickup_scheduled', 'picked_up', 'reached_hub',
   'in_transit', 'out_for_delivery', 'delivered',
   'failed_delivery', 'rto_initiated', 'cancelled',
 ];
@@ -183,8 +184,17 @@ const FulfillmentPage: React.FC = () => {
       header: 'AWB / Shipment',
       render: (_: unknown, row: ShipmentListItem) => (
         <div>
-          <p className="text-xs font-black text-slate-800 font-mono">{row.awb_number || 'Pending AWB'}</p>
-          <p className="text-[10px] font-bold text-indigo-600 font-mono mt-0.5">{row.shipment_number || row.order_number}</p>
+          <p className="text-xs font-black text-slate-800 font-mono">
+            {row.awb_number || 'No AWB Yet'}
+          </p>
+          <p className="text-[10px] font-bold text-indigo-600 font-mono mt-0.5">
+            {row.shipment_number || row.order_number}
+          </p>
+          {row.needs_review && (
+            <span className="inline-flex items-center gap-0.5 mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300">
+              ⚠ Review
+            </span>
+          )}
         </div>
       ),
     },
@@ -210,13 +220,23 @@ const FulfillmentPage: React.FC = () => {
     },
     {
       key: 'shipment_status',
-      header: 'Shipment Status',
-      render: (_: unknown, row: ShipmentListItem) => (
-        <StatusBadge
-          label={SHIPMENT_STATUS_LABELS[row.shipment_status] || row.shipment_status}
-          variant={getShipmentVariant(row.shipment_status)}
-        />
-      ),
+      header: 'Courier Status',
+      render: (_: unknown, row: ShipmentListItem) => {
+        if (row.shipment_status === 'not_created') {
+          return (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              Awaiting Creation
+            </span>
+          );
+        }
+        return (
+          <StatusBadge
+            label={SHIPMENT_STATUS_LABELS[row.shipment_status] || row.shipment_status}
+            variant={getShipmentVariant(row.shipment_status)}
+          />
+        );
+      },
     },
     {
       key: 'packing_status',
@@ -276,8 +296,7 @@ const FulfillmentPage: React.FC = () => {
     },
   ];
 
-  // ── Stats Cards ───────────────────────────────────────────────────────────────
-  // ── Stats Cards ───────────────────────────────────────────────────────────────
+  // ── Stats Cards ─────────────────────────────────────────────────────────────
   const statCards = stats
     ? [
         {
@@ -297,6 +316,24 @@ const FulfillmentPage: React.FC = () => {
           textColor: 'text-amber-900',
           labelColor: 'text-amber-700/80',
           iconStyle: 'bg-white/90 border border-amber-200/80 text-amber-600',
+        },
+        {
+          label: 'Awaiting Courier',
+          value: stats.not_created ?? 0,
+          icon: <Package className="w-4 h-4" />,
+          cardStyle: 'bg-gradient-to-br from-[#f1f5f9]/95 via-[#e2e8f0]/70 to-[#cbd5e1]/50 border-slate-300/90 shadow-xs shadow-slate-100/50',
+          textColor: 'text-slate-700',
+          labelColor: 'text-slate-500/80',
+          iconStyle: 'bg-white/90 border border-slate-200/80 text-slate-500',
+        },
+        {
+          label: 'Ready for Courier',
+          value: stats.ready_for_pickup_count ?? 0,
+          icon: <CheckSquare className="w-4 h-4" />,
+          cardStyle: 'bg-gradient-to-br from-[#f0fdf4]/95 via-[#dcfce7]/70 to-[#bbf7d0]/50 border-green-200/90 shadow-xs shadow-green-100/50',
+          textColor: 'text-green-800',
+          labelColor: 'text-green-600/80',
+          iconStyle: 'bg-white/90 border border-green-200/80 text-green-600',
         },
         {
           label: 'Pickup Pending',
@@ -373,7 +410,7 @@ const FulfillmentPage: React.FC = () => {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-10 gap-3">
           {statCards.map((card) => (
             <div
               key={card.label}
