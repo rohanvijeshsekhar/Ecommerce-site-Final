@@ -42,70 +42,69 @@ export const SalesTab: React.FC<SalesTabProps> = ({
       {/* 2-Column Sales Grid: Channel Breakdown & Weekly Heatmap */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sales Channel Breakdown */}
-        <div className="p-5 rounded-2xl bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-50/90 via-fuchsia-50/40 to-indigo-50/70 border border-purple-100/80 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between pb-3 border-b border-purple-100/70">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Sales Channel Breakdown</h3>
               <p className="text-xs text-slate-500 mt-0.5">B2B Dealer Network vs Direct Customer Sales</p>
             </div>
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-[#005F63]/10 text-[#005F63] rounded-full border border-[#005F63]/20">
-              Live DB Aggregation
-            </span>
           </div>
 
           <div className="space-y-4 mt-4">
             <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
+              <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-slate-800">Direct Customer Purchases</span>
-                <span className="text-[#005F63]">{custShare}% of Total Revenue</span>
+                <span className="text-indigo-600 font-bold">{custShare}% of Total Revenue</span>
               </div>
-              <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-[#005F63] rounded-full" style={{ width: `${custShare}%` }} />
+              <div className="w-full h-3 rounded-full bg-indigo-100/60 overflow-hidden p-0.5 border border-indigo-100/50">
+                <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{ width: `${custShare}%` }} />
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
+              <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-slate-800">Approved B2B Dealer Orders</span>
-                <span className="text-sky-700">{dealerShare}% of Total Revenue</span>
+                <span className="text-pink-600 font-bold">{dealerShare}% of Total Revenue</span>
               </div>
-              <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-sky-600 rounded-full" style={{ width: `${dealerShare}%` }} />
+              <div className="w-full h-3 rounded-full bg-pink-100/60 overflow-hidden p-0.5 border border-pink-100/50">
+                <div className="h-full bg-pink-400 rounded-full transition-all duration-500" style={{ width: `${dealerShare}%` }} />
               </div>
             </div>
           </div>
 
-          <div className="mt-5 p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs font-semibold">
+          <div className="mt-5 p-3.5 rounded-xl bg-white/90 backdrop-blur-sm border border-purple-100/80 shadow-xs flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-600">Total Paid Sales Revenue:</span>
-            <span className="font-bold text-[#005F63]">₹{salesChannel?.total_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 }) ?? '0.00'}</span>
+            <span className="font-bold text-purple-900 text-sm">₹{salesChannel?.total_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 }) ?? '0.00'}</span>
           </div>
         </div>
 
         {/* Weekly Sales Heatmap */}
-        <div className="p-5 rounded-2xl bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-50/90 via-fuchsia-50/40 to-indigo-50/70 border border-purple-100/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-purple-100/70">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Weekly Sales Heatmap</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Order volume by day of the week from DB timestamps</p>
               </div>
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <div className="p-2 rounded-xl bg-purple-100/80 border border-purple-200/60 text-purple-600">
+                <Calendar className="w-4 h-4 text-purple-600" />
+              </div>
             </div>
 
             <div className="grid grid-cols-7 gap-2 mt-4 text-center">
               {weeklyHeatmap.map((item) => {
                 const style =
                   item.level === 'High'
-                    ? 'bg-[#005F63] text-white font-black shadow-xs'
+                    ? 'bg-purple-500 text-white font-bold shadow-xs'
                     : item.level === 'Med'
-                    ? 'bg-teal-500/40 text-teal-900 font-bold'
+                    ? 'bg-purple-200/80 text-purple-900 font-bold border border-purple-200/50'
                     : item.level === 'Low'
-                    ? 'bg-teal-500/15 text-teal-800 font-semibold'
-                    : 'bg-slate-100 text-slate-400';
+                    ? 'bg-purple-100/70 text-purple-800 font-medium border border-purple-200/40'
+                    : 'bg-white/80 text-slate-400 border border-purple-100/40';
 
                 return (
                   <div key={item.day} className="space-y-1">
-                    <div className="text-[10px] font-semibold text-slate-400">{item.day}</div>
+                    <div className="text-[10px] font-semibold text-slate-500">{item.day}</div>
                     <div className={`p-2.5 rounded-xl text-xs ${style}`}>
                       {item.count}
                     </div>
@@ -115,9 +114,9 @@ export const SalesTab: React.FC<SalesTabProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+          <div className="mt-4 pt-3 border-t border-purple-100/80 text-xs text-slate-600 flex justify-between">
             <span>Period Orders Count:</span>
-            <span className="font-bold text-slate-900">{revenueData.total_orders} orders</span>
+            <span className="font-bold text-purple-950">{revenueData.total_orders} orders</span>
           </div>
         </div>
       </section>

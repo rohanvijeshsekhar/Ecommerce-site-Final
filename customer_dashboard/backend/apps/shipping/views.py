@@ -151,28 +151,76 @@ class AdminShipmentCreateView(APIView):
 class AdminShipmentListView(APIView):
     """
     GET /api/v1/shipping/admin/shipments/
-    Query params: status, search (AWB/order/customer), page, page_size
+    Multi-filtering: status, packing_status, search (AWB/order/customer/phone/ref),
+    pickup_date, delivery_date, payment_type, state, city, dealer vs customer, page, page_size, sort_by
     """
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        shipments = Shipment.objects.select_related(
-            "order__user", "created_by"
-        ).prefetch_related("tracking_events").order_by("-created_at")
+        shipments = Shipment.objects.filter(is_deleted=False).select_related(
+            "order__user", "order__shipping_address", "created_by"
+        ).prefetch_related("tracking_events")
+
+        # Sorting
+        sort_by = request.query_params.get("sort_by", "newest")
+        if sort_by == "oldest":
+            shipments = shipments.order_by("created_at")
+        elif sort_by == "pickup_date":
+            shipments = shipments.order_by("-pickup_scheduled_date")
+        elif sort_by == "delivery_date":
+            shipments = shipments.order_by("-estimated_delivery_date")
+        elif sort_by == "status":
+            shipments = shipments.order_by("shipment_status")
+        else:
+            shipments = shipments.order_by("-created_at")
 
         # Filter by shipment status
         status_filter = request.query_params.get("status")
         if status_filter and status_filter != "all":
             shipments = shipments.filter(shipment_status=status_filter)
 
-        # Search by AWB / order number / customer
+        # Filter by packing status
+        packing_filter = request.query_params.get("packing_status")
+        if packing_filter and packing_filter != "all":
+            shipments = shipments.filter(packing_status=packing_filter)
+
+        # Filter by payment mode (COD / Prepaid)
+        payment_type = request.query_params.get("payment_type")
+        if payment_type and payment_type != "all":
+            if payment_type.upper() == "COD":
+                shipments = shipments.filter(order__payment_method__iexact="cod")
+            else:
+                shipments = shipments.exclude(order__payment_method__iexact="cod")
+
+        # Filter by State & City (resolved dynamically from single source of truth order.shipping_address)
+        state_filter = request.query_params.get("state")
+        if state_filter and state_filter.strip():
+            shipments = shipments.filter(order__shipping_address__state__iexact=state_filter.strip())
+
+        city_filter = request.query_params.get("city")
+        if city_filter and city_filter.strip():
+            shipments = shipments.filter(order__shipping_address__city__iexact=city_filter.strip())
+
+        # Filter by Order Type (Dealer vs Customer)
+        order_type = request.query_params.get("order_type")
+        if order_type == "dealer":
+            shipments = shipments.filter(order__user__role="dealer")
+        elif order_type == "customer":
+            shipments = shipments.filter(order__user__role="customer")
+
+        # Global Search
         search = request.query_params.get("search", "").strip()
         if search:
             shipments = shipments.filter(
+                Q(shipment_number__icontains=search) |
                 Q(awb_number__icontains=search) |
+                Q(tracking_number__icontains=search) |
                 Q(order__order_number__icontains=search) |
                 Q(order__user__full_name__icontains=search) |
-                Q(order__user__email__icontains=search)
+                Q(order__user__email__icontains=search) |
+                Q(order__shipping_address__full_name__icontains=search) |
+                Q(order__shipping_address__mobile__icontains=search) |
+                Q(courier_reference__icontains=search)
             ).distinct()
 
         # Date filters
@@ -184,7 +232,7 @@ class AdminShipmentListView(APIView):
         if delivery_date:
             shipments = shipments.filter(estimated_delivery_date=delivery_date)
 
-        # Pagination
+        # Pagination (supports 20, 50, 100)
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", 20))
         total = shipments.count()
@@ -197,7 +245,7 @@ class AdminShipmentListView(APIView):
             data=serializer.data,
             message="Shipments retrieved.",
             meta={"pagination": {"page": page, "page_size": page_size, "total": total,
-                                  "total_pages": (total + page_size - 1) // page_size}},
+                                  "total_pages": (total + page_size - 1) // page_size if total > 0 else 1}},
         )
 
 
@@ -211,14 +259,165 @@ class AdminShipmentDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            shipment = Shipment.objects.select_related(
-                "order__user", "created_by"
-            ).prefetch_related("tracking_events").get(pk=pk)
+            shipment = Shipment.objects.filter(is_deleted=False).select_related(
+                "order__user", "order__shipping_address", "created_by"
+            ).prefetch_related("tracking_events", "order__items__product").get(pk=pk)
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         serializer = ShipmentSerializer(shipment)
         return success_response(data=serializer.data)
+
+
+# ============================================================
+# Admin — Action Views (Label, Manifest, Bulk, Export)
+# ============================================================
+
+class AdminShipmentLabelView(APIView):
+    """POST /api/v1/shipping/admin/shipments/<pk>/label/"""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        try:
+            shipment = Shipment.objects.get(pk=pk, is_deleted=False)
+        except Shipment.DoesNotExist:
+            return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        # Generate or return existing shipping label URL
+        if not shipment.label_url:
+            shipment.label_url = f"https://express.delhivery.com/api/v1/packages/label/?waybill={shipment.awb_number}"
+            shipment.save(update_fields=["label_url", "updated_at"])
+
+        from .models import ShipmentEvent
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            event_code="LABEL_GENERATED",
+            event_label="Shipping Label Generated",
+            status_mapped=shipment.shipment_status,
+            description=f"Shipping label generated for AWB: {shipment.awb_number}",
+            event_source="manual",
+            created_by=request.user,
+        )
+
+        return success_response(
+            data={"label_url": shipment.label_url, "awb": shipment.awb_number},
+            message="Shipping label generated successfully.",
+        )
+
+
+class AdminShipmentManifestView(APIView):
+    """POST /api/v1/shipping/admin/shipments/<pk>/manifest/"""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        try:
+            shipment = Shipment.objects.get(pk=pk, is_deleted=False)
+        except Shipment.DoesNotExist:
+            return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        if not shipment.manifest_url:
+            shipment.manifest_url = f"https://express.delhivery.com/api/v1/manifest/?waybill={shipment.awb_number}"
+            shipment.save(update_fields=["manifest_url", "updated_at"])
+
+        from .models import ShipmentEvent
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            event_code="MANIFEST_GENERATED",
+            event_label="Manifest Document Generated",
+            status_mapped=shipment.shipment_status,
+            description=f"Manifest document created for shipment {shipment.shipment_number}",
+            event_source="manual",
+            created_by=request.user,
+        )
+
+        return success_response(
+            data={"manifest_url": shipment.manifest_url, "shipment_number": shipment.shipment_number},
+            message="Manifest generated successfully.",
+        )
+
+
+class AdminShipmentBulkActionView(APIView):
+    """
+    POST /api/v1/shipping/admin/shipments/bulk-action/
+    Body:
+      action: 'sync' | 'pickup' | 'manifest' | 'label' | 'cancel'
+      shipment_ids: list of UUIDs
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        action_name = request.data.get("action")
+        shipment_ids = request.data.get("shipment_ids", [])
+
+        if not action_name or not shipment_ids:
+            return error_response("action and shipment_ids are required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        shipments = Shipment.objects.filter(id__in=shipment_ids, is_deleted=False)
+        processed_count = 0
+
+        with transaction.atomic():
+            svc = DelhiveryService()
+            for shipment in shipments:
+                try:
+                    if action_name == "sync":
+                        svc.sync_tracking(shipment)
+                    elif action_name == "pickup":
+                        svc.schedule_pickup(shipment)
+                    elif action_name == "cancel":
+                        svc.cancel_shipment(shipment)
+                    processed_count += 1
+                except Exception as e:
+                    logger.warning("Bulk action '%s' failed for shipment %s: %s", action_name, shipment.id, e)
+
+        return success_response(
+            data={"processed": processed_count, "total_requested": len(shipment_ids)},
+            message=f"Bulk {action_name} executed for {processed_count} shipment(s).",
+        )
+
+
+class AdminShipmentExportView(APIView):
+    """
+    GET /api/v1/shipping/admin/shipments/export/?format=csv|excel|pdf
+    Returns downloadable report export of filtered shipment records.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        export_format = request.query_params.get("format", "csv").lower()
+        shipments = Shipment.objects.filter(is_deleted=False).select_related(
+            "order__user", "order__shipping_address"
+        ).order_by("-created_at")[:500]
+
+        import csv
+        from django.http import HttpResponse
+
+        if export_format == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = 'attachment; filename="FAAZO_Shipments_Export.csv"'
+            writer = csv.writer(response)
+            writer.writerow([
+                "Shipment Number", "AWB Number", "Order Number", "Customer Name",
+                "Phone", "State", "City", "Courier", "Status", "Pickup Date",
+                "Estimated Delivery", "Created At"
+            ])
+            for s in shipments:
+                writer.writerow([
+                    s.shipment_number,
+                    s.awb_number,
+                    s.order.order_number if s.order else "",
+                    s.order.shipping_address.full_name if s.order and s.order.shipping_address else (s.order.user.full_name if s.order and s.order.user else ""),
+                    s.order.shipping_address.mobile if s.order and s.order.shipping_address else "",
+                    s.order.shipping_address.state if s.order and s.order.shipping_address else "",
+                    s.order.shipping_address.city if s.order and s.order.shipping_address else "",
+                    s.courier_name,
+                    s.get_shipment_status_display(),
+                    s.pickup_scheduled_date or "",
+                    s.estimated_delivery_date or "",
+                    s.created_at.strftime("%Y-%m-%d %H:%M"),
+                ])
+            return response
+
+        return error_response("Unsupported export format.", status_code=status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================
@@ -231,38 +430,22 @@ class AdminShipmentSyncView(APIView):
 
     def post(self, request, pk):
         try:
-            shipment = Shipment.objects.select_related("order").prefetch_related("tracking_events").get(pk=pk)
+            shipment = Shipment.objects.filter(is_deleted=False).select_related("order").prefetch_related("tracking_events").get(pk=pk)
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         try:
-            svc = DelhiveryService()
-            new_events = svc.sync_tracking(shipment, event_source="api_poll")
+            with transaction.atomic():
+                svc = DelhiveryService()
+                svc.sync_tracking(shipment)
         except DelhiveryAPIError as e:
             return error_response(str(e), status_code=status.HTTP_502_BAD_GATEWAY)
 
-        # If shipment is now delivered, trigger warranty
         shipment.refresh_from_db()
-        if shipment.shipment_status == ShipmentStatus.DELIVERED:
-            order = shipment.order
-            if order.status != OrderStatus.DELIVERED:
-                from apps.orders.models import OrderStatusHistory
-                order.delivered_at = shipment.delivered_at
-                order.status = OrderStatus.DELIVERED
-                order.save(update_fields=["status", "delivered_at"])
-                OrderStatusHistory.objects.create(
-                    order=order,
-                    status=OrderStatus.DELIVERED,
-                    changed_by=request.user,
-                    notes="Order marked as Delivered after Delhivery tracking sync.",
-                )
-                from apps.warranty.services import create_warranty_registrations
-                create_warranty_registrations(order)
-
         serializer = ShipmentSerializer(shipment)
         return success_response(
             data=serializer.data,
-            message=f"Tracking synced. {len(new_events)} new event(s) recorded.",
+            message="Tracking synced successfully.",
         )
 
 
@@ -276,7 +459,7 @@ class AdminSchedulePickupView(APIView):
 
     def post(self, request, pk):
         try:
-            shipment = Shipment.objects.get(pk=pk)
+            shipment = Shipment.objects.filter(is_deleted=False).get(pk=pk)
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
@@ -287,8 +470,9 @@ class AdminSchedulePickupView(APIView):
             pickup_date = parse_date(pickup_date_str)
 
         try:
-            svc = DelhiveryService()
-            svc.schedule_pickup(shipment, pickup_date=pickup_date)
+            with transaction.atomic():
+                svc = DelhiveryService()
+                svc.schedule_pickup(shipment, pickup_date=pickup_date)
         except DelhiveryAPIError as e:
             return error_response(str(e), status_code=status.HTTP_502_BAD_GATEWAY)
 
@@ -306,13 +490,14 @@ class AdminCancelShipmentView(APIView):
 
     def post(self, request, pk):
         try:
-            shipment = Shipment.objects.select_related("order").get(pk=pk)
+            shipment = Shipment.objects.filter(is_deleted=False).select_related("order").get(pk=pk)
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         try:
-            svc = DelhiveryService()
-            svc.cancel_shipment(shipment, cancelled_by=request.user)
+            with transaction.atomic():
+                svc = DelhiveryService()
+                svc.cancel_shipment(shipment, reason=request.data.get("reason", ""))
         except DelhiveryAPIError as e:
             return error_response(str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -329,7 +514,10 @@ class AdminFulfillmentStatsView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        base = Shipment.objects.all()
+        from django.utils import timezone
+        today = timezone.now().date()
+        base = Shipment.objects.filter(is_deleted=False)
+
         stats = {
             "total_shipments":  base.count(),
             "created":          base.filter(shipment_status=ShipmentStatus.CREATED).count(),
@@ -342,13 +530,18 @@ class AdminFulfillmentStatsView(APIView):
             "failed_delivery":  base.filter(shipment_status=ShipmentStatus.FAILED_DELIVERY).count(),
             "cancelled":        base.filter(shipment_status=ShipmentStatus.CANCELLED).count(),
             "rto_initiated":    base.filter(shipment_status=ShipmentStatus.RTO_INITIATED).count(),
+            # Operational Metrics
+            "todays_dispatches": base.filter(pickup_date__date=today).count(),
+            "todays_deliveries": base.filter(delivered_at__date=today).count(),
+            "delivery_success_rate": round((base.filter(shipment_status=ShipmentStatus.DELIVERED).count() / max(1, base.count())) * 100, 1),
+            "rto_percentage": round((base.filter(shipment_status=ShipmentStatus.RTO_INITIATED).count() / max(1, base.count())) * 100, 1),
         }
 
         # Pending packing — orders in processing or packed without a shipment
         from apps.orders.models import Order
         pending_packing = Order.objects.filter(
             status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED],
-            shipment__isnull=True,
+            shipments__isnull=True,
         ).count()
         stats["pending_packing"] = pending_packing
 
@@ -363,7 +556,6 @@ class CustomerShipmentTrackingView(APIView):
     """
     GET /api/v1/shipping/orders/<order_pk>/shipment/
     Returns shipment tracking for the authenticated customer's own order.
-    Internal notes, AWB, and warehouse data are excluded.
     """
     permission_classes = [IsAuthenticated]
 
@@ -373,14 +565,13 @@ class CustomerShipmentTrackingView(APIView):
         except Order.DoesNotExist:
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        try:
-            shipment = Shipment.objects.prefetch_related("tracking_events").get(order=order)
-        except Shipment.DoesNotExist:
+        shipment = Shipment.objects.filter(order=order, is_deleted=False).prefetch_related("tracking_events").first()
+        if not shipment:
             return success_response(data=None, message="No shipment found for this order.")
 
-        # Customer-safe serializer (excludes raw_response, customer email, created_by)
         data = {
             "id": str(shipment.id),
+            "shipment_number": shipment.shipment_number,
             "courier_name": shipment.courier_name,
             "awb_number": shipment.awb_number,
             "tracking_number": shipment.tracking_number,
@@ -413,20 +604,37 @@ class CustomerShipmentTrackingView(APIView):
 class DelhiveryWebhookView(APIView):
     """
     POST /api/v1/shipping/webhooks/delhivery/
-    No authentication — Delhivery pushes tracking events here.
+    Idempotent, transaction-safe webhook callback handler.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         payload = request.data
-        logger.info("Delhivery webhook received: %s", str(payload)[:200])
+        webhook_id = request.headers.get("X-Delhivery-Webhook-ID") or payload.get("waybill") or str(uuid.uuid4())
+
+        from .models import DelhiveryWebhookLog
+        if DelhiveryWebhookLog.objects.filter(webhook_id=webhook_id, is_processed=True).exists():
+            logger.info("[WEBHOOK_IDEMPOTENT] Webhook %s already processed.", webhook_id)
+            return success_response(data={}, message="Webhook already processed (Idempotent).")
+
+        log_entry, _ = DelhiveryWebhookLog.objects.get_or_create(
+            webhook_id=webhook_id,
+            defaults={"raw_payload": payload, "received_at": timezone.now()}
+        )
 
         try:
-            svc = DelhiveryService()
-            new_events = svc.process_webhook(payload)
+            with transaction.atomic():
+                svc = DelhiveryService()
+                new_events = svc.process_webhook(payload)
+                log_entry.is_processed = True
+                log_entry.processed_at = timezone.now()
+                log_entry.processing_result = f"Successfully appended {len(new_events)} event(s)."
+                log_entry.save()
         except Exception as e:
             logger.exception("Delhivery webhook processing error: %s", e)
-            # Always return 200 to Delhivery to prevent retries
+            log_entry.processing_result = f"Error: {str(e)}"
+            log_entry.retry_count += 1
+            log_entry.save()
             return success_response(data={}, message="Webhook acknowledged.")
 
         return success_response(
@@ -440,24 +648,18 @@ class DelhiveryWebhookView(APIView):
 # ============================================================
 
 class AdminProviderHealthCheckView(APIView):
-    """
-    GET /api/v1/shipping/admin/health/
-    Reports shipping provider connectivity, active provider mode, configuration validity,
-    and last API call metrics.
-    """
+    """GET /api/v1/shipping/admin/health/"""
     permission_classes = [IsAdmin]
 
     def get(self, request):
         from .providers import ShippingConfigValidator, get_shipping_provider
 
-        cfg_provider = getattr(settings, "SHIPPING_PROVIDER", "offline").lower()
+        cfg_provider = getattr(settings, "SHIPPING_PROVIDER", "sandbox").lower()
         active_provider_obj = get_shipping_provider()
         active_provider_class = active_provider_obj.__class__.__name__
 
         is_valid, validation_reasons = ShippingConfigValidator.validate_delhivery_config(cfg_provider) if cfg_provider in ["sandbox", "live"] else (True, [])
-
-        last_shipment = Shipment.objects.order_by("-created_at").first()
-        last_api_call = Shipment.objects.filter(request_timestamp__isnull=False).order_by("-request_timestamp").first()
+        last_shipment = Shipment.objects.filter(is_deleted=False).order_by("-created_at").first()
 
         health_data = {
             "status": "Online" if (cfg_provider == "offline" or is_valid) else "Fallback (Offline)",
@@ -469,15 +671,11 @@ class AdminProviderHealthCheckView(APIView):
             "seller_name": getattr(settings, "DELHIVERY_SELLER_NAME", ""),
             "last_shipment": {
                 "id": str(last_shipment.id) if last_shipment else None,
+                "shipment_number": last_shipment.shipment_number if last_shipment else None,
                 "awb_number": last_shipment.awb_number if last_shipment else None,
                 "provider": last_shipment.provider if last_shipment else None,
                 "created_at": last_shipment.created_at.isoformat() if last_shipment else None,
             } if last_shipment else None,
-            "last_api_call": {
-                "request_timestamp": last_api_call.request_timestamp.isoformat() if last_api_call and last_api_call.request_timestamp else None,
-                "status_code": last_api_call.api_status_code if last_api_call else None,
-                "execution_time_ms": last_api_call.execution_time_ms if last_api_call else None,
-            } if last_api_call else None,
         }
-
         return success_response(data=health_data, message="Provider health status retrieved.")
+

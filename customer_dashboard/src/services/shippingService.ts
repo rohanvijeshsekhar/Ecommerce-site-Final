@@ -1,8 +1,8 @@
 /**
- * FAAZO – Shipping & Fulfillment Frontend Service
+ * FAAZO – Enterprise Shipping & Fulfillment Frontend Service
  *
  * Handles all API communication for the shipping module:
- * - Admin: Create, List, Detail, Sync, Cancel, Schedule Pickup
+ * - Admin: Create, List, Detail, Sync, Cancel, Schedule Pickup, Generate Label, Manifest, Bulk Actions, Export
  * - Customer: Order tracking view
  */
 
@@ -18,8 +18,9 @@ export interface ShipmentTrackingEvent {
   event_timestamp: string;
   location: string;
   description: string;
-  event_source: 'api_poll' | 'webhook' | 'manual';
+  event_source: 'api_poll' | 'webhook' | 'manual' | 'system';
   is_delivered: boolean;
+  created_by_name?: string;
   created_at: string;
 }
 
@@ -39,25 +40,72 @@ export type ShipmentStatus =
   | 'lost';
 
 export type PickupStatus = 'pending' | 'scheduled' | 'picked_up' | 'failed' | 'cancelled';
+export type PackingStatus = 'pending' | 'packing' | 'packed' | 'qc_passed' | 'ready_for_pickup';
+
+export interface ShippingAddressDetail {
+  full_name: string;
+  mobile: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  address_type?: string;
+}
+
+export interface OrderItemDetail {
+  id: string;
+  product_name: string;
+  sku?: string;
+  quantity: number;
+  unit_price: string | number;
+  total_price: string | number;
+}
 
 export interface Shipment {
   id: string;
+  shipment_number: string;
+  order_id: string;
   order_number: string;
+  order_status?: string;
+  payment_status?: string;
+  payment_method?: string;
   customer_name: string;
   customer_email: string;
+  customer_phone?: string;
+  shipping_address?: ShippingAddressDetail | null;
+  items?: OrderItemDetail[];
   created_by_name: string;
+  provider?: 'offline' | 'sandbox' | 'live';
   courier_name: string;
   delhivery_shipment_id: string;
+  external_shipment_id?: string;
   awb_number: string;
   tracking_number: string;
+  pickup_request_id?: string;
+  courier_reference?: string;
+  tracking_url?: string;
+  label_url?: string;
+  manifest_url?: string;
+  packing_status: PackingStatus;
+  warehouse: string;
+  dispatch_location: string;
+  weight: number | string;
+  length: number | string;
+  width: number | string;
+  height: number | string;
+  volumetric_weight: number | string;
+  shipping_cost: number | string;
+  cod_amount: number | string;
+  delivery_type: string;
   shipment_status: ShipmentStatus;
   pickup_status: PickupStatus;
   current_location: string;
+  current_hub?: string;
   pickup_scheduled_date: string | null;
   pickup_date: string | null;
   estimated_delivery_date: string | null;
   delivered_at: string | null;
-  provider?: 'offline' | 'sandbox' | 'live';
   last_synced_at: string | null;
   is_cancellable: boolean;
   is_delivered: boolean;
@@ -66,7 +114,28 @@ export interface Shipment {
   updated_at: string;
 }
 
-export type ShipmentListItem = Omit<Shipment, 'tracking_events' | 'customer_email' | 'created_by_name' | 'delhivery_shipment_id'>;
+export interface ShipmentListItem {
+  id: string;
+  shipment_number: string;
+  order_id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone?: string;
+  state?: string;
+  city?: string;
+  courier_name: string;
+  awb_number: string;
+  shipment_status: ShipmentStatus;
+  packing_status: PackingStatus;
+  pickup_status: PickupStatus;
+  current_location: string;
+  current_hub?: string;
+  estimated_delivery_date: string | null;
+  pickup_scheduled_date: string | null;
+  last_synced_at: string | null;
+  is_cancellable: boolean;
+  created_at: string;
+}
 
 export interface FulfillmentStats {
   total_shipments: number;
@@ -81,10 +150,15 @@ export interface FulfillmentStats {
   cancelled: number;
   rto_initiated: number;
   pending_packing: number;
+  todays_dispatches: number;
+  todays_deliveries: number;
+  delivery_success_rate: number;
+  rto_percentage: number;
 }
 
 export interface CustomerShipmentTracking {
   id: string;
+  shipment_number: string;
   courier_name: string;
   awb_number: string;
   tracking_number: string;
@@ -134,42 +208,32 @@ export const adminShippingService = {
     return res.data;
   },
 
-  /** List all shipments with optional filters */
+  /** List all shipments with multi-filtering and pagination */
   listShipments: async (params?: {
     status?: string;
+    packing_status?: string;
+    payment_type?: string;
+    state?: string;
+    city?: string;
+    order_type?: string;
     search?: string;
     pickup_date?: string;
     delivery_date?: string;
     page?: number;
     page_size?: number;
+    sort_by?: string;
   }): Promise<APIResponse<ShipmentListItem[]>> => {
     const res = await api.get('/shipping/admin/shipments/', { params });
     return res.data;
   },
 
-  /** Get full shipment detail with tracking events */
+  /** Get full shipment detail for a given shipmentId */
   getShipment: async (shipmentId: string): Promise<APIResponse<Shipment>> => {
     const res = await api.get(`/shipping/admin/shipments/${shipmentId}/`);
     return res.data;
   },
 
-  /** Get shipment by order number search */
-  getShipmentForOrder: async (orderNumber: string): Promise<APIResponse<ShipmentListItem | null>> => {
-    const res = await api.get('/shipping/admin/shipments/', {
-      params: { search: orderNumber, page_size: 1 },
-    });
-    const data = res.data;
-    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-      return { ...data, data: data.data[0] };
-    }
-    return { ...data, data: null };
-  },
-
-  /**
-   * Get full shipment detail for a specific order.
-   * Searches shipments list by orderId then fetches full detail.
-   * Returns null data if no shipment exists yet.
-   */
+  /** Get full shipment detail for a specific order by orderId */
   getShipmentByOrderId: async (orderId: string): Promise<APIResponse<Shipment | null>> => {
     try {
       const listRes = await api.get('/shipping/admin/shipments/', {
@@ -201,8 +265,26 @@ export const adminShippingService = {
   },
 
   /** Cancel a shipment (only before pickup) */
-  cancelShipment: async (shipmentId: string): Promise<APIResponse<Shipment>> => {
-    const res = await api.post(`/shipping/admin/shipments/${shipmentId}/cancel/`);
+  cancelShipment: async (shipmentId: string, reason?: string): Promise<APIResponse<Shipment>> => {
+    const res = await api.post(`/shipping/admin/shipments/${shipmentId}/cancel/`, { reason });
+    return res.data;
+  },
+
+  /** Generate or get Shipping Label URL */
+  generateLabel: async (shipmentId: string): Promise<APIResponse<{ label_url: string; awb: string }>> => {
+    const res = await api.post(`/shipping/admin/shipments/${shipmentId}/label/`);
+    return res.data;
+  },
+
+  /** Generate or get Manifest Document URL */
+  generateManifest: async (shipmentId: string): Promise<APIResponse<{ manifest_url: string; shipment_number: string }>> => {
+    const res = await api.post(`/shipping/admin/shipments/${shipmentId}/manifest/`);
+    return res.data;
+  },
+
+  /** Bulk shipment processing (sync, pickup, cancel) */
+  bulkAction: async (action: 'sync' | 'pickup' | 'cancel', shipmentIds: string[]): Promise<APIResponse<{ processed: number; total_requested: number }>> => {
+    const res = await api.post('/shipping/admin/shipments/bulk-action/', { action, shipment_ids: shipmentIds });
     return res.data;
   },
 
@@ -241,6 +323,14 @@ export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   lost:              'Lost',
 };
 
+export const PACKING_STATUS_LABELS: Record<PackingStatus, string> = {
+  pending:          'Pending Packing',
+  packing:          'Packing In Progress',
+  packed:           'Packed',
+  qc_passed:        'QC Passed',
+  ready_for_pickup: 'Ready For Pickup',
+};
+
 export const PICKUP_STATUS_LABELS: Record<PickupStatus, string> = {
   pending:    'Pickup Pending',
   scheduled:  'Pickup Scheduled',
@@ -259,3 +349,4 @@ export const SHIPMENT_LIFECYCLE: ShipmentStatus[] = [
   'out_for_delivery',
   'delivered',
 ];
+

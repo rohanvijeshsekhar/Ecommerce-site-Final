@@ -6,6 +6,10 @@ from .views import (
     AdminShipmentSyncView,
     AdminSchedulePickupView,
     AdminCancelShipmentView,
+    AdminShipmentLabelView,
+    AdminShipmentManifestView,
+    AdminShipmentBulkActionView,
+    AdminShipmentExportView,
     AdminFulfillmentStatsView,
     AdminProviderHealthCheckView,
     CustomerShipmentTrackingView,
@@ -30,6 +34,16 @@ urlpatterns = [
         name="admin-shipment-create",
     ),
     path(
+        "shipping/admin/shipments/bulk-action/",
+        AdminShipmentBulkActionView.as_view(),
+        name="admin-shipment-bulk-action",
+    ),
+    path(
+        "shipping/admin/shipments/export/",
+        AdminShipmentExportView.as_view(),
+        name="admin-shipment-export",
+    ),
+    path(
         "shipping/admin/shipments/<uuid:pk>/",
         AdminShipmentDetailView.as_view(),
         name="admin-shipment-detail",
@@ -48,6 +62,16 @@ urlpatterns = [
         "shipping/admin/shipments/<uuid:pk>/cancel/",
         AdminCancelShipmentView.as_view(),
         name="admin-shipment-cancel",
+    ),
+    path(
+        "shipping/admin/shipments/<uuid:pk>/label/",
+        AdminShipmentLabelView.as_view(),
+        name="admin-shipment-label",
+    ),
+    path(
+        "shipping/admin/shipments/<uuid:pk>/manifest/",
+        AdminShipmentManifestView.as_view(),
+        name="admin-shipment-manifest",
     ),
     path(
         "shipping/admin/stats/",
@@ -69,3 +93,4 @@ urlpatterns = [
         name="delhivery-webhook",
     ),
 ]
+

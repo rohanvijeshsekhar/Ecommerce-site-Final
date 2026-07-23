@@ -1,18 +1,14 @@
 """
-FAAZO – Shipping & Fulfillment Models
+FAAZO – Enterprise Shipping & Fulfillment Models
 
-Stores Delhivery shipment records and complete tracking event history.
-All records are append-only — tracking events are never overwritten.
-
-Models:
-  ShipmentStatus   ← TextChoices for Delhivery-mapped statuses
-  Shipment         ← One-to-one with Order; the live fulfillment record
-  ShipmentTrackingEvent ← Append-only history of every Delhivery event
+Stores production Delhivery shipment records, multi-shipment dispatches,
+packing/QC workflows, append-only event histories, and complete audit API logs.
 """
 
 import uuid
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from apps.common.mixins import BaseModel
 from apps.orders.models import Order
 
@@ -49,24 +45,36 @@ class PickupStatus(models.TextChoices):
     CANCELLED  = "cancelled",  "Cancelled"
 
 
+class PackingStatus(models.TextChoices):
+    PENDING          = "pending",          "Pending"
+    PACKING          = "packing",          "Packing"
+    PACKED           = "packed",           "Packed"
+    QC_PASSED        = "qc_passed",        "QC Passed"
+    READY_FOR_PICKUP = "ready_for_pickup", "Ready for Pickup"
+
+
 # ============================================================
 # Shipment
 # ============================================================
 
 class Shipment(BaseModel):
     """
-    Central fulfillment record for every FAAZO order dispatched via Delhivery.
-
-    One shipment per order. Created manually by the warehouse admin
-    after the order reaches 'packed' status.
-
-    Raw Delhivery API responses are stored in `raw_response` for full auditability.
+    Central fulfillment record for FAAZO orders dispatched via Delhivery or partner logistics.
+    Supports multi-shipment dispatches per order.
     """
 
-    order = models.OneToOneField(
+    shipment_number = models.CharField(
+        max_length=50,
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name="Shipment Number",
+        db_index=True,
+    )
+    order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name="shipment",
+        related_name="shipments",
         verbose_name="Order",
     )
     created_by = models.ForeignKey(
@@ -86,7 +94,7 @@ class Shipment(BaseModel):
             ("sandbox", "Delhivery Sandbox"),
             ("live", "Delhivery Live"),
         ],
-        default="offline",
+        default="sandbox",
         verbose_name="Shipping Provider",
         db_index=True,
     )
@@ -129,11 +137,125 @@ class Shipment(BaseModel):
         default="",
         verbose_name="Pickup Request ID",
     )
+    courier_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Courier Reference",
+    )
+
+    # ── URLs & Documents ─────────────────────────────────────
     tracking_url = models.URLField(
         max_length=500,
         blank=True,
         default="",
         verbose_name="Tracking URL",
+    )
+    label_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        verbose_name="Shipping Label URL",
+    )
+    manifest_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        verbose_name="Manifest URL",
+    )
+
+    # ── Warehouse & QC Workflow ──────────────────────────────
+    packing_status = models.CharField(
+        max_length=30,
+        choices=PackingStatus.choices,
+        default=PackingStatus.PENDING,
+        verbose_name="Packing Status",
+        db_index=True,
+    )
+    packed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="packed_shipments",
+        verbose_name="Packed By",
+    )
+    packed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Packed At",
+    )
+    qc_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="qc_shipments",
+        verbose_name="QC By",
+    )
+    qc_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="QC At",
+    )
+    warehouse = models.CharField(
+        max_length=150,
+        default="FAAZO Central Warehouse - Hub 1",
+        verbose_name="Warehouse / Fulfillment Center",
+    )
+    dispatch_location = models.CharField(
+        max_length=200,
+        default="Mumbai Fulfillment Hub",
+        verbose_name="Dispatch Location",
+    )
+
+    # ── Package Dimensions & Financial Metrics ───────────────
+    weight = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=1.00,
+        verbose_name="Weight (kg)",
+    )
+    length = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=10.00,
+        verbose_name="Length (cm)",
+    )
+    width = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=10.00,
+        verbose_name="Width (cm)",
+    )
+    height = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=10.00,
+        verbose_name="Height (cm)",
+    )
+    volumetric_weight = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=1.00,
+        verbose_name="Volumetric Weight (kg)",
+    )
+    shipping_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        verbose_name="Shipping Charges (₹)",
+    )
+    cod_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        verbose_name="COD Collection Amount (₹)",
+    )
+    delivery_type = models.CharField(
+        max_length=50,
+        default="Express Surface",
+        verbose_name="Delivery Type",
     )
 
     # ── Shipment State ───────────────────────────────────────
@@ -155,6 +277,12 @@ class Shipment(BaseModel):
         blank=True,
         default="",
         verbose_name="Current Location",
+    )
+    current_hub = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        verbose_name="Current Hub",
     )
 
     # ── Scheduling & Delivery ────────────────────────────────
@@ -179,49 +307,24 @@ class Shipment(BaseModel):
         verbose_name="Delivered At",
     )
 
-    # ── Sync Metadata & Metrics ──────────────────────────────
+    # ── Sync Metadata & Soft Delete ──────────────────────────
     last_synced_at = models.DateTimeField(
         blank=True,
         null=True,
         verbose_name="Last Synced At",
     )
-    request_timestamp = models.DateTimeField(
+    is_deleted = models.BooleanField(
+        default=False,
+        verbose_name="Is Deleted (Soft)",
+        db_index=True,
+    )
+    deleted_at = models.DateTimeField(
         blank=True,
         null=True,
-        verbose_name="Request Timestamp",
-    )
-    response_timestamp = models.DateTimeField(
-        blank=True,
-        null=True,
-        verbose_name="Response Timestamp",
-    )
-    api_status_code = models.IntegerField(
-        blank=True,
-        null=True,
-        verbose_name="API Status Code",
-    )
-    execution_time_ms = models.IntegerField(
-        blank=True,
-        null=True,
-        verbose_name="Execution Time (ms)",
-    )
-    error_message = models.TextField(
-        blank=True,
-        default="",
-        verbose_name="Error Message",
+        verbose_name="Deleted At",
     )
 
     # ── Audit Storage ────────────────────────────────────────
-    request_payload = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Request Payload",
-    )
-    response_payload = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Response Payload",
-    )
     raw_response = models.JSONField(
         default=dict,
         blank=True,
@@ -233,8 +336,15 @@ class Shipment(BaseModel):
         verbose_name_plural = "Shipments"
         ordering = ["-created_at"]
 
+    def save(self, *args, **kwargs):
+        if not self.shipment_number:
+            date_str = timezone.now().strftime("%Y%m")
+            short_id = uuid.uuid4().hex[:6].upper()
+            self.shipment_number = f"SHP-{date_str}-{short_id}"
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Shipment {self.awb_number or self.id} — {self.shipment_status}"
+        return f"{self.shipment_number} ({self.awb_number or 'No AWB'}) — {self.shipment_status}"
 
     @property
     def is_cancellable(self) -> bool:
@@ -250,15 +360,12 @@ class Shipment(BaseModel):
 
 
 # ============================================================
-# ShipmentTrackingEvent
+# ShipmentTrackingEvent (ShipmentEvent)
 # ============================================================
 
 class ShipmentTrackingEvent(BaseModel):
     """
-    Immutable log of every tracking event received from Delhivery.
-
-    Records are NEVER updated or deleted. New events are always appended.
-    This ensures a complete, tamper-proof audit trail of the package journey.
+    Immutable, append-only log of every shipment event and tracking update.
     """
 
     shipment = models.ForeignKey(
@@ -266,6 +373,14 @@ class ShipmentTrackingEvent(BaseModel):
         on_delete=models.CASCADE,
         related_name="tracking_events",
         verbose_name="Shipment",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shipment_events",
+        verbose_name="Created By",
     )
 
     # ── Event Details ────────────────────────────────────────
@@ -285,6 +400,7 @@ class ShipmentTrackingEvent(BaseModel):
         verbose_name="Mapped Shipment Status",
     )
     event_timestamp = models.DateTimeField(
+        default=timezone.now,
         verbose_name="Event Timestamp",
     )
     location = models.CharField(
@@ -306,6 +422,7 @@ class ShipmentTrackingEvent(BaseModel):
             ("api_poll", "API Poll"),
             ("webhook", "Delhivery Webhook"),
             ("manual", "Manual Admin"),
+            ("system", "System Process"),
         ],
         default="api_poll",
         verbose_name="Event Source",
@@ -321,4 +438,111 @@ class ShipmentTrackingEvent(BaseModel):
         ordering = ["-event_timestamp"]
 
     def __str__(self):
-        return f"{self.shipment.awb_number} — {self.event_label} @ {self.event_timestamp}"
+        return f"{self.shipment.shipment_number} — {self.event_label} @ {self.event_timestamp}"
+
+
+# Alias for clean backward compatibility
+ShipmentEvent = ShipmentTrackingEvent
+
+
+# ============================================================
+# Audit & Webhook Logs
+# ============================================================
+
+class DelhiveryWebhookLog(BaseModel):
+    """
+    Audit log of all incoming webhooks received from Delhivery to guarantee idempotency and non-repudiation.
+    """
+    webhook_id = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name="Webhook Transaction ID",
+        db_index=True,
+    )
+    verification_status = models.CharField(
+        max_length=50,
+        default="verified",
+        verbose_name="HMAC Verification Status",
+    )
+    raw_payload = models.JSONField(
+        default=dict,
+        verbose_name="Raw Webhook Payload",
+    )
+    received_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Received At",
+    )
+    processed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Processed At",
+    )
+    is_processed = models.BooleanField(
+        default=False,
+        verbose_name="Is Processed",
+    )
+    retry_count = models.IntegerField(
+        default=0,
+        verbose_name="Retry Count",
+    )
+    processing_result = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Processing Result",
+    )
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Delhivery Webhook Log"
+        verbose_name_plural = "Delhivery Webhook Logs"
+        ordering = ["-received_at"]
+
+
+class ShippingAPILog(BaseModel):
+    """
+    Audit log for all outbound communication with Delhivery logistics APIs.
+    """
+    shipment = models.ForeignKey(
+        Shipment,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="api_logs",
+        verbose_name="Shipment",
+    )
+    endpoint = models.CharField(
+        max_length=300,
+        verbose_name="API Endpoint",
+    )
+    request_method = models.CharField(
+        max_length=10,
+        default="POST",
+        verbose_name="HTTP Method",
+    )
+    request_payload = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Request Payload",
+    )
+    response_payload = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Response Payload",
+    )
+    http_status = models.IntegerField(
+        verbose_name="HTTP Status Code",
+    )
+    latency_ms = models.IntegerField(
+        default=0,
+        verbose_name="Execution Time (ms)",
+    )
+    error_message = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Error Message",
+    )
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Shipping API Log"
+        verbose_name_plural = "Shipping API Logs"
+        ordering = ["-created_at"]
+
