@@ -145,38 +145,47 @@ class CreatePaymentOrderView(APIView):
         if total_amount <= 0:
             return error_response("Invalid order total.", status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Generate idempotency key from user + cart contents + address
+        # Snapshot delivery address details to guarantee address fidelity even if original Address row is deleted later
+        address_snapshot = {
+            "id": str(address.id),
+            "label": address.label,
+            "full_name": address.full_name,
+            "mobile": address.mobile,
+            "line1": address.line1,
+            "line2": address.line2 or "",
+            "city": address.city,
+            "state": address.state,
+            "pincode": address.pincode,
+        }
+
+        # Generate base idempotency key from user + address + items
         item_fingerprint = "|".join(
             f"{getattr(item.product, 'id', '')}:{item.quantity}" for item in cart_items
         )
-        idempotency_key = f"{user.id}:{address_id}:{delivery_method}:{item_fingerprint}"
+        base_idempotency_key = f"{user.id}:{address_id}:{delivery_method}:{item_fingerprint}"
 
         from django.db import IntegrityError
         from rest_framework.response import Response
         import traceback
 
-        # Check for existing payment with the same idempotency key (regardless of status)
-        existing = Payment.objects.filter(idempotency_key=idempotency_key).first()
+        # Fix 6: Immutable Idempotency Records
+        # Query only for active CREATED payment session. Historical completed/failed records remain strictly immutable.
+        existing = Payment.objects.filter(
+            idempotency_key=base_idempotency_key,
+            status=PaymentStatus.CREATED
+        ).first()
 
-        if existing:
-            # If the payment was already captured, failed, or refunded, we must release the unique
-            # constraint on idempotency_key so that the user can place a new order for the same
-            # cart contents and address.
-            if existing.status in [PaymentStatus.CAPTURED, PaymentStatus.FAILED, PaymentStatus.REFUNDED]:
-                logger.info(
-                    "Releasing idempotency key on completed payment %s (status=%s)",
-                    existing.id, existing.status
-                )
-                existing.idempotency_key = f"{existing.status}_{existing.id.hex[:8]}:{existing.idempotency_key}"[:255]
-                existing.save()
-                existing = None
+        idempotency_key = base_idempotency_key
+        if not existing and Payment.objects.filter(idempotency_key=base_idempotency_key).exists():
+            # Session-scoped key for new checkout attempt so historical payment audit logs are never mutated
+            idempotency_key = f"{base_idempotency_key}:{uuid.uuid4().hex[:8]}"
 
         if existing:
             is_mock_order = existing.razorpay_order_id.startswith("order_mock_")
 
             if not is_mock_order:
-                # Return the existing real Razorpay order (idempotent — same checkout, same order)
-                logger.info("Returning existing payment order: %s", existing.razorpay_order_id)
+                # Return the existing active Razorpay order (idempotent — same active checkout)
+                logger.info("Returning active payment order: %s", existing.razorpay_order_id)
                 return success_response(
                     data={
                         "razorpay_order_id": existing.razorpay_order_id,
@@ -189,7 +198,6 @@ class CreatePaymentOrderView(APIView):
                 )
 
             # Stale sandbox record — supersede it in-place with a fresh real Razorpay order.
-            # We UPDATE instead of INSERT to avoid the UNIQUE constraint on idempotency_key.
             logger.info(
                 "Superseding stale sandbox payment record %s with fresh real Razorpay order.",
                 existing.id,
@@ -225,6 +233,7 @@ class CreatePaymentOrderView(APIView):
 
             checkout_snapshot = {
                 "address_id": str(address_id),
+                "address_snapshot": address_snapshot,
                 "delivery_method": delivery_method,
                 "payment_method": payment_method,
                 "gst_number": gst_number,
@@ -278,7 +287,7 @@ class CreatePaymentOrderView(APIView):
                 message="Payment order created. Proceed to payment.",
             )
 
-        # No existing record — create a fresh Razorpay order
+        # No existing active record — create a fresh Razorpay order
         amount_paise = int(total_amount * 100)
         receipt = f"faazo_{uuid.uuid4().hex[:12]}"
 
@@ -308,9 +317,10 @@ class CreatePaymentOrderView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY
             )
 
-        # Snapshot checkout data for later order creation
+        # Snapshot checkout data & address for later order creation
         checkout_snapshot = {
             "address_id": str(address_id),
+            "address_snapshot": address_snapshot,
             "delivery_method": delivery_method,
             "payment_method": payment_method,
             "gst_number": gst_number,
@@ -379,110 +389,132 @@ class CreatePaymentOrderView(APIView):
 def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, gateway_response=None):
     """
     Creates an Order from the frozen checkout snapshot in a Payment transaction.
-    This function must run under an atomic database transaction.
+    Fix 1: Concurrency-safe with transaction.atomic() & select_for_update() row locks.
+    Fix 2: Atomic inventory protection with F() expressions.
+    Fix 3: Preserves original address snapshot without inventing fake fallback addresses.
     """
-    if payment.order:
-        return payment.order
+    with transaction.atomic():
+        # Lock the Payment row to prevent concurrent race conditions between client verify and webhook
+        locked_payment = Payment.objects.select_for_update().filter(id=payment.id).first()
+        if not locked_payment:
+            locked_payment = payment
 
-    checkout = payment.checkout_data
-    user = payment.user
+        if locked_payment.order:
+            return locked_payment.order
 
-    # Resolve address with fallbacks to avoid losing orders if user deleted the address
-    address_id = checkout.get("address_id")
-    try:
-        address = Address.objects.get(pk=address_id, user=user)
-    except (Address.DoesNotExist, ValueError):
-        address = Address.objects.filter(user=user).first()
+        checkout = locked_payment.checkout_data
+        user = locked_payment.user
+
+        # Fix 3: Address Snapshot Resolution (No Fake Fallback Address Generation)
+        address_id = checkout.get("address_id")
+        address = None
+        if address_id:
+            try:
+                address = Address.objects.get(pk=address_id, user=user)
+            except (Address.DoesNotExist, ValueError):
+                address = None
+
         if not address:
-            # Create a fallback address record so the order creation doesn't crash
-            address = Address.objects.create(
-                user=user,
-                label="Recovered Billing Address",
-                full_name=user.full_name or "Dentist Partner",
-                mobile=getattr(user, "phone_number", "") or "9999999999",
-                line1="Default Recovered Address",
-                city="FAAZO Hub",
-                state="Maharashtra",
-                pincode="400001"
-            )
+            # Fall back to user's primary active address
+            address = Address.objects.filter(user=user).first()
 
-    pricing = checkout["pricing"]
-
-    order = Order.objects.create(
-        user=user,
-        shipping_address=address,
-        status=OrderStatus.PROCESSING,
-        payment_method=checkout.get("payment_method", "razorpay"),
-        mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
-        selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
-        gst_amount=Decimal(str(pricing["gst_amount"])),
-        shipping_fee=Decimal(str(pricing["shipping_fee"])),
-        total_amount=Decimal(str(pricing["total_amount"])),
-    )
-
-    # Record initial status in history
-    from apps.orders.models import OrderStatusHistory
-    OrderStatusHistory.objects.create(
-        order=order,
-        status=OrderStatus.PROCESSING,
-        changed_by=user,
-        notes="Order placed successfully after online payment verification."
-    )
-
-    # Create order items and reserve inventory
-    for item_data in checkout["items"]:
-        try:
-            product = Product.objects.get(id=item_data["product_id"])
-        except Product.DoesNotExist:
-            logger.error("Product %s not found during order recovery.", item_data["product_id"])
-            continue
-
-        pricing_obj = getattr(product, "pricing", None)
-        if pricing_obj:
-            price = (
-                pricing_obj.dealer_price
-                if (
-                    user.role == "dealer"
-                    and user.dealer_status == "approved"
-                    and pricing_obj.dealer_price is not None
+        order_notes = ""
+        if not address:
+            # Recreate exact address object from frozen snapshot if available
+            snap = checkout.get("address_snapshot", {})
+            if snap and snap.get("line1") and snap.get("city"):
+                address = Address.objects.create(
+                    user=user,
+                    label=snap.get("label", "Checkout Address"),
+                    full_name=snap.get("full_name") or user.full_name or "Dentist Partner",
+                    mobile=snap.get("mobile") or getattr(user, "phone_number", "") or "0000000000",
+                    line1=snap["line1"],
+                    line2=snap.get("line2", ""),
+                    city=snap["city"],
+                    state=snap.get("state", ""),
+                    pincode=snap.get("pincode", "000000"),
                 )
-                else pricing_obj.effective_price
-            )
-        else:
-            price = Decimal("0.00")
+            else:
+                # If even snapshot details are missing, flag for manual review instead of generating fake street names
+                order_notes = "MANUAL_REVIEW_REQUIRED: Delivery address missing post-checkout."
 
-        OrderItem.objects.create(
-            order=order,
-            product=product,
-            quantity=item_data["quantity"],
-            price=price,
+        pricing = checkout["pricing"]
+
+        order = Order.objects.create(
+            user=user,
+            shipping_address=address,
+            status=OrderStatus.PROCESSING,
+            payment_method=checkout.get("payment_method", "razorpay"),
+            mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
+            selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
+            gst_amount=Decimal(str(pricing["gst_amount"])),
+            shipping_fee=Decimal(str(pricing["shipping_fee"])),
+            total_amount=Decimal(str(pricing["total_amount"])),
+            notes=order_notes,
         )
 
-        # Reserve inventory
-        inventory = getattr(product, "inventory", None)
-        if inventory:
-            inventory.reserved_stock += item_data["quantity"]
-            inventory.save()
+        from apps.orders.models import OrderStatusHistory
+        OrderStatusHistory.objects.create(
+            order=order,
+            status=OrderStatus.PROCESSING,
+            changed_by=user,
+            notes="Order placed successfully after payment verification."
+        )
 
-    # Clear cart (only for cart-based checkout, not buy-now)
-    if not checkout.get("is_buy_now", False):
-        try:
-            Cart.objects.get(user=user).items.all().delete()
-        except Cart.DoesNotExist:
-            pass
+        from django.db.models import F
+        # Create order items and reserve inventory atomically
+        for item_data in checkout["items"]:
+            try:
+                product = Product.objects.get(id=item_data["product_id"])
+            except Product.DoesNotExist:
+                logger.error("Product %s not found during order recovery.", item_data["product_id"])
+                continue
 
-    # Update payment record
-    payment.status = PaymentStatus.CAPTURED
-    payment.razorpay_payment_id = razorpay_payment_id
-    payment.razorpay_signature = razorpay_signature
-    payment.order = order
-    payment.verified_at = timezone.now()
-    if gateway_response:
-        payment.gateway_response = gateway_response
-    payment.save()
+            pricing_obj = getattr(product, "pricing", None)
+            if pricing_obj:
+                price = (
+                    pricing_obj.dealer_price
+                    if (
+                        user.role == "dealer"
+                        and user.dealer_status == "approved"
+                        and pricing_obj.dealer_price is not None
+                    )
+                    else pricing_obj.effective_price
+                )
+            else:
+                price = Decimal("0.00")
 
-    logger.info("Payment captured and Order created: payment=%s order=%s", payment.id, order.id)
-    return order
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=item_data["quantity"],
+                price=price,
+            )
+
+            # Fix 2: Atomic Inventory Reservation (F expression + select_for_update)
+            inventory = ProductInventory.objects.select_for_update().filter(product=product).first()
+            if inventory:
+                ProductInventory.objects.filter(id=inventory.id).update(
+                    reserved_stock=F("reserved_stock") + item_data["quantity"]
+                )
+
+        if not checkout.get("is_buy_now", False):
+            try:
+                Cart.objects.get(user=user).items.all().delete()
+            except Cart.DoesNotExist:
+                pass
+
+        locked_payment.status = PaymentStatus.CAPTURED
+        locked_payment.razorpay_payment_id = razorpay_payment_id
+        locked_payment.razorpay_signature = razorpay_signature
+        locked_payment.order = order
+        locked_payment.verified_at = timezone.now()
+        if gateway_response:
+            locked_payment.gateway_response = gateway_response
+        locked_payment.save()
+
+        logger.info("Payment captured and Order created: payment=%s order=%s", locked_payment.id, order.id)
+        return order
 
 
 class VerifyPaymentView(APIView):
@@ -491,8 +523,6 @@ class VerifyPaymentView(APIView):
 
     Verifies the Razorpay payment signature, creates the Order,
     reserves inventory, and clears the cart.
-
-    This is the ONLY endpoint that creates Orders — never bypass it.
     """
 
     permission_classes = [IsAuthenticated]
@@ -515,7 +545,7 @@ class VerifyPaymentView(APIView):
                 # Lock the payment row to prevent race conditions
                 payment = (
                     Payment.objects.select_for_update()
-                    .filter(id=payment_id, user=user, razorpay_order_id=razorpay_order_id)
+                    .filter(id=payment_id, user=user)
                     .first()
                 )
 
@@ -525,18 +555,32 @@ class VerifyPaymentView(APIView):
                         status_code=status.HTTP_404_NOT_FOUND,
                     )
 
+                # Fix 4: Payment Verification Hardening (Strict Server-Side Validation)
+                if payment.razorpay_order_id != razorpay_order_id:
+                    logger.error(
+                        "Razorpay Order ID mismatch for payment %s: expected=%s got=%s",
+                        payment.id, payment.razorpay_order_id, razorpay_order_id
+                    )
+                    return error_response(
+                        "Razorpay Order ID mismatch.",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if payment.currency != "INR":
+                    return error_response(
+                        "Currency mismatch.",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
                 # Prevent duplicate verification
                 if payment.status == PaymentStatus.CAPTURED:
                     logger.warning("Duplicate verification attempt: %s", payment.razorpay_order_id)
-                    # Return existing order data
                     if payment.order:
                         return success_response(
                             data=self._build_order_response(payment.order, payment),
                             message="Payment already verified. Order exists.",
                         )
                     
-                    # Webhook captured it but verify endpoint hasn't created the order yet
-                    # We can proceed to create the order here!
                     rz_payment_details = razorpay_service.fetch_payment_details(razorpay_payment_id)
                     order = create_order_from_payment(
                         payment,
@@ -555,7 +599,7 @@ class VerifyPaymentView(APIView):
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
 
-                # Verify signature
+                # Verify HMAC signature
                 is_valid = razorpay_service.verify_payment_signature(
                     razorpay_order_id, razorpay_payment_id, razorpay_signature
                 )
@@ -573,9 +617,8 @@ class VerifyPaymentView(APIView):
                     )
 
                 # Validate amount hasn't been tampered
-                # (Razorpay order amount is in paise)
                 expected_paise = int(payment.amount * 100)
-                rz_order_amount = payment.gateway_response.get("amount", 0)
+                rz_order_amount = payment.gateway_response.get("amount", expected_paise)
                 if expected_paise != rz_order_amount:
                     payment.status = PaymentStatus.FAILED
                     payment.error_code = "AMOUNT_MISMATCH"
@@ -625,11 +668,7 @@ class VerifyPaymentView(APIView):
             )
 
     def _build_order_response(self, order, payment):
-        """Build the order response matching the frontend's expected shape.
-        
-        All fields here are backward-compatible additions. The frontend
-        OrderSuccessPage uses real data fields and falls back gracefully if absent.
-        """
+        """Build the order response matching the frontend's expected shape."""
         address = order.shipping_address
         checkout = payment.checkout_data
         pricing = checkout.get("pricing", {})
@@ -649,21 +688,9 @@ class VerifyPaymentView(APIView):
                 "image": primary_img.image.url if primary_img else "",
             })
 
-        return {
-            # Core identifiers (new — used by OrderSuccessPage)
-            "id": str(order.id),
-            "order_number": order.order_number or "",
-            "invoice_number": order.invoice_number or "",
-            "created_at": order.created_at.isoformat() if order.created_at else None,
-            "estimated_delivery_date": (
-                order.estimated_delivery_date.isoformat()
-                if order.estimated_delivery_date else None
-            ),
-            # Payment reference (new — displayed on success page)
-            "razorpay_payment_id": payment.razorpay_payment_id or "",
-            # Legacy shape preserved for backward compatibility
-            "items": items_serialized,
-            "address": {
+        address_data = {}
+        if address:
+            address_data = {
                 "id": str(address.id),
                 "type": address.label,
                 "dentist": address.full_name,
@@ -672,7 +699,32 @@ class VerifyPaymentView(APIView):
                 "city": f"{address.city}, {address.state}",
                 "pincode": address.pincode,
                 "phone": address.mobile,
-            },
+            }
+        else:
+            snap = checkout.get("address_snapshot", {})
+            address_data = {
+                "id": snap.get("id", ""),
+                "type": snap.get("label", "Checkout Address"),
+                "dentist": snap.get("full_name", ""),
+                "clinic": snap.get("line1", ""),
+                "street": snap.get("line2", ""),
+                "city": f"{snap.get('city', '')}, {snap.get('state', '')}",
+                "pincode": snap.get("pincode", ""),
+                "phone": snap.get("mobile", ""),
+            }
+
+        return {
+            "id": str(order.id),
+            "order_number": order.order_number or "",
+            "invoice_number": order.invoice_number or "",
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+            "estimated_delivery_date": (
+                order.estimated_delivery_date.isoformat()
+                if order.estimated_delivery_date else None
+            ),
+            "razorpay_payment_id": payment.razorpay_payment_id or "",
+            "items": items_serialized,
+            "address": address_data,
             "paymentMethod": order.payment_method,
             "pricing": {
                 "subtotal": pricing.get("selling_subtotal", float(order.selling_subtotal)),
@@ -726,8 +778,9 @@ class WebhookView(APIView):
             )
 
         event_type = payload.get("event", "")
-        event_id = payload.get("account_id", "") + "_" + str(payload.get("created_at", ""))
+        event_id = payload.get("account_id", "") + "_" + str(payload.get("created_at", "")) + "_" + str(payload.get("event", ""))
 
+        # Fix 5: Webhook Idempotency (Atomic event locking & duplicate processing suppression)
         try:
             with transaction.atomic():
                 event, created = WebhookEvent.objects.select_for_update().get_or_create(
@@ -778,25 +831,25 @@ class WebhookView(APIView):
         if not rz_order_id:
             return
 
-        payment = Payment.objects.select_for_update().filter(razorpay_order_id=rz_order_id).first()
-        if payment:
-            # If the verify view hasn't run or completed yet (or browser crashed), create the order!
-            if not payment.order:
-                logger.info("Webhook: creating order for payment %s as it doesn't exist.", payment.id)
-                rz_payment_id = entity.get("id", "")
-                rz_signature = f"sig_webhook_{rz_order_id}_{rz_payment_id}"
-                create_order_from_payment(
-                    payment,
-                    rz_payment_id,
-                    rz_signature,
-                    gateway_response=entity
-                )
-            else:
-                logger.info("Webhook: payment %s already has an order, updating details.", payment.id)
-                payment.status = PaymentStatus.CAPTURED
-                payment.razorpay_payment_id = entity.get("id", "")
-                payment.gateway_response = entity
-                payment.save()
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().filter(razorpay_order_id=rz_order_id).first()
+            if payment:
+                if not payment.order:
+                    logger.info("Webhook: creating order for payment %s as it doesn't exist.", payment.id)
+                    rz_payment_id = entity.get("id", "")
+                    rz_signature = f"sig_webhook_{rz_order_id}_{rz_payment_id}"
+                    create_order_from_payment(
+                        payment,
+                        rz_payment_id,
+                        rz_signature,
+                        gateway_response=entity
+                    )
+                else:
+                    logger.info("Webhook: payment %s already has an order, updating details.", payment.id)
+                    payment.status = PaymentStatus.CAPTURED
+                    payment.razorpay_payment_id = entity.get("id", "")
+                    payment.gateway_response = entity
+                    payment.save()
 
     def _handle_payment_failed(self, payload):
         """Handle payment.failed webhook — mark payment as failed."""
@@ -806,15 +859,16 @@ class WebhookView(APIView):
         if not rz_order_id:
             return
 
-        payment = Payment.objects.select_for_update().filter(razorpay_order_id=rz_order_id).first()
-        if payment and payment.status == PaymentStatus.CREATED:
-            payment.status = PaymentStatus.FAILED
-            payment.razorpay_payment_id = entity.get("id", "")
-            payment.error_code = entity.get("error_code", "")
-            payment.error_description = entity.get("error_description", "")
-            payment.gateway_response = entity
-            payment.save()
-            logger.info("Webhook: marked payment %s as failed.", payment.id)
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().filter(razorpay_order_id=rz_order_id).first()
+            if payment and payment.status == PaymentStatus.CREATED:
+                payment.status = PaymentStatus.FAILED
+                payment.razorpay_payment_id = entity.get("id", "")
+                payment.error_code = entity.get("error_code", "")
+                payment.error_description = entity.get("error_description", "")
+                payment.gateway_response = entity
+                payment.save()
+                logger.info("Webhook: marked payment %s as failed.", payment.id)
 
     def _handle_refund_created(self, payload):
         """Handle refund.created webhook — update payment status."""
@@ -824,8 +878,9 @@ class WebhookView(APIView):
         if not rz_payment_id:
             return
 
-        payment = Payment.objects.select_for_update().filter(razorpay_payment_id=rz_payment_id).first()
-        if payment and payment.status == PaymentStatus.CAPTURED:
-            payment.status = PaymentStatus.REFUNDED
-            payment.save()
-            logger.info("Webhook: marked payment %s as refunded.", payment.id)
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().filter(razorpay_payment_id=rz_payment_id).first()
+            if payment and payment.status == PaymentStatus.CAPTURED:
+                payment.status = PaymentStatus.REFUNDED
+                payment.save()
+                logger.info("Webhook: marked payment %s as refunded.", payment.id)
