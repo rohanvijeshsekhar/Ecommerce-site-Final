@@ -19,7 +19,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
+class PaymentCreateOrderThrottle(ScopedRateThrottle):
+    scope = "payment_create"
+
+class PaymentVerifyThrottle(ScopedRateThrottle):
+    scope = "payment_verify"
 
 from apps.cart.models import Cart
 from apps.checkout.views import calculate_checkout_pricing, is_valid_uuid
@@ -98,6 +105,7 @@ class CreatePaymentOrderView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [PaymentCreateOrderThrottle]
 
     def post(self, request):
         user = request.user
@@ -526,6 +534,7 @@ class VerifyPaymentView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [PaymentVerifyThrottle]
 
     def post(self, request):
         user = request.user
@@ -749,6 +758,7 @@ class WebhookView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []  # No JWT auth for webhooks
+    throttle_classes = []  # Explicitly unthrottled to guarantee Razorpay webhook retry processing
 
     def post(self, request):
         signature = request.META.get("HTTP_X_RAZORPAY_SIGNATURE", "")
