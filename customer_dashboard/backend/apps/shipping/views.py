@@ -70,14 +70,13 @@ class AdminShipmentCreateView(APIView):
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         allowed_order_statuses = [
-            OrderStatus.CONFIRMED,
             OrderStatus.PROCESSING,
             OrderStatus.PACKED,
         ]
         if order.status not in allowed_order_statuses:
             return error_response(
                 f"Cannot initiate fulfilment for order in '{order.status}' status. "
-                f"Order must be confirmed, processing, or packed.",
+                f"Order must be processing or packed.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -110,15 +109,12 @@ class AdminShipmentCreateView(APIView):
                 event_source="manual",
                 created_by=request.user,
             )
-            if order.status == OrderStatus.CONFIRMED:
-                order.status = OrderStatus.PROCESSING
-                order.save(update_fields=["status"])
-                OrderStatusHistory.objects.create(
-                    order=order,
-                    status=OrderStatus.PROCESSING,
-                    changed_by=request.user,
-                    notes="Fulfilment record created. Order moved to processing.",
-                )
+            OrderStatusHistory.objects.create(
+                order=order,
+                status=order.status,
+                changed_by=request.user,
+                notes="Fulfilment record created. Warehouse packing initialized.",
+            )
 
         serializer = ShipmentSerializer(shipment)
         return success_response(
