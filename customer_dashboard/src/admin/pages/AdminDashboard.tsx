@@ -185,23 +185,27 @@ const AdminDashboard: React.FC = () => {
     <div className="space-y-8 max-w-[1600px] mx-auto pb-16 px-4 md:px-6">
 
       {/* ── Top Hero Section ── */}
-      <div className="bg-gradient-to-br from-[#005F63]/[0.02] via-[#0B7C80]/[0.04] to-white border border-[#005F63]/10 rounded-[24px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,95,99,0.015)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2.5">
-          <span className="text-[11px] font-bold text-[#005F63] uppercase tracking-widest bg-[#005F63]/8 px-3 py-1 rounded-full">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#005F63]/12 via-[#0F766E]/8 to-[#14B8A6]/5 border border-[#005F63]/20 rounded-[24px] p-6 md:p-8 shadow-[0_10px_35px_rgba(0,95,99,0.06)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        {/* Soft decorative glow background highlights */}
+        <div className="absolute -top-16 -right-16 w-56 h-56 bg-[#0F766E]/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-[#14B8A6]/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="space-y-3 relative z-10">
+          <span className="text-[11px] font-extrabold text-[#004D51] uppercase tracking-widest bg-[#005F63]/12 border border-[#005F63]/20 px-3.5 py-1 rounded-full shadow-2xs">
             Platform control center
           </span>
-          <h1 className="text-[36px] md:text-[40px] font-extrabold text-[#111827] tracking-tight leading-none">
+          <h1 className="text-[36px] md:text-[40px] font-extrabold text-[#0F172A] tracking-tight leading-none pt-1">
             {getGreeting()}, <span className="text-[#005F63]">{adminName}</span>
           </h1>
-          <p className="text-[13px] text-[#64748B] font-medium flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span>{dateStr}</span>
+          <p className="text-[13px] text-[#475569] font-medium flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#0F766E]" />
+            <span className="font-semibold text-slate-700">{dateStr}</span>
             <span className="text-slate-300">•</span>
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span className="font-semibold text-slate-600">{timeStr}</span>
+            <Clock className="w-4 h-4 text-[#0F766E]" />
+            <span className="font-bold text-slate-800">{timeStr}</span>
           </p>
-          <p className="text-[12px] text-[#005F63] font-medium bg-[#005F63]/5 border border-[#005F63]/10 px-3.5 py-1.5 rounded-xl inline-block mt-2">
-            System status operational • You have {overviewData?.summary_counts?.stock_alerts ?? 0} stock alerts and {overviewData?.summary_counts?.pending_orders ?? 0} pending orders.
+          <p className="text-[12px] text-[#004D51] font-semibold bg-[#005F63]/10 border border-[#005F63]/20 px-4 py-2 rounded-xl inline-block mt-1 shadow-2xs">
+            System status operational • You have <strong className="font-extrabold">{overviewData?.summary_counts?.stock_alerts ?? 0}</strong> stock alerts and <strong className="font-extrabold">{overviewData?.summary_counts?.pending_orders ?? 0}</strong> pending orders.
           </p>
         </div>
       </div>

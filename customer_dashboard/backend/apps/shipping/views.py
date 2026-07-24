@@ -298,8 +298,8 @@ class AdminCreateCourierShipmentView(APIView):
                     existing_shipment = shipment,
                 )
 
-                # Move order to FULFILLED
-                order.status          = OrderStatus.FULFILLED
+                # Move order to SHIPPED
+                order.status          = OrderStatus.SHIPPED
                 order.tracking_number = shipment.awb_number
                 order.shipping_carrier= shipment.courier_name
                 from django.utils import timezone
@@ -309,7 +309,7 @@ class AdminCreateCourierShipmentView(APIView):
                 ])
                 OrderStatusHistory.objects.create(
                     order=order,
-                    status=OrderStatus.FULFILLED,
+                    status=OrderStatus.SHIPPED,
                     changed_by=request.user,
                     notes=f"Courier shipment created via Delhivery. AWB: {shipment.awb_number}",
                 )

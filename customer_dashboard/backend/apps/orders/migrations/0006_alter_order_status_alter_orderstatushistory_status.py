@@ -3,17 +3,6 @@
 from django.db import migrations, models
 
 
-def migrate_legacy_shipped_statuses(apps, schema_editor):
-    Order = apps.get_model("orders", "Order")
-    OrderStatusHistory = apps.get_model("orders", "OrderStatusHistory")
-    
-    legacy_statuses = ["shipped", "shipment_created", "picked_up", "in_transit", "out_for_delivery"]
-    Order.objects.filter(status__in=legacy_statuses).update(status="fulfilled")
-    OrderStatusHistory.objects.filter(status__in=legacy_statuses).update(status="fulfilled")
-
-def reverse_legacy_shipped_statuses(apps, schema_editor):
-    pass
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -21,7 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrate_legacy_shipped_statuses, reverse_legacy_shipped_statuses),
         migrations.AlterField(
             model_name="order",
             name="status",

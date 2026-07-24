@@ -67,8 +67,7 @@ class DashboardOverviewView(APIView):
         valid_orders_q = Q(status__in=[
             OrderStatus.PROCESSING,
             OrderStatus.PACKED,
-            OrderStatus.FULFILLED,
-            OrderStatus.COMPLETED,
+            OrderStatus.SHIPPED,
             OrderStatus.DELIVERED
         ])
         

@@ -126,7 +126,7 @@ class OrderManagementTests(APITestCase):
         self.assertEqual(OrderStatusHistory.objects.filter(order=self.order, status=OrderStatus.CANCELLED).count(), 1)
 
     def test_customer_cancel_shipped_fail(self):
-        self.order.status = OrderStatus.FULFILLED
+        self.order.status = OrderStatus.SHIPPED
         self.order.save()
 
         self.client.force_authenticate(user=self.customer)
@@ -157,15 +157,15 @@ class OrderManagementTests(APITestCase):
         res2 = self.client.patch(url, {"status": OrderStatus.PROCESSING}, format='json')
         self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # 3. Forward to Fulfilled (should deduct current_stock and reserved_stock)
+        # 3. Forward to Shipped (should deduct current_stock and reserved_stock)
         res3 = self.client.patch(url, {
-            "status": OrderStatus.FULFILLED,
+            "status": OrderStatus.SHIPPED,
             "tracking_number": "TRK12345",
             "shipping_carrier": "BlueDart"
         }, format='json')
         self.assertEqual(res3.status_code, status.HTTP_200_OK)
         self.order.refresh_from_db()
-        self.assertEqual(self.order.status, OrderStatus.FULFILLED)
+        self.assertEqual(self.order.status, OrderStatus.SHIPPED)
         self.assertEqual(self.order.tracking_number, "TRK12345")
         
         self.inventory.refresh_from_db()

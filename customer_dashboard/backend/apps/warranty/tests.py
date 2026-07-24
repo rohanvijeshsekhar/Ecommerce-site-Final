@@ -112,7 +112,7 @@ class WarrantyModuleTests(APITestCase):
         self.assertEqual(WarrantyRegistration.objects.count(), 0)
 
         # Update order status to DELIVERED
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
 
         from apps.warranty.services import create_warranty_registrations
@@ -128,7 +128,7 @@ class WarrantyModuleTests(APITestCase):
     def test_customer_manual_registration_submission(self):
         """Test manual registration submission flow for FAAZO products."""
         # Deliver order to create registration record
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -165,7 +165,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_imported_products_gated_and_listed(self):
         """Test that imported products are listed via endpoints but do not generate registrations."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -183,7 +183,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_admin_registration_review_flow(self):
         """Test that admins can approve, reject, or request information on registrations."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -212,7 +212,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_claim_submission_gating_rules(self):
         """Test that claims cannot be raised until the registration status is Active."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -239,7 +239,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_duplicate_registration_prevention(self):
         """Test that user cannot register a warranty twice if already active or pending verification."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -261,7 +261,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_duplicate_claim_prevention(self):
         """Test that user cannot file multiple active claims for the same registration."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -296,7 +296,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_permission_isolation(self):
         """Test that Customer A cannot view or claim for Customer B's warranty registrations."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -324,7 +324,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_file_size_and_type_validation(self):
         """Test backend validation constraints for files (size and extensions)."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -347,7 +347,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_warranty_expiry_gating(self):
         """Test that claims are blocked if the warranty has expired (by date)."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)
@@ -376,7 +376,7 @@ class WarrantyModuleTests(APITestCase):
 
     def test_admin_timeline_creation(self):
         """Test that admin review action logs audit events inside timeline / notes."""
-        self.order.status = OrderStatus.COMPLETED
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         from apps.warranty.services import create_warranty_registrations
         create_warranty_registrations(self.order)

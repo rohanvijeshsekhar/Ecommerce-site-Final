@@ -9,8 +9,8 @@ class OrderStatus(models.TextChoices):
     PENDING_PAYMENT = "pending_payment", "Pending Payment"
     PROCESSING      = "processing",      "Processing"
     PACKED          = "packed",          "Packed"
-    FULFILLED       = "fulfilled",       "Fulfilled"
-    COMPLETED       = "completed",       "Completed"
+    SHIPPED         = "shipped",         "Shipped"
+    DELIVERED       = "delivered",       "Delivered"
     CANCELLED       = "cancelled",       "Cancelled"
 
 class Order(BaseModel):

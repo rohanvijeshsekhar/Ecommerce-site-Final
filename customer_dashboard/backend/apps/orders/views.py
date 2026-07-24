@@ -91,10 +91,10 @@ class OrderCancelView(APIView):
             with transaction.atomic():
                 order = Order.objects.select_for_update().get(pk=pk, user=request.user)
 
-                # Check if order can be cancelled (before fulfillment/completion)
-                if order.status in [OrderStatus.FULFILLED, OrderStatus.COMPLETED]:
+                # Check if order can be cancelled (before shipment)
+                if order.status in [OrderStatus.SHIPPED, OrderStatus.DELIVERED]:
                     return error_response(
-                        f"Cannot cancel order because it has already reached status '{order.status}'.",
+                        f"Cannot cancel order because it has already been {order.status}.",
                         status_code=status.HTTP_400_BAD_REQUEST
                     )
                 
@@ -177,8 +177,8 @@ class AdminOrderListView(APIView):
             "pending_payment": orders.filter(status=OrderStatus.PENDING_PAYMENT).count(),
             "processing": orders.filter(status=OrderStatus.PROCESSING).count(),
             "packed": orders.filter(status=OrderStatus.PACKED).count(),
-            "fulfilled": orders.filter(status=OrderStatus.FULFILLED).count(),
-            "completed": orders.filter(status=OrderStatus.COMPLETED).count(),
+            "shipped": orders.filter(status=OrderStatus.SHIPPED).count(),
+            "delivered": orders.filter(status=OrderStatus.DELIVERED).count(),
             "cancelled": orders.filter(status=OrderStatus.CANCELLED).count(),
             "total_sales": float(orders.exclude(status=OrderStatus.CANCELLED).aggregate(total=Sum('total_amount'))['total'] or 0.0)
         }
@@ -260,13 +260,13 @@ class AdminOrderDetailView(APIView):
                     OrderStatus.PENDING_PAYMENT: 0,
                     OrderStatus.PROCESSING: 1,
                     OrderStatus.PACKED: 2,
-                    OrderStatus.FULFILLED: 3,
-                    OrderStatus.COMPLETED: 4,
+                    OrderStatus.SHIPPED: 3,
+                    OrderStatus.DELIVERED: 4,
                     OrderStatus.CANCELLED: 5,
                 }
 
                 # Disallow reversing status flow (except cancellation to/from terminal states)
-                if old_status == OrderStatus.CANCELLED or old_status == OrderStatus.COMPLETED:
+                if old_status == OrderStatus.CANCELLED or old_status == OrderStatus.DELIVERED:
                     return error_response(
                         f"Cannot modify order status in final state: '{old_status}'.",
                         status_code=status.HTTP_400_BAD_REQUEST
@@ -282,13 +282,13 @@ class AdminOrderDetailView(APIView):
                 # Set timing fields
                 if new_status == OrderStatus.PACKED:
                     order.packed_at = timezone.now()
-                elif new_status == OrderStatus.FULFILLED:
+                elif new_status == OrderStatus.SHIPPED:
                     order.shipped_at = timezone.now()
                     if tracking_number:
                         order.tracking_number = tracking_number
                     if shipping_carrier:
                         order.shipping_carrier = shipping_carrier
-                elif new_status == OrderStatus.COMPLETED:
+                elif new_status == OrderStatus.DELIVERED:
                     order.delivered_at = timezone.now()
                 elif new_status == OrderStatus.CANCELLED:
                     order.cancelled_at = timezone.now()
@@ -298,7 +298,7 @@ class AdminOrderDetailView(APIView):
                 order.status = new_status
                 order.save()
 
-                if new_status == OrderStatus.COMPLETED:
+                if new_status == OrderStatus.DELIVERED:
                     from apps.warranty.services import create_warranty_registrations
                     create_warranty_registrations(order)
 
@@ -311,8 +311,8 @@ class AdminOrderDetailView(APIView):
                 )
 
                 # Inventory Synchronization on Transitions
-                # A: Transition to Fulfilled -> Deduct from physical stock and release reserved stock
-                if new_status == OrderStatus.FULFILLED and old_status in [OrderStatus.PROCESSING, OrderStatus.PACKED]:
+                # A: Transition to Shipped -> Deduct from physical stock and release reserved stock
+                if new_status == OrderStatus.SHIPPED and old_status in [OrderStatus.PROCESSING, OrderStatus.PACKED]:
                     for item in order.items.all():
                         inventory = getattr(item.product, "inventory", None)
                         if inventory:

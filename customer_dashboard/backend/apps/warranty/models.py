@@ -11,7 +11,6 @@ from apps.common.mixins import BaseModel
 # ============================================================
 
 class WarrantyRegistrationStatus(models.TextChoices):
-    PENDING_ACTIVATION   = "pending_activation",   "Pending Activation"
     PENDING_REGISTRATION = "pending_registration", "Pending Registration"
     PENDING_VERIFICATION = "pending_verification", "Pending Verification"
     NEED_MORE_INFO       = "need_more_info",       "Need More Info"
