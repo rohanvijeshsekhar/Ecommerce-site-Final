@@ -6,12 +6,16 @@ from apps.products.models import Product
 from apps.users.models import Address
 
 class OrderStatus(models.TextChoices):
-    PENDING_PAYMENT = "pending_payment", "Pending Payment"
-    PROCESSING      = "processing",      "Processing"
-    PACKED          = "packed",          "Packed"
-    SHIPPED         = "shipped",         "Shipped"
-    DELIVERED       = "delivered",       "Delivered"
-    CANCELLED       = "cancelled",       "Cancelled"
+    PENDING_PAYMENT  = "pending_payment",  "Pending Payment"
+    PROCESSING       = "processing",       "Processing"
+    PACKED           = "packed",           "Packed"
+    SHIPMENT_CREATED = "shipment_created", "Shipment Created"
+    PICKED_UP        = "picked_up",        "Picked Up"
+    IN_TRANSIT       = "in_transit",       "In Transit"
+    OUT_FOR_DELIVERY = "out_for_delivery", "Out for Delivery"
+    SHIPPED          = "shipped",          "Shipped"
+    DELIVERED        = "delivered",        "Delivered"
+    CANCELLED        = "cancelled",        "Cancelled"
 
 class Order(BaseModel):
     user = models.ForeignKey(
