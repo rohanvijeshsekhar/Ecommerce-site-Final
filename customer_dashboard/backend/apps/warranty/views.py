@@ -170,7 +170,7 @@ class ImportedProductsListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        orders = Order.objects.filter(user=request.user, status=OrderStatus.DELIVERED).prefetch_related('items__product__brand')
+        orders = Order.objects.filter(user=request.user, status=OrderStatus.COMPLETED).prefetch_related('items__product__brand')
         imported_items = []
         
         for order in orders:

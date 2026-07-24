@@ -9,8 +9,8 @@ def create_warranty_registrations(order):
     Explicitly creates warranty registrations for all FAAZO products in a delivered order.
     Sets status to 'pending_registration'. Imported brands are skipped.
     """
-    # Guard: only delivered orders can be registered
-    if order.status != OrderStatus.DELIVERED:
+    # Guard: only completed orders can be registered
+    if order.status != OrderStatus.COMPLETED:
         return
     
     with transaction.atomic():
