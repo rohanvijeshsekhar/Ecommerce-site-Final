@@ -145,7 +145,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const addr = order.shipping_address_detail;
-  const canCreate = ['packed', 'processing'].includes(order.status) && !shipment;
+  const canCreate = ['packed', 'processing'].includes(order.status) && (!shipment || shipment.shipment_status === 'not_created' || !shipment.awb_number);
 
   const handleCopyAWB = (awb: string) => {
     navigator.clipboard.writeText(awb);
@@ -158,15 +158,27 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
     setCreating(true);
     setValidationErrors([]);
     try {
-      const res = await adminShippingService.createShipment({
-        order_id:     order.id,
-        weight:       parseFloat(weight),
-        length:       parseFloat(length),
-        breadth:      parseFloat(breadth),
-        height:       parseFloat(height),
-        payment_mode: paymentMode,
-        pickup_date:  pickupDate || undefined,
-      });
+      let res;
+      if (shipment && shipment.id) {
+        res = await adminShippingService.createCourierShipment(shipment.id, {
+          weight:       parseFloat(weight),
+          length:       parseFloat(length),
+          breadth:      parseFloat(breadth),
+          height:       parseFloat(height),
+          payment_mode: paymentMode,
+          pickup_date:  pickupDate || undefined,
+        });
+      } else {
+        res = await adminShippingService.createShipment({
+          order_id:     order.id,
+          weight:       parseFloat(weight),
+          length:       parseFloat(length),
+          breadth:      parseFloat(breadth),
+          height:       parseFloat(height),
+          payment_mode: paymentMode,
+          pickup_date:  pickupDate || undefined,
+        });
+      }
 
       if (res.success && res.data) {
         toast.success(`Shipment created! AWB: ${res.data.awb_number}`);

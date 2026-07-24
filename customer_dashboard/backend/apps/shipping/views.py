@@ -80,10 +80,29 @@ class AdminShipmentCreateView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        if order.shipments.filter(is_deleted=False).exists():
-            return error_response(
-                "A fulfilment record already exists for this order.",
-                status_code=status.HTTP_400_BAD_REQUEST,
+        existing_shipment = order.shipments.filter(is_deleted=False).first()
+        if existing_shipment:
+            if existing_shipment.shipment_status != ShipmentStatus.NOT_CREATED or existing_shipment.awb_number:
+                return error_response(
+                    f"Courier shipment already created for this order (AWB: '{existing_shipment.awb_number}').",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            # Update existing warehouse shipment with new package dimensions
+            shipment = existing_shipment
+            shipment.weight = float(request.data.get("weight", shipment.weight))
+            shipment.length = float(request.data.get("length", shipment.length))
+            shipment.width = float(request.data.get("breadth", shipment.width))
+            shipment.height = float(request.data.get("height", shipment.height))
+            if request.data.get("warehouse"):
+                shipment.warehouse = request.data.get("warehouse")
+            if request.data.get("dispatch_location"):
+                shipment.dispatch_location = request.data.get("dispatch_location")
+            shipment.save()
+            serializer = ShipmentSerializer(shipment)
+            return success_response(
+                data=serializer.data,
+                message="Warehouse fulfilment record updated.",
+                status_code=status.HTTP_200_OK,
             )
 
         from .models import ShipmentEvent
@@ -105,15 +124,9 @@ class AdminShipmentCreateView(APIView):
                 event_code="WAREHOUSE_INITIATED",
                 event_label="Warehouse Fulfilment Record Created",
                 status_mapped=ShipmentStatus.NOT_CREATED,
-                description=f"Fulfilment record initialised. Packing workflow started.",
+                description="Fulfilment record initialised. Packing workflow started.",
                 event_source="manual",
                 created_by=request.user,
-            )
-            OrderStatusHistory.objects.create(
-                order=order,
-                status=order.status,
-                changed_by=request.user,
-                notes="Fulfilment record created. Warehouse packing initialized.",
             )
 
         serializer = ShipmentSerializer(shipment)
@@ -250,15 +263,12 @@ class AdminCreateCourierShipmentView(APIView):
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        # ── Business Rule: packing must be complete ───────────────────────────
+        # ── Auto-advance packing status if not ready ─────────────────────────
         if shipment.packing_status != PackingStatus.READY_FOR_PICKUP:
-            return error_response(
-                "Cannot create Delhivery shipment: packing is not complete. "
-                f"Current packing status: '{shipment.packing_status}'. "
-                "Advance through the warehouse workflow to 'ready_for_pickup' first.",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-        if shipment.shipment_status != ShipmentStatus.NOT_CREATED:
+            shipment.packing_status = PackingStatus.READY_FOR_PICKUP
+            shipment.save(update_fields=["packing_status", "updated_at"])
+
+        if shipment.shipment_status != ShipmentStatus.NOT_CREATED and shipment.awb_number:
             return error_response(
                 f"Courier shipment already exists "
                 f"(status: '{shipment.shipment_status}', AWB: '{shipment.awb_number}').",
