@@ -158,7 +158,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight font-display">
+            <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight font-sans">
               Shop by Category
             </h2>
             <a
@@ -215,7 +215,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
 
                   {/* Bottom: Text area */}
                   <div className="bg-white text-left px-6.5 pt-9 pb-6 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-slate-100">
-                    <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug group-hover:text-[#006670] transition-colors duration-300 font-display">
+                    <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug group-hover:text-[#006670] transition-colors duration-300 font-sans">
                       {cat.title}
                     </h3>
                     <div className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#007C82] hover:text-[#006670] transition-colors duration-300">
@@ -235,7 +235,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
         <div className="w-full px-5">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[28px] font-black text-slate-800 tracking-tight font-display leading-tight">
+            <h2 className="text-[28px] font-black text-slate-800 tracking-tight font-sans leading-tight">
               Shop by Category
             </h2>
             <a
