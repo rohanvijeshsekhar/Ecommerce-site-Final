@@ -75,10 +75,6 @@ const WhyChoosePanel: React.FC = () => {
             <img 
               src="/images/dental_chair_banner.png" 
               alt="Ultra Modern Ergonomic Dental Chair" 
-              style={{
-                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%)',
-                maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%)'
-              }}
               className="h-auto max-h-[420px] w-full object-contain object-center scale-125 translate-x-6 drop-shadow-[0_16px_36px_rgba(0,95,99,0.15)] relative z-10"
             />
           </div>
