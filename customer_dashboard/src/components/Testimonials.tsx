@@ -125,10 +125,11 @@ const Testimonials: React.FC = () => {
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* Mobile view */}
       <section className="block md:hidden w-full bg-[#F2FBFB] border-y border-teal-100/60 px-5 py-8 select-none" id="testimonials-mobile">
