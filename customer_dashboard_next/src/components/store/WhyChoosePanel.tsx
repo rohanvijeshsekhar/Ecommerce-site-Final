@@ -71,11 +71,10 @@ const WhyChoosePanel: React.FC = () => {
 
           {/* Right Column: Large Blended Dental Chair unit */}
           <div className="col-span-4 h-full w-full relative flex items-center justify-center p-0 overflow-visible">
-            <div className="absolute inset-0 bg-radial from-[#005F63]/10 to-transparent blur-2xl pointer-events-none scale-125" />
             <img 
               src="/images/dental_chair_banner.png" 
               alt="Ultra Modern Ergonomic Dental Chair" 
-              className="h-auto max-h-[420px] w-full object-contain object-center scale-125 translate-x-6 drop-shadow-[0_16px_36px_rgba(0,95,99,0.15)] relative z-10"
+              className="h-auto max-h-[420px] w-full object-contain object-center scale-125 translate-x-6 drop-shadow-[0_12px_24px_rgba(0,95,99,0.10)] relative z-10"
             />
           </div>
 
