@@ -97,13 +97,11 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
   // Handle Product Search Autocomplete
   useEffect(() => {
-    if (!productSearchInput.trim()) {
-      setSearchResults([]);
-      return;
-    }
     const timer = setTimeout(() => {
       setSearchingProducts(true);
-      api.get(`products/?search=${encodeURIComponent(productSearchInput)}`)
+      const query = productSearchInput.trim();
+      const url = query ? `products/?search=${encodeURIComponent(query)}` : 'products/';
+      api.get(url)
         .then((res) => {
           const list = res.data?.results ?? res.data?.data ?? res.data ?? [];
           if (Array.isArray(list)) {
@@ -111,7 +109,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
               id: p.id,
               name: p.name || p.title,
               sku: p.sku || `SKU-${p.id}`,
-              price: p.price || 0,
+              price: p.pricing?.offer_price || p.pricing?.selling_price || p.price || 0,
               brand: p.brand?.name || p.brand || 'FAAZO',
               image: p.primary_image_url || '/images/bestseller_handpiece.png',
             })));
@@ -161,11 +159,12 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
       seo_keywords: sol.seo_keywords || '',
     });
     
-    // Fetch detail for mapped products
-    api.get(`solutions/admin/${sol.id}/`)
+    // Fetch detail using slug or id
+    const lookupKey = sol.slug || sol.id;
+    api.get(`solutions/admin/${lookupKey}/`)
       .then((res) => {
         const detail = res.data?.data ?? res.data;
-        if (detail && detail.products) {
+        if (detail && Array.isArray(detail.products)) {
           setSelectedProducts(detail.products.map((p: any) => ({
             id: p.product_id || p.id,
             name: p.product_name || p.name,
