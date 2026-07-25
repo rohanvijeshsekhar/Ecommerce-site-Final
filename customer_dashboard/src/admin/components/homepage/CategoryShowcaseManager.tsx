@@ -21,6 +21,21 @@ const ICON_OPTIONS = [
   { key: 'other', label: 'Other' },
 ];
 
+const autoDetectIconKey = (name: string): string => {
+  const s = name.toLowerCase();
+  if (s.includes('handpiece') || s.includes('rotary') || s.includes('drill') || s.includes('turbine')) return 'handpiece';
+  if (s.includes('imaging') || s.includes('camera') || s.includes('scan') || s.includes('x-ray') || s.includes('xray') || s.includes('sensor')) return 'imaging';
+  if (s.includes('instrument') || s.includes('scaler') || s.includes('forceps') || s.includes('pliers') || s.includes('elevator') || s.includes('mirror')) return 'instruments';
+  if (s.includes('equipment') || s.includes('compressor') || s.includes('suction') || s.includes('unit') || s.includes('motor')) return 'equipment';
+  if (s.includes('material') || s.includes('composite') || s.includes('cement') || s.includes('impression') || s.includes('resin')) return 'materials';
+  if (s.includes('chair') || s.includes('seating') || s.includes('stool')) return 'chairs';
+  if (s.includes('steriliz') || s.includes('autoclave') || s.includes('clean') || s.includes('pouch') || s.includes('disinfect')) return 'sterilization';
+  if (s.includes('endo') || s.includes('canal') || s.includes('file') || s.includes('gutta')) return 'endo';
+  if (s.includes('implant') || s.includes('prosthetic') || s.includes('abutment')) return 'implants';
+  if (s.includes('iphone') || s.includes('phone') || s.includes('mobile') || s.includes('apple')) return 'phone';
+  return 'other';
+};
+
 const BLANK_FORM = {
   category: '',
   title_override: '',
@@ -164,7 +179,12 @@ const CategoryShowcaseManager: React.FC = () => {
               {/* Category picker */}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Catalogue Category *</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                <select value={form.category} onChange={e => {
+                  const catId = e.target.value;
+                  const selectedCat = dropdown.find(d => d.id === catId);
+                  const detectedIcon = selectedCat ? autoDetectIconKey(selectedCat.name) : form.icon_key;
+                  setForm(f => ({ ...f, category: catId, icon_key: detectedIcon }));
+                }}
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30">
                   <option value="">— Select a category —</option>
                   {dropdown.map(d => <option key={d.id} value={d.id}>{d.full_path}</option>)}

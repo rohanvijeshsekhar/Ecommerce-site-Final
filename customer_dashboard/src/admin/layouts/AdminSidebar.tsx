@@ -30,6 +30,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'categories', label: 'Categories',    icon: 'Tag',              path: '/admin/categories' },
       { id: 'brands',     label: 'Brands',        icon: 'Award',            path: '/admin/brands'     },
       { id: 'combos',     label: 'Combo deals',   icon: 'Sparkles',         path: '/admin/combos'     },
+      { id: 'solutions',  label: 'Explore Solutions', icon: 'Layers',       path: '/admin/solutions'  },
     ],
   },
   {

@@ -41,7 +41,7 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
   return (
     <>
       {/* Desktop view */}
-      <footer className="hidden md:block w-full bg-[#004d54] text-slate-300 pt-16 pb-8 px-8 border-t border-[#00525b] select-none text-left">
+      <footer className="hidden md:block w-full bg-[#005F63] text-slate-200 pt-16 pb-8 px-8 border-t border-[#0B7C80]/30 select-none text-left">
         <div className="max-w-7xl mx-auto grid grid-cols-12 gap-12 mb-12">
 
           {/* Column 1: FAAZO branding */}
@@ -180,7 +180,7 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
       </footer>
 
       {/* Mobile view */}
-      <footer className="block md:hidden w-full bg-[#004d54] text-slate-300 py-10 px-5 border-t border-[#00525b] select-none text-left" id="footer-mobile">
+      <footer className="block md:hidden w-full bg-[#005F63] text-slate-200 py-10 px-5 border-t border-[#0B7C80]/30 select-none text-left" id="footer-mobile">
         <div className="flex flex-col gap-8">
           {/* Column 1: FAAZO branding */}
           <div className="flex flex-col items-start">

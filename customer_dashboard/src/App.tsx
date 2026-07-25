@@ -36,7 +36,10 @@ import LoginModal from './components/LoginModal';
 import type { CartItem } from './types/pendingAction';
 import { api } from './services/api';
 
-type AppView = 'home' | 'portfolio' | 'listing' | 'detail' | 'cart' | 'wishlist' | 'checkout' | 'order-success' | 'my-orders' | 'profile' | 'combo-deals' | 'combo-detail' | 'dealer-portal';
+import SolutionDetailPage from './components/SolutionDetailPage';
+import ExploreSolutionsAdmin from './components/ExploreSolutionsAdmin';
+
+type AppView = 'home' | 'portfolio' | 'listing' | 'detail' | 'cart' | 'wishlist' | 'checkout' | 'order-success' | 'my-orders' | 'profile' | 'combo-deals' | 'combo-detail' | 'dealer-portal' | 'solution-detail';
 
 interface Order {
   id: string;
@@ -63,6 +66,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [activeComboId, setActiveComboId] = useState<string | null>(null);
+  const [selectedSolutionSlug, setSelectedSolutionSlug] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('dashboard');
 
@@ -512,7 +516,13 @@ function App() {
       )}
 
       <main className="flex-grow flex flex-col">
-        {currentView === 'combo-deals' ? (
+        {currentView === 'solution-detail' && selectedSolutionSlug ? (
+          <SolutionDetailPage
+            slug={selectedSolutionSlug}
+            onBack={() => { setCurrentView('home'); window.scrollTo(0, 0); }}
+            onAddToCart={addItemToCart}
+          />
+        ) : currentView === 'combo-deals' ? (
           <ComboListingPage
             setCurrentView={setCurrentView}
             setActiveComboId={setActiveComboId}
@@ -670,7 +680,18 @@ function App() {
               setSelectedCategory(cat);
               setCurrentView('listing');
             }} />
-            <ExploreSolutions onViewPortfolio={() => { setCurrentView('portfolio'); window.scrollTo(0, 0); }} />
+            <ExploreSolutions
+              onSelectSolution={(slug) => {
+                setSelectedSolutionSlug(slug);
+                setCurrentView('solution-detail');
+                window.scrollTo(0, 0);
+              }}
+              onViewAllSolutions={() => {
+                setSelectedSolutionSlug('restorative-dentistry');
+                setCurrentView('solution-detail');
+                window.scrollTo(0, 0);
+              }}
+            />
             <BrandLogos />
             <BestSellers
               onProductClick={handleProductClick}

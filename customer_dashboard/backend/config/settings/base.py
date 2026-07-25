@@ -65,6 +65,7 @@ LOCAL_APPS = [
     "apps.pricing",
     "apps.inventory",
     "apps.combos",
+    "apps.solutions",
     # ── Phase 8+: Commerce ──────────────────────────────────
     "apps.cart",
     "apps.checkout",
@@ -212,10 +213,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "60/hour",
-        "user": "1000/hour",
-        "payment_create": "20/minute",
-        "payment_verify": "10/minute",
+        "anon": "10000/hour",
+        "user": "50000/hour",
+        "payment_create": "100/minute",
+        "payment_verify": "100/minute",
     },
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",

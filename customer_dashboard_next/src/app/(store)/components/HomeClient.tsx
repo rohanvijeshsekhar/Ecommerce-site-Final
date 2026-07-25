@@ -6,6 +6,7 @@ import { useStore } from '@/contexts/StoreContext';
 import dynamic from 'next/dynamic';
 import Hero from '@/components/store/Hero';
 import CategoryList from '@/components/store/CategoryList';
+import { getCategoryIconBadge } from '@/utils/categoryIcons';
 import ExploreSolutions from '@/components/store/ExploreSolutions';
 import BrandLogos from '@/components/store/BrandLogos';
 const BestSellers = dynamic(() => import('@/components/store/BestSellers'), { ssr: true });
@@ -69,7 +70,7 @@ export default function HomeClient({
       id: c.category_slug ?? c.category,
       title: c.display_title,
       image: c.card_image_url || getCategoryFallbackImage(slug),
-      icon: null, // SVG fallback is handled locally inside the component matching icon_key
+      icon: getCategoryIconBadge(c.display_title, slug, c.icon_key),
       icon_key: c.icon_key
     };
   });

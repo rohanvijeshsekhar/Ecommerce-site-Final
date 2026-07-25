@@ -72,6 +72,7 @@ urlpatterns = [
                 # Phase 5B – Homepage CMS
                 path("",            include("apps.homepage.urls")),
                 path("combos/",     include("apps.combos.urls")),
+                path("solutions/",  include("apps.solutions.urls")),
                 # Phase 8+ – Cart
                 path("cart/", include("apps.cart.urls")),
                 # Phase 9+ – Checkout

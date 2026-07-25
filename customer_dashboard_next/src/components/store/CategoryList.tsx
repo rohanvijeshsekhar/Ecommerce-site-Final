@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import { ArrowRight } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
+import { getCategoryIconBadge } from '../../utils/categoryIcons';
 
 import 'swiper/css';
 
@@ -16,105 +17,7 @@ interface CategoryItem {
   icon: React.ReactNode;
 }
 
-// Custom SVG Icons matching the reference design badges
-const HandpieceBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-  </svg>
-);
-
-const ImagingBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-    <circle cx="12" cy="13" r="4" />
-  </svg>
-);
-
-const InstrumentsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M6 19 L15 10" />
-    <path d="M15 10 C16 9, 17 9, 17.5 8 C18 7, 17.5 5.5, 16 5.5" />
-    <path d="M10 19 L17 12" />
-    <circle cx="18.5" cy="10.5" r="2.5" />
-  </svg>
-);
-
-const EquipmentBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-  </svg>
-);
-
-const MaterialsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-    <line x1="12" y1="22.08" x2="12" y2="12" />
-  </svg>
-);
-
-const ChairsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
-    <path d="M19 9l1.25-2.5A2 2 0 0 0 18.46 4H5.54a2 2 0 0 0-1.79 2.5L5 9" />
-    <path d="M5 9v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
-    <path d="M9 17v4" />
-    <path d="M15 17v4" />
-  </svg>
-);
-
-// Maps icon_key → existing predefined SVG icon component
-const ICON_MAP: Record<string, React.ReactNode> = {
-  handpiece:      <HandpieceBadgeIcon />,
-  imaging:        <ImagingBadgeIcon />,
-  instruments:    <InstrumentsBadgeIcon />,
-  equipment:      <EquipmentBadgeIcon />,
-  materials:      <MaterialsBadgeIcon />,
-  chairs:         <ChairsBadgeIcon />,
-  sterilization:  <HandpieceBadgeIcon />,
-  endo:           <InstrumentsBadgeIcon />,
-  implants:       <ImagingBadgeIcon />,
-  other:          <MaterialsBadgeIcon />,
-};
-
 const categoryMapping: Record<string, string> = {};
-
-// Helper to return small logo-type emoji badge for each category
-const getCategoryIconBadge = (title?: string, slug?: string, iconKey?: string): React.ReactNode => {
-  const combined = `${title || ''} ${slug || ''} ${iconKey || ''}`.toLowerCase();
-  
-  if (combined.includes('iphone') || combined.includes('phone') || combined.includes('mobile') || combined.includes('apple')) {
-    return <span className="text-[24px] leading-none select-none">📱</span>;
-  }
-  if (combined.includes('handpiece') || combined.includes('drill') || combined.includes('rotary')) {
-    return <span className="text-[24px] leading-none select-none">🦷</span>;
-  }
-  if (combined.includes('imaging') || combined.includes('camera') || combined.includes('scan') || combined.includes('x-ray') || combined.includes('xray')) {
-    return <span className="text-[24px] leading-none select-none">📷</span>;
-  }
-  if (combined.includes('instrument') || combined.includes('scaler') || combined.includes('forceps') || combined.includes('pliers')) {
-    return <span className="text-[24px] leading-none select-none">✂️</span>;
-  }
-  if (combined.includes('equipment') || combined.includes('compressor') || combined.includes('suction') || combined.includes('unit')) {
-    return <span className="text-[24px] leading-none select-none">🔌</span>;
-  }
-  if (combined.includes('chair') || combined.includes('seating') || combined.includes('stool')) {
-    return <span className="text-[24px] leading-none select-none">🪑</span>;
-  }
-  if (combined.includes('material') || combined.includes('composite') || combined.includes('cement') || combined.includes('impression')) {
-    return <span className="text-[24px] leading-none select-none">📦</span>;
-  }
-  if (combined.includes('steriliz') || combined.includes('autoclave') || combined.includes('clean')) {
-    return <span className="text-[24px] leading-none select-none">🧼</span>;
-  }
-  if (combined.includes('endo') || combined.includes('canal') || combined.includes('file')) {
-    return <span className="text-[24px] leading-none select-none">🩺</span>;
-  }
-  if (combined.includes('implant') || combined.includes('prosthetic')) {
-    return <span className="text-[24px] leading-none select-none">💎</span>;
-  }
-
-  return <span className="text-[24px] leading-none select-none">🏷️</span>;
-};
 
 // ─── Static fallback used when backend returns no categories ───────────────
 const STATIC_CATEGORIES: CategoryItem[] = [
@@ -166,7 +69,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
   const [categories, setCategories] = useState<CategoryItem[]>(initialCategories || []);
 
   useEffect(() => {
-    if (initialCategories && initialCategories.length > 0) return;
+    if (initialCategories && initialCategories.length > 0) {
+      setCategories(initialCategories);
+      return;
+    }
     const getCategoryFallbackImage = (slug: string): string => {
       const s = slug.toLowerCase();
       if (s.includes('handpiece')) return '/images/category_handpieces.png';
@@ -248,7 +154,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block w-full py-20 select-none bg-white overflow-hidden" id="categories">
+      <section className="hidden md:block w-full py-20 select-none bg-[#F8FAFC] border-y border-slate-200/60 overflow-hidden" id="categories">
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-12">
@@ -290,9 +196,9 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-${idx}`} style={{ width: 'auto' }}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-gradient-to-br from-white/45 via-[#F2FAF9]/30 to-white/40 backdrop-blur-xl border border-[#006670]/20 rounded-[32px] shadow-[0_8px_32px_rgba(0, 43, 46,0.03)] hover:shadow-[0_20px_40px_rgba(0, 43, 46,0.08)] hover:border-[#006670]/35 hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-[390px] cursor-pointer group relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,102,112,0.1)] hover:border-[#006670]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col h-[390px] cursor-pointer group relative overflow-hidden">
                   {/* Top: Image Area */}
-                  <div className="w-full h-[250px] bg-[#F5FBFB]/20 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.11)_0%,transparent_65%)] flex items-center justify-center overflow-hidden relative">
+                  <div className="w-full h-[250px] bg-slate-50 flex items-center justify-center overflow-hidden relative">
                     <Image
                       src={cat.image || '/images/category_materials.png'}
                       alt={cat.title}
@@ -303,12 +209,12 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                   </div>
 
                   {/* Overlapping floating badge */}
-                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.12)] border border-[#006670]/20 group-hover:scale-110 group-hover:bg-[#006670] group-hover:border-[#006670] transition-all duration-300">
-                    {cat.icon}
+                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-white rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.12)] border border-slate-200 group-hover:scale-110 group-hover:bg-[#006670] group-hover:border-[#006670] transition-all duration-300">
+                    {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
                   </div>
 
                   {/* Bottom: Text area */}
-                  <div className="bg-white/60 backdrop-blur-md text-left px-6.5 pt-9 pb-6 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-[#006670]/10">
+                  <div className="bg-white text-left px-6.5 pt-9 pb-6 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-slate-100">
                     <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug group-hover:text-[#006670] transition-colors duration-300 font-display">
                       {cat.title}
                     </h3>
@@ -325,7 +231,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full py-12 select-none bg-white overflow-hidden" id="categories-mobile">
+      <section className="block md:hidden w-full py-12 select-none bg-[#F8FAFC] border-y border-slate-200/60 overflow-hidden" id="categories-mobile">
         <div className="w-full px-5">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -377,7 +283,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                   {/* Overlapping floating badge */}
                   <div className="absolute top-[118px] left-3.5 z-10 w-9 h-9 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-md border border-[#006670]/20 group-hover:bg-[#006670] transition-colors">
                     <div className="scale-90 flex items-center justify-center">
-                      {cat.icon}
+                      {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
                     </div>
                   </div>
 

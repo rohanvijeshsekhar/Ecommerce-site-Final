@@ -1,225 +1,278 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ChevronRight, Stethoscope, Scissors, Activity, Heart, Shield } from 'lucide-react';
-import { api, getAbsoluteImageUrl } from '../services/api';
+import { ArrowRight, Sparkles, Layers, Package } from 'lucide-react';
+import { api } from '../services/api';
 
-interface SolutionItem {
-  id: string;
+export interface ClinicalSolutionData {
+  id: string | number;
   title: string;
-  image: string;
-  icon: React.ReactNode;
+  slug: string;
+  short_description: string;
+  banner: string;
+  thumbnail: string;
+  product_count: number;
+  display_order: number;
+  is_active: boolean;
+  show_on_homepage: boolean;
 }
 
-
-
-const ICON_MAP: Record<string, React.ReactNode> = {
-  general: <Stethoscope className="w-4 h-4 text-[#006670]" />,
-  surgery: <Scissors className="w-4 h-4 text-[#006670]" />,
-  ortho: <Activity className="w-4 h-4 text-[#006670]" />,
-  endo: <Heart className="w-4 h-4 text-[#006670]" />,
-  lab: <Shield className="w-4 h-4 text-[#006670]" />
-};
-
-// ─── Static fallback used when backend returns no data ──────────────────
-const STATIC_SOLUTIONS: SolutionItem[] = [
+const STATIC_SOLUTIONS: ClinicalSolutionData[] = [
   {
-    id: 'general-dentistry',
-    title: 'General Dentistry',
-    image: '/images/category_chairs.png',
-    icon: <Stethoscope className="w-4 h-4 text-[#006670]" />,
+    id: 1,
+    title: 'Restorative Dentistry',
+    slug: 'restorative-dentistry',
+    short_description: 'Complete workflow for composite fillings, matrices, curing lights, and bonding agents.',
+    banner: '/images/hero1_ecommerce.png',
+    thumbnail: '/images/bestseller_curing.png',
+    product_count: 8,
+    display_order: 1,
+    is_active: true,
+    show_on_homepage: true,
   },
   {
-    id: 'oral-surgery-implantology',
-    title: 'Oral Surgery & Implantology',
-    image: '/images/category_imaging.png',
-    icon: <Scissors className="w-4 h-4 text-[#006670]" />,
+    id: 2,
+    title: 'Endodontic Solutions',
+    slug: 'endodontic-solutions',
+    short_description: 'Endo motors, rotary files, apex locators, and obturation systems for root canal treatments.',
+    banner: '/images/hero_ecommerce.png',
+    thumbnail: '/images/bestseller_locator.png',
+    product_count: 6,
+    display_order: 2,
+    is_active: true,
+    show_on_homepage: true,
   },
   {
-    id: 'orthodontics',
-    title: 'Orthodontics',
-    image: '/images/loginimg.png',
-    icon: <Activity className="w-4 h-4 text-[#006670]" />,
+    id: 3,
+    title: 'Orthodontic Solutions',
+    slug: 'orthodontic-solutions',
+    short_description: 'Brackets, archwires, pliers, aligner accessories, and orthodontic bonding.',
+    banner: '/images/hero_equipment.png',
+    thumbnail: '/images/category_instruments.png',
+    product_count: 12,
+    display_order: 3,
+    is_active: true,
+    show_on_homepage: true,
   },
   {
-    id: 'endodontics',
-    title: 'Endodontics',
-    image: '/images/bestseller_locator.png',
-    icon: <Heart className="w-4 h-4 text-[#006670]" />,
+    id: 4,
+    title: 'Prosthodontic Solutions',
+    slug: 'prosthodontic-solutions',
+    short_description: 'Impression materials, crown & bridge resins, retraction cords, and articulators.',
+    banner: '/images/hero1_ecommerce.png',
+    thumbnail: '/images/category_materials.png',
+    product_count: 9,
+    display_order: 4,
+    is_active: true,
+    show_on_homepage: true,
   },
   {
-    id: 'dental-lab',
-    title: 'Dental Lab',
-    image: '/images/category_instruments.png',
-    icon: <Shield className="w-4 h-4 text-[#006670]" />,
+    id: 5,
+    title: 'Implant Solutions',
+    slug: 'implant-solutions',
+    short_description: 'Surgical physiodispensers, implant handpieces, torque wrenches, and bone grafting instruments.',
+    banner: '/images/hero_ecommerce.png',
+    thumbnail: '/images/category_equipment.png',
+    product_count: 5,
+    display_order: 5,
+    is_active: true,
+    show_on_homepage: true,
+  },
+  {
+    id: 6,
+    title: 'Preventive Care',
+    slug: 'preventive-care',
+    short_description: 'Ultrasonic scalers, prophy handpieces, fluoride gels, and dental hygiene consumables.',
+    banner: '/images/hero_equipment.png',
+    thumbnail: '/images/bestseller_scaler.png',
+    product_count: 10,
+    display_order: 6,
+    is_active: true,
+    show_on_homepage: true,
+  },
+  {
+    id: 7,
+    title: 'Pediatric Dentistry',
+    slug: 'pediatric-dentistry',
+    short_description: 'Child-friendly pediatric crowns, topical anesthetics, space maintainers, and gentle handpieces.',
+    banner: '/images/hero1_ecommerce.png',
+    thumbnail: '/images/category_handpieces.png',
+    product_count: 7,
+    display_order: 7,
+    is_active: true,
+    show_on_homepage: true,
+  },
+  {
+    id: 8,
+    title: 'Oral Surgery',
+    slug: 'oral-surgery',
+    short_description: 'Surgical burs, extraction forceps, elevators, bone chisels, and surgical suctions.',
+    banner: '/images/hero_ecommerce.png',
+    thumbnail: '/images/category_instruments.png',
+    product_count: 11,
+    display_order: 8,
+    is_active: true,
+    show_on_homepage: true,
   },
 ];
 
-const ExploreSolutions: React.FC<{ onViewPortfolio?: () => void }> = ({ onViewPortfolio }) => {
-  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+interface ExploreSolutionsProps {
+  onSelectSolution?: (slug: string) => void;
+  onViewAllSolutions?: () => void;
+  onViewPortfolio?: () => void;
+}
+
+const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, onViewAllSolutions }) => {
+  const [solutions, setSolutions] = useState<ClinicalSolutionData[]>(STATIC_SOLUTIONS);
 
   useEffect(() => {
-    const getCategoryFallbackImage = (slug: string): string => {
-      const s = slug.toLowerCase();
-      if (s.includes('handpiece')) return '/images/category_handpieces.png';
-      if (s.includes('camera') || s.includes('scan') || s.includes('imaging') || s.includes('x-ray')) return '/images/category_imaging.png';
-      if (s.includes('instrument')) return '/images/category_instruments.png';
-      if (s.includes('compressor') || s.includes('suction') || s.includes('equipment')) return '/images/category_equipment.png';
-      if (s.includes('chair') || s.includes('seating') || s.includes('stool')) return '/images/category_chairs.png';
-      return '/images/category_materials.png';
-    };
-
-    const mapCategoryToSolution = (cat: any, index: number): SolutionItem => {
-      const defaultIcons = ['general', 'surgery', 'ortho', 'endo', 'lab'];
-      const defaultIconKey = defaultIcons[index % defaultIcons.length];
-      const slug = cat.slug || '';
-      return {
-        id: cat.slug || String(cat.id),
-        title: cat.name,
-        image: getAbsoluteImageUrl(cat.image) || getCategoryFallbackImage(slug),
-        icon: ICON_MAP[cat.slug] || ICON_MAP[defaultIconKey] || <Stethoscope className="w-4 h-4 text-[#006670]" />
-      };
-    };
-
-    api.get('homepage/explore-solutions/')
-      .then(res => {
+    api.get('solutions/?homepage=true')
+      .then((res) => {
         const data = res.data?.data ?? res.data?.results ?? res.data ?? [];
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: SolutionItem[] = data.map((item: any, index: number) => {
-            const defaultIcons = ['general', 'surgery', 'ortho', 'endo', 'lab'];
-            const defaultIconKey = defaultIcons[index % defaultIcons.length];
-            const slug = item.category_slug ?? item.category ?? '';
-            return {
-              id: item.category_slug ?? item.category,
-              title: item.display_heading || item.category_name || '',
-              image: getAbsoluteImageUrl(item.image_url) || getCategoryFallbackImage(slug),
-              icon: ICON_MAP[item.category_slug] || ICON_MAP[defaultIconKey] || <Stethoscope className="w-4 h-4 text-[#006670]" />
-            };
-          });
-          setSolutions(mapped);
-        } else {
-          // Fallback to active parent categories
-          api.get('categories/?parent__isnull=true')
-            .then(cRes => {
-              const cData = cRes.data?.data ?? cRes.data?.results ?? cRes.data ?? [];
-              if (Array.isArray(cData) && cData.length > 0) {
-                setSolutions(cData.map((cat: any, idx: number) => mapCategoryToSolution(cat, idx)));
-              }
-              // else: keep static defaults showing
-            })
-            .catch(() => {});
+          setSolutions(data);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback to static initial data if offline
+      });
   }, []);
 
-  // Use static fallback when no backend solutions loaded yet
-  const displaySolutions = solutions.length > 0 ? solutions : STATIC_SOLUTIONS;
+  const handleSolutionClick = (slug: string) => {
+    if (onSelectSolution) {
+      onSelectSolution(slug);
+    } else {
+      window.location.hash = `#/solutions/${slug}`;
+    }
+  };
 
   return (
-
     <>
       {/* Desktop view */}
-      <section className="hidden md:block max-w-7xl mx-auto px-8 py-12 select-none" id="solutions">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight font-display">
-            Explore by Solution
-          </h2>
-          <a 
-            href="#" 
-            onClick={(e) => { e.preventDefault(); onViewPortfolio && onViewPortfolio(); }}
-            className="group inline-flex items-center gap-1.5 text-sm font-bold text-[#006670] hover:text-[#004e56] transition-colors"
-          >
-            View All Solutions
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </a>
-        </div>
-
-        {/* Solutions Cards Grid */}
-        <div className="flex flex-wrap justify-start gap-5">
-          {displaySolutions.map((sol) => (
-            <div 
-              key={sol.id} 
-              onClick={() => onViewPortfolio && onViewPortfolio()}
-              className="group relative w-[280px] h-[380px] rounded-2xl overflow-hidden border border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-hover transition-all duration-500 cursor-pointer flex flex-col justify-end p-4"
-            >
-              {/* Background image overlay */}
-              <div className="absolute inset-0 z-0">
-                <img 
-                  src={sol.image} 
-                  alt={sol.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.9] group-hover:brightness-[0.95]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+      <section className="hidden md:block w-full bg-[#F2FBFB] border-y border-[#E2E8F0] py-16 select-none" id="solutions">
+        <div className="max-w-7xl mx-auto px-8">
+          {/* Header */}
+          <div className="flex justify-between items-end mb-10 text-left">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#005F63]/10 text-[#005F63] text-xs font-extrabold uppercase tracking-wider mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Procedure Workflows</span>
               </div>
+              <h2 className="text-3xl font-black text-slate-800 tracking-tight font-display">
+                Explore by Solutions
+              </h2>
+              <p className="text-sm font-medium text-slate-500 mt-1">
+                Find complete product solutions designed for every clinical procedure.
+              </p>
+            </div>
 
-              {/* Content box overlapping background at bottom */}
-              <div className="relative z-10 w-full bg-white/95 backdrop-blur-sm rounded-xl p-3.5 flex items-center justify-between border border-white/20 shadow-sm group-hover:bg-white transition-colors duration-300">
-                <div className="flex items-center gap-2.5 text-left">
-                  <div className="w-7 h-7 rounded-lg bg-[#e6f3f5] flex items-center justify-center flex-shrink-0">
-                    {sol.icon}
-                  </div>
-                  <span className="text-[12.5px] font-extrabold text-slate-800 leading-tight tracking-tight font-display line-clamp-1">
-                    {sol.title}
+            <button
+              onClick={() => onViewAllSolutions ? onViewAllSolutions() : handleSolutionClick(solutions[0]?.slug || 'restorative-dentistry')}
+              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#E2E8F0] text-sm font-bold text-[#005F63] hover:bg-[#F2FBFB] hover:border-[#005F63] transition-all shadow-xs"
+            >
+              <span>View All Solutions</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          </div>
+
+          {/* Solutions Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
+            {solutions.map((sol) => (
+              <div
+                key={sol.id}
+                onClick={() => handleSolutionClick(sol.slug)}
+                className="group relative rounded-2xl overflow-hidden bg-white border border-[#E2E8F0] shadow-sm hover:shadow-[0_16px_36px_rgba(0,95,99,0.14)] hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col justify-between h-[360px]"
+              >
+                {/* Background Banner Image with Dark Gradient Overlay */}
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                  <img
+                    src={sol.banner || sol.thumbnail}
+                    alt={sol.title}
+                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 brightness-[0.85] group-hover:brightness-[0.95]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/50 to-slate-900/10" />
+                </div>
+
+                {/* Top Badge: Product Count */}
+                <div className="relative z-10 p-4 flex justify-between items-center">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold text-[#005F63] border border-white/40 shadow-xs">
+                    <Package className="w-3.5 h-3.5" />
+                    {sol.product_count} Products Included
                   </span>
                 </div>
-                
-                <ChevronRight className="w-4 h-4 text-[#006670] group-hover:translate-x-0.5 transition-transform stroke-[2.5]" />
-              </div>
 
-            </div>
-          ))}
+                {/* Bottom Content Area */}
+                <div className="relative z-10 p-5 flex flex-col justify-end">
+                  <h3 className="text-xl font-extrabold text-white tracking-tight font-display mb-1.5 leading-snug">
+                    {sol.title}
+                  </h3>
+                  <p className="text-xs text-slate-200/90 font-medium line-clamp-2 leading-relaxed mb-4">
+                    {sol.short_description}
+                  </p>
+
+                  <div className="inline-flex items-center justify-between w-full pt-3 border-t border-white/20 text-xs font-bold text-white group-hover:text-teal-200 transition-colors">
+                    <span className="flex items-center gap-1">
+                      Explore Solution
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                    <span className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm group-hover:bg-[#005F63] flex items-center justify-center transition-colors">
+                      <ArrowRight className="w-3.5 h-3.5 text-white" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full px-5 py-6 select-none" id="solutions-mobile">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[28px] font-black text-slate-800 tracking-tight font-display leading-tight">
-            Explore by Solution
+      <section className="block md:hidden w-full bg-[#F2FBFB] border-y border-[#E2E8F0] px-5 py-8 select-none" id="solutions-mobile">
+        <div className="flex flex-col mb-6 text-left">
+          <span className="text-[10px] font-extrabold text-[#005F63] tracking-widest uppercase mb-1">
+            Procedure Workflows
+          </span>
+          <h2 className="text-[26px] font-black text-slate-800 tracking-tight font-display leading-tight">
+            Explore by Solutions
           </h2>
-          <a 
-            href="#" 
-            onClick={(e) => { e.preventDefault(); onViewPortfolio && onViewPortfolio(); }}
-            className="group inline-flex items-center gap-1 text-xs font-bold text-[#006670] hover:text-[#004e56] transition-colors"
-          >
-            <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Find complete product solutions designed for every clinical procedure.
+          </p>
         </div>
 
-        {/* Solutions Cards Grid (Single Column mobile layout) */}
-        <div className="grid grid-cols-1 gap-4">
-          {displaySolutions.map((sol) => (
-            <div 
-              key={sol.id} 
-              onClick={() => onViewPortfolio && onViewPortfolio()}
-              className="group relative h-48 rounded-xl overflow-hidden border border-slate-100 flex flex-col justify-end p-4 cursor-pointer"
+        <div className="flex flex-col gap-4 text-left">
+          {solutions.map((sol) => (
+            <div
+              key={sol.id}
+              onClick={() => handleSolutionClick(sol.slug)}
+              className="group relative rounded-xl overflow-hidden bg-slate-900 border border-[#E2E8F0] shadow-sm active:scale-[0.99] transition-all cursor-pointer h-[240px] flex flex-col justify-between p-4"
             >
-              {/* Background image overlay */}
               <div className="absolute inset-0 z-0">
-                <img 
-                  src={sol.image} 
-                  alt={sol.title} 
-                  className="w-full h-full object-cover brightness-[0.8]"
+                <img
+                  src={sol.banner || sol.thumbnail}
+                  alt={sol.title}
+                  className="w-full h-full object-cover opacity-60"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
               </div>
 
-              {/* Content box */}
-              <div className="relative z-10 w-full bg-white/95 backdrop-blur-sm rounded-lg p-3 flex items-center justify-between border border-white/20">
-                <div className="flex items-center gap-2 text-left">
-                  <div className="w-6.5 h-6.5 rounded bg-[#e6f3f5] flex items-center justify-center flex-shrink-0">
-                    {sol.icon}
-                  </div>
-                  <span className="text-[12px] font-bold text-slate-800 tracking-tight font-display line-clamp-1">
-                    {sol.title}
-                  </span>
+              <div className="relative z-10 flex justify-between items-center">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/90 text-[10px] font-bold text-[#005F63]">
+                  <Package className="w-3 h-3" />
+                  {sol.product_count} Products
+                </span>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="text-lg font-extrabold text-white tracking-tight font-display mb-1">
+                  {sol.title}
+                </h3>
+                <p className="text-[11px] text-slate-300 font-medium line-clamp-2 mb-3">
+                  {sol.short_description}
+                </p>
+                <div className="inline-flex items-center gap-1 text-xs font-bold text-teal-300">
+                  <span>Explore Solution</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </div>
-                
-                <ChevronRight className="w-3.5 h-3.5 text-[#006670] stroke-[2.5]" />
               </div>
-
             </div>
           ))}
         </div>

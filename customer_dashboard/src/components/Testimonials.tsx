@@ -72,28 +72,29 @@ const Testimonials: React.FC = () => {
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block max-w-7xl mx-auto px-8 py-16 select-none">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight font-display">
-            What Our Customers Say
-          </h2>
-          <a 
-            href="#" 
-            className="group inline-flex items-center gap-1.5 text-sm font-bold text-[#006670] hover:text-[#004e56] transition-colors"
-          >
-            View All Reviews
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </a>
-        </div>
-
-        {/* Grid for desktop */}
-        <div className="grid grid-cols-3 gap-6 text-left">
-          {displayReviews.map((rev) => (
-            <div 
-              key={rev.id} 
-              className="bg-[#F7FAF9] border border-slate-100/80 hover:border-slate-200 rounded-2xl p-6 hover:shadow-premium transition-all duration-300 flex flex-col justify-between"
+      <section className="hidden md:block w-full bg-[#F2FBFB] border-y border-teal-100/60 py-16 select-none">
+        <div className="max-w-7xl mx-auto px-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight font-display">
+              What Our Customers Say
+            </h2>
+            <a 
+              href="#" 
+              className="group inline-flex items-center gap-1.5 text-sm font-bold text-[#006670] hover:text-[#004e56] transition-colors"
             >
+              View All Reviews
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+
+          {/* Grid for desktop */}
+          <div className="grid grid-cols-3 gap-6 text-left">
+            {displayReviews.map((rev) => (
+              <div 
+                key={rev.id} 
+                className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_28px_rgba(0,102,112,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              >
               <div>
                 <Quote className="w-8 h-8 text-[#006670]/25 mb-4 transform -scale-x-100" />
                 <p className="text-sm font-medium text-slate-700 italic leading-relaxed min-h-[72px]">
@@ -125,12 +126,12 @@ const Testimonials: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full px-5 py-6 select-none" id="testimonials-mobile">
+      <section className="block md:hidden w-full bg-[#F2FBFB] border-y border-teal-100/60 px-5 py-8 select-none" id="testimonials-mobile">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-[28px] font-black text-slate-800 tracking-tight font-display leading-tight">

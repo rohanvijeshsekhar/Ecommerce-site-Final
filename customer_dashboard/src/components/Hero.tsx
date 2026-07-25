@@ -55,9 +55,9 @@ const Hero: React.FC = () => {
 
   return (
     <div className="relative w-full bg-transparent pt-[60px] md:pt-[76px] lg:pt-[180px] px-0 md:px-8">
-      <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,102,112,0.04)] border-b md:border border-[#006670]/5 bg-[#F0F7F7]">
+      <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
-        <div className="w-full bg-gradient-to-r from-[#004e56] via-[#006670] to-[#004e56] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-[#00383e]/20">
+        <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
           <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
             FAAZO SUPER DEALS ARE LIVE:
           </span>
@@ -108,7 +108,7 @@ const Hero: React.FC = () => {
                           <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
                           {slide.heading.includes(' engineered ') && (
                             <>
-                              <span className="text-[#006670]">engineered for</span>
+                              <span className="text-[#005F63]">engineered for</span>
                               <span>{slide.heading.split(' engineered ')[1] || ''}</span>
                             </>
                           )}
@@ -117,7 +117,7 @@ const Hero: React.FC = () => {
                         <>
                           <span>{slide.heading.split(' ')[0] || ''}</span>
                           {slide.heading.split(' ')[1] && (
-                            <span className="text-[#006670]">{slide.heading.split(' ')[1]}</span>
+                            <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
                           )}
                           {slide.heading.split(' ').length > 2 && (
                             <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
@@ -128,7 +128,7 @@ const Hero: React.FC = () => {
 
                     <a
                       href={slide.cta_link}
-                      className="group inline-flex items-center gap-2 text-base font-bold text-[#006670] border-b-2 border-[#006670] pb-1 hover:text-[#004e56] hover:border-[#004e56] transition-all cursor-pointer mt-4"
+                      className="group inline-flex items-center gap-2 text-base font-bold text-[#005F63] border-b-2 border-[#005F63] pb-1 hover:text-[#0B7C80] hover:border-[#0B7C80] transition-all cursor-pointer mt-4"
                     >
                       {slide.cta_text}
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -141,14 +141,14 @@ const Hero: React.FC = () => {
                   <h2 className="text-[17px] font-black text-slate-800 uppercase tracking-tight font-display">
                     {isSecondSlide ? 'DENTAL SOLUTIONS' : 'CLINICAL EQUIPMENT'}
                   </h2>
-                  <span className="text-[34px] font-display font-black text-[#006670] tracking-tight -mt-1.5 mb-1">
+                  <span className="text-[34px] font-display font-black text-[#005F63] tracking-tight -mt-1.5 mb-1">
                     {isSecondSlide ? 'Summit' : 'Carnival'}
                   </span>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-1.5 font-display">
                     {slide.heading.toUpperCase()}
                   </p>
-                  <div className="w-8 h-[1.5px] bg-[#006670]/40 mb-2" />
-                  <span className="text-[12px] font-black text-[#006670] uppercase tracking-wider mb-2 font-display">
+                  <div className="w-8 h-[1.5px] bg-[#005F63]/40 mb-2" />
+                  <span className="text-[12px] font-black text-[#005F63] uppercase tracking-wider mb-2 font-display">
                     {isSecondSlide ? 'UP TO 40% OFF' : 'UP TO 50% OFF'}
                   </span>
                   <p className="text-[8px] font-extrabold text-slate-600 tracking-wide uppercase mt-1 font-display">
@@ -162,13 +162,13 @@ const Hero: React.FC = () => {
 
         {/* Circular Slider Navigation Controls */}
         <button
-          className="hero-swiper-prev absolute left-3 md:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#006670] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
+          className="hero-swiper-prev absolute left-3 md:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
           aria-label="Previous slide"
         >
           <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
         </button>
         <button
-          className="hero-swiper-next absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#006670] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
+          className="hero-swiper-next absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
           aria-label="Next slide"
         >
           <ChevronRight className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />

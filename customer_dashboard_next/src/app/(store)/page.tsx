@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { serverFetch } from '../../lib/server-api';
 import HomeClient from './components/HomeClient';
 
-// Incremental Static Regeneration (ISR) revalidation window: 300 seconds
-export const revalidate = 300;
+// Dynamic homepage CMS rendering (0s revalidation so Admin changes show instantly)
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'FAAZO Dental Solutions | Premium B2B Clinical Equipment & Supplies',

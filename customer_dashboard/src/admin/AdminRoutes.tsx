@@ -25,6 +25,8 @@ import FulfillmentPage from './pages/FulfillmentPage';
 import ReportsPage from './pages/ReportsPage';
 
 
+import ExploreSolutionsAdmin from '../components/ExploreSolutionsAdmin';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AdminRoutes — All admin route definitions
 // Future modules plug in here without touching the portal shell.
@@ -41,6 +43,7 @@ const AdminRoutes: React.FC = () => (
       <Route path="categories" element={<CategoriesPage />} />
       <Route path="brands" element={<BrandsPage />} />
       <Route path="combos" element={<ComboDealsPage />} />
+      <Route path="solutions" element={<ExploreSolutionsAdmin />} />
 
       {/* Homepage CMS — Phase 5B LIVE */}
       <Route path="homepage" element={<HomepagePage />} />

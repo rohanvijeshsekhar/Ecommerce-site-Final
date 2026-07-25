@@ -29,11 +29,11 @@ const WhyChoosePanel: React.FC = () => {
     <>
       {/* Desktop view */}
       <section className="hidden lg:block max-w-7xl mx-auto px-8 py-12 select-none">
-        <div className="bg-gradient-mint rounded-3xl border border-[#D5E6E5] overflow-hidden grid grid-cols-12 items-center min-h-[350px]">
+        <div className="bg-[#EAF8F8] rounded-3xl border border-[#E2E8F0] overflow-hidden grid grid-cols-12 items-center min-h-[350px] relative shadow-[0_4px_20px_rgba(0,95,99,0.04)]">
           
           {/* Left Column: Headline copy */}
-          <div className="col-span-4 p-10 text-left flex flex-col items-start justify-center">
-            <span className="text-xs font-extrabold text-[#006670] tracking-widest uppercase mb-2 block font-display">
+          <div className="col-span-4 p-10 text-left flex flex-col items-start justify-center relative z-10">
+            <span className="text-xs font-extrabold text-[#005F63] tracking-widest uppercase mb-2 block font-display">
               WHY CHOOSE FAAZO?
             </span>
             <h2 className="text-3xl font-black text-slate-800 tracking-tight leading-tight mb-6 font-display">
@@ -41,7 +41,7 @@ const WhyChoosePanel: React.FC = () => {
             </h2>
             <a 
               href="#about"
-              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-sm font-bold shadow transition-all cursor-pointer"
+              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold shadow transition-all cursor-pointer"
             >
               Learn More
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -49,7 +49,7 @@ const WhyChoosePanel: React.FC = () => {
           </div>
 
           {/* Center Column: Interactive Stats points */}
-          <div className="col-span-5 p-4 grid grid-cols-1 gap-6 text-left border-l border-r border-slate-200/50">
+          <div className="col-span-4 p-4 grid grid-cols-1 gap-5 text-left relative z-10">
             {points.map((pt, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-[#e6f3f5]">
@@ -67,16 +67,17 @@ const WhyChoosePanel: React.FC = () => {
             ))}
           </div>
 
-          {/* Right Column: Smiling Dentist image */}
-          <div className="col-span-3 h-full w-full flex items-end justify-center bg-gradient-to-t from-[#DCEFEF]/20 to-transparent">
+          {/* Right Column: Large Blended Dental Chair unit */}
+          <div className="col-span-4 h-full w-full relative flex items-center justify-center p-0 overflow-visible">
+            <div className="absolute inset-0 bg-radial from-[#005F63]/10 to-transparent blur-2xl pointer-events-none scale-125" />
             <img 
-              src="/images/dentist_smiling.png" 
-              alt="Smiling Professional Indian Dentist" 
+              src="/images/dental_chair_banner.png" 
+              alt="Ultra Modern Ergonomic Dental Chair" 
               style={{
-                WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-                maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)'
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%)'
               }}
-              className="h-auto max-h-[340px] w-auto object-contain block drop-shadow-[0_-5px_15px_rgba(0,0,0,0.04)]"
+              className="h-auto max-h-[420px] w-full object-contain object-center scale-125 translate-x-6 drop-shadow-[0_16px_36px_rgba(0,95,99,0.15)] relative z-10"
             />
           </div>
 
@@ -89,7 +90,7 @@ const WhyChoosePanel: React.FC = () => {
           
           {/* Top: Headline */}
           <div>
-            <span className="text-[10px] font-extrabold text-[#006670] tracking-widest uppercase mb-1.5 block font-sans">
+            <span className="text-[10px] font-extrabold text-[#005F63] tracking-widest uppercase mb-1.5 block font-sans">
               WHY CHOOSE FAAZO?
             </span>
             <h2 className="text-[28px] font-black text-slate-800 tracking-tight leading-tight font-display mb-4">
@@ -97,7 +98,7 @@ const WhyChoosePanel: React.FC = () => {
             </h2>
             <a 
               href="#about"
-              className="group inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold shadow transition-all cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-xs font-bold shadow transition-all cursor-pointer"
             >
               Learn More
               <ArrowRight className="w-3.5 h-3.5" />
@@ -123,16 +124,17 @@ const WhyChoosePanel: React.FC = () => {
             ))}
           </div>
 
-          {/* Bottom: Dentist Image */}
-          <div className="w-full flex justify-center bg-gradient-to-t from-[#DCEFEF]/20 to-transparent pt-4">
+          {/* Bottom: Large Blended Dental Chair Image */}
+          <div className="w-full relative flex justify-center pt-2 overflow-hidden">
+            <div className="absolute inset-0 bg-radial from-[#005F63]/15 to-transparent blur-xl pointer-events-none" />
             <img 
-              src="/images/dentist_smiling.png" 
-              alt="Smiling Professional Indian Dentist" 
+              src="/images/dental_chair_banner.png" 
+              alt="Ultra Modern Ergonomic Dental Chair" 
               style={{
-                WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-                maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)'
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 90%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%)'
               }}
-              className="h-auto max-h-[220px] w-auto object-contain block drop-shadow-[0_-5px_15px_rgba(0,0,0,0.04)]"
+              className="h-auto max-h-[300px] w-auto object-contain scale-110 block drop-shadow-[0_10px_24px_rgba(0,95,99,0.18)] relative z-10"
             />
           </div>
 

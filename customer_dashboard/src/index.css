@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-teal: #006670;
-  --color-primary-dark: #004e56;
-  --color-accent-orange: #F58734;
-  --color-clinical-mint: #e6f3f5;
-  --color-clinical-bg: #f4f8f9;
+  --color-primary-teal: #005F63;
+  --color-primary-dark: #0B7C80;
+  --color-accent-blue: #45AFED;
+  --color-clinical-mint: #EAF8F8;
+  --color-clinical-bg: #F8FAFC;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-display: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --shadow-premium: 0 10px 30px -10px rgba(0, 102, 112, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
-  --shadow-hover: 0 20px 40px -15px rgba(0, 102, 112, 0.15), 0 2px 8px rgba(0, 102, 112, 0.05);
+  --shadow-premium: 0 10px 30px -10px rgba(0, 95, 99, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 20px 40px -15px rgba(0, 95, 99, 0.15), 0 2px 8px rgba(0, 95, 99, 0.05);
   
   /* Consistent font weight mappings for premium med-tech style */
   --font-weight-bold: 600;      /* Nav, buttons, product names */

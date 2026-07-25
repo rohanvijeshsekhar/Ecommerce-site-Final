@@ -126,7 +126,8 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block max-w-7xl mx-auto px-8 py-14 select-none" id="featured-combos">
+      <section className="hidden md:block w-full bg-[#F8FAFC] border-y border-slate-200/60 py-16 select-none" id="featured-combos">
+        <div className="max-w-7xl mx-auto px-8">
         <style>{`
           .combo-swiper-pagination .swiper-pagination-bullet {
             background: #CBD5E1 !important;
@@ -287,10 +288,11 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
             </button>
           </div>
         </div>
+        </div>
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full px-5 py-8 select-none bg-slate-50" id="featured-combos-mobile">
+      <section className="block md:hidden w-full px-5 py-8 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="featured-combos-mobile">
         <div className="flex items-center justify-between mb-6 text-left">
           <div>
             <h2 className="text-xl font-black text-slate-800 tracking-tight">
