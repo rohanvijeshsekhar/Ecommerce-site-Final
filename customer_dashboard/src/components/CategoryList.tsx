@@ -73,6 +73,8 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   other:          <MaterialsBadgeIcon />,
 };
 
+const categoryMapping: Record<string, string> = {};
+
 // Helper to return small logo-type emoji badge for each category
 const getCategoryIconBadge = (title?: string, slug?: string, iconKey?: string): React.ReactNode => {
   const combined = `${title || ''} ${slug || ''} ${iconKey || ''}`.toLowerCase();
