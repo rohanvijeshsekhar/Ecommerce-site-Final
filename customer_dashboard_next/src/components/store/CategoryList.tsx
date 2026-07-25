@@ -18,26 +18,20 @@ interface CategoryItem {
 
 // Custom SVG Icons matching the reference design badges
 const HandpieceBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
-    <path d="M6 18L17 7" />
-    <path d="M15 5l4 4" />
-    <path d="M17 7l-2-2" />
-    <path d="M19 9l-2-2" />
-    <path d="M18 4l2-2" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 );
 
 const ImagingBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
-    <path d="M5 8c0 5 3 8 7 8s7-3 7-8" />
-    <path d="M9 12h6" />
-    <path d="M12 16v4" />
-    <path d="M8 20h8" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
   </svg>
 );
 
 const InstrumentsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
     <path d="M6 19 L15 10" />
     <path d="M15 10 C16 9, 17 9, 17.5 8 C18 7, 17.5 5.5, 16 5.5" />
     <path d="M10 19 L17 12" />
@@ -46,28 +40,25 @@ const InstrumentsBadgeIcon = () => (
 );
 
 const EquipmentBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
-    <path d="M12 5 v12" />
-    <path d="M9 17 h6 v3 c0 1, -6 1, -6 0 Z" />
-    <path d="M12 5 c1 0, 2 1, 2 2 v2 l-2 1" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
   </svg>
 );
 
 const MaterialsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
-    <rect x="7" y="9" width="10" height="11" rx="1.5" />
-    <path d="M10 9V6h4v3" />
-    <path d="M9 6h6" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
   </svg>
 );
 
 const ChairsBadgeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#006670" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5.5 h-5.5 text-[#006670]">
-    <path d="M4 18h16" />
-    <path d="M6 18V13h12v5" />
-    <path d="M8 13C8 10 10 8 12 8s4 2 4 5" />
-    <path d="M12 8V4" />
-    <path d="M10 4h4" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-[#006670] group-hover:text-white transition-colors duration-300">
+    <path d="M19 9l1.25-2.5A2 2 0 0 0 18.46 4H5.54a2 2 0 0 0-1.79 2.5L5 9" />
+    <path d="M5 9v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
+    <path d="M9 17v4" />
+    <path d="M15 17v4" />
   </svg>
 );
 
@@ -280,7 +271,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                   </div>
 
                   {/* Overlapping floating badge */}
-                  <div className="absolute top-[223px] left-6.5 z-10 w-13.5 h-13.5 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(0, 43, 46,0.05)] border border-white/80 group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.12)] border border-[#006670]/20 group-hover:scale-110 group-hover:bg-[#006670] group-hover:border-[#006670] transition-all duration-300">
                     {cat.icon}
                   </div>
 
@@ -352,7 +343,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                   </div>
 
                   {/* Overlapping floating badge */}
-                  <div className="absolute top-[122px] left-4 z-10 w-9 h-9 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0, 43, 46,0.03)] border border-white/80">
+                  <div className="absolute top-[118px] left-3.5 z-10 w-9 h-9 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-md border border-[#006670]/20 group-hover:bg-[#006670] transition-colors">
                     <div className="scale-90 flex items-center justify-center">
                       {cat.icon}
                     </div>
