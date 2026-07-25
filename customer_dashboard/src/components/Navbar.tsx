@@ -622,7 +622,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
             {/* Navigation Links */}
             <nav className="flex items-center text-slate-800 font-sans font-semibold text-[13px] tracking-[0.02em] gap-4">
-              <a href="#special-offers" onClick={(e) => { e.preventDefault(); setCurrentView('listing'); setSelectedCategory('Special Offers'); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Special Offers</a>
+              <a href="#special-offers" onClick={(e) => { e.preventDefault(); closeAllMenus(); setCurrentView('special-offers'); window.scrollTo(0, 0); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Special Offers</a>
               <span className="text-slate-300 select-none">•</span>
               <a href="#bestsellers" onClick={(e) => { e.preventDefault(); setCurrentView('home'); setTimeout(() => document.getElementById('bestsellers')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Bestsellers</a>
               <span className="text-slate-300 select-none">•</span>
