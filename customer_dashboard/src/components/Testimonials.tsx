@@ -125,7 +125,7 @@ const Testimonials: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
