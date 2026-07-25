@@ -642,95 +642,134 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
               {/* TAB 2: PRODUCT MAPPING */}
               {activeTab === 'products' && (
-                <div className="space-y-4">
-                  {/* Search Autocomplete */}
-                  <div className="relative">
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Search & Attach Products (by Name, SKU, or Brand)
-                    </label>
+                <div className="space-y-6">
+                  {/* Search & Available Products Section */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="block font-extrabold text-slate-800 text-xs">
+                        Search & Attach Products to Solution
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        Click any product below to attach it to this solution
+                      </span>
+                    </div>
+
                     <div className="relative">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
-                        placeholder="Type product name or SKU..."
+                        placeholder="Search by product name, SKU, or brand..."
                         value={productSearchInput}
                         onChange={(e) => setProductSearchInput(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:border-[#005F63]"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:border-[#005F63] text-xs"
                       />
                     </div>
 
-                    {/* Autocomplete Dropdown */}
-                    {searchResults.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-slate-100">
-                        {searchResults.map((prod) => (
-                          <div
-                            key={prod.id}
-                            onClick={() => handleAddProductToSolution(prod)}
-                            className="p-3 hover:bg-teal-50 flex items-center justify-between cursor-pointer transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={prod.image}
-                                alt={prod.name}
-                                className="w-8 h-8 rounded object-contain border border-slate-200"
-                              />
-                              <div>
-                                <span className="font-bold text-slate-800 block">
-                                  {prod.name}
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {prod.brand} • SKU: {prod.sku}
-                                </span>
+                    {/* Available Catalog Products */}
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                        Catalog Products ({searchResults.length})
+                      </span>
+
+                      {searchResults.length === 0 ? (
+                        <div className="p-4 text-center text-slate-400 font-medium text-xs">
+                          {searchingProducts ? 'Searching products...' : 'No catalog products match your search.'}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                          {searchResults.map((prod) => {
+                            const isAttached = selectedProducts.some((p) => String(p.id) === String(prod.id));
+                            return (
+                              <div
+                                key={prod.id}
+                                className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                                  isAttached
+                                    ? 'bg-teal-50/50 border-teal-200 opacity-70'
+                                    : 'bg-white border-slate-200 hover:border-[#005F63] hover:shadow-xs'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <img
+                                    src={prod.image}
+                                    alt={prod.name}
+                                    className="w-9 h-9 rounded-lg object-contain bg-slate-50 border border-slate-200 shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <span className="font-extrabold text-slate-800 text-xs block truncate">
+                                      {prod.name}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 block truncate">
+                                      {prod.brand} • ₹{(prod.price || 0).toLocaleString('en-IN')}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={isAttached}
+                                  onClick={() => handleAddProductToSolution(prod)}
+                                  className={`px-3 py-1 rounded-lg text-[10px] font-extrabold shrink-0 transition-all cursor-pointer ${
+                                    isAttached
+                                      ? 'bg-teal-100 text-teal-700 cursor-default'
+                                      : 'bg-[#005F63] hover:bg-[#0B7C80] text-white shadow-xs'
+                                  }`}
+                                >
+                                  {isAttached ? 'Attached' : '+ Attach'}
+                                </button>
                               </div>
-                            </div>
-                            <span className="text-xs font-black text-[#005F63]">
-                              ₹{prod.price.toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Selected Products List */}
+                  {/* Attached Products List */}
                   <div>
-                    <h4 className="font-extrabold text-slate-800 mb-2">
-                      Attached Products ({selectedProducts.length})
-                    </h4>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-black text-slate-800 text-sm font-display">
+                        Attached Products ({selectedProducts.length})
+                      </h4>
+                      {selectedProducts.length > 0 && (
+                        <span className="text-[10px] text-slate-500 font-semibold">
+                          Mark products as "Featured" to highlight them on the solution page
+                        </span>
+                      )}
+                    </div>
 
                     {selectedProducts.length === 0 ? (
-                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 font-semibold">
-                        No products attached to this solution yet. Search above to add products.
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 font-semibold text-xs">
+                        No products attached to this solution yet. Click "+ Attach" above to add products.
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {selectedProducts.map((p, idx) => (
                           <div
                             key={p.id}
-                            className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300"
+                            className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 shadow-2xs"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-[10px]">
+                              <span className="w-6 h-6 rounded-full bg-[#005F63]/10 text-[#005F63] font-black flex items-center justify-center text-[10px]">
                                 {idx + 1}
                               </span>
                               <div>
-                                <span className="font-bold text-slate-800 block">
+                                <span className="font-extrabold text-slate-800 text-xs block">
                                   {p.name}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
-                                  SKU: {p.sku} • ₹{p.price.toLocaleString('en-IN')}
+                                <span className="text-[10px] font-medium text-slate-500">
+                                  {p.brand} • SKU: {p.sku} • ₹{(p.price || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleToggleFeaturedProduct(p.id)}
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
                                   p.is_featured
-                                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                    : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                                 }`}
                               >
                                 <Star className={`w-3 h-3 ${p.is_featured ? 'fill-amber-500 stroke-amber-500' : ''}`} />
@@ -740,7 +779,8 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
                               <button
                                 type="button"
                                 onClick={() => handleRemoveProductFromSolution(p.id)}
-                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Remove Product"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
