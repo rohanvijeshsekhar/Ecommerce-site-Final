@@ -214,6 +214,8 @@ export const adminShippingService = {
     height?: number;
     warehouse?: string;
     dispatch_location?: string;
+    payment_mode?: string;
+    pickup_date?: string;
   }): Promise<APIResponse<Shipment>> => {
     const res = await api.post('/shipping/admin/shipments/create/', payload);
     return res.data;
