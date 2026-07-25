@@ -78,43 +78,81 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 const categoryMapping: Record<string, string> = {};
 
+// Helper to return small logo-type emoji badge for each category
+const getCategoryIconBadge = (title?: string, slug?: string, iconKey?: string): React.ReactNode => {
+  const combined = `${title || ''} ${slug || ''} ${iconKey || ''}`.toLowerCase();
+  
+  if (combined.includes('iphone') || combined.includes('phone') || combined.includes('mobile') || combined.includes('apple')) {
+    return <span className="text-[24px] leading-none select-none">📱</span>;
+  }
+  if (combined.includes('handpiece') || combined.includes('drill') || combined.includes('rotary')) {
+    return <span className="text-[24px] leading-none select-none">🦷</span>;
+  }
+  if (combined.includes('imaging') || combined.includes('camera') || combined.includes('scan') || combined.includes('x-ray') || combined.includes('xray')) {
+    return <span className="text-[24px] leading-none select-none">📷</span>;
+  }
+  if (combined.includes('instrument') || combined.includes('scaler') || combined.includes('forceps') || combined.includes('pliers')) {
+    return <span className="text-[24px] leading-none select-none">✂️</span>;
+  }
+  if (combined.includes('equipment') || combined.includes('compressor') || combined.includes('suction') || combined.includes('unit')) {
+    return <span className="text-[24px] leading-none select-none">🔌</span>;
+  }
+  if (combined.includes('chair') || combined.includes('seating') || combined.includes('stool')) {
+    return <span className="text-[24px] leading-none select-none">🪑</span>;
+  }
+  if (combined.includes('material') || combined.includes('composite') || combined.includes('cement') || combined.includes('impression')) {
+    return <span className="text-[24px] leading-none select-none">📦</span>;
+  }
+  if (combined.includes('steriliz') || combined.includes('autoclave') || combined.includes('clean')) {
+    return <span className="text-[24px] leading-none select-none">🧼</span>;
+  }
+  if (combined.includes('endo') || combined.includes('canal') || combined.includes('file')) {
+    return <span className="text-[24px] leading-none select-none">🩺</span>;
+  }
+  if (combined.includes('implant') || combined.includes('prosthetic')) {
+    return <span className="text-[24px] leading-none select-none">💎</span>;
+  }
+
+  return <span className="text-[24px] leading-none select-none">🏷️</span>;
+};
+
 // ─── Static fallback used when backend returns no categories ───────────────
 const STATIC_CATEGORIES: CategoryItem[] = [
   {
     id: 'dental-handpieces',
     title: 'Dental Handpieces',
     image: '/images/category_handpieces.png',
-    icon: <HandpieceBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">🦷</span>,
   },
   {
     id: 'dental-imaging',
     title: 'Dental Imaging',
     image: '/images/category_imaging.png',
-    icon: <ImagingBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">📷</span>,
   },
   {
     id: 'dental-instruments',
     title: 'Dental Instruments',
     image: '/images/category_instruments.png',
-    icon: <InstrumentsBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">✂️</span>,
   },
   {
     id: 'dental-equipment',
     title: 'Dental Equipment',
     image: '/images/category_equipment.png',
-    icon: <EquipmentBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">🔌</span>,
   },
   {
     id: 'dental-chairs',
     title: 'Dental Chairs',
     image: '/images/category_chairs.png',
-    icon: <ChairsBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">🪑</span>,
   },
   {
     id: 'dental-materials',
     title: 'Dental Materials',
     image: '/images/category_materials.png',
-    icon: <MaterialsBadgeIcon />,
+    icon: <span className="text-[24px] leading-none select-none">📦</span>,
   },
 ];
 
@@ -141,29 +179,23 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
 
     const mapCategory = (c: any): CategoryItem => {
       const slug = c.slug || '';
-      let iconKey = 'other';
-      if (slug.includes('handpiece')) iconKey = 'handpiece';
-      else if (slug.includes('camera') || slug.includes('scan') || slug.includes('imaging') || slug.includes('x-ray')) iconKey = 'imaging';
-      else if (slug.includes('instrument')) iconKey = 'instruments';
-      else if (slug.includes('compressor') || slug.includes('suction') || slug.includes('equipment')) iconKey = 'equipment';
-      else if (slug.includes('material') || slug.includes('composite')) iconKey = 'materials';
-      else if (slug.includes('chair') || slug.includes('seating') || slug.includes('stool')) iconKey = 'chairs';
-
+      const title = c.name || '';
       return {
-        id:    c.slug || String(c.id),
-        title: c.name,
+        id:    slug || String(c.id),
+        title: title,
         image: getAbsoluteImageUrl(c.image) || getCategoryFallbackImage(slug),
-        icon:  ICON_MAP[iconKey] ?? <MaterialsBadgeIcon />,
+        icon:  getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
     const mapHomepageCategory = (c: any): CategoryItem => {
       const slug = c.category_slug ?? c.category ?? '';
+      const title = c.display_title ?? c.category_name ?? '';
       return {
-        id:    c.category_slug ?? c.category,
-        title: c.display_title,
+        id:    slug,
+        title: title,
         image: getAbsoluteImageUrl(c.card_image_url) || getCategoryFallbackImage(slug),
-        icon:  ICON_MAP[c.icon_key] ?? <MaterialsBadgeIcon />,
+        icon:  getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
