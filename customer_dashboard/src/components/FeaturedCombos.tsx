@@ -283,7 +283,8 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
             </button>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* Mobile view */}
       <section className="block md:hidden w-full px-5 py-8 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="featured-combos-mobile">
