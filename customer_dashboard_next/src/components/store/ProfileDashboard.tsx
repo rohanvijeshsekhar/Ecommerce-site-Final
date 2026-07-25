@@ -73,13 +73,42 @@ interface SupportTicket {
 const TEAL = '#005B63';
 const ORANGE = '#F58220';
 
-const statusConfig = {
-  processing: { label: 'Processing', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-  shipped:    { label: 'Shipped',    color: 'text-blue-700  bg-blue-50  border-blue-200'  },
-  delivered:  { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-  cancelled:  { label: 'Cancelled',  color: 'text-rose-700  bg-rose-50   border-rose-200' },
-  returned:   { label: 'Returned',   color: 'text-slate-700 bg-slate-50  border-slate-200' },
+const getOrderStatusInfo = (status: string | undefined | null) => {
+  const normalized = (status || 'processing').toLowerCase().trim();
+  const configMap: Record<string, { label: string; color: string }> = {
+    pending:    { label: 'Pending',    color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    processing: { label: 'Processing', color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    confirmed:  { label: 'Confirmed',  color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    shipped:    { label: 'Shipped',    color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    delivered:  { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    cancelled:  { label: 'Cancelled',  color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    failed:     { label: 'Failed',     color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    returned:   { label: 'Returned',   color: 'text-slate-700 bg-slate-50 border-slate-200' },
+  };
+
+  return configMap[normalized] || {
+    label: (status || 'Processing').toString().toUpperCase(),
+    color: 'text-amber-700 bg-amber-50 border-amber-200'
+  };
 };
+
+const statusConfig = new Proxy(
+  {
+    pending:    { label: 'Pending',    color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    processing: { label: 'Processing', color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    confirmed:  { label: 'Confirmed',  color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    shipped:    { label: 'Shipped',    color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    delivered:  { label: 'Delivered',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    cancelled:  { label: 'Cancelled',  color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    failed:     { label: 'Failed',     color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    returned:   { label: 'Returned',   color: 'text-slate-700 bg-slate-50 border-slate-200' },
+  },
+  {
+    get(target, prop: string) {
+      return getOrderStatusInfo(prop);
+    }
+  }
+);
 
 const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
   <div className="mb-6">
