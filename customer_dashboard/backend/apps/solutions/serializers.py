@@ -1,3 +1,4 @@
+import uuid
 from rest_framework import serializers
 from .models import ClinicalSolution, ClinicalSolutionProduct
 from apps.products.models import Product
@@ -159,7 +160,6 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         featured_product_ids = set(str(pid) for pid in validated_data.pop("featured_product_ids", []))
         
         solution = ClinicalSolution.objects.create(**validated_data)
-        
         self._sync_products(solution, product_ids, featured_product_ids)
         return solution
 
@@ -182,20 +182,38 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         
         mappings = []
         for idx, pid in enumerate(product_ids):
+            pid_str = str(pid).strip()
+            prod = None
+            
+            # Try UUID lookup
             try:
-                prod = Product.objects.filter(id=pid).first() or Product.objects.filter(sku=pid).first()
-                if prod:
-                    is_feat = str(prod.id) in featured_product_ids or str(pid) in featured_product_ids
-                    mappings.append(
-                        ClinicalSolutionProduct(
-                            clinical_solution=solution,
-                            product=prod,
-                            display_order=idx + 1,
-                            is_featured=is_feat
-                        )
-                    )
+                valid_uuid = uuid.UUID(pid_str)
+                prod = Product.objects.filter(id=valid_uuid).first()
             except Exception:
-                continue
+                pass
+                
+            # Try SKU / Slug / Name lookup
+            if not prod:
+                prod = (
+                    Product.objects.filter(sku__iexact=pid_str).first() or
+                    Product.objects.filter(slug=pid_str).first() or
+                    Product.objects.filter(name__icontains=pid_str).first()
+                )
+                
+            if prod:
+                is_feat = (
+                    str(prod.id) in featured_product_ids or
+                    str(pid) in featured_product_ids or
+                    str(prod.sku) in featured_product_ids
+                )
+                mappings.append(
+                    ClinicalSolutionProduct(
+                        clinical_solution=solution,
+                        product=prod,
+                        display_order=idx + 1,
+                        is_featured=is_feat
+                    )
+                )
                 
         if mappings:
             ClinicalSolutionProduct.objects.bulk_create(mappings)

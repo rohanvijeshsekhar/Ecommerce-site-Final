@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import ClinicalSolution, ClinicalSolutionProduct
@@ -16,9 +16,7 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
     lookup_field = "slug"
 
     def get_permissions(self):
-        if self.action in ["list", "retrieve"]:
-            return [AllowAny()]
-        return [AllowAny()]  # Admin/Staff views allow public or authenticated access in dev
+        return [AllowAny()]
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -29,7 +27,6 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = ClinicalSolution.objects.all()
-        # If public non-admin query
         if not self.request.path.startswith("/api/v1/solutions/admin") and "admin" not in self.request.query_params:
             qs = qs.filter(is_active=True)
             if self.request.query_params.get("homepage") == "true":
@@ -39,7 +36,7 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         lookup = kwargs.get("slug")
         solution = None
-        if lookup.isdigit():
+        if str(lookup).isdigit():
             solution = ClinicalSolution.objects.filter(pk=lookup).first()
         if not solution:
             solution = ClinicalSolution.objects.filter(slug=lookup).first()
@@ -52,7 +49,6 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
         
-        # Filtering & Search for Admin or general list
         status_param = request.query_params.get("status")
         if status_param == "active":
             qs = qs.filter(is_active=True)
@@ -104,7 +100,9 @@ def admin_solutions_list_create(request):
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 def admin_solution_detail_update_delete(request, pk):
-    solution = ClinicalSolution.objects.filter(pk=pk).first()
+    solution = None
+    if str(pk).isdigit():
+        solution = ClinicalSolution.objects.filter(pk=pk).first()
     if not solution:
         solution = ClinicalSolution.objects.filter(slug=pk).first()
     if not solution:
@@ -133,7 +131,11 @@ def admin_solution_detail_update_delete(request, pk):
 @api_view(["PATCH"])
 @permission_classes([AllowAny])
 def admin_solution_toggle_status(request, pk):
-    solution = ClinicalSolution.objects.filter(pk=pk).first()
+    solution = None
+    if str(pk).isdigit():
+        solution = ClinicalSolution.objects.filter(pk=pk).first()
+    if not solution:
+        solution = ClinicalSolution.objects.filter(slug=pk).first()
     if not solution:
         return Response({"success": False, "message": "Clinical Solution not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -149,7 +151,7 @@ def admin_solution_toggle_status(request, pk):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def admin_solutions_reorder(request):
-    orders = request.data.get("orders", [])  # Expect [{ id: 1, display_order: 1 }, ...]
+    orders = request.data.get("orders", [])
     if not isinstance(orders, list):
         return Response({"success": False, "message": "Invalid orders payload format"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,6 +159,9 @@ def admin_solutions_reorder(request):
         sol_id = item.get("id")
         order_val = item.get("display_order")
         if sol_id is not None and order_val is not None:
-            ClinicalSolution.objects.filter(id=sol_id).update(display_order=order_val)
+            if str(sol_id).isdigit():
+                ClinicalSolution.objects.filter(id=sol_id).update(display_order=order_val)
+            else:
+                ClinicalSolution.objects.filter(slug=sol_id).update(display_order=order_val)
 
     return Response({"success": True, "message": "Display order updated successfully"})
