@@ -38,8 +38,9 @@ import { api } from './services/api';
 
 import SolutionDetailPage from './components/SolutionDetailPage';
 import ExploreSolutionsAdmin from './components/ExploreSolutionsAdmin';
+import OffersPage from './components/OffersPage';
 
-type AppView = 'home' | 'portfolio' | 'listing' | 'detail' | 'cart' | 'wishlist' | 'checkout' | 'order-success' | 'my-orders' | 'profile' | 'combo-deals' | 'combo-detail' | 'dealer-portal' | 'solution-detail';
+type AppView = 'home' | 'portfolio' | 'listing' | 'detail' | 'cart' | 'wishlist' | 'checkout' | 'order-success' | 'my-orders' | 'profile' | 'combo-deals' | 'combo-detail' | 'dealer-portal' | 'solution-detail' | 'special-offers';
 
 interface Order {
   id: string;
@@ -659,6 +660,18 @@ function App() {
             setCurrentView={setCurrentView}
             setDashboardSection={setDashboardSection}
             showToast={showToast}
+          />
+        ) : currentView === 'special-offers' ? (
+          <OffersPage
+            setCurrentView={setCurrentView}
+            setCartItems={setCartItems}
+            showToast={showToast}
+            onOpenLoginModal={openLoginModal}
+            onSelectSolution={(slug) => {
+              setSelectedSolutionSlug(slug);
+              setCurrentView('solution-detail');
+              window.scrollTo(0, 0);
+            }}
           />
         ) : currentView === 'my-orders' ? (
           <ProfileDashboard
