@@ -26,6 +26,7 @@ import ReportsPage from './pages/ReportsPage';
 
 
 import ExploreSolutionsAdmin from '../components/ExploreSolutionsAdmin';
+import SpecialOffersAdmin from './pages/SpecialOffersAdmin';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AdminRoutes — All admin route definitions
@@ -43,6 +44,7 @@ const AdminRoutes: React.FC = () => (
       <Route path="categories" element={<CategoriesPage />} />
       <Route path="brands" element={<BrandsPage />} />
       <Route path="combos" element={<ComboDealsPage />} />
+      <Route path="offers" element={<SpecialOffersAdmin />} />
       <Route path="solutions" element={<ExploreSolutionsAdmin />} />
 
       {/* Homepage CMS — Phase 5B LIVE */}

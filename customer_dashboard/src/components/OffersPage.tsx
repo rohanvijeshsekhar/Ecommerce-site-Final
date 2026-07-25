@@ -140,6 +140,24 @@ const OffersPage: React.FC<OffersPageProps> = ({
   onOpenLoginModal,
   onSelectSolution
 }) => {
+  const [offersList] = useState<OfferItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('faazo_admin_special_offers');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.filter((o: any) => o.isActive !== false).map((o: any, idx: number) => ({
+              ...o,
+              popularRank: idx + 1
+            }));
+          }
+        } catch (e) { console.error(e); }
+      }
+    }
+    return MOCK_OFFERS;
+  });
+
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedOfferType, setSelectedOfferType] = useState<string>('All');
@@ -148,7 +166,7 @@ const OffersPage: React.FC<OffersPageProps> = ({
 
   // Filtered & Sorted Offers list
   const filteredOffers = useMemo(() => {
-    return MOCK_OFFERS.filter(item => {
+    return offersList.filter(item => {
       if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
       if (selectedOfferType !== 'All' && item.offerType !== selectedOfferType) return false;
       if (selectedBrand !== 'All' && item.brand !== selectedBrand) return false;
@@ -162,9 +180,9 @@ const OffersPage: React.FC<OffersPageProps> = ({
       if (sortBy === 'newest') {
         return a.id.localeCompare(b.id);
       }
-      return a.popularRank - b.popularRank;
+      return (a.popularRank || 1) - (b.popularRank || 1);
     });
-  }, [selectedCategory, selectedOfferType, selectedBrand, sortBy]);
+  }, [offersList, selectedCategory, selectedOfferType, selectedBrand, sortBy]);
 
   const handleAddToCart = (offer: OfferItem) => {
     setCartItems(prev => {

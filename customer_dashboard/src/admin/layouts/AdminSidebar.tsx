@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
   BarChart3, Bell, UserCog, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck
+  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,6 +30,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'categories', label: 'Categories',    icon: 'Tag',              path: '/admin/categories' },
       { id: 'brands',     label: 'Brands',        icon: 'Award',            path: '/admin/brands'     },
       { id: 'combos',     label: 'Combo deals',   icon: 'Sparkles',         path: '/admin/combos'     },
+      { id: 'offers',     label: 'Limited offers',icon: 'Percent',          path: '/admin/offers'     },
       { id: 'solutions',  label: 'Explore Solutions', icon: 'Layers',       path: '/admin/solutions'  },
     ],
   },
@@ -77,7 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
-  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck,
+  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
