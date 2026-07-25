@@ -275,7 +275,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                       alt={cat.title}
                       fill
                       sizes="280px"
-                      className="object-contain p-6 mix-blend-multiply transform group-hover:scale-[1.05] transition-transform duration-500"
+                      className="object-cover transform group-hover:scale-[1.05] transition-transform duration-500"
                     />
                   </div>
 
@@ -347,7 +347,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                     <img
                       src={cat.image}
                       alt={cat.title}
-                      className="max-w-[75%] max-h-[75%] object-contain mix-blend-multiply"
+                      className="w-full h-full object-cover transform group-hover:scale-[1.05] transition-transform duration-500"
                     />
                   </div>
 
