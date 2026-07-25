@@ -7,7 +7,7 @@ import BrandShowcaseManager from '../components/homepage/BrandShowcaseManager';
 import BestSellersManager from '../components/homepage/BestSellersManager';
 import FeaturedCollectionsManager from '../components/homepage/FeaturedCollectionsManager';
 import LimitedOffersManager from '../components/homepage/LimitedOffersManager';
-import ExploreSolutionsManager from '../components/homepage/ExploreSolutionsManager';
+import ExploreSolutionsAdmin from '../../components/ExploreSolutionsAdmin';
 import TestimonialsManager from '../components/homepage/TestimonialsManager';
 import RecommendedManager from '../components/homepage/RecommendedManager';
 
@@ -59,7 +59,7 @@ const HomepagePage: React.FC = () => {
       case 'bestsellers':  return <BestSellersManager />;
       case 'collections':  return <FeaturedCollectionsManager />;
       case 'offers':       return <LimitedOffersManager />;
-      case 'solutions':    return <ExploreSolutionsManager />;
+      case 'solutions':    return <ExploreSolutionsAdmin />;
       case 'testimonials': return <TestimonialsManager />;
       case 'recommended':  return <RecommendedManager />;
       default:             return null;
