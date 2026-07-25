@@ -96,10 +96,10 @@ const Testimonials: React.FC = () => {
                 className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_28px_rgba(0,102,112,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
               >
               <div>
-                <Quote className="w-8 h-8 text-[#006670]/25 mb-4 transform -scale-x-100" />
-                <p className="text-sm font-medium text-slate-700 italic leading-relaxed min-h-[72px]">
-                  "{rev.quote}"
-                </p>
+                    <Quote className="w-8 h-8 text-[#005F63] opacity-25 mb-4 transform -scale-x-100" />
+                    <p className="text-sm font-medium text-slate-700 italic leading-relaxed min-h-[72px]">
+                      &quot;{rev.quote}&quot;
+                    </p>
                 
                 {/* Star Rating */}
                 <div className="flex items-center text-amber-500 gap-0.5 mt-4 mb-6">
@@ -159,9 +159,9 @@ const Testimonials: React.FC = () => {
               <SwiperSlide key={rev.id}>
                 <div className="bg-[#F7FAF9] border border-slate-100 rounded-2xl p-6 text-left flex flex-col justify-between min-h-[300px]">
                   <div>
-                    <Quote className="w-8 h-8 text-[#006670]/25 mb-4 transform -scale-x-100" />
+                    <Quote className="w-8 h-8 text-[#005F63] opacity-25 mb-4 transform -scale-x-100" />
                     <p className="text-sm font-medium text-slate-700 italic leading-relaxed mb-4 font-sans">
-                      "{rev.quote}"
+                      &quot;{rev.quote}&quot;
                     </p>
                     
                     <div className="flex items-center text-amber-500 gap-0.5 mb-6">
