@@ -42,7 +42,7 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
 class ClinicalSolutionListSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
-    product_count = serializers.IntegerField(source="product_count", read_only=True)
+    product_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ClinicalSolution
@@ -78,7 +78,7 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
     products = ClinicalSolutionProductSerializer(source="solution_products", many=True, read_only=True)
-    product_count = serializers.IntegerField(source="product_count", read_only=True)
+    product_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ClinicalSolution
