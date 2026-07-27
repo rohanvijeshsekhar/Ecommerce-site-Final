@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import CategoryMegaMenu from './CategoryMegaMenu';
 import { useCategories } from '../../hooks/useCategories';
 import {
@@ -124,6 +125,7 @@ const Navbar: React.FC<NavbarProps> = ({
   setDashboardSection,
   setActiveComboId
 }) => {
+  const router = useRouter();
   const { user, isAuthenticated, logout, setPendingAction } = useAuth();
   const categoriesList = useCategories();
 
@@ -302,8 +304,10 @@ const Navbar: React.FC<NavbarProps> = ({
   const handleMegaMenuCategoryClick = (name: string, e: React.MouseEvent) => {
     e.preventDefault();
     closeAllMenus();
-    setSelectedCategory(name);
-    setCurrentView('listing');
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    router.push(`/categories/${slug}`);
+    if (setSelectedCategory) setSelectedCategory(name);
+    if (setCurrentView) setCurrentView('listing');
     window.scrollTo(0, 0);
   };
 
@@ -600,7 +604,11 @@ const Navbar: React.FC<NavbarProps> = ({
               onMouseLeave={handleMouseLeave}
             >
               <button
-                onClick={(e) => { e.preventDefault(); if (activeMenu === 'categories') { closeAllMenus(); } else { handleMouseEnter('categories'); } }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeAllMenus();
+                  router.push('/categories');
+                }}
                 className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${
                   activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'
                 }`}

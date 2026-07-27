@@ -33,12 +33,10 @@ export const notifyCategoriesChange = () => {
 };
 
 export const fetchCategoriesTree = () => {
-  if (CATEGORIES.length > 0 || isFetching) return;
-  isFetching = true;
   api.get('categories/tree/')
     .then(res => {
       const payload = res.data?.data ?? res.data ?? [];
-      if (Array.isArray(payload)) {
+      if (Array.isArray(payload) && payload.length > 0) {
         const mapped = payload.map((c: any) => ({
           id: c.id,
           slug: c.slug || c.id,
@@ -48,7 +46,7 @@ export const fetchCategoriesTree = () => {
             id: sub.id,
             slug: sub.slug || sub.id,
             name: sub.name,
-            count: sub.active_product_count ?? 0,
+            count: sub.active_product_count ?? (sub.children ? sub.children.length : 0),
             subItems: (sub.children || []).map((child: any) => ({
               id: child.id,
               slug: child.slug || child.id,
@@ -60,11 +58,9 @@ export const fetchCategoriesTree = () => {
         CATEGORIES.push(...mapped);
         notifyCategoriesChange();
       }
-      isFetching = false;
     })
     .catch(err => {
       console.error('Failed to load categories tree:', err);
-      isFetching = false;
     });
 };
 

@@ -14,7 +14,7 @@ import {
   Settings
 } from 'lucide-react';
 import { api } from '../../lib/api';
-import { useCategories, CATEGORIES } from '../../hooks/useCategories';
+import { useCategories, CATEGORIES, fetchCategoriesTree } from '../../hooks/useCategories';
 import type { Category } from '../../hooks/useCategories';
 
 const getCategoryIcon = (id: string) => {
@@ -28,6 +28,178 @@ const getCategoryIcon = (id: string) => {
   return <Settings className="w-3.5 h-3.5" />;
 };
 
+
+const DEFAULT_STATIC_CATEGORIES: Category[] = [
+  {
+    id: 'dental-handpieces',
+    slug: 'dental-handpieces',
+    icon: '📁',
+    label: 'Dental Handpieces',
+    subCategories: [
+      {
+        id: 'high-speed-air-turbines',
+        slug: 'high-speed-air-turbines',
+        name: 'High Speed Air Turbines',
+        count: 14,
+        subItems: [
+          { id: 'led-optics', slug: 'led-optics', name: 'LED Optics Turbines' },
+          { id: 'standard-4-hole', slug: 'standard-4-hole', name: 'Standard 4-Hole Handpieces' },
+          { id: 'quick-connect-couplings', slug: 'quick-connect-couplings', name: 'Quick Connect Couplings' },
+        ],
+      },
+      {
+        id: 'low-speed-contra-angles',
+        slug: 'low-speed-contra-angles',
+        name: 'Low Speed Contra Angles',
+        count: 12,
+        subItems: [
+          { id: '1-1-latch-type', slug: '1-1-latch-type', name: '1:1 Latch Type Handpieces' },
+          { id: '1-5-increasing', slug: '1-5-increasing', name: '1:5 Speed Increasing Friction Grip' },
+          { id: 'straight-handpieces', slug: 'straight-handpieces', name: 'Straight Handpieces' },
+        ],
+      },
+      {
+        id: 'endo-motors-apex-locators',
+        slug: 'endo-motors-apex-locators',
+        name: 'Endo Motors & Apex Locators',
+        count: 8,
+        subItems: [
+          { id: 'reciprocating-endo-motors', slug: 'reciprocating-endo-motors', name: 'Reciprocating Endo Motors' },
+          { id: 'integrated-apex-locators', slug: 'integrated-apex-locators', name: 'Integrated Apex Locators' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'intraoral-cameras',
+    slug: 'intraoral-cameras',
+    icon: '📁',
+    label: 'Intraoral Cameras',
+    subCategories: [
+      {
+        id: 'hd-usb-intraoral-cameras',
+        slug: 'hd-usb-intraoral-cameras',
+        name: 'HD USB Intraoral Cameras',
+        count: 6,
+        subItems: [
+          { id: 'auto-focus-cameras', slug: 'auto-focus-cameras', name: 'Auto-Focus HD Cameras' },
+          { id: 'wireless-wifi-cameras', slug: 'wireless-wifi-cameras', name: 'Wireless Wi-Fi Cameras' },
+        ],
+      },
+      {
+        id: 'imaging-software-mounts',
+        slug: 'imaging-software-mounts',
+        name: 'Imaging Software & Mounts',
+        count: 4,
+        subItems: [
+          { id: 'patient-education-software', slug: 'patient-education-software', name: 'Patient Education Software' },
+          { id: 'monitor-arm-mounts', slug: 'monitor-arm-mounts', name: 'Monitor Arm Mounts' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'led-light-cure-units',
+    slug: 'led-light-cure-units',
+    icon: '📁',
+    label: 'LED Light Cure Units',
+    subCategories: [
+      {
+        id: 'broadband-led-curing-lights',
+        slug: 'broadband-led-curing-lights',
+        name: 'Broadband LED Curing Lights',
+        count: 9,
+        subItems: [
+          { id: 'high-intensity-cure-lights', slug: 'high-intensity-cure-lights', name: 'High-Intensity 1-Sec Curing Lights' },
+          { id: 'caries-detection-lights', slug: 'caries-detection-lights', name: 'Caries Detection Lights' },
+        ],
+      },
+      {
+        id: 'cordless-curing-units',
+        slug: 'cordless-curing-units',
+        name: 'Cordless Curing Units',
+        count: 7,
+        subItems: [
+          { id: 'ergonomic-pen-type', slug: 'ergonomic-pen-type', name: 'Ergonomic Pen-Type Units' },
+          { id: 'light-guides-radiometers', slug: 'light-guides-radiometers', name: 'Light Guides & Radiometers' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dental-chairs',
+    slug: 'dental-chairs',
+    icon: '📁',
+    label: 'Dental Chairs & Units',
+    subCategories: [
+      {
+        id: 'electromechanical-chairs',
+        slug: 'electromechanical-chairs',
+        name: 'Electromechanical Dental Chairs',
+        count: 5,
+        subItems: [
+          { id: 'premium-pedestal-units', slug: 'premium-pedestal-units', name: 'Premium Pedestal Units' },
+          { id: 'over-the-patient-delivery', slug: 'over-the-patient-delivery', name: 'Over-the-Patient Delivery Units' },
+        ],
+      },
+      {
+        id: 'operating-lights-stools',
+        slug: 'operating-lights-stools',
+        name: 'Operating Lights & Doctor Stools',
+        count: 11,
+        subItems: [
+          { id: 'sensor-led-lights', slug: 'sensor-led-lights', name: 'Sensor LED Operating Lights' },
+          { id: 'doctor-stools', slug: 'doctor-stools', name: 'Ergonomic Doctor & Assistant Stools' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '3d-oral-scanners',
+    slug: '3d-oral-scanners',
+    icon: '📁',
+    label: '3D Oral Scanners',
+    subCategories: [
+      {
+        id: 'intraoral-3d-scanners',
+        slug: 'intraoral-3d-scanners',
+        name: 'Intraoral 3D Scanners',
+        count: 4,
+        subItems: [
+          { id: 'powderless-color-scanners', slug: 'powderless-color-scanners', name: 'Powderless Full-Color Scanners' },
+          { id: 'cad-cam-restorative-scanners', slug: 'cad-cam-restorative-scanners', name: 'CAD/CAM Restorative Scanners' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dental-air-compressors',
+    slug: 'dental-air-compressors',
+    icon: '📁',
+    label: 'Dental Air Compressors & Suctions',
+    subCategories: [
+      {
+        id: 'oil-free-air-compressors',
+        slug: 'oil-free-air-compressors',
+        name: 'Oil-Free Air Compressors',
+        count: 6,
+        subItems: [
+          { id: 'silent-oil-free-compressors', slug: 'silent-oil-free-compressors', name: 'Silent Medical Oil-Free Compressors' },
+          { id: 'desiccant-air-dryers', slug: 'desiccant-air-dryers', name: 'Desiccant Air Dryer Systems' },
+        ],
+      },
+      {
+        id: 'high-vacuum-suction-units',
+        slug: 'high-vacuum-suction-units',
+        name: 'High Vacuum Suction Units',
+        count: 5,
+        subItems: [
+          { id: 'wet-dry-suction-pumps', slug: 'wet-dry-suction-pumps', name: 'Wet & Dry Suction Pumps' },
+        ],
+      },
+    ],
+  },
+];
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 interface CategoryMegaMenuProps {
@@ -48,6 +220,8 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
   // ── raw data from API / DB ────────────────────────────────────────
   interface RawCategory { id: string; name: string; slug: string; active_product_count: number; children: RawCategory[]; }
   const dbCategories = useCategories();
+  const categoriesToDisplay = dbCategories.length > 0 ? dbCategories : DEFAULT_STATIC_CATEGORIES;
+
   const [rawTree, setRawTree] = useState<RawCategory[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('');
   const [hoveredSubCatIdx, setHoveredSubCatIdx] = useState<number | null>(null);
@@ -56,6 +230,7 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      fetchCategoriesTree();
       api.get('products/?page_size=200')
         .then(res => {
           const prods = res.data?.data ?? res.data ?? [];
@@ -77,13 +252,12 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
 
   // Sync initial selected ID once categories load or on start
   useEffect(() => {
-    if (dbCategories.length > 0 && !selectedCatId) {
-      setSelectedCatId(dbCategories[0].id);
+    if (categoriesToDisplay.length > 0 && !selectedCatId) {
+      setSelectedCatId(categoriesToDisplay[0].id);
     }
-  }, [dbCategories, selectedCatId]);
+  }, [categoriesToDisplay, selectedCatId]);
 
-
-  const activeCat = dbCategories.find(c => c.id === selectedCatId) ?? dbCategories[0] ?? CATEGORIES[0];
+  const activeCat = categoriesToDisplay.find(c => c.id === selectedCatId) ?? categoriesToDisplay[0];
 
   // Does this category have any subcategories at all?
   const isLeafRoot = activeCat ? activeCat.subCategories.length === 0 : false;
@@ -108,7 +282,7 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
 
   // Filter categories based on search
   const filteredCategories = searchQuery.trim()
-    ? dbCategories.filter(
+    ? categoriesToDisplay.filter(
         cat =>
           cat.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
           cat.subCategories.some(
@@ -119,7 +293,7 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
               )
           )
       )
-    : dbCategories;
+    : categoriesToDisplay;
 
   const handleCatSelect = (catId: string) => {
     setSelectedCatId(catId);
@@ -137,13 +311,13 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
     <div
       className={`
         hidden lg:block absolute left-1/2 -translate-x-1/2 w-full max-w-7xl px-6 md:px-12
-        z-[45] transition-all duration-250 ease-out text-left select-none
+        top-full z-[100] transition-all duration-250 ease-out text-left select-none
         ${isOpen
           ? 'opacity-100 translate-y-0 pointer-events-auto visible'
           : 'opacity-0 -translate-y-2 pointer-events-none invisible'
         }
       `}
-      style={{ top: 'calc(100% + 8px)' }}
+      style={{ top: 'calc(100% + 4px)' }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={() => {
         onMouseLeave();

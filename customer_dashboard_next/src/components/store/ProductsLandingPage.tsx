@@ -41,8 +41,8 @@ interface CategoryCard {
 }
 
 interface ProductsLandingPageProps {
-  onCategoryClick: (categoryName: string) => void;
-  setCurrentView: (view: 'home' | 'portfolio' | 'listing' | 'detail') => void;
+  onCategoryClick?: (categoryName: string) => void;
+  setCurrentView?: (view: 'home' | 'portfolio' | 'listing' | 'detail') => void;
   onProductClick?: (productId: string) => void;
 }
 
@@ -356,7 +356,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
             count: prods.length > 0 ? `${prods.length} items` : null,
             onClick: (e: React.MouseEvent) => {
               e.preventDefault();
-              onCategoryClick(child.name);
+              onCategoryClick?.(child.name);
             }
           });
         });
@@ -375,7 +375,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
             if (onProductClick) {
               onProductClick(p.slug);
             } else {
-              onCategoryClick(sub.name);
+              onCategoryClick?.(sub.name);
             }
           }
         });
@@ -597,7 +597,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
                     <div key={idx} className="space-y-2.5">
                       {/* Subcategory title */}
                       <div
-                        onClick={() => onCategoryClick(sub.name)}
+                        onClick={() => onCategoryClick?.(sub.name)}
                         className="flex items-center justify-between bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-md border border-slate-100/50 cursor-pointer active:scale-[0.98] transition-all"
                       >
                         <span className="text-[11px] font-extrabold text-[#006670] hover:underline">{sub.name}</span>
@@ -717,7 +717,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
               {manufacturedCategories.map((cat) => (
                 <div
                   key={cat.id}
-                  onClick={() => onCategoryClick(cat.id)}
+                  onClick={() => onCategoryClick?.(cat.id)}
                   className="group bg-[#F8FAFB] rounded-[24px] border border-slate-100/50 p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0, 43, 46,0.04)] hover:border-[#006670]/15"
                 >
                   <div>
@@ -771,7 +771,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
               {importedCategories.map((cat) => (
                 <div
                   key={cat.id}
-                  onClick={() => onCategoryClick(cat.id)}
+                  onClick={() => onCategoryClick?.(cat.id)}
                   className="group bg-[#F8FAFB] rounded-[24px] border border-slate-100/50 p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0, 43, 46,0.04)] hover:border-[#006670]/15"
                 >
                   <div>
@@ -912,7 +912,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
 
             <div className="flex items-center gap-4 mt-2 md:mt-0">
               <button
-                onClick={() => setCurrentView('home')}
+                onClick={() => setCurrentView?.('home')}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] cursor-pointer"
               >
                 Learn About Workflows
@@ -950,7 +950,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
                   key={idx}
                   onClick={() => {
                     const targetCat = specialtyCategoryMap[spec.title] || spec.title;
-                    onCategoryClick(targetCat);
+                    onCategoryClick?.(targetCat);
                   }}
                   className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] flex-shrink-0 group bg-[#F8FAFB] rounded-2xl border border-slate-100 overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-[0_12px_35px_rgba(0, 43, 46,0.03)] hover:border-[#006670]/15 cursor-pointer hover:-translate-y-1"
                 >
@@ -1007,7 +1007,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
                   if (col.title === 'Most Popular') target = 'Best Sellers';
                   if (col.title === 'Premium Equipment') target = 'Dental Chairs';
                   if (col.title === 'Clinical Essentials') target = 'Dental Handpieces';
-                  onCategoryClick(target);
+                  onCategoryClick?.(target);
                 }}
                 className={`min-w-[240px] md:min-w-0 bg-gradient-to-br ${col.bg} rounded-[20px] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer`}
               >

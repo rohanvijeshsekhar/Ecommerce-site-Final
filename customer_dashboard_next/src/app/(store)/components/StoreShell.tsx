@@ -123,10 +123,10 @@ export default function StoreShell({ children }: StoreShellProps) {
 
           {/* CATEGORIES */}
           <button
-            onClick={() => { router.push('/products'); window.scrollTo(0, 0); }}
-            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname === '/products' ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
+            onClick={() => { router.push('/categories'); window.scrollTo(0, 0); }}
+            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname.startsWith('/categories') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
           >
-            <LayoutGrid className={`w-[20px] h-[20px] transition-all duration-150 ${pathname === '/products' ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
+            <LayoutGrid className={`w-[20px] h-[20px] transition-all duration-150 ${pathname.startsWith('/categories') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
             <span className="text-[9px] font-bold tracking-wider mt-1 select-none">CATEGORIES</span>
           </button>
 

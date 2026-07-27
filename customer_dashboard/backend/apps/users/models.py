@@ -110,6 +110,31 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name="Email Verified",
     )
 
+    # ── Security & Account Locking ──────────────────────────────
+    failed_login_attempts = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Failed Login Attempts",
+        help_text="Consecutive failed login attempts.",
+    )
+    locked_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Locked Until",
+        help_text="Account locked until this timestamp.",
+    )
+    last_login_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Last Login At",
+        help_text="Timestamp of last successful login.",
+    )
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Terms Accepted At",
+        help_text="Timestamp when terms & conditions were accepted.",
+    )
+
     # ── Account Status ──────────────────────────────────────────
     is_active = models.BooleanField(
         default=True,
@@ -165,6 +190,41 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin_user(self) -> bool:
         return self.role == UserRole.ADMIN or self.is_superuser
+
+    @property
+    def is_locked(self) -> bool:
+        """Check if account is currently locked out."""
+        if self.locked_until and timezone.now() < self.locked_until:
+            return True
+        return False
+
+    @property
+    def phone(self) -> str | None:
+        """Alias for phone_number to ensure multi-module compatibility."""
+        return self.phone_number
+
+    @phone.setter
+    def phone(self, value: str | None) -> None:
+        self.phone_number = value
+
+    @property
+    def email_verified(self) -> bool:
+        """Alias for is_email_verified."""
+        return self.is_email_verified
+
+    @email_verified.setter
+    def email_verified(self, value: bool) -> None:
+        self.is_email_verified = value
+
+    @property
+    def phone_verified(self) -> bool:
+        """Alias for is_phone_verified."""
+        return self.is_phone_verified
+
+    @phone_verified.setter
+    def phone_verified(self, value: bool) -> None:
+        self.is_phone_verified = value
+
 
 
 # ============================================================

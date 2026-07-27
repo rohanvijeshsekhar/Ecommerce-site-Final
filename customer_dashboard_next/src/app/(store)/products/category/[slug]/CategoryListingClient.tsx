@@ -7,13 +7,14 @@ import ProductListingPage from '@/components/store/ProductListingPage';
 import { getCategoryDisplayName } from '@/lib/utils';
 
 interface CategoryListingClientProps {
-  slug: string;
+  slug?: string;
+  categoryName?: string;
 }
 
-export default function CategoryListingClient({ slug }: CategoryListingClientProps) {
+export default function CategoryListingClient({ slug, categoryName }: CategoryListingClientProps) {
   const router = useRouter();
   const store = useStore();
-  const categoryDisplayName = getCategoryDisplayName(slug);
+  const categoryDisplayName = categoryName || (slug ? getCategoryDisplayName(slug) : 'All Products');
 
   const handleProductClick = (productSlug: string) => {
     router.push(`/products/${productSlug}`);

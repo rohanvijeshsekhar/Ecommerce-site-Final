@@ -13,8 +13,10 @@ import type { PendingAction } from '../types/pendingAction';
 
 export interface AuthContextType {
   user: UserMinimal | null;
+  adminUser?: UserMinimal | null;
   profile: UserProfile | null;
   isAuthenticated: boolean;
+  isAdminAuthenticated?: boolean;
   isLoading: boolean;
   pendingAction: PendingAction | null;
   setPendingAction: (action: PendingAction | null) => void;
@@ -234,8 +236,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         user,
+        adminUser: user?.role === 'admin' ? user : null,
         profile,
         isAuthenticated: !!user,
+        isAdminAuthenticated: user?.role === 'admin',
         isLoading,
         pendingAction,
         setPendingAction,
