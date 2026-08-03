@@ -599,4 +599,3 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 };
 
 export default OrderDetailPage;
-export default OrderDetailPage;
