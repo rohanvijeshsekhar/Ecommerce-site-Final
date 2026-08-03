@@ -29,9 +29,14 @@ class UserRole(models.TextChoices):
     DEALER = "dealer", "Dealer"
     ADMIN = "admin", "Administrator"
 
-    # Future roles — uncomment when needed:
-    # DISTRIBUTOR = "distributor", "Distributor"
-    # HOSPITAL    = "hospital",    "Hospital / Institution"
+
+# ============================================================
+# Auth Provider Choices
+# ============================================================
+
+class AuthProvider(models.TextChoices):
+    EMAIL = "email", "Email & Password"
+    GOOGLE = "google", "Google OAuth"
 
 
 # ============================================================
@@ -79,6 +84,29 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=UserRole.CUSTOMER,
         db_index=True,
         verbose_name="Role",
+    )
+    auth_provider = models.CharField(
+        max_length=20,
+        choices=AuthProvider.choices,
+        default=AuthProvider.EMAIL,
+        db_index=True,
+        verbose_name="Authentication Provider",
+    )
+    google_sub = models.CharField(
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Google Subject ID",
+        help_text="Unique Subject ID assigned by Google OAuth 2.0.",
+    )
+    profile_picture = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Profile Picture URL",
+        help_text="URL to user's Google avatar or uploaded profile image.",
     )
 
     # ── Phone (future-ready for OTP verification) ──────────────
@@ -194,8 +222,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_locked(self) -> bool:
         """Check if account is currently locked out."""
-        if self.locked_until and timezone.now() < self.locked_until:
-            return True
+        if self.locked_until:
+            return timezone.now().timestamp() < self.locked_until.timestamp()
         return False
 
     @property

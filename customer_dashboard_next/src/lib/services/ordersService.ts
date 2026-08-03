@@ -76,4 +76,27 @@ export const ordersService = {
     const response = await api.post(`orders/${id}/cancel/`, { reason });
     return response.data;
   },
+
+  async getShipmentTracking(orderId: string): Promise<ApiResponse<any>> {
+    const response = await api.get(`orders/${orderId}/shipment/`);
+    return response.data;
+  },
+
+  async checkPincode(pincode: string, weight = 1.0, cod = false): Promise<ApiResponse<any>> {
+    const response = await api.post('shipping/pincode-check/', { pincode, weight, cod });
+    return response.data;
+  },
+
+  async calculateShippingCost(data: {
+    subtotal: number;
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
+    destination_pincode: string;
+    is_cod?: boolean;
+  }): Promise<ApiResponse<any>> {
+    const response = await api.post('shipping/calculate-cost/', data);
+    return response.data;
+  },
 };

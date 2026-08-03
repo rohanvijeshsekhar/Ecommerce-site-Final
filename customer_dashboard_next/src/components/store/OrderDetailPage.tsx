@@ -134,7 +134,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   return (
     <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
       <div className="max-w-4xl mx-auto px-4 md:px-6">
-        
+
         {/* Back and Page Actions */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <button
@@ -144,7 +144,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             <ArrowLeft className="w-4.5 h-4.5" />
             Back to Orders
           </button>
-          
+
           <div className="flex gap-2.5">
             <button
               onClick={() => setShowInvoiceModal(true)}
@@ -177,8 +177,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
               <span className={`text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full border block w-fit
                 ${order.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
                   order.status === 'cancelled' ? 'bg-rose-50 border-rose-100 text-rose-600' :
-                  order.status === 'processing' ? 'bg-amber-50 border-amber-100 text-amber-500' :
-                  'bg-slate-100 border-slate-200 text-slate-500'}`}>
+                    order.status === 'processing' ? 'bg-amber-50 border-amber-100 text-amber-500' :
+                      'bg-slate-100 border-slate-200 text-slate-500'}`}>
                 {getStatusLabel(order.status)}
               </span>
             </div>
@@ -223,8 +223,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                 return (
                   <div key={step.key} className="flex md:flex-col items-center gap-3 md:gap-2.5 relative z-10 text-left md:text-center flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center border font-black text-xs transition-colors
-                      ${isActive 
-                        ? 'bg-[#006670] border-[#006670] text-white shadow-sm' 
+                      ${isActive
+                        ? 'bg-[#006670] border-[#006670] text-white shadow-sm'
                         : 'bg-white border-slate-200 text-slate-400'}`}>
                       {isActive ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                     </div>
@@ -436,7 +436,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             {/* Invoice print sheet */}
             <div className="flex-grow p-8 overflow-y-auto bg-white print:p-0" id="print-invoice-sheet">
               {/* Styling specifically for printing layout */}
-              <style dangerouslySetInnerHTML={{__html: `
+              <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                   body * {
                     visibility: hidden;
@@ -568,4 +569,5 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   );
 };
 
+export default OrderDetailPage;
 export default OrderDetailPage;

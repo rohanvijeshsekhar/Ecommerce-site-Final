@@ -331,6 +331,45 @@ class Shipment(BaseModel):
         null=True,
         verbose_name="Last Synced At",
     )
+
+    # ── Courier & Failure Recovery Details ───────────────────
+    courier_code = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Courier Code",
+    )
+    courier_contact = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Courier Contact",
+    )
+    failure_reason = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Failure Reason",
+    )
+    last_error_code = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Last Error Code",
+    )
+    raw_provider_response = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Raw Provider Response",
+    )
+    retry_count = models.IntegerField(
+        default=0,
+        verbose_name="Retry Count",
+    )
+    max_retries_exceeded = models.BooleanField(
+        default=False,
+        verbose_name="Max Retries Exceeded",
+    )
+
     is_deleted = models.BooleanField(
         default=False,
         verbose_name="Is Deleted (Soft)",
@@ -523,6 +562,11 @@ class DelhiveryWebhookLog(BaseModel):
         verbose_name = "Delhivery Webhook Log"
         verbose_name_plural = "Delhivery Webhook Logs"
         ordering = ["-received_at"]
+
+
+# Alias for clean Shiprocket webhook logging
+ShiprocketWebhookLog = DelhiveryWebhookLog
+
 
 
 class ShippingAPILog(BaseModel):

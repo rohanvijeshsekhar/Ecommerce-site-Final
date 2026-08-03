@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../lib/services/auth';
 import {
@@ -15,10 +16,42 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-type ModalMode = 'login' | 'register' | 'dealer-register' | 'forgot-password';
+type ModalMode = 'login' | 'register' | 'dealer-register' | 'forgot-password' | 'otp-verify';
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const { login, register, dealerRegister, pendingAction } = useAuth();
+  const { login, register, dealerRegister, verifyOTP, resendOTP, refreshUser, pendingAction, preRegister, verifyAndRegister, googleLogin } = useAuth();
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) {
+      setApiError('Failed to retrieve Google ID Token.');
+      return;
+    }
+    setIsSubmitting(true);
+    setApiError(null);
+    setSuccessMessage(null);
+    try {
+      const resData = await googleLogin(credentialResponse.credential);
+      const action = resData?.auth_action;
+      if (action === 'GOOGLE_SIGNUP') {
+        setSuccessMessage('Welcome to FAAZO! Your account has been created.');
+      } else if (action === 'GOOGLE_ACCOUNT_LINKED') {
+        setSuccessMessage('Google account linked successfully!');
+      } else {
+        setSuccessMessage('Welcome back! Successfully logged in with Google.');
+      }
+      setTimeout(() => {
+        onClose();
+        resetForm();
+      }, 1200);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message;
+      setApiError(msg || 'No account found with this Google email. Please register before signing in.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const hasGoogleClientId = !!(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.trim());
 
   // Contextual messaging based on pending action
   const pendingMsg = pendingAction ? PENDING_ACTION_MESSAGES[pendingAction.type] : null;
@@ -48,6 +81,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       title: 'Reset Password and Recover Access.',
       subtitle: 'Enter your email to get a reset link.',
     },
+    'otp-verify': {
+      title: 'Verify Your Mobile Number',
+      subtitle: 'Enter the 6-digit verification code sent to your mobile.',
+    },
   };
 
   const [mode, setMode] = useState<ModalMode>('login');
@@ -61,6 +98,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // OTP Verification state
+  const [otpCode, setOtpCode] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpSentTarget, setOtpSentTarget] = useState('');
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => setOtpCooldown(p => p - 1), 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -112,15 +160,55 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     try {
       const payload: any = { email, password, confirm_password: confirmPassword, full_name: fullName };
       if (phoneNumber) payload.phone_number = phoneNumber;
-      await register(payload);
-      setSuccessMessage('Registration successful! Please check your email to verify your account.');
-      setTimeout(() => { onClose(); resetForm(); }, 3000);
+
+      const result = await preRegister(payload);
+
+      if (result.otp_required && result.phone) {
+        // Account NOT created yet — waiting for OTP verification
+        setOtpSentTarget(result.phone);
+        setOtpCooldown(60);
+        setSuccessMessage(`OTP sent to ${result.phone}. Enter the 6-digit code to complete registration.`);
+        setMode('otp-verify');
+      } else {
+        // No phone number — account created immediately
+        setSuccessMessage('Account created successfully! Please check your email to verify.');
+        setTimeout(() => { onClose(); resetForm(); }, 3000);
+      }
     } catch (err: any) {
       if (err.response?.data) {
         const res = err.response.data;
         setApiError(res.message || 'Registration failed.');
         if (res.errors) setFieldErrors(res.errors);
       } else { setApiError(err.message || 'Failed to connect to the server.'); }
+    } finally { setIsSubmitting(false); }
+  };
+
+  const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length !== 6) {
+      setApiError('Please enter a valid 6-digit OTP code.');
+      return;
+    }
+    setIsSubmitting(true); setApiError(null); setSuccessMessage(null);
+    try {
+      // OTP-first flow: verifyAndRegister creates the account
+      await verifyAndRegister(otpSentTarget, otpCode);
+      setSuccessMessage('Phone verified! Your account has been created. Welcome to FAAZO! 🎉');
+      setTimeout(() => { onClose(); resetForm(); }, 2000);
+    } catch (err: any) {
+      setApiError(err.response?.data?.message || err.message || 'OTP verification failed. Please check your code.');
+    } finally { setIsSubmitting(false); }
+  };
+
+  const handleResendOtp = async () => {
+    if (otpCooldown > 0) return;
+    setIsSubmitting(true); setApiError(null); setSuccessMessage(null);
+    try {
+      await resendOTP({ target: otpSentTarget, purpose: 'registration' });
+      setOtpCooldown(60);
+      setSuccessMessage('A new 6-digit OTP code has been sent.');
+    } catch (err: any) {
+      setApiError(err.response?.data?.message || err.message || 'Failed to resend OTP.');
     } finally { setIsSubmitting(false); }
   };
 
@@ -146,8 +234,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       });
       if (phoneNumber) formData.append('phone_number', phoneNumber);
       await dealerRegister(formData);
-      setSuccessMessage('Dealer application submitted! Your documents are under review. Please verify your email.');
-      setTimeout(() => { onClose(); resetForm(); }, 5000);
+      
+      if (phoneNumber) {
+        setOtpSentTarget(phoneNumber);
+        try {
+          await authService.otpSend({ target: phoneNumber, purpose: 'registration' });
+          setOtpCooldown(60);
+          setSuccessMessage(`Dealer application submitted! Enter the OTP sent to ${phoneNumber}.`);
+        } catch (otpErr: any) {
+          setSuccessMessage(`Dealer application submitted! Please verify your phone number.`);
+        }
+        setMode('otp-verify');
+      } else {
+        setSuccessMessage('Dealer application submitted! Your documents are under review. Please verify your email.');
+        setTimeout(() => { onClose(); resetForm(); }, 5000);
+      }
     } catch (err: any) {
       if (err.response?.data) {
         const res = err.response.data;
@@ -186,6 +287,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     'register': { heading: 'Join FAAZO! 🦷', sub: 'Create your dental professional account' },
     'dealer-register': { heading: 'Dealer Application 🏢', sub: 'Apply for a FAAZO B2B dealer account' },
     'forgot-password': { heading: 'Reset Password 🔐', sub: 'Enter your email to receive a reset link' },
+    'otp-verify': { heading: 'Verify Mobile OTP 📱', sub: 'Enter the 6-digit code sent to your phone' },
   };
 
   const { heading, sub } = pendingMsg && mode === 'login'
@@ -460,35 +562,39 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 </button>
 
                 {/* Social divider */}
-                <div className="flex items-center gap-2 md:gap-2.5 my-0.5">
+                <div className="flex items-center gap-2 md:gap-2.5 my-1">
                   <div className="flex-1 h-px bg-slate-200" />
                   <span className="text-[10px] md:text-xs text-slate-400 font-medium">or continue with</span>
                   <div className="flex-1 h-px bg-slate-200" />
                 </div>
 
-                {/* Google + Apple */}
-                <div className="grid grid-cols-2 gap-2 md:gap-2.5">
-                  <button type="button"
-                    className="flex items-center justify-center gap-1.5 md:gap-2 border border-slate-200 rounded-xl py-2 md:py-2.5 text-[11px] md:text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
-                  >
-                    {/* Google G SVG */}
-                    <svg className="w-3.5 h-3.5 md:w-4 md:h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                    </svg>
-                    Google
-                  </button>
-                  <button type="button"
-                    className="flex items-center justify-center gap-1.5 md:gap-2 border border-slate-200 rounded-xl py-2 md:py-2.5 text-[11px] md:text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
-                  >
-                    {/* Apple logo SVG */}
-                    <svg className="w-3.5 h-3.5 md:w-4 md:h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                    </svg>
-                    Apple
-                  </button>
+                {/* Google Sign-In Official Button Container */}
+                <div className="flex justify-center w-full my-1">
+                  {hasGoogleClientId ? (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setApiError('Google Sign-In failed or was cancelled.')}
+                      theme="outline"
+                      shape="pill"
+                      size="medium"
+                      width="100%"
+                      text="continue_with"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setApiError('Google Client ID is missing. Please add your Google Client ID to NEXT_PUBLIC_GOOGLE_CLIENT_ID in .env.local.')}
+                      className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2 md:py-2.5 px-4 rounded-xl transition-all shadow-2xs cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                      </svg>
+                      <span>Continue with Google</span>
+                    </button>
+                  )}
                 </div>
 
 
@@ -569,6 +675,42 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   className="w-full bg-[#006670] hover:bg-[#004e56] text-white font-bold text-xs md:text-sm py-2 md:py-2.5 rounded-xl transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 md:gap-2 tracking-wide">
                   {isSubmitting ? 'Creating Account...' : (<>Create Account <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" /></>)}
                 </button>
+
+                {/* Social divider */}
+                <div className="flex items-center gap-2 md:gap-2.5 my-1">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-[10px] md:text-xs text-slate-400 font-medium">or sign up with</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
+                {/* Google Sign-Up Official Button Container */}
+                <div className="flex justify-center w-full my-1">
+                  {hasGoogleClientId ? (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setApiError('Google Sign-Up failed or was cancelled.')}
+                      theme="outline"
+                      shape="pill"
+                      size="medium"
+                      width="100%"
+                      text="signup_with"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setApiError('Google Client ID is missing. Please add your Google Client ID to NEXT_PUBLIC_GOOGLE_CLIENT_ID in .env.local.')}
+                      className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2 md:py-2.5 px-4 rounded-xl transition-all shadow-2xs cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                      </svg>
+                      <span>Sign up with Google</span>
+                    </button>
+                  )}
+                </div>
 
 
               </form>
@@ -711,12 +853,64 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSubmitting}
-                  className="w-full bg-[#006670] hover:bg-[#004e56] text-white font-bold text-xs md:text-sm py-2 md:py-2.5 rounded-xl transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 md:gap-2 tracking-wide">
-                  {isSubmitting ? 'Sending...' : (<>Send Reset Link <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" /></>)}
+              </form>
+            )}
+
+            {/* ── OTP VERIFICATION FORM ──────────────────────── */}
+            {mode === 'otp-verify' && (
+              <form onSubmit={handleVerifyOtpSubmit} className="space-y-3 md:space-y-4">
+                <div className="p-3 bg-[#006670]/5 border border-[#006670]/15 rounded-xl flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#006670]/10 flex items-center justify-center text-[#006670] shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">Target Phone: {otpSentTarget}</p>
+                    <p className="text-[11px] text-slate-500">Enter the 6-digit verification code sent to your mobile</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelBase}>6-Digit Verification Code</label>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      className={`${inputBase} text-center font-mono text-sm md:text-base font-bold tracking-[0.3em] md:tracking-[0.4em]`}
+                      placeholder="000000"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-0.5">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={otpCooldown > 0 || isSubmitting}
+                    className={`text-[11px] font-bold ${otpCooldown > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-[#006670] hover:underline cursor-pointer'}`}
+                  >
+                    {otpCooldown > 0 ? `Resend OTP in ${otpCooldown}s` : 'Resend OTP Code'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { onClose(); resetForm(); }}
+                    className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                  >
+                    Skip for now
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || otpCode.length !== 6}
+                  className="w-full bg-[#006670] hover:bg-[#004e56] text-white font-bold text-xs md:text-sm py-2 md:py-2.5 rounded-xl transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 md:gap-2 tracking-wide"
+                >
+                  {isSubmitting ? 'Verifying...' : (<>Verify & Finish Registration <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4" /></>)}
                 </button>
-
-
               </form>
             )}
           </div>

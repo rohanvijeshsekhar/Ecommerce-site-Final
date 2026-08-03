@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usersService } from '../../lib/services/users';
+import { authService } from '../../lib/services/auth';
 import type { Address } from '../../lib/services/users';
 import type { CartItem } from '../../types/pendingAction';
 import OrderDetailPage from './OrderDetailPage';
@@ -199,12 +200,104 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   onProductClick,
   showToast,
 }) => {
-  const { user, profile, logout, refreshUser, resendVerification } = useAuth();
+  const { user, profile, logout, refreshUser, resendVerification, logoutAll, activeSessions, verifyOTP, resendOTP } = useAuth();
 
   // ── Local state ──
   const [localToast, setLocalToast] = useState<string | null>(null);
   const [dealerApp, setDealerApp] = useState<any | null>(null);
   const [dealerAppLoading, setDealerAppLoading] = useState(false);
+
+  // Phone OTP verification states
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpCode, setPhoneOtpCode] = useState('');
+  const [phoneOtpLoading, setPhoneOtpLoading] = useState(false);
+  const [phoneOtpError, setPhoneOtpError] = useState<string | null>(null);
+  const [phoneOtpSuccess, setPhoneOtpSuccess] = useState<string | null>(null);
+  const [phoneOtpCooldown, setPhoneOtpCooldown] = useState(0);
+
+  useEffect(() => {
+    if (phoneOtpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setPhoneOtpCooldown(p => p - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phoneOtpCooldown]);
+
+  const handleSendPhoneOtp = async () => {
+    const phone = user?.phone_number || profileForm.phone_number;
+    if (!phone) {
+      setPhoneOtpError("Please link and save a phone number in your profile first.");
+      return;
+    }
+    setPhoneOtpLoading(true);
+    setPhoneOtpError(null);
+    setPhoneOtpSuccess(null);
+    try {
+      const res = await authService.otpSend({
+        target: phone,
+        purpose: 'registration',
+      });
+      if (res.success) {
+        setPhoneOtpSent(true);
+        setPhoneOtpCooldown(60);
+        setPhoneOtpSuccess("OTP code sent to your phone successfully.");
+      } else {
+        setPhoneOtpError(res.message || "Failed to send OTP.");
+      }
+    } catch (e: any) {
+      setPhoneOtpError(e.response?.data?.message || e.message || "An error occurred.");
+    } finally {
+      setPhoneOtpLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    const phone = user?.phone_number || profileForm.phone_number;
+    if (!phone || !phoneOtpCode) return;
+    if (phoneOtpCode.length !== 6) {
+      setPhoneOtpError("Please enter a valid 6-digit code.");
+      return;
+    }
+    setPhoneOtpLoading(true);
+    setPhoneOtpError(null);
+    setPhoneOtpSuccess(null);
+    try {
+      await verifyOTP({
+        target: phone,
+        purpose: 'registration',
+        code: phoneOtpCode,
+      });
+      setPhoneOtpSuccess("Phone number verified successfully!");
+      setPhoneOtpSent(false);
+      setPhoneOtpCode('');
+      await refreshUser();
+    } catch (e: any) {
+      setPhoneOtpError(e.response?.data?.message || e.message || "Verification failed. Please try again.");
+    } finally {
+      setPhoneOtpLoading(false);
+    }
+  };
+
+  const handleResendPhoneOtp = async () => {
+    if (phoneOtpCooldown > 0) return;
+    const phone = user?.phone_number || profileForm.phone_number;
+    if (!phone) return;
+    setPhoneOtpLoading(true);
+    setPhoneOtpError(null);
+    setPhoneOtpSuccess(null);
+    try {
+      await resendOTP({
+        target: phone,
+        purpose: 'registration',
+      });
+      setPhoneOtpCooldown(60);
+      setPhoneOtpSuccess("OTP resent successfully.");
+    } catch (e: any) {
+      setPhoneOtpError(e.response?.data?.message || e.message || "Failed to resend OTP.");
+    } finally {
+      setPhoneOtpLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (activeSection === 'dealer-status' && user?.role === 'dealer') {
@@ -312,11 +405,29 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   const [warrantyDate, setWarrantyDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [showWarrantyForm, setShowWarrantyForm] = useState(false);
 
-  // Active Device log mock
-  const [deviceSessions] = useState([
-    { device: 'Chrome on Windows 11', location: 'Mumbai, India', status: 'active', time: 'Active Now' },
-    { device: 'Safari on iPhone 15 Pro', location: 'Pune, India', status: 'logged-out', time: 'Last active: 2 hours ago' }
-  ]);
+  // Active Device Sessions — live from enterprise API
+  const [liveDeviceSessions, setLiveDeviceSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  const fetchSessions = async () => {
+    if (!user) return;
+    setSessionsLoading(true);
+    try {
+      const sessions = await activeSessions();
+      setLiveDeviceSessions(sessions);
+    } catch (e) {
+      console.error('Failed to fetch sessions:', e);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'security' && user) {
+      fetchSessions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, user]);
 
   // Order Details / History loading state
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -506,10 +617,45 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     }
     setSecuritySaving(true);
     try {
-      fireToast('Password changed successfully!');
-      setSecurityForm({ old_password: '', new_password: '', confirm_password: '' });
-    } catch { fireToast('Failed to change password.'); }
-    finally { setSecuritySaving(false); }
+      const { authService } = await import('../../lib/services/auth');
+      const res = await authService.changePassword({
+        current_password: securityForm.old_password,
+        new_password: securityForm.new_password,
+        confirm_password: securityForm.confirm_password,
+      });
+      if (res.success) {
+        fireToast('Password changed successfully! Please log in again.');
+        setSecurityForm({ old_password: '', new_password: '', confirm_password: '' });
+        // Force logout — new password invalidated all tokens
+        setTimeout(() => logout(), 1500);
+      } else {
+        fireToast(res.message || 'Failed to change password.');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to change password.';
+      fireToast(msg);
+    }
+    setSecuritySaving(false);
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      const { authService } = await import('../../lib/services/auth');
+      await authService.revokeSession(sessionId);
+      fireToast('Session revoked.');
+      fetchSessions();
+    } catch {
+      fireToast('Failed to revoke session.');
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    try {
+      await logoutAll();
+      fireToast('Logged out of all devices.');
+    } catch {
+      fireToast('Failed to logout from all devices.');
+    }
   };
 
   const handleResendVerification = async () => {
@@ -1709,20 +1855,78 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         {/* Phone Verification */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 flex flex-col justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
               <Phone className="w-5 h-5" />
             </div>
             <div>
               <h4 className="text-xs font-black text-slate-800">OTP Phone Authentication</h4>
-              <p className="text-[11px] text-slate-400">{profileForm.phone_number || 'Not Linked'}</p>
+              <p className="text-[11px] text-slate-400">{user?.phone_number || profileForm.phone_number || 'Not Linked'}</p>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100 font-sans">
-              Inactive
-            </span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest font-sans">Coming Soon</span>
-          </div>
+
+          {phoneOtpSent ? (
+            <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Enter 6-Digit OTP</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={phoneOtpCode}
+                  onChange={e => setPhoneOtpCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full text-center px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-850 bg-white focus:outline-none focus:border-[#005B63] tracking-widest"
+                />
+              </div>
+
+              {phoneOtpError && <p className="text-[10px] text-rose-500 font-semibold">{phoneOtpError}</p>}
+              {phoneOtpSuccess && <p className="text-[10px] text-emerald-600 font-semibold">{phoneOtpSuccess}</p>}
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleResendPhoneOtp}
+                  disabled={phoneOtpCooldown > 0 || phoneOtpLoading}
+                  className={`text-[9px] font-black uppercase tracking-widest ${phoneOtpCooldown > 0 ? 'text-slate-300' : 'text-[#005B63] hover:underline'} cursor-pointer bg-transparent border-none`}
+                >
+                  {phoneOtpCooldown > 0 ? `Resend in ${phoneOtpCooldown}s` : 'Resend OTP'}
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPhoneOtpSent(false); setPhoneOtpCode(''); setPhoneOtpError(null); setPhoneOtpSuccess(null); }}
+                    className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerifyPhoneOtp}
+                    disabled={phoneOtpLoading || phoneOtpCode.length !== 6}
+                    className="px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-white cursor-pointer"
+                    style={{ background: TEAL }}
+                  >
+                    {phoneOtpLoading ? 'Verifying...' : 'Verify'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'} font-sans`}>
+                {user?.is_phone_verified ? 'Verified' : 'Pending Verification'}
+              </span>
+              {!user?.is_phone_verified && (user?.phone_number || profileForm.phone_number) && (
+                <button
+                  type="button"
+                  onClick={handleSendPhoneOtp}
+                  disabled={phoneOtpLoading}
+                  className="text-[10px] font-black uppercase tracking-widest text-[#005B63] hover:underline cursor-pointer font-sans bg-transparent border-none"
+                >
+                  {phoneOtpLoading ? 'Sending...' : 'Verify Phone'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1754,28 +1958,66 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         </button>
       </div>
 
-      {/* Device Sessions */}
+      {/* Device Sessions — Live Enterprise API */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
         <div className="p-4 border-b border-slate-50 flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Active Practitioner Sessions</h3>
-          <button onClick={() => fireToast('Logged out of other devices.')} className="text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline">Revoke All Other Sessions</button>
+          <button
+            onClick={handleRevokeAllSessions}
+            className="text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
+          >
+            Logout All Devices
+          </button>
         </div>
-        <div className="divide-y divide-slate-100">
-          {deviceSessions.map((session, idx) => (
-            <div key={idx} className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {session.device.includes('iPhone') ? <Smartphone className="w-5 h-5 text-slate-400" /> : <Globe className="w-5 h-5 text-slate-400" />}
-                <div>
-                  <p className="text-xs font-bold text-slate-800">{session.device}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{session.location} · {session.time}</p>
+
+        {sessionsLoading ? (
+          <div className="p-8 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-[#005B63] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : liveDeviceSessions.length === 0 ? (
+          <div className="p-6 text-center">
+            <p className="text-xs text-slate-400 font-medium">No active sessions found.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {liveDeviceSessions.map((session) => {
+              const isMobile = /mobile|android|iphone|ipad/i.test(session.user_agent || '');
+              const lastActive = session.last_active_at
+                ? new Date(session.last_active_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                : '—';
+
+              return (
+                <div key={session.id} className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isMobile
+                      ? <Smartphone className="w-5 h-5 text-slate-400 shrink-0" />
+                      : <Globe className="w-5 h-5 text-slate-400 shrink-0" />
+                    }
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-[240px]">
+                        {session.device_name || 'Unknown Device'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {session.ip_address ?? 'IP unknown'} · Last active: {lastActive}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border bg-emerald-50 text-emerald-600 border-emerald-100 font-sans">
+                      Active
+                    </span>
+                    <button
+                      onClick={() => handleRevokeSession(session.id)}
+                      className="text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
+                    >
+                      Revoke
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${session.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'} font-sans`}>
-                {session.status === 'active' ? 'Current' : 'Signed out'}
-              </span>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

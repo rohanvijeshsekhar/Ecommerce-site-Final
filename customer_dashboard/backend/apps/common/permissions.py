@@ -29,19 +29,40 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 class IsAdmin(BasePermission):
     """
     Allow access only to users whose role is 'admin'.
-
-    Relies on `request.user.role.name` — this will be wired
-    to the custom User model in Phase 3.
+    Audits all denied access attempts.
     """
 
     message = "You do not have administrator privileges."
 
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and self._is_admin(request.user)
+        is_allowed = bool(request.user and request.user.is_authenticated and self._is_admin(request.user))
+        if not is_allowed:
+            from apps.authentication.services.audit_service import AuditService
+            ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR")
+            ua = request.META.get("HTTP_USER_AGENT", "")
+            user = request.user if getattr(request.user, "is_authenticated", False) else None
+            user_id = str(user.id) if user else "anonymous"
+            role = str(getattr(user, "role", "unauthenticated"))
+            reason = "Unauthenticated request to admin endpoint" if not user else f"User role '{role}' is not admin"
+
+            AuditService.log_event(
+                action="ADMIN_ACCESS_DENIED",
+                user=user,
+                status="FAILURE",
+                ip_address=ip,
+                user_agent=ua,
+                details={
+                    "user_id": user_id,
+                    "role": role,
+                    "endpoint": request.path,
+                    "method": request.method,
+                    "reason": reason,
+                },
+            )
+        return is_allowed
 
     @staticmethod
     def _is_admin(user) -> bool:
-        # Supports both Django superuser and FAAZO role system
         if getattr(user, "is_superuser", False):
             return True
         role = getattr(user, "role", None)

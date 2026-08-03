@@ -321,10 +321,38 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 };
 
+const defaultStoreContext: StoreContextType = {
+  cartItems: [],
+  setCartItems: async () => {},
+  cartLoading: false,
+  wishlistItems: [],
+  setWishlistItems: () => {},
+  savedForLaterItems: [],
+  setSavedForLaterItems: () => {},
+  toastMessage: null,
+  showToast: () => {},
+  isLoginModalOpen: false,
+  setIsLoginModalOpen: () => {},
+  openLoginModal: () => {},
+  checkoutSource: 'cart',
+  setCheckoutSource: () => {},
+  buyNowItem: null,
+  setBuyNowItem: () => {},
+  completedOrderData: null,
+  setCompletedOrderData: () => {},
+  orders: [],
+  setOrders: () => {},
+  addItemToCart: () => {},
+  addItemToWishlist: () => {},
+  handleBuyNowDirect: () => {},
+  dashboardSection: 'dashboard',
+  setDashboardSection: () => {},
+};
+
 export const useStore = () => {
   const context = useContext(StoreContext);
   if (!context) {
-    throw new Error('useStore must be used within a StoreProvider');
+    return defaultStoreContext;
   }
   return context;
 };

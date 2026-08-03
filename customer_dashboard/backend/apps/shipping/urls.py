@@ -15,10 +15,26 @@ from .views import (
     AdminUpdatePackingStatusView,
     AdminCreateCourierShipmentView,
     CustomerShipmentTrackingView,
+    ShiprocketWebhookView,
     DelhiveryWebhookView,
+    PincodeServiceabilityView,
+    ShippingCostCalculateView,
+    AdminShipmentRetryView,
 )
 
 urlpatterns = [
+    # ── Pincode & Shipping Cost Endpoints ────────────────────
+    path(
+        "shipping/pincode-check/",
+        PincodeServiceabilityView.as_view(),
+        name="shipping-pincode-check",
+    ),
+    path(
+        "shipping/calculate-cost/",
+        ShippingCostCalculateView.as_view(),
+        name="shipping-calculate-cost",
+    ),
+
     # ── Admin Shipment Endpoints ─────────────────────────────
     path(
         "shipping/admin/health/",
@@ -54,6 +70,11 @@ urlpatterns = [
         "shipping/admin/shipments/<uuid:pk>/sync/",
         AdminShipmentSyncView.as_view(),
         name="admin-shipment-sync",
+    ),
+    path(
+        "shipping/admin/shipments/<uuid:pk>/retry/",
+        AdminShipmentRetryView.as_view(),
+        name="admin-shipment-retry",
     ),
     path(
         "shipping/admin/shipments/<uuid:pk>/schedule-pickup/",
@@ -98,7 +119,12 @@ urlpatterns = [
         name="customer-shipment-tracking",
     ),
 
-    # ── Delhivery Webhook ────────────────────────────────────
+    # ── Shiprocket & Legacy Webhooks ─────────────────────────
+    path(
+        "shipping/webhooks/shiprocket/",
+        ShiprocketWebhookView.as_view(),
+        name="shiprocket-webhook",
+    ),
     path(
         "shipping/webhooks/delhivery/",
         DelhiveryWebhookView.as_view(),

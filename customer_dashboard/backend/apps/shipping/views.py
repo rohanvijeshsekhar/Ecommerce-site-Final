@@ -20,6 +20,8 @@ Webhook endpoint (no auth):
 """
 
 import logging
+from django.conf import settings
+from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import status
@@ -29,11 +31,14 @@ from apps.common.responses import success_response, error_response
 from apps.common.permissions import IsAdmin
 from apps.orders.models import Order, OrderStatus, OrderStatusHistory
 
-from .models import Shipment, ShipmentStatus, PackingStatus, ShipmentEvent
+import uuid
+from .models import Shipment, ShipmentStatus, PackingStatus, ShipmentEvent, DelhiveryWebhookLog, ShiprocketWebhookLog
 from .serializers import ShipmentSerializer, ShipmentListSerializer
-from .services import DelhiveryService, DelhiveryAPIError, DelhiveryValidationError
+from .services import ShiprocketService, DelhiveryService, ShiprocketAPIError, ShiprocketValidationError, DelhiveryAPIError, DelhiveryValidationError
+from .shiprocket_client import circuit_breaker, ShiprocketAPIClient
 
 logger = logging.getLogger("faazo")
+
 
 
 # ============================================================
@@ -285,23 +290,22 @@ class AdminCreateCourierShipmentView(APIView):
         }
 
         try:
+            svc = ShiprocketService()
             with transaction.atomic():
-                order  = shipment.order
-                svc    = DelhiveryService()
+                order = shipment.order
 
-                # Call Delhivery via create_shipment_for_existing (updates the
-                # pre-existing Shipment record rather than creating a new one)
+                # Core Business Transaction: Create Order & Assign Courier/AWB
                 shipment = svc.create_shipment(
-                    order       = order,
-                    package_info= package_info,
-                    created_by  = request.user,
-                    existing_shipment = shipment,
+                    order=order,
+                    package_info=package_info,
+                    created_by=request.user,
+                    existing_shipment=shipment,
                 )
 
                 # Move order to SHIPPED
-                order.status          = OrderStatus.SHIPPED
+                order.status = OrderStatus.SHIPPED
                 order.tracking_number = shipment.awb_number
-                order.shipping_carrier= shipment.courier_name
+                order.shipping_carrier = shipment.courier_name
                 from django.utils import timezone
                 order.shipped_at = timezone.now()
                 order.save(update_fields=[
@@ -311,35 +315,35 @@ class AdminCreateCourierShipmentView(APIView):
                     order=order,
                     status=OrderStatus.SHIPPED,
                     changed_by=request.user,
-                    notes=f"Courier shipment created via Delhivery. AWB: {shipment.awb_number}",
+                    notes=f"Courier shipment created via Shiprocket. AWB: {shipment.awb_number}",
                 )
 
-                # Deduct inventory
+                # Deduct inventory after successful order creation and AWB generation
                 for item in order.items.all():
                     inv = getattr(item.product, "inventory", None)
                     if inv:
-                        inv.current_stock  = max(0, inv.current_stock  - item.quantity)
+                        inv.current_stock = max(0, inv.current_stock - item.quantity)
                         inv.reserved_stock = max(0, inv.reserved_stock - item.quantity)
                         inv.save()
 
-                # Auto-schedule pickup if date provided
-                pickup_date_str = request.data.get("pickup_date")
-                if pickup_date_str:
-                    from django.utils.dateparse import parse_date
-                    pd = parse_date(pickup_date_str)
-                    if pd:
-                        try:
-                            svc.schedule_pickup(shipment, pickup_date=pd)
-                        except Exception as exc:
-                            logger.warning("Auto-pickup scheduling failed: %s", exc)
+            # Post-commit operational action: Auto-schedule pickup if date provided
+            pickup_date_str = request.data.get("pickup_date")
+            if pickup_date_str:
+                from django.utils.dateparse import parse_date
+                pd = parse_date(pickup_date_str)
+                if pd:
+                    try:
+                        svc.schedule_pickup(shipment, pickup_date=pd)
+                    except Exception as exc:
+                        logger.warning("Auto-pickup scheduling post-commit failed: %s", exc)
 
-        except DelhiveryValidationError as e:
+        except (ShiprocketValidationError, DelhiveryValidationError) as e:
             return error_response(
                 "Courier shipment validation failed.",
                 status_code=status.HTTP_400_BAD_REQUEST,
-                details=e.errors,
+                details=getattr(e, "errors", [str(e)]),
             )
-        except DelhiveryAPIError as e:
+        except (ShiprocketAPIError, DelhiveryAPIError) as e:
             return error_response(str(e), status_code=status.HTTP_502_BAD_GATEWAY)
         except Exception as e:
             logger.exception("Unexpected error creating courier shipment: %s", e)
@@ -352,9 +356,10 @@ class AdminCreateCourierShipmentView(APIView):
         serializer = ShipmentSerializer(shipment)
         return success_response(
             data=serializer.data,
-            message=f"Courier shipment created with Delhivery. AWB: {shipment.awb_number}",
+            message=f"Courier shipment created with Shiprocket. AWB: {shipment.awb_number}",
             status_code=status.HTTP_201_CREATED,
         )
+
 
 
 # ============================================================
@@ -824,50 +829,111 @@ class CustomerShipmentTrackingView(APIView):
 # Webhook — Delhivery Callback
 # ============================================================
 
-class DelhiveryWebhookView(APIView):
+# ============================================================
+# Webhook — Shiprocket Callback
+# ============================================================
+
+class ShiprocketWebhookView(APIView):
     """
-    POST /api/v1/shipping/webhooks/delhivery/
-    Idempotent, transaction-safe webhook callback handler.
+    POST /api/v1/shipping/webhooks/shiprocket/
+    Idempotent, transaction-safe Shiprocket webhook callback handler.
+    Includes HMAC signature verification, replay protection, and event emission.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         payload = request.data
-        webhook_id = request.headers.get("X-Delhivery-Webhook-ID") or payload.get("waybill") or str(uuid.uuid4())
+        if not isinstance(payload, dict):
+            payload = {}
 
-        from .models import DelhiveryWebhookLog
-        if DelhiveryWebhookLog.objects.filter(webhook_id=webhook_id, is_processed=True).exists():
+        # HMAC Signature Verification if configured
+        secret = getattr(settings, "SHIPROCKET_WEBHOOK_SECRET", "")
+        if secret and secret.strip():
+            header_sig = request.headers.get("X-Api-HMAC-SHA256") or request.headers.get("X-Shiprocket-Signature")
+            if header_sig:
+                import hmac
+                import hashlib
+                import json
+                expected_sig = hmac.new(secret.encode("utf-8"), json.dumps(payload).encode("utf-8"), hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(header_sig, expected_sig):
+                    logger.warning("[SHIPROCKET_WEBHOOK_REJECTED] Invalid HMAC signature.")
+                    return error_response("Invalid webhook signature.", status_code=status.HTTP_401_UNAUTHORIZED)
+
+        awb_code = payload.get("awb") or payload.get("awb_code") or payload.get("waybill")
+        sr_shipment_id = payload.get("shipment_id") or payload.get("order_id")
+        current_status = payload.get("current_status") or payload.get("status") or "SYNC"
+
+        webhook_id = request.headers.get("X-Shiprocket-Webhook-ID") or f"{awb_code}_{current_status}_{payload.get('current_timestamp', '')}" or str(uuid.uuid4())
+
+        from .models import ShiprocketWebhookLog, ShipmentStatus
+        from .providers import SHIPROCKET_STATUS_MAP
+        if ShiprocketWebhookLog.objects.filter(webhook_id=webhook_id, is_processed=True).exists():
             logger.info("[WEBHOOK_IDEMPOTENT] Webhook %s already processed.", webhook_id)
             return success_response(data={}, message="Webhook already processed (Idempotent).")
 
-        log_entry, _ = DelhiveryWebhookLog.objects.get_or_create(
+        log_entry, _ = ShiprocketWebhookLog.objects.get_or_create(
             webhook_id=webhook_id,
             defaults={"raw_payload": payload, "received_at": timezone.now()}
         )
 
         try:
             with transaction.atomic():
-                svc = DelhiveryService()
-                new_events = svc.process_webhook(payload)
+                shipment = None
+                if awb_code:
+                    shipment = Shipment.objects.filter(awb_number=awb_code, is_deleted=False).first()
+                if not shipment and sr_shipment_id:
+                    shipment = Shipment.objects.filter(delhivery_shipment_id=str(sr_shipment_id), is_deleted=False).first()
+
+                if shipment:
+                    from .providers import SHIPROCKET_STATUS_MAP
+                    mapped_status = SHIPROCKET_STATUS_MAP.get(str(current_status).upper(), shipment.shipment_status)
+                    shipment.shipment_status = mapped_status
+                    if payload.get("location") or payload.get("scans"):
+                        scans = payload.get("scans", [])
+                        last_loc = scans[-1].get("location") if scans else payload.get("location")
+                        if last_loc:
+                            shipment.current_location = last_loc
+
+                    if mapped_status == ShipmentStatus.DELIVERED and not shipment.delivered_at:
+                        shipment.delivered_at = timezone.now()
+
+                    shipment.save(update_fields=["shipment_status", "current_location", "delivered_at", "updated_at"])
+
+                    ShipmentEvent.objects.create(
+                        shipment=shipment,
+                        event_code=f"WEBHOOK_{current_status.upper()}",
+                        event_label=f"Webhook: {current_status}",
+                        status_mapped=mapped_status,
+                        event_timestamp=timezone.now(),
+                        location=shipment.current_location or "Shiprocket Network",
+                        description=f"Status updated via Shiprocket Webhook: {current_status}",
+                        event_source="webhook",
+                    )
+
                 log_entry.is_processed = True
                 log_entry.processed_at = timezone.now()
-                log_entry.processing_result = f"Successfully appended {len(new_events)} event(s)."
+                log_entry.processing_result = f"Successfully processed status '{current_status}' for shipment."
                 log_entry.save()
+
         except Exception as e:
-            logger.exception("Delhivery webhook processing error: %s", e)
+            logger.exception("Shiprocket webhook processing error: %s", e)
             log_entry.processing_result = f"Error: {str(e)}"
             log_entry.retry_count += 1
             log_entry.save()
             return success_response(data={}, message="Webhook acknowledged.")
 
         return success_response(
-            data={"new_events": len(new_events)},
-            message="Webhook processed.",
+            data={"status": current_status, "awb": awb_code},
+            message="Webhook processed successfully.",
         )
 
 
+# Alias for backward compatibility
+DelhiveryWebhookView = ShiprocketWebhookView
+
+
 # ============================================================
-# Admin — Provider Health Check
+# Admin — Provider Health Check & Circuit Status
 # ============================================================
 
 class AdminProviderHealthCheckView(APIView):
@@ -876,22 +942,33 @@ class AdminProviderHealthCheckView(APIView):
 
     def get(self, request):
         from .providers import ShippingConfigValidator, get_shipping_provider
+        from django.core.cache import cache
 
-        cfg_provider = getattr(settings, "SHIPPING_PROVIDER", "sandbox").lower()
+        cfg_provider = getattr(settings, "SHIPPING_PROVIDER", "offline").lower()
         active_provider_obj = get_shipping_provider()
         active_provider_class = active_provider_obj.__class__.__name__
 
-        is_valid, validation_reasons = ShippingConfigValidator.validate_delhivery_config(cfg_provider) if cfg_provider in ["sandbox", "live"] else (True, [])
+        is_valid, validation_reasons = ShippingConfigValidator.validate_shiprocket_config(cfg_provider) if cfg_provider in ["shiprocket", "sandbox", "live"] else (True, [])
         last_shipment = Shipment.objects.filter(is_deleted=False).order_by("-created_at").first()
 
+        circuit_state = circuit_breaker.get_state()
+        auth_stats = cache.get(ShiprocketAPIClient.CACHE_AUTH_STATS_KEY, {
+            "last_success": None,
+            "last_failure": None,
+            "token_expiry": None,
+            "last_error": "",
+        })
+
         health_data = {
-            "status": "Online" if (cfg_provider == "offline" or is_valid) else "Fallback (Offline)",
+            "status": "Online" if (cfg_provider == "offline" or (is_valid and circuit_state != "OPEN")) else "Degraded (Circuit Open)" if circuit_state == "OPEN" else "Fallback (Offline)",
             "configured_provider": cfg_provider,
             "active_provider_class": active_provider_class,
+            "circuit_breaker_state": circuit_state,
+            "auth_stats": auth_stats,
             "is_config_valid": is_valid,
             "validation_reasons": validation_reasons,
-            "pickup_location": getattr(settings, "DELHIVERY_PICKUP_LOCATION", ""),
-            "seller_name": getattr(settings, "DELHIVERY_SELLER_NAME", ""),
+            "pickup_location": getattr(settings, "SHIPROCKET_PICKUP_LOCATION", "Primary"),
+            "seller_name": "FAAZO Dental Solutions Pvt. Ltd.",
             "last_shipment": {
                 "id": str(last_shipment.id) if last_shipment else None,
                 "shipment_number": last_shipment.shipment_number if last_shipment else None,
@@ -901,4 +978,109 @@ class AdminProviderHealthCheckView(APIView):
             } if last_shipment else None,
         }
         return success_response(data=health_data, message="Provider health status retrieved.")
+
+
+# ============================================================
+# Public — Pincode Serviceability & Delivery ETA
+# ============================================================
+
+class PincodeServiceabilityView(APIView):
+    """
+    POST /api/v1/shipping/pincode-check/
+
+    Body:
+      pincode (str): required Indian 6-digit pincode
+      weight (float): optional (default 1.0 kg)
+      cod (bool): optional (default false)
+      declared_value (float): optional (default 1000.0)
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        pincode = str(request.data.get("pincode", "")).strip()
+        weight = float(request.data.get("weight", 1.0))
+        cod = bool(request.data.get("cod", False))
+        declared_value = float(request.data.get("declared_value", 1000.0))
+
+        if not pincode:
+            return error_response(message="Pincode is required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        from .pincode_service import PincodeServiceabilityEngine
+        res = PincodeServiceabilityEngine.check(
+            destination_pincode=pincode,
+            weight_kg=weight,
+            cod=cod,
+            declared_value=declared_value,
+        )
+        return success_response(data=res, message="Pincode serviceability checked.")
+
+
+# ============================================================
+# Public — Reusable Shipping Cost Calculation Engine
+# ============================================================
+
+class ShippingCostCalculateView(APIView):
+    """
+    POST /api/v1/shipping/calculate-cost/
+
+    Body:
+      subtotal (float/decimal): order item subtotal
+      weight (float): kg
+      length, width, height (float): cm
+      destination_pincode (str): customer pincode
+      is_cod (bool): COD payment flag
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        subtotal = request.data.get("subtotal", 0.0)
+        weight = float(request.data.get("weight", 1.0))
+        length = float(request.data.get("length", 10.0))
+        width = float(request.data.get("width", 10.0))
+        height = float(request.data.get("height", 10.0))
+        destination_pincode = str(request.data.get("destination_pincode", "110001"))
+        is_cod = bool(request.data.get("is_cod", False))
+
+        from .cost_engine import ShippingCostCalculator
+        cost_breakdown = ShippingCostCalculator.calculate_cost(
+            order_subtotal=subtotal,
+            weight_kg=weight,
+            length_cm=length,
+            width_cm=width,
+            height_cm=height,
+            destination_pincode=destination_pincode,
+            is_cod=is_cod,
+        )
+        return success_response(data=cost_breakdown, message="Shipping cost breakdown calculated.")
+
+
+# ============================================================
+# Admin — 1-Click Failure Recovery Retry Action
+# ============================================================
+
+class AdminShipmentRetryView(APIView):
+    """
+    POST /api/v1/shipping/admin/shipments/<uuid:pk>/retry/
+
+    Body:
+      action (str): 'create_courier', 'schedule_pickup', 'generate_label', or 'generate_manifest'
+    """
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        try:
+            shipment = Shipment.objects.get(pk=pk, is_deleted=False)
+        except Shipment.DoesNotExist:
+            return error_response(message="Shipment record not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        action = str(request.data.get("action", "create_courier")).strip()
+        svc = ShiprocketService()
+        result = svc.retry_failed_shipment(shipment, action=action)
+
+        if result.get("success"):
+            return success_response(data=result, message=result.get("message"))
+        else:
+            return error_response(message=result.get("message"), status_code=status.HTTP_400_BAD_REQUEST)
+
+
 

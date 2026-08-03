@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../lib/api';
+import NotificationBell from './NotificationBell';
 
 // FAAZO logo component
 export const FaazoLogo: React.FC<{ 
@@ -357,7 +358,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {/* Main Premium Navbar */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 w-full flex flex-col transition-all duration-300 ease-in-out select-none
-          h-[60px] ${scrolled ? 'lg:h-[124px] bg-white/95 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_2px_20px_rgba(0,0,0,0.03)]' : 'lg:h-[160px] bg-white border-b border-slate-200/40'}`}
+          h-[100px] ${scrolled ? 'lg:h-[124px] bg-white/95 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_2px_20px_rgba(0,0,0,0.03)]' : 'lg:h-[160px] bg-white border-b border-slate-200/40'}`}
       >
         {/* Top Bar (Dark Teal Green) */}
         <div
@@ -590,46 +591,10 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 <span className="text-[10px] font-bold tracking-wider uppercase leading-none mt-0.5">CART</span>
               </button>
+
+              {/* Notification Center Bell */}
+              <NotificationBell onOpenLoginModal={onOpenLoginModal} />
             </div>
-          </div>
-        </div>
-
-        {/* Row 2 (Grey with border): Categories dropdown, Navigation Links */}
-        <div className="hidden lg:block w-full bg-[#f5f5f5] border-b border-slate-200/60">
-          <div className="max-w-7xl mx-auto w-full px-6 md:px-12 h-[48px] flex items-center justify-start gap-12">
-            {/* Categories Button */}
-            <div
-              className="relative py-1 group"
-              onMouseEnter={() => handleMouseEnter('categories')}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeAllMenus();
-                  router.push('/categories');
-                }}
-                className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${
-                  activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'
-                }`}
-              >
-                <Menu className="w-4 h-4" />
-                <span>Categories</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === 'categories' ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
-
-            {/* Navigation Links */}
-            <nav className="flex items-center text-slate-800 font-sans font-semibold text-[13px] tracking-[0.02em] gap-4">
-              <Link href="/offers" onClick={() => { closeAllMenus(); if (setCurrentView) setCurrentView('special-offers'); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Special Offers</Link>
-              <span className="text-slate-300 select-none">•</span>
-              <a href="#bestsellers" onClick={(e) => { e.preventDefault(); setCurrentView('home'); setTimeout(() => document.getElementById('bestsellers')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Bestsellers</a>
-              <span className="text-slate-300 select-none">•</span>
-              <a href="#combo-deals" onClick={(e) => { e.preventDefault(); setCurrentView('combo-deals'); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Combo Deals</a>
-              <span className="text-slate-300 select-none">•</span>
-              <a href="#brands" onClick={(e) => { e.preventDefault(); setCurrentView('home'); setTimeout(() => document.getElementById('brands')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="hover:text-[#006670] transition-colors py-1 cursor-pointer font-bold">Brands</a>
-
-            </nav>
           </div>
         </div>
 
@@ -769,6 +734,20 @@ const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
+            {/* Wishlist Icon Trigger */}
+            <button
+              onClick={(e) => { e.preventDefault(); closeAllMenus(); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
+              className="relative p-1.5 sm:p-2 rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-rose-500"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-[18px] h-[18px] stroke-[1.8]" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </button>
+
             {/* Notification Bell Icon Trigger & Dropdown */}
             <div 
               className="relative"
@@ -827,20 +806,44 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* Wishlist Icon Trigger */}
-            <button
-              onClick={(e) => { e.preventDefault(); closeAllMenus(); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
-              className="relative p-1.5 sm:p-2 rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-rose-500"
-              aria-label="Wishlist"
+        {/* Row 2 (Grey/Teal Tint with border): Categories dropdown (Desktop), Sub-Navigation Links (Mobile & Desktop) */}
+        <div className="w-full bg-[#f6fafb] lg:bg-[#f5f5f5] border-b border-slate-200/60 shadow-2xs">
+          <div className="max-w-7xl mx-auto w-full px-3.5 sm:px-6 md:px-12 h-[36px] lg:h-[48px] flex items-center justify-center lg:justify-start gap-4 lg:gap-12">
+            {/* Categories Button (Desktop) */}
+            <div
+              className="hidden lg:block relative py-1 group shrink-0"
+              onMouseEnter={() => handleMouseEnter('categories')}
+              onMouseLeave={handleMouseLeave}
             >
-              <Heart className="w-[18px] h-[18px] stroke-[1.8]" />
-              {wishlistItems.length > 0 && (
-                <span className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeAllMenus();
+                  router.push('/products');
+                }}
+                className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${
+                  activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'
+                }`}
+              >
+                <Menu className="w-4 h-4" />
+                <span>Categories</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === 'categories' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Navigation Links — Positioned Below Navbar in Mobile View */}
+            <nav className="flex items-center text-slate-800 font-sans font-semibold text-[11.5px] sm:text-[13px] tracking-[0.01em] gap-2.5 sm:gap-4.5 overflow-x-auto no-scrollbar w-full lg:w-auto py-1 justify-center lg:justify-start select-none">
+              <Link href="/offers" onClick={() => { closeAllMenus(); if (setCurrentView) setCurrentView('special-offers'); }} className="hover:text-[#006670] transition-colors py-0.5 cursor-pointer font-bold shrink-0">Special Offers</Link>
+              <span className="text-slate-300 select-none shrink-0">•</span>
+              <Link href="/best-sellers" onClick={() => closeAllMenus()} className="hover:text-[#006670] transition-colors py-0.5 cursor-pointer font-bold shrink-0">Bestsellers</Link>
+              <span className="text-slate-300 select-none shrink-0">•</span>
+              <Link href="/combo-deals" onClick={() => { closeAllMenus(); if (setCurrentView) setCurrentView('combo-deals'); }} className="hover:text-[#006670] transition-colors py-0.5 cursor-pointer font-bold shrink-0">Combo Deals</Link>
+              <span className="text-slate-300 select-none shrink-0">•</span>
+              <Link href="/brands" onClick={() => closeAllMenus()} className="hover:text-[#006670] transition-colors py-0.5 cursor-pointer font-bold shrink-0">Brands</Link>
+            </nav>
           </div>
         </div>
 

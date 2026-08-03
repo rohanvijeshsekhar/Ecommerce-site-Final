@@ -18,7 +18,7 @@ export default async function HomePage() {
   const [
     heroRes,
     categoriesRes,
-    bestSellersRes,
+    bestsellersRes,
     recommendedRes,
     combosRes
   ] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function HomePage() {
 
   const initialSlides = heroRes.data || [];
   const initialCategories = categoriesRes.data || [];
-  const initialBestSellers = bestSellersRes.data || [];
+  const initialBestSellers = bestsellersRes.data || [];
   const initialRecommended = recommendedRes.data || [];
   const initialCombos = combosRes.data || [];
 

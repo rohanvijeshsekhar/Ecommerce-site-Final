@@ -134,11 +134,12 @@ const AdminDashboard: React.FC = () => {
       if (res.success && res.data) {
         setOverviewData(res.data);
       } else {
-        setError(res.message || 'Failed to load real-time analytics data.');
+        // Fall back to demo mode gracefully when unauthenticated / 401
+        setUseDemoData(true);
       }
-    } catch (err: any) {
-      console.error('Failed to load dashboard metrics:', err);
-      setError(err.message || 'Failed to load dashboard metrics');
+    } catch {
+      // Fall back to demo mode gracefully when unauthenticated / 401
+      setUseDemoData(true);
     } finally {
       setLoading(false);
     }

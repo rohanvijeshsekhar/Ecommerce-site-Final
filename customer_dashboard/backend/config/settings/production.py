@@ -58,6 +58,10 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_SAMESITE": "Strict",
 }
 
+# REFRESH_COOKIE is cookie-based v2 token management
+REFRESH_COOKIE_SECURE = True
+REFRESH_COOKIE_SAMESITE = "Strict"
+
 
 # ============================================================
 # Amazon S3 / Cloudflare R2 Media Storage

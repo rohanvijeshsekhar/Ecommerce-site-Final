@@ -48,6 +48,11 @@ from apps.authentication.serializers import (
     UserMinimalSerializer,
 )
 from apps.authentication.services import AuthService, EmailService, JWTService, TokenService
+from apps.authentication.throttles import (
+    ForgotPasswordRateThrottle,
+    LoginRateThrottle,
+    RegisterRateThrottle,
+)
 from apps.dealer.models import DealerApplication, DealerApplicationDocument
 from apps.users.models import UserRole
 
@@ -75,9 +80,16 @@ def _error(message: str, errors=None, status_code: int = status.HTTP_400_BAD_REQ
 
 
 def _get_client_ip(request) -> str:
+    """
+    M1 Fix: Respect TRUSTED_PROXY_COUNT when reading X-Forwarded-For.
+    """
+    from django.conf import settings as _settings
+    trusted_count = getattr(_settings, "TRUSTED_PROXY_COUNT", 0)
     x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded:
-        return x_forwarded.split(",")[0].strip()
+    if x_forwarded and trusted_count > 0:
+        ips = [ip.strip() for ip in x_forwarded.split(",")]
+        idx = max(0, len(ips) - trusted_count)
+        return ips[idx]
     return request.META.get("REMOTE_ADDR", "unknown")
 
 
@@ -97,6 +109,7 @@ class RegisterView(APIView):
 
     permission_classes = [AllowAny]
     parser_classes = [JSONParser]
+    throttle_classes = [RegisterRateThrottle]  # H2: 5/hour per IP
 
     @extend_schema(
         summary="Customer Registration",
@@ -142,6 +155,179 @@ class RegisterView(APIView):
                 "user": UserMinimalSerializer(user).data,
             },
             message="Account created successfully. Please check your email to verify your address.",
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+# ──────────────────────────────────────────────────────────────
+# OTP-First Registration — Pre-Register (send OTP, no account yet)
+# ──────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Authentication"])
+class PreRegisterView(APIView):
+    """
+    POST /api/v1/auth/pre-register/
+
+    Step 1 of OTP-first registration.
+    Validates registration data and sends OTP to the phone number.
+    No account is created at this stage.
+    Stores pending registration data in cache for 15 minutes.
+    """
+
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser]
+    throttle_classes = [RegisterRateThrottle]
+
+    def post(self, request):
+        from django.core.cache import cache
+        from apps.authentication.services import OTPService
+
+        serializer = RegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            return _error("Registration failed.", errors=serializer.errors, status_code=400)
+
+        data = serializer.validated_data
+        phone = data.get("phone_number") or None
+
+        if not phone:
+            # No phone number — create account immediately (no OTP needed)
+            user = User.objects.create_user(
+                email=data["email"],
+                full_name=data["full_name"],
+                password=data["password"],
+                role=UserRole.CUSTOMER,
+            )
+            tokens = JWTService.generate_tokens_for_user(user)
+            raw_token = TokenService.generate_email_verification_token(user)
+            EmailService.send_welcome_verify(user, raw_token)
+            logger.info("[PRE-REGISTER] No phone — account created directly for %s.", user.email)
+            return _ok(
+                data={
+                    "otp_required": False,
+                    "access": tokens["access"],
+                    "refresh": tokens["refresh"],
+                    "user": UserMinimalSerializer(user).data,
+                },
+                message="Account created successfully.",
+                status_code=status.HTTP_201_CREATED,
+            )
+
+        # Check email uniqueness before sending OTP
+        if User.objects.filter(email=data["email"]).exists():
+            return _error("Registration failed.", errors={"email": ["A user with this email already exists."]}, status_code=400)
+
+        # Check phone uniqueness
+        if User.objects.filter(phone_number=phone).exists():
+            return _error("Registration failed.", errors={"phone_number": ["This phone number is already registered."]}, status_code=400)
+
+        # Store pending registration data in cache (15 min TTL)
+        cache_key = f"pending_reg_{phone}"
+        cache.set(cache_key, {
+            "email": data["email"],
+            "full_name": data["full_name"],
+            "password": data["password"],
+            "phone_number": phone,
+        }, timeout=900)  # 15 minutes
+
+        # Send OTP
+        success, msg = OTPService.send_otp(phone, "registration", ip_address=_get_client_ip(request))
+        if not success:
+            cache.delete(cache_key)
+            return _error(f"Failed to send OTP: {msg}", status_code=500)
+
+        logger.info("[PRE-REGISTER] OTP sent to %s for email %s.", phone, data["email"])
+        return _ok(
+            data={"otp_required": True, "phone": phone},
+            message=f"OTP sent to {phone}. Please verify to complete registration.",
+            status_code=status.HTTP_200_OK,
+        )
+
+
+# ──────────────────────────────────────────────────────────────
+# OTP-First Registration — Verify & Create Account
+# ──────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Authentication"])
+class VerifyAndRegisterView(APIView):
+    """
+    POST /api/v1/auth/verify-and-register/
+
+    Step 2 of OTP-first registration.
+    Verifies the OTP and creates the user account only on success.
+    Body: { phone_number, otp_code }
+    """
+
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        from django.core.cache import cache
+        from apps.authentication.services import OTPService
+
+        phone = request.data.get("phone_number", "").strip()
+        otp_code = request.data.get("otp_code", "").strip()
+
+        if not phone or not otp_code:
+            return _error("phone_number and otp_code are required.", status_code=400)
+
+        # Verify the OTP
+        verified, msg = OTPService.verify_otp(
+            target=phone,
+            purpose="registration",
+            raw_otp=otp_code,
+            ip_address=_get_client_ip(request),
+        )
+        if not verified:
+            return _error(msg, status_code=400)
+
+        # Retrieve pending registration data
+        cache_key = f"pending_reg_{phone}"
+        pending = cache.get(cache_key)
+        if not pending:
+            return _error(
+                "Registration session expired. Please start registration again.",
+                status_code=400,
+            )
+
+        # Final uniqueness check (race condition guard)
+        if User.objects.filter(email=pending["email"]).exists():
+            cache.delete(cache_key)
+            return _error("An account with this email already exists.", status_code=400)
+
+        # Create the user account
+        user = User.objects.create_user(
+            email=pending["email"],
+            full_name=pending["full_name"],
+            password=pending["password"],
+            phone_number=phone,
+            role=UserRole.CUSTOMER,
+        )
+
+        # Mark phone as verified
+        profile = getattr(user, "userprofile", None)
+        if profile:
+            profile.phone_verified = True
+            profile.save(update_fields=["phone_verified"])
+
+        # Clear cache entry
+        cache.delete(cache_key)
+
+        # Generate tokens and send welcome email
+        tokens = JWTService.generate_tokens_for_user(user)
+        try:
+            raw_token = TokenService.generate_email_verification_token(user)
+            EmailService.send_welcome_verify(user, raw_token)
+        except Exception:
+            pass  # Don't fail registration if email fails
+
+        logger.info("[VERIFY-AND-REGISTER] Account created for %s (phone=%s).", user.email, phone)
+        return _ok(
+            data={
+                "access": tokens["access"],
+                "refresh": tokens["refresh"],
+                "user": UserMinimalSerializer(user).data,
+            },
+            message="Phone verified! Your account has been created successfully.",
             status_code=status.HTTP_201_CREATED,
         )
 
@@ -245,6 +431,7 @@ class LoginView(APIView):
 
     permission_classes = [AllowAny]
     parser_classes = [JSONParser]
+    throttle_classes = [LoginRateThrottle]  # H2: 10/minute per IP
 
     @extend_schema(
         summary="Login",
@@ -520,6 +707,7 @@ class ForgotPasswordView(APIView):
 
     permission_classes = [AllowAny]
     parser_classes = [JSONParser]
+    throttle_classes = [ForgotPasswordRateThrottle]  # H2: 5/hour per IP
 
     @extend_schema(
         summary="Forgot Password",

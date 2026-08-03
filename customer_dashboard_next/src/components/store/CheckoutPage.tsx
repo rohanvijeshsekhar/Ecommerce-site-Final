@@ -221,19 +221,27 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   } | null>(null);
 
   useEffect(() => {
+    // Guard: no address selected yet
     if (!selectedAddressId || selectedAddressId.startsWith('addr-') || selectedAddressId.length < 10) {
+      return;
+    }
+    // Guard: buy-now flow must have items in cartItems before firing the preview request
+    if (checkoutSource === 'buy-now' && cartItems.length === 0) {
       return;
     }
     const loadPreview = async () => {
       try {
         const { cartService } = await import('../../lib/services/cart');
-        const itemsPayload = checkoutSource === 'buy-now' ? cartItems.map(item => ({ product_id: item.id, quantity: item.qty })) : undefined;
+        const itemsPayload = checkoutSource === 'buy-now'
+          ? cartItems.map(item => ({ product_id: item.id, quantity: item.qty }))
+          : undefined;
         const res = await cartService.checkoutPreview(selectedAddressId, deliveryMethod, itemsPayload);
         if (res.success && res.data) {
           setPreviewPricing(res.data);
         }
-      } catch (e) {
-        console.error(e);
+      } catch (e: any) {
+        const backendMsg = e?.response?.data?.error?.message || e?.response?.data?.message || e?.message || 'Checkout preview failed.';
+        console.error('Checkout preview error:', backendMsg, e);
       }
     };
     loadPreview();
@@ -427,12 +435,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
       };
 
-      // 5. Detect sandbox mode: use our custom modal when credentials are placeholders
-      const isSandbox = 
+      // 5. Detect sandbox mode.
+      // We trust the backend to decide whether credentials are valid.
+      // The only client-side signals are:
+      //   a) The backend returned a mock order ID (always prefixed 'order_mock_')
+      //   b) No key_id was returned, or it contains the literal placeholder 'REPLACE'
+      // We do NOT validate key format or length — credentials are accepted exactly
+      // as issued by the Razorpay Dashboard.
+      const isSandbox =
         rzOrder.razorpay_order_id.startsWith('order_mock_') ||
         !rzOrder.key_id ||
         rzOrder.key_id.includes('REPLACE') ||
         rzOrder.key_id === '';
+
+
 
       if (isSandbox) {
         // Store sandbox data and show the internal simulation modal
@@ -449,17 +465,46 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         return;
       }
 
-      // 6. Open real Razorpay payment modal (live credentials)
-      const rzInstance = new (window as any).Razorpay(options);
-      
-      // Handle payment failure event inside Razorpay modal
-      rzInstance.on('payment.failed', function (resp: any) {
-        console.error('Razorpay Payment Failed Callback:', resp.error);
-        showToast?.(`Payment failed: ${resp.error.description || 'Reason unknown'}`);
-        setIsPlacing(false);
-      });
 
-      rzInstance.open();
+      // 6. Open real Razorpay payment modal (live credentials)
+      try {
+        const rzInstance = new (window as any).Razorpay(options);
+        
+        // Handle payment failure event inside Razorpay modal
+        rzInstance.on('payment.failed', function (resp: any) {
+          const rawError = resp?.error;
+          const hasErrorObj = rawError && typeof rawError === 'object' && Object.keys(rawError).length > 0;
+          const errObj = hasErrorObj
+            ? rawError
+            : (resp && typeof resp === 'object' && Object.keys(resp).length > 0 ? resp : (rawError || resp || {}));
+
+          const failDesc =
+            errObj?.description ||
+            errObj?.reason ||
+            errObj?.code ||
+            resp?.error?.description ||
+            resp?.error?.reason ||
+            resp?.description ||
+            resp?.reason ||
+            (typeof resp === 'string' ? resp : null) ||
+            'Transaction cancelled or failed.';
+
+          console.warn('Razorpay Payment Failed Callback:', {
+            resp,
+            error: errObj,
+            description: failDesc
+          });
+
+          showToast?.(`Payment failed: ${failDesc}`);
+          setIsPlacing(false);
+        });
+
+        rzInstance.open();
+      } catch (sdkErr) {
+        console.warn('Razorpay SDK initialization failed.', sdkErr);
+        showToast?.('Failed to open Razorpay payment gateway.');
+        setIsPlacing(false);
+      }
 
     } catch (err: any) {
       showToast?.(err.response?.data?.error?.message || 'Failed to initialize payment gateway.');

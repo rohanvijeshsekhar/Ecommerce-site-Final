@@ -43,50 +43,50 @@ import type { Shipment, ShipmentStatus } from '../../services/shippingService';
 
 const getOrderStatusVariant = (s: OrderDetail['status']) => {
   switch (s) {
-    case 'delivered':       return 'success';
-    case 'shipped':         return 'info';
-    case 'packed':          return 'purple';
-    case 'processing':      return 'warning';
+    case 'delivered': return 'success';
+    case 'shipped': return 'info';
+    case 'packed': return 'purple';
+    case 'processing': return 'warning';
     case 'pending_payment': return 'neutral';
-    case 'cancelled':       return 'error';
-    default:                return 'neutral';
+    case 'cancelled': return 'error';
+    default: return 'neutral';
   }
 };
 
 const getOrderStatusLabel = (s: string): string => {
   const map: Record<string, string> = {
     pending_payment: 'Pending Payment',
-    processing:      'Processing',
-    packed:          'Packed',
-    shipped:         'Shipped',
-    delivered:       'Delivered',
-    cancelled:       'Cancelled',
+    processing: 'Processing',
+    packed: 'Packed',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
   };
   return map[s] || s;
 };
 
 const getShipmentVariant = (s: ShipmentStatus): 'success' | 'info' | 'warning' | 'error' | 'purple' | 'neutral' => {
   switch (s) {
-    case 'delivered':        return 'success';
+    case 'delivered': return 'success';
     case 'out_for_delivery': return 'info';
-    case 'in_transit':       return 'info';
-    case 'reached_hub':      return 'purple';
-    case 'picked_up':        return 'purple';
+    case 'in_transit': return 'info';
+    case 'reached_hub': return 'purple';
+    case 'picked_up': return 'purple';
     case 'pickup_scheduled': return 'warning';
-    case 'created':          return 'warning';
-    case 'failed_delivery':  return 'error';
-    case 'cancelled':        return 'error';
-    default:                 return 'neutral';
+    case 'created': return 'warning';
+    case 'failed_delivery': return 'error';
+    case 'cancelled': return 'error';
+    default: return 'neutral';
   }
 };
 
 const NEXT_STATUSES: Partial<Record<string, string[]>> = {
   pending_payment: ['pending_payment', 'processing', 'cancelled'],
-  processing:      ['processing', 'packed', 'cancelled'],
-  packed:          ['packed', 'cancelled'],
-  shipped:         ['shipped', 'delivered'],
-  delivered:       [],
-  cancelled:       [],
+  processing: ['processing', 'packed', 'cancelled'],
+  packed: ['packed', 'cancelled'],
+  shipped: ['shipped', 'delivered'],
+  delivered: [],
+  cancelled: [],
 };
 
 // Order Progress Steps
@@ -130,19 +130,19 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
 }) => {
   const toast = useToast();
 
-  const [weight, setWeight]     = useState('0.5');
-  const [length, setLength]     = useState('15');
-  const [breadth, setBreadth]   = useState('15');
-  const [height, setHeight]     = useState('10');
+  const [weight, setWeight] = useState('0.5');
+  const [length, setLength] = useState('15');
+  const [breadth, setBreadth] = useState('15');
+  const [height, setHeight] = useState('10');
   const [paymentMode, setPaymentMode] = useState<'Prepaid' | 'COD'>('Prepaid');
-  const [pickupDate, setPickupDate]   = useState('');
-  const [view, setView]         = useState<PanelView>('form');
+  const [pickupDate, setPickupDate] = useState('');
+  const [view, setView] = useState<PanelView>('form');
 
-  const [creating, setCreating]                 = useState(false);
-  const [syncing, setSyncing]                   = useState(false);
-  const [cancelling, setCancelling]             = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [schedulingPickup, setSchedulingPickup] = useState(false);
-  const [copiedAWB, setCopiedAWB]               = useState(false);
+  const [copiedAWB, setCopiedAWB] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -163,22 +163,22 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
       let res;
       if (shipment && shipment.id) {
         res = await adminShippingService.createCourierShipment(shipment.id, {
-          weight:       parseFloat(weight),
-          length:       parseFloat(length),
-          breadth:      parseFloat(breadth),
-          height:       parseFloat(height),
+          weight: parseFloat(weight),
+          length: parseFloat(length),
+          breadth: parseFloat(breadth),
+          height: parseFloat(height),
           payment_mode: paymentMode,
-          pickup_date:  pickupDate || undefined,
+          pickup_date: pickupDate || undefined,
         });
       } else {
         res = await adminShippingService.createShipment({
-          order_id:     order.id,
-          weight:       parseFloat(weight),
-          length:       parseFloat(length),
-          breadth:      parseFloat(breadth),
-          height:       parseFloat(height),
+          order_id: order.id,
+          weight: parseFloat(weight),
+          length: parseFloat(length),
+          breadth: parseFloat(breadth),
+          height: parseFloat(height),
           payment_mode: paymentMode,
-          pickup_date:  pickupDate || undefined,
+          pickup_date: pickupDate || undefined,
         });
       }
 
@@ -407,13 +407,12 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
                   .sort((a, b) => new Date(b.event_timestamp).getTime() - new Date(a.event_timestamp).getTime())
                   .map((evt, idx) => (
                     <div key={evt.id} className="relative text-[11px]">
-                      <span className={`absolute -left-[15px] top-1 w-2.5 h-2.5 rounded-full border-2 ${
-                        evt.is_delivered
+                      <span className={`absolute -left-[15px] top-1 w-2.5 h-2.5 rounded-full border-2 ${evt.is_delivered
                           ? 'bg-emerald-500 border-emerald-500'
                           : idx === 0
-                          ? 'bg-[#006670] border-[#006670]'
-                          : 'bg-white border-slate-300'
-                      }`} />
+                            ? 'bg-[#006670] border-[#006670]'
+                            : 'bg-white border-slate-300'
+                        }`} />
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-800">{evt.event_label}</span>
                         <span className="text-[9px] text-slate-400 font-medium">
@@ -616,20 +615,20 @@ const AdminOrderDetailPage: React.FC = () => {
   const router = useRouter();
   const toast = useToast();
 
-  const [order, setOrder]             = useState<OrderDetail | null>(null);
-  const [loading, setLoading]         = useState(true);
+  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [shipment, setShipment]       = useState<Shipment | null>(null);
+  const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loadingShipment, setLoadingShipment] = useState(true);
 
   // Notes state & Edit toggle
   const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [adminNotes, setAdminNotes]         = useState('');
-  const [savingNotes, setSavingNotes]       = useState(false);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
 
   // Status Modal / Target
   const [targetStatus, setTargetStatus] = useState('');
-  const [estDelivery, setEstDelivery]   = useState('');
+  const [estDelivery, setEstDelivery] = useState('');
 
   useBreadcrumbSync([
     { label: 'Operations' },
@@ -835,22 +834,20 @@ const AdminOrderDetailPage: React.FC = () => {
 
             {PROGRESS_STEPS.map((step, idx) => {
               const isCompleted = idx < currentStepIdx;
-              const isCurrent   = idx === currentStepIdx;
+              const isCurrent = idx === currentStepIdx;
 
               return (
                 <div key={step.id} className="flex flex-col items-center relative z-10 text-center px-1">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                    isCompleted
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${isCompleted
                       ? 'bg-emerald-500 text-white shadow-sm'
                       : isCurrent
-                      ? 'bg-[#006670] text-white ring-4 ring-[#006670]/20 animate-pulse'
-                      : 'bg-white border-2 border-slate-200 text-slate-400'
-                  }`}>
+                        ? 'bg-[#006670] text-white ring-4 ring-[#006670]/20 animate-pulse'
+                        : 'bg-white border-2 border-slate-200 text-slate-400'
+                    }`}>
                     {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
                   </div>
-                  <span className={`text-[11px] font-bold mt-2 leading-tight ${
-                    isCurrent ? 'text-[#006670] font-black' : isCompleted ? 'text-slate-800' : 'text-slate-400'
-                  }`}>
+                  <span className={`text-[11px] font-bold mt-2 leading-tight ${isCurrent ? 'text-[#006670] font-black' : isCompleted ? 'text-slate-800' : 'text-slate-400'
+                    }`}>
                     {step.label}
                   </span>
                 </div>

@@ -3,7 +3,26 @@ FAAZO – Brand Serializers
 """
 
 from rest_framework import serializers
-from .models import Brand, BrandDocument
+from .models import Brand, BrandDocument, BrandPageBanner
+
+
+class BrandPageBannerSerializer(serializers.ModelSerializer):
+    banner_image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BrandPageBanner
+        fields = [
+            "id", "title", "subtitle", "banner_image",
+            "banner_image_url", "button_text", "button_link", "is_active",
+        ]
+
+    def get_banner_image_url(self, obj):
+        if obj.banner_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.banner_image.url)
+            return obj.banner_image.url
+        return None
 
 
 class BrandDocumentSerializer(serializers.ModelSerializer):
@@ -17,43 +36,75 @@ class BrandDocumentSerializer(serializers.ModelSerializer):
 
 
 class BrandListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for list views and dropdowns."""
+    """Lightweight serializer for list views and cards."""
+    product_count = serializers.IntegerField(read_only=True, default=0)
+    logo_url = serializers.SerializerMethodField()
+    banner_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Brand
         fields = [
-            "id", "name", "slug", "logo", "country_of_origin",
-            "warranty_months_default", "is_active",
+            "id", "name", "slug", "logo", "logo_url", "banner_image", "banner_image_url",
+            "short_description", "full_description", "country_of_origin",
+            "warranty_months_default", "display_order", "is_featured",
+            "is_active", "product_count", "created_at",
         ]
-        read_only_fields = ["id", "slug"]
+        read_only_fields = ["id", "slug", "product_count"]
+
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+
+    def get_banner_image_url(self, obj):
+        if obj.banner_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.banner_image.url)
+            return obj.banner_image.url
+        return None
 
 
 class BrandDetailSerializer(serializers.ModelSerializer):
-    """Full serializer including after-sales policy and documents."""
-
+    """Full serializer including after-sales policy, documents, and SEO."""
     documents = BrandDocumentSerializer(many=True, read_only=True)
+    product_count = serializers.IntegerField(read_only=True, default=0)
+    logo_url = serializers.SerializerMethodField()
+    banner_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Brand
         fields = [
-            "id", "name", "slug", "description", "logo",
-            "country_of_origin",
-            # Contact
-            "website_url", "support_email", "support_phone",
-            # Warranty
+            "id", "name", "slug", "short_description", "full_description", "description",
+            "logo", "logo_url", "banner_image", "banner_image_url",
+            "country_of_origin", "website_url", "support_email", "support_phone",
             "warranty_policy_text", "warranty_months_default", "is_warranty_transferable",
-            # Service
             "service_policy_text", "service_turnaround_days",
-            # Compliance
             "certifications", "documentation_url",
-            # Admin
-            "is_active",
-            # Documents
-            "documents",
-            # Timestamps
+            "display_order", "is_featured", "is_active",
+            "seo_title", "seo_description", "product_count", "documents",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "slug", "created_at", "updated_at", "documents"]
+        read_only_fields = ["id", "slug", "created_at", "updated_at", "documents", "product_count"]
+
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+
+    def get_banner_image_url(self, obj):
+        if obj.banner_image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.banner_image.url)
+            return obj.banner_image.url
+        return None
 
 
 class BrandWriteSerializer(serializers.ModelSerializer):
@@ -63,11 +114,13 @@ class BrandWriteSerializer(serializers.ModelSerializer):
         model = Brand
         fields = [
             "id", "slug",
-            "name", "description", "logo", "country_of_origin",
+            "name", "short_description", "full_description", "description",
+            "logo", "banner_image", "country_of_origin",
             "website_url", "support_email", "support_phone",
             "warranty_policy_text", "warranty_months_default", "is_warranty_transferable",
             "service_policy_text", "service_turnaround_days",
-            "certifications", "documentation_url", "is_active",
+            "certifications", "documentation_url", "display_order", "is_featured",
+            "is_active", "seo_title", "seo_description",
         ]
         read_only_fields = ["id", "slug"]
 
@@ -94,3 +147,4 @@ class BrandAfterSalesSerializer(serializers.ModelSerializer):
             "service_policy_text", "service_turnaround_days",
             "support_email", "support_phone", "documentation_url",
         ]
+

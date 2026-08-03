@@ -1,32 +1,65 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import BrandLogos from '@/components/store/BrandLogos';
+import BrandsClient from '@/components/store/BrandsClient';
 
 export const metadata: Metadata = {
-  title: 'Authorized Dental Equipment Brands | FAAZO Dental Solutions',
-  description: 'Explore genuine clinical equipment and supplies from world-renowned dental manufacturers: 3M, Dentsply Sirona, NSK, Planmeca, Woodpecker, W&H, and more.',
-  keywords: ['dental brands', '3M Oral Care', 'Dentsply Sirona', 'NSK Japan', 'Planmeca Finland', 'Woodpecker Dental', 'W&H Dental'],
+  title: 'Brands | FAAZO Dental Marketplace',
+  description: 'Discover premium dental brands available on FAAZO. Explore 100% authentic clinical equipment and supplies directly from leading global manufacturers with full warranty support.',
+  keywords: [
+    'Brands',
+    'Dental Brands',
+    '3M Dental',
+    'NSK Dental',
+    'Dentsply Sirona',
+    'Planmeca',
+    'Woodpecker',
+    'FAAZO Marketplace',
+    'Clinical Dental Equipment'
+  ],
+  openGraph: {
+    title: 'Brands | FAAZO Dental Marketplace',
+    description: 'Explore 100% authentic clinical equipment and supplies directly from leading global manufacturers.',
+    url: 'https://faazo.in/brands',
+    siteName: 'FAAZO',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Brands | FAAZO Dental Marketplace',
+    description: 'Explore 100% authentic clinical equipment and supplies directly from leading global manufacturers.',
+  },
+  alternates: {
+    canonical: 'https://faazo.in/brands',
+  },
 };
 
 export default function BrandsPage() {
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 text-center">
-          <span className="text-xs font-black tracking-widest text-[#006670] uppercase">
-            Global Manufacturers
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2">
-            Authorized Brand Partners
-          </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto mt-2 text-sm sm:text-base">
-            100% genuine clinical equipment directly sourced from authorized international manufacturers with full warranty support.
-          </p>
-        </div>
-
-        <BrandLogos />
-      </div>
-    </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://faazo.in',
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Brands',
+                item: 'https://faazo.in/brands',
+              },
+            ],
+          }),
+        }}
+      />
+      <BrandsClient />
+    </>
   );
 }

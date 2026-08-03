@@ -44,8 +44,8 @@ export const dashboardService = {
       const res = await api.get('admin/dashboard/overview/', { params: { period } });
       return res.data;
     } catch (err: any) {
-      console.error('Failed to fetch dashboard overview:', err);
-      return { success: false, message: err.message || 'Failed to fetch dashboard overview' };
+      // Silently return failure — 401 is expected when the user is not yet authenticated
+      return { success: false, message: err.response?.status === 401 ? 'Unauthenticated' : (err.message || 'Failed to fetch dashboard overview') };
     }
   },
 

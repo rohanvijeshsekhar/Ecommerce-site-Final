@@ -24,8 +24,28 @@ environ.Env.read_env(BASE_DIR / ".env")
 # Security
 # ============================================================
 SECRET_KEY = env("SECRET_KEY")
+# ── Dedicated JWT signing key (H3) ──────────────────────────────────────────
+# Separate from Django's SECRET_KEY so they can be rotated independently.
+# Falls back to SECRET_KEY for zero-config development environments.
+JWT_SECRET_KEY = env("JWT_SECRET_KEY", default=SECRET_KEY)
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+
+# ── Reverse Proxy (M1) ───────────────────────────────────────────────────────
+# Set to the number of trusted proxy hops in front of Django.
+# e.g. TRUSTED_PROXY_COUNT=1 when behind a single nginx / load balancer.
+# 0 = no reverse proxy (default for dev). Read X-Forwarded-For only up to this depth.
+TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=0)
+
+# ── Refresh Cookie Settings (C1) ─────────────────────────────────────────────
+# HttpOnly cookie is the secure transport mechanism for refresh tokens.
+# Never change REFRESH_COOKIE_HTTPONLY — it must always be True.
+REFRESH_COOKIE_NAME = "faazo_refresh"
+REFRESH_COOKIE_PATH = "/api/v1/auth/"   # narrowed path — not sent on every request
+REFRESH_COOKIE_HTTPONLY = True
+REFRESH_COOKIE_SECURE = env.bool("COOKIE_SECURE", default=False)  # True in prod
+REFRESH_COOKIE_SAMESITE = env("COOKIE_SAMESITE", default="Lax")    # Lax in dev/prod-same-domain
+REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60  # 7 days in seconds (matches REFRESH_TOKEN_LIFETIME)
 
 
 # ============================================================
@@ -77,6 +97,8 @@ LOCAL_APPS = [
     "apps.warranty",
     # ── Phase 13: Shipping & Fulfillment ─────────────────────
     "apps.shipping",
+    # ── Best Sellers Module ──────────────────────────────────
+    "apps.bestsellers",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -97,6 +119,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 # ============================================================
@@ -217,6 +241,13 @@ REST_FRAMEWORK = {
         "user": "50000/hour",
         "payment_create": "100/minute",
         "payment_verify": "100/minute",
+        # ── Per-endpoint auth throttles (H2) ────────────────────────────────
+        "auth_login": "10/minute",          # 10 login attempts per minute per IP
+        "auth_register": "5/hour",          # 5 registrations per hour per IP
+        "auth_otp_send": "3/minute",        # 3 OTP sends per minute per IP
+        "auth_otp_verify": "10/minute",     # 10 OTP verify attempts per minute per IP
+        "auth_token_refresh": "60/minute",  # 60 refresh requests per minute per user
+        "auth_forgot_password": "5/hour",   # 5 forgot-password requests per hour per IP
     },
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
@@ -244,18 +275,22 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
+    "SIGNING_KEY": JWT_SECRET_KEY,              # ← H3: uses dedicated key
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
-    # Cookie settings (overridden per environment)
+    # Cookie references — used only when/if cookie-based access token is enabled.
+    # Refresh tokens are managed by REFRESH_COOKIE_* settings above.
     "AUTH_COOKIE": "access_token",
     "AUTH_COOKIE_REFRESH": "refresh_token",
     "AUTH_COOKIE_SECURE": env.bool("COOKIE_SECURE", default=False),
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SAMESITE": "Lax",
 }
+
+# Maximum active concurrent device sessions per user
+MAX_ACTIVE_SESSIONS = env.int("MAX_ACTIVE_SESSIONS", default=10)
 
 
 # ============================================================
@@ -467,6 +502,33 @@ LOGGING = {
 APP_NAME = "FAAZO Dental Solutions"
 APP_VERSION = "1.0.0"
 
+# Google OAuth 2.0 Configuration
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+
+
+# ============================================================
+# OTP Provider Settings
+# ============================================================
+# SMS_PROVIDER options: 'sangamam' | 'mock'
+SMS_PROVIDER = env("SMS_PROVIDER", default="mock").lower()
+
+# Sangamam v1.0 Signed API credentials
+SANGAMAM_ACCESS_TOKEN     = env("SANGAMAM_ACCESS_TOKEN", default="")
+SANGAMAM_ACCESS_TOKEN_KEY = env("SANGAMAM_ACCESS_TOKEN_KEY", default="")
+SANGAMAM_TEMPLATE_ID      = env("SANGAMAM_TEMPLATE_ID", default="")
+SANGAMAM_SENDER_HEADER    = env("SANGAMAM_SENDER_HEADER", default="FAZODT")
+
+# Legacy MSG91 (kept for reference)
+MSG91_AUTHKEY    = env("MSG91_AUTHKEY", default="")
+MSG91_SENDER_ID  = env("MSG91_SENDER_ID", default="FAAZO")
+MSG91_ROUTE      = env("MSG91_ROUTE", default="4")
+MSG91_TEMPLATE_ID = env("MSG91_TEMPLATE_ID", default="")
+
+OTP_RESEND_COOLDOWN_SECONDS = env.int("OTP_RESEND_COOLDOWN_SECONDS", default=60)
+OTP_MAX_PER_HOUR = env.int("OTP_MAX_PER_HOUR", default=5)
+OTP_EXPIRATION_MINUTES = env.int("OTP_EXPIRATION_MINUTES", default=10)
+OTP_MAX_ATTEMPTS = env.int("OTP_MAX_ATTEMPTS", default=3)
+
 
 # ============================================================
 # Razorpay Payment Gateway
@@ -477,20 +539,24 @@ RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 
 
 # ============================================================
-# Delhivery Shipping Integration & Provider Settings
+# Shiprocket Shipping Integration & Provider Settings
 # ============================================================
-# SHIPPING_PROVIDER options: 'offline' | 'sandbox' | 'live'
+# SHIPPING_PROVIDER options: 'offline' | 'shiprocket'
 SHIPPING_PROVIDER = env("SHIPPING_PROVIDER", default="offline").lower()
-DELHIVERY_BASE_URL_SANDBOX = env("DELHIVERY_BASE_URL_SANDBOX", default="https://staging-express.delhivery.com")
-DELHIVERY_BASE_URL_LIVE = env("DELHIVERY_BASE_URL_LIVE", default="https://express.delhivery.com")
-DELHIVERY_API_TOKEN = env("DELHIVERY_API_TOKEN", default=env("DELHIVERY_TOKEN", default=""))
-DELHIVERY_CLIENT_NAME = env("DELHIVERY_CLIENT_NAME", default="FAAZO")
-DELHIVERY_PICKUP_LOCATION = env("DELHIVERY_PICKUP_LOCATION", default="FAAZO Central Warehouse")
-DELHIVERY_SELLER_NAME = env("DELHIVERY_SELLER_NAME", default="FAAZO Dental Solutions Pvt. Ltd.")
-DELHIVERY_PHONE = env("DELHIVERY_PHONE", default="9876543210")
-DELHIVERY_EMAIL = env("DELHIVERY_EMAIL", default="operations@faazo.com")
+SHIPROCKET_BASE_URL = env("SHIPROCKET_BASE_URL", default="https://apiv2.shiprocket.in")
+SHIPROCKET_EMAIL = env("SHIPROCKET_EMAIL", default="")
+SHIPROCKET_PASSWORD = env("SHIPROCKET_PASSWORD", default="")
+SHIPROCKET_PICKUP_LOCATION = env("SHIPROCKET_PICKUP_LOCATION", default="Primary")
+SHIPROCKET_WEBHOOK_SECRET = env("SHIPROCKET_WEBHOOK_SECRET", default="")
+SHIPROCKET_TOKEN_CACHE_TTL = env.int("SHIPROCKET_TOKEN_CACHE_TTL", default=864000)
 
-# Legacy aliases for backward compatibility
-DELHIVERY_TOKEN = DELHIVERY_API_TOKEN
-DELHIVERY_SANDBOX = (SHIPPING_PROVIDER != "live")
-DELHIVERY_REGISTERED_NAME = DELHIVERY_SELLER_NAME
+# Backward-compatible fallback aliases for existing view / check calls
+DELHIVERY_BASE_URL_SANDBOX = SHIPROCKET_BASE_URL
+DELHIVERY_BASE_URL_LIVE = SHIPROCKET_BASE_URL
+DELHIVERY_API_TOKEN = ""
+DELHIVERY_CLIENT_NAME = "FAAZO"
+DELHIVERY_PICKUP_LOCATION = SHIPROCKET_PICKUP_LOCATION
+DELHIVERY_SELLER_NAME = "FAAZO Dental Solutions Pvt. Ltd."
+DELHIVERY_PHONE = "9876543210"
+DELHIVERY_EMAIL = SHIPROCKET_EMAIL
+

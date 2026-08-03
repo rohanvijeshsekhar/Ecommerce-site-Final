@@ -212,10 +212,10 @@ export default function OffersPage({ setCartItems, showToast }: OffersPageProps)
     <div className="w-full bg-[#F8FAFC] min-h-screen text-slate-800 font-sans text-left pt-[100px] lg:pt-[135px] pb-24 select-none">
       
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION (Light Olive Green Background Only) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <section className="w-full bg-gradient-to-b from-white via-slate-50 to-[#F8FAFC] border-b border-slate-200/70 py-12 lg:py-16 px-6 lg:px-12">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <section className="w-full bg-[#E2EAD9] bg-gradient-to-r from-[#D9E3D0] via-[#E5ECE0] to-[#DAE4D2] border-b border-[#6E8154]/20 py-12 lg:py-16 px-6 lg:px-12 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
           
           {/* Text Content */}
           <div className="lg:col-span-7 space-y-4">
@@ -241,26 +241,27 @@ export default function OffersPage({ setCartItems, showToast }: OffersPageProps)
                 <ArrowRight className="w-4 h-4" />
               </a>
 
-              <span className="text-xs font-bold text-slate-400">
+              <span className="text-xs font-bold text-slate-500">
                 ✓ 100% Genuine Direct Import • Manufacturer Warranty
               </span>
             </div>
           </div>
 
-          {/* Hero Banner Visual */}
+          {/* Hero Banner Visual Card with Small Box Image */}
           <div className="lg:col-span-5 relative flex justify-center">
             <div className="w-full max-w-md bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#006670]/5 rounded-full blur-2xl pointer-events-none" />
               
-              <div className="w-full h-56 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden mb-4 relative">
+              {/* Small Box Image Area */}
+              <div className="w-full h-56 bg-white rounded-2xl flex items-center justify-center overflow-hidden mb-4 relative p-2 border border-slate-100 shadow-inner">
                 <Image 
-                  src="/images/hero_chair.png" 
-                  alt="Special Offers Banner" 
+                  src="/images/hero_chair_banner.png" 
+                  alt="Special Offers Operatory Setup" 
                   fill
                   sizes="400px"
-                  className="object-contain p-4 transform hover:scale-105 transition-transform duration-500"
+                  className="object-contain p-1 transform hover:scale-105 transition-transform duration-500"
                 />
-                <span className="absolute top-3 left-3 bg-[#006670] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                <span className="absolute top-3 left-3 bg-[#006670] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-sm z-10">
                   Exclusive B2B Deal
                 </span>
               </div>

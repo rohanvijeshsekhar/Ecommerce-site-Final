@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Star, ShoppingCart, Heart, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Autoplay } from 'swiper/modules';
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
-import { useGuestGuard } from '../../hooks/useGuestGuard';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import 'swiper/css';
 
-interface BestSellerProduct {
+interface ProductItem {
   id: string;
   title: string;
-  brand: string;
-  description: string;
+  subtitle: string;
   price: number;
-  originalPrice?: number;
   rating: number;
   reviews: number;
   image: string;
@@ -33,23 +33,22 @@ interface MockCartItem {
 interface BestSellersProps {
   onProductClick?: (productId: string) => void;
   onOpenLoginModal?: () => void;
-  setCartItems?: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
-  wishlistItems?: MockCartItem[];
-  setWishlistItems?: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
+  setCartItems: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
+  wishlistItems: MockCartItem[];
+  setWishlistItems: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
   showToast?: (msg: string) => void;
-  initialProducts?: any[];
+  initialProducts?: ProductItem[];
 }
 
-// ─── Static Fallback Products ─────────────────────────────────────────────────
 
-const STATIC_BEST_SELLERS: BestSellerProduct[] = [
+
+// ─── Static fallback products used when backend returns none ──────────────
+const STATIC_BEST_SELLERS: ProductItem[] = [
   {
     id: 'nsk-ti-max-z900l',
     title: 'NSK Ti-Max Z900L',
-    brand: 'NSK',
-    description: 'High-speed turbine handpiece with LED illumination',
+    subtitle: 'High-Speed Turbine Handpiece',
     price: 24999,
-    originalPrice: 29999,
     rating: 4.8,
     reviews: 124,
     image: '/images/nsk_handpiece_portrait.png',
@@ -57,10 +56,8 @@ const STATIC_BEST_SELLERS: BestSellerProduct[] = [
   {
     id: 'woodpecker-uds-e',
     title: 'Woodpecker UDS-E LED',
-    brand: 'Woodpecker',
-    description: 'Ultrasonic scaler with built-in LED light guide',
+    subtitle: 'Ultrasonic Scaler with LED',
     price: 12499,
-    originalPrice: 15000,
     rating: 4.7,
     reviews: 87,
     image: '/images/bestseller_scaler.png',
@@ -68,282 +65,45 @@ const STATIC_BEST_SELLERS: BestSellerProduct[] = [
   {
     id: 'dentsply-x-smart',
     title: 'Dentsply X-Smart Plus',
-    brand: 'Dentsply Sirona',
-    description: 'Advanced endodontic motor with auto-reverse torque',
+    subtitle: 'Endodontic Motor System',
     price: 38500,
-    originalPrice: 45000,
     rating: 4.9,
     reviews: 63,
     image: '/images/bestseller_scaler.png',
   },
-  {
-    id: 'planmeca-compact-i',
-    title: 'Planmeca Compact i5',
-    brand: 'Planmeca',
-    description: 'Ergonomic dental unit for modern clinical workflows',
-    price: 189000,
-    originalPrice: 210000,
-    rating: 4.9,
-    reviews: 42,
-    image: '/images/category_chairs.png',
-  },
-  {
-    id: 'ivoclar-emax',
-    title: 'IPS e.max Press',
-    brand: 'Ivoclar',
-    description: 'Premium lithium disilicate ceramic for restorations',
-    price: 8750,
-    originalPrice: 9999,
-    rating: 4.8,
-    reviews: 56,
-    image: '/images/category_materials.png',
-  },
-  {
-    id: 'satelec-p5-newtron',
-    title: 'Satelec P5 Newtron',
-    brand: 'Acteon',
-    description: 'Piezoelectric ultrasonic scaler for precision scaling',
-    price: 18500,
-    originalPrice: 22000,
-    rating: 4.7,
-    reviews: 39,
-    image: '/images/bestseller_scaler.png',
-  },
-  {
-    id: 'morita-root-zx-ii',
-    title: 'Morita Root ZX II',
-    brand: 'J. Morita',
-    description: 'Gold-standard electronic apex locator for endodontics',
-    price: 31000,
-    originalPrice: 35000,
-    rating: 4.9,
-    reviews: 72,
-    image: '/images/nsk_handpiece_portrait.png',
-  },
-  {
-    id: 'gdc-extraction-kit',
-    title: 'GDC Extraction Kit',
-    brand: 'GDC',
-    description: 'Complete surgical extraction forceps and elevator set',
-    price: 7200,
-    originalPrice: 8500,
-    rating: 4.6,
-    reviews: 98,
-    image: '/images/category_materials.png',
-  },
 ];
 
-// ─── Scroll-Triggered Fade-Up Hook ────────────────────────────────────────────
-
-function useFadeUp(threshold = 0.12) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
-      { threshold }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, visible };
-}
-
-// ─── Product Card ─────────────────────────────────────────────────────────────
-
-interface ProductCardProps {
-  product: BestSellerProduct;
-  index: number;
-  isWishlisted: boolean;
-  onProductClick?: (id: string) => void;
-  onAddToCart: (e: React.MouseEvent, p: BestSellerProduct) => void;
-  onToggleWishlist: (e: React.MouseEvent, p: BestSellerProduct) => void;
-}
-
-const ProductCard: React.FC<ProductCardProps> = ({
-  product,
-  index,
-  isWishlisted,
+const BestSellers: React.FC<BestSellersProps> = ({ 
   onProductClick,
-  onAddToCart,
-  onToggleWishlist,
+  initialProducts
 }) => {
-  const { ref, visible } = useFadeUp(0.08);
-  const discountPct = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0;
+  const [products, setProducts] = useState<ProductItem[]>(initialProducts || []);
 
-  return (
-    <div
-      ref={ref}
-      className="bs-card"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(24px)',
-        transition: `opacity 0.45s ease ${index * 0.07}s, transform 0.45s ease ${index * 0.07}s`,
-      }}
-      onClick={() => onProductClick?.(product.id)}
-    >
-      {/* Image Container */}
-      <div className="bs-image-wrap">
-        {/* Best Seller Badge */}
-        <span className="bs-badge">★ Best Seller</span>
-
-        {/* Wishlist */}
-        <button
-          className="bs-wishlist-btn"
-          onClick={(e) => onToggleWishlist(e, product)}
-          aria-label="Toggle wishlist"
-        >
-          <Heart
-            className={`w-4 h-4 transition-all duration-200 ${
-              isWishlisted
-                ? 'fill-[#006670] stroke-[#006670]'
-                : 'stroke-slate-400'
-            }`}
-          />
-        </button>
-
-        <img
-          src={product.image}
-          alt={product.title}
-          loading="lazy"
-          className="bs-image"
-        />
-      </div>
-
-      {/* Card Body */}
-      <div className="bs-body">
-        {/* Brand */}
-        <p className="bs-brand">{product.brand}</p>
-
-        {/* Title */}
-        <h3 className="bs-[#1E293B] bs-title">{product.title}</h3>
-
-        {/* Description */}
-        <p className="bs-description">{product.description}</p>
-
-        {/* Rating */}
-        <div className="bs-rating">
-          <div className="bs-stars">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`w-3.5 h-3.5 ${
-                  i < Math.floor(product.rating)
-                    ? 'fill-amber-400 stroke-amber-400'
-                    : i < product.rating
-                    ? 'fill-amber-200 stroke-amber-300'
-                    : 'stroke-slate-200 fill-none'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="bs-rating-score">{product.rating}</span>
-          <span className="bs-rating-count">({product.reviews})</span>
-        </div>
-
-        {/* Pricing */}
-        <div className="bs-pricing">
-          <div className="bs-price-block">
-            <span className="bs-price">₹{product.price.toLocaleString('en-IN')}</span>
-            {product.originalPrice && (
-              <span className="bs-original-price">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-            )}
-          </div>
-          {discountPct > 0 && (
-            <span className="bs-discount-pill">{discountPct}% off</span>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="bs-actions">
-          <button
-            className="bs-btn-cart"
-            onClick={(e) => onAddToCart(e, product)}
-          >
-            <ShoppingCart className="w-4 h-4 shrink-0" />
-            <span>Add to Cart</span>
-          </button>
-          <button
-            className="bs-btn-details"
-            onClick={(e) => { e.stopPropagation(); onProductClick?.(product.id); }}
-          >
-            View Details
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── BestSellers Section ──────────────────────────────────────────────────────
-
-const BestSellers: React.FC<BestSellersProps> = ({
-  onProductClick,
-  onOpenLoginModal,
-  setCartItems,
-  wishlistItems,
-  setWishlistItems,
-  showToast,
-  initialProducts,
-}) => {
-  const [products, setProducts] = useState<BestSellerProduct[]>(() => {
-    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
-      return initialProducts.map((b: any, idx: number) => ({
-        id: b.id || b.product_slug || b.slug || String(idx),
-        title: b.title || b.display_heading || b.product_name || b.name,
-        brand: b.brand || b.brand_name || 'FAAZO',
-        description: b.subtitle || b.description || b.display_short_description || b.short_description || '',
-        price: typeof b.price === 'number' ? b.price : parseFloat(b.price || '0'),
-        originalPrice: b.originalPrice ? parseFloat(b.originalPrice) : undefined,
-        rating: b.rating || 4.8,
-        reviews: b.reviews || (40 + (idx * 11) % 90),
-        image: getAbsoluteImageUrl(b.image || b.display_image_url || b.primary_image) || '/images/nsk_handpiece_portrait.png',
-      }));
-    }
-    return [];
-  });
-
-  const { guardAction } = useGuestGuard(onOpenLoginModal ?? (() => {}), showToast);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const [headerVisible, setHeaderVisible] = useState(false);
-
-  // Header fade-up
   useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setHeaderVisible(true); observer.disconnect(); } },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Fetch products if initialProducts was not passed or empty
-  useEffect(() => {
-    if (products.length > 0) return;
-
-    const mapBestSeller = (b: any, idx: number): BestSellerProduct => {
-      const price = b.pricing
-        ? parseFloat(b.pricing.effective_price || b.pricing.selling_price || '0')
-        : (b.price || 0);
-      const mrp = b.pricing ? parseFloat(b.pricing.mrp || '0') : (b.originalPrice || 0);
+    if (initialProducts && initialProducts.length > 0) return;
+    const mapBestSeller = (b: any): ProductItem => {
+      const price = b.pricing ? parseFloat(b.pricing.effective_price || b.pricing.selling_price || '0') : 0;
       return {
-        id:            b.product_slug ?? b.product ?? b.slug ?? String(idx),
-        title:         b.display_heading || b.product_name || b.name || b.title,
-        brand:         b.brand_name || b.brand || 'FAAZO',
-        description:   b.display_short_description || b.short_description || b.subtitle || '',
-        price,
-        originalPrice: mrp > price ? mrp : undefined,
-        rating:        4.8,
-        reviews:       40 + (idx * 11) % 90,
-        image:         getAbsoluteImageUrl(b.display_image_url || b.primary_image || b.image) || '/images/nsk_handpiece_portrait.png',
+        id:       b.product_slug ?? b.product,
+        title:    b.display_heading || b.product_name,
+        subtitle: b.display_short_description || '',
+        price:    price,
+        rating:   4.8,
+        reviews:  12,
+        image:    getAbsoluteImageUrl(b.display_image_url) || '/images/nsk_handpiece_portrait.png',
+      };
+    };
+
+    const mapProductToBestSeller = (p: any): ProductItem => {
+      const price = p.pricing ? parseFloat(p.pricing.effective_price || p.pricing.selling_price || '0') : 0;
+      return {
+        id:       p.slug,
+        title:    p.name,
+        subtitle: p.short_description || '',
+        price:    price,
+        rating:   4.8,
+        reviews:  12,
+        image:    getAbsoluteImageUrl(p.primary_image) || '/images/nsk_handpiece_portrait.png',
       };
     };
 
@@ -353,444 +113,302 @@ const BestSellers: React.FC<BestSellersProps> = ({
         if (Array.isArray(data) && data.length > 0) {
           setProducts(data.map(mapBestSeller));
         } else {
-          api.get('products/?page_size=12')
+          // Fallback to active catalog products
+          api.get('products/?page_size=10')
             .then(pRes => {
               const pData = pRes.data?.data ?? pRes.data?.results ?? pRes.data ?? [];
               if (Array.isArray(pData) && pData.length > 0) {
-                setProducts(pData.map((item: any, idx: number) => mapBestSeller(item, idx)));
+                setProducts(pData.map(mapProductToBestSeller));
               }
             })
             .catch(() => {});
         }
       })
       .catch(() => {});
-  }, [products.length]);
+  }, [initialProducts]);
 
   const displayProducts = products.length > 0 ? products : STATIC_BEST_SELLERS;
 
-  const isWishlisted = (id: string) => wishlistItems ? wishlistItems.some(w => w.id === id) : false;
-
-  const handleAddToCart = (e: React.MouseEvent, prod: BestSellerProduct) => {
-    e.stopPropagation();
-    const item: MockCartItem = {
-      id: prod.id,
-      name: prod.title,
-      category: 'Dental Equipment',
-      price: prod.price,
-      qty: 1,
-      image: prod.image,
-      originalPrice: prod.originalPrice,
-      rating: prod.rating,
-    };
-    if (!guardAction({ type: 'add-to-cart', payload: { item } })) return;
-    if (setCartItems) {
-      setCartItems(prev => {
-        const existing = prev.find(c => c.id === prod.id);
-        if (existing) return prev.map(c => c.id === prod.id ? { ...c, qty: c.qty + 1 } : c);
-        return [...prev, item];
-      });
-    }
-    showToast?.('Added to Cart');
-  };
-
-  const handleToggleWishlist = (e: React.MouseEvent, prod: BestSellerProduct) => {
-    e.stopPropagation();
-    const item: MockCartItem = {
-      id: prod.id,
-      name: prod.title,
-      category: 'Dental Equipment',
-      price: prod.price,
-      qty: 1,
-      image: prod.image,
-      originalPrice: prod.originalPrice,
-    };
-    if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
-    if (setWishlistItems) {
-      setWishlistItems(prev => {
-        const exists = prev.find(w => w.id === prod.id);
-        if (exists) {
-          showToast?.('Removed from Wishlist');
-          return prev.filter(w => w.id !== prod.id);
-        } else {
-          showToast?.('Added to Wishlist');
-          return [...prev, item];
-        }
-      });
-    }
-  };
-
   return (
     <>
-      {/* ── Scoped Styles ── */}
-      <style>{`
-        /* ── Section ── */
-        .bs-section {
-          width: 100%;
-          background: #F8FAFC;
-          padding: 80px 0 96px;
-          position: relative;
-        }
-        @media (max-width: 767px) {
-          .bs-section { padding: 52px 0 64px; }
-        }
+      {/* Desktop view */}
+      <section 
+        className="hidden md:block w-full py-20 select-none overflow-hidden relative border-y border-slate-200/40" 
+        id="products" 
+        style={{ 
+          perspective: '1400px',
+          backgroundColor: '#f7fafb',
+          backgroundImage: `
+            linear-gradient(to bottom, rgba(248, 250, 252, 0.8), rgba(237, 248, 249, 0.6), rgba(248, 250, 252, 0.8)),
+            linear-gradient(rgba(0, 77, 84, 0.30) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 77, 84, 0.30) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 100%, 32px 32px, 32px 32px',
+        }}
+      >
 
-        /* ── Container ── */
-        .bs-container {
-          max-width: 1400px;
-          margin: 0 auto;
-          padding: 0 48px;
-        }
-        @media (max-width: 1023px) { .bs-container { padding: 0 28px; } }
-        @media (max-width: 767px)  { .bs-container { padding: 0 20px; } }
+        {/* Ambient Gradient Glow Orbs for Glassmorphic Refraction */}
+        <div className="absolute top-1/4 left-1/6 w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#006670]/25 via-teal-300/20 to-emerald-200/10 blur-[120px] pointer-events-none z-0 animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-teal-400/20 via-[#004d54]/15 to-emerald-300/15 blur-[120px] pointer-events-none z-0" />
 
-        /* ── Section Header ── */
-        .bs-header {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 48px;
-        }
-        @media (max-width: 639px) {
-          .bs-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 32px; }
-        }
+        <div className="max-w-[1400px] mx-auto px-4 md:px-12 text-center relative z-10">
 
-        .bs-eyebrow {
-          display: block;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: #006670;
-          margin-bottom: 10px;
-        }
+          {/* 3D Glassmorphic Main Card Container (Static) */}
+          <div className="w-full bg-white/45 backdrop-blur-2xl border border-white/90 rounded-[40px] shadow-[0_30px_80px_-15px_rgba(0,102,112,0.18),0_15px_35px_-10px_rgba(0,0,0,0.06),inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-2px_6px_rgba(0,0,0,0.03)] ring-1 ring-black/5 p-8 lg:p-14 relative overflow-hidden group/box">
+            {/* Top 3D Light Source Highlight Line */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none z-20" />
+            <div className="absolute -top-24 -left-24 w-60 h-60 bg-white/60 rounded-full blur-2xl pointer-events-none z-0" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-white/60 via-white/10 to-transparent rounded-full blur-xl pointer-events-none z-0" />
 
-        .bs-heading {
-          font-size: clamp(28px, 4vw, 40px);
-          font-weight: 700;
-          color: #0F2D30;
-          letter-spacing: -0.03em;
-          line-height: 1.15;
-          margin: 0 0 10px;
-        }
-
-        .bs-subtitle {
-          font-size: 15px;
-          color: #64748B;
-          font-weight: 400;
-          line-height: 1.6;
-          margin: 0;
-          max-width: 440px;
-        }
-        @media (max-width: 767px) { .bs-subtitle { font-size: 14px; } }
-
-        .bs-view-all {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13.5px;
-          font-weight: 600;
-          color: #006670;
-          text-decoration: none;
-          white-space: nowrap;
-          transition: color 0.2s ease, gap 0.2s ease;
-          flex-shrink: 0;
-          cursor: pointer;
-          background: none;
-          border: none;
-          padding: 0;
-        }
-        .bs-view-all:hover { color: #004e56; gap: 10px; }
-
-        /* ── Grid ── */
-        .bs-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
-        }
-        @media (max-width: 1199px) { .bs-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 767px)  { .bs-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
-
-        /* ── Product Card ── */
-        .bs-card {
-          background: #ffffff;
-          border: 1px solid #E5E7EB;
-          border-radius: 18px;
-          overflow: hidden;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-          position: relative;
-        }
-        .bs-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 32px rgba(0,95,99,0.10), 0 2px 8px rgba(0,0,0,0.04);
-          border-color: rgba(0,102,112,0.18);
-        }
-
-        /* ── Image Wrapper ── */
-        .bs-image-wrap {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 1 / 1;
-          background: #F4F8F7;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* ── Product Image ── */
-        .bs-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.35s ease;
-        }
-        .bs-card:hover .bs-image {
-          transform: scale(1.04);
-        }
-
-        /* ── Best Seller Badge ── */
-        .bs-badge {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          z-index: 2;
-          background: rgba(217, 175, 98, 0.14);
-          color: #96750A;
-          border: 1px solid rgba(150, 117, 10, 0.22);
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          padding: 4px 10px;
-          border-radius: 100px;
-          white-space: nowrap;
-          backdrop-filter: blur(4px);
-        }
-
-        /* ── Wishlist Button ── */
-        .bs-wishlist-btn {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          z-index: 2;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.80);
-          backdrop-filter: blur(6px);
-          border: 1px solid rgba(255,255,255,0.9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-          transition: background 0.2s ease, transform 0.2s ease;
-        }
-        .bs-wishlist-btn:hover {
-          background: rgba(255,255,255,0.95);
-          transform: scale(1.08);
-        }
-
-        /* ── Card Body ── */
-        .bs-body {
-          padding: 16px 16px 18px;
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          gap: 0;
-        }
-        @media (max-width: 767px) { .bs-body { padding: 12px 12px 14px; } }
-
-        /* ── Brand ── */
-        .bs-brand {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: #94A3B8;
-          margin: 0 0 5px;
-        }
-
-        /* ── Title ── */
-        .bs-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: #1E293B;
-          letter-spacing: -0.01em;
-          line-height: 1.35;
-          margin: 0 0 5px;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        @media (max-width: 767px) { .bs-title { font-size: 13px; } }
-
-        /* ── Description ── */
-        .bs-description {
-          font-size: 11.5px;
-          color: #94A3B8;
-          margin: 0 0 10px;
-          line-height: 1.5;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        @media (max-width: 767px) { .bs-description { display: none; } }
-
-        /* ── Rating ── */
-        .bs-rating {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-bottom: 12px;
-        }
-        .bs-stars { display: flex; align-items: center; gap: 2px; }
-        .bs-rating-score { font-size: 12px; font-weight: 700; color: #334155; }
-        .bs-rating-count { font-size: 11px; color: #94A3B8; font-weight: 500; }
-
-        /* ── Pricing ── */
-        .bs-pricing {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 13px;
-          gap: 8px;
-        }
-        .bs-price-block { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
-        .bs-price {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0F2D30;
-          letter-spacing: -0.02em;
-        }
-        @media (max-width: 767px) { .bs-price { font-size: 15px; } }
-        .bs-original-price {
-          font-size: 12px;
-          color: #94A3B8;
-          text-decoration: line-through;
-          font-weight: 500;
-        }
-        .bs-discount-pill {
-          font-size: 10px;
-          font-weight: 700;
-          color: #059669;
-          background: rgba(5,150,105,0.08);
-          border: 1px solid rgba(5,150,105,0.14);
-          padding: 3px 8px;
-          border-radius: 100px;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        /* ── Actions ── */
-        .bs-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: auto;
-        }
-
-        /* Primary: Add to Cart */
-        .bs-btn-cart {
-          flex: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          background: #006670;
-          color: #ffffff;
-          font-size: 12.5px;
-          font-weight: 600;
-          padding: 9px 14px;
-          border-radius: 10px;
-          border: none;
-          cursor: pointer;
-          transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-          white-space: nowrap;
-        }
-        .bs-btn-cart:hover {
-          background: #004e56;
-          box-shadow: 0 4px 14px rgba(0,95,99,0.22);
-          transform: translateY(-1px);
-        }
-        .bs-btn-cart:active { transform: translateY(0); }
-        @media (max-width: 767px) { .bs-btn-cart { font-size: 11.5px; padding: 8px 10px; gap: 5px; } }
-
-        /* Secondary: Details */
-        .bs-btn-details {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          color: #475569;
-          font-size: 12.5px;
-          font-weight: 600;
-          padding: 9px 13px;
-          border-radius: 10px;
-          border: 1px solid #E2E8F0;
-          cursor: pointer;
-          transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-        .bs-btn-details:hover {
-          border-color: #006670;
-          color: #006670;
-          background: rgba(0,102,112,0.04);
-        }
-        @media (max-width: 767px) { .bs-btn-details { font-size: 11.5px; padding: 8px 10px; } }
-      `}</style>
-
-      <section className="bs-section" id="best-sellers" aria-label="Best Sellers">
-        <div className="bs-container">
-
-          {/* ── Header ── */}
-          <div
-            ref={headerRef}
-            className="bs-header"
-            style={{
-              opacity: headerVisible ? 1 : 0,
-              transform: headerVisible ? 'translateY(0)' : 'translateY(20px)',
-              transition: 'opacity 0.5s ease, transform 0.5s ease',
-            }}
-          >
-            <div className="bs-header-left">
-              <span className="bs-eyebrow">Best Sellers</span>
-              <h2 className="bs-heading">Best Sellers</h2>
-              <p className="bs-subtitle">
-                Discover the products most trusted by dental professionals across India.
+            {/* Header Section */}
+            <div className="mb-14 relative z-10" style={{ transform: 'translateZ(25px)' }}>
+              <span className="inline-block text-[11px] font-extrabold tracking-[0.25em] text-[#006670] uppercase mb-3 font-sans bg-[#006670]/10 px-4 py-1.5 rounded-full border border-[#006670]/15 shadow-2xs">
+                BEST SELLERS
+              </span>
+              <h2 className="text-4xl md:text-5xl lg:text-[52px] font-medium text-slate-800 tracking-tight leading-tight mb-4 font-display">
+                Crafted for Precision. Preferred by Experts.
+              </h2>
+              <p className="text-sm md:text-base text-slate-500 font-medium max-w-xl mx-auto">
+                Discover our most trusted products, selected by dental professionals
               </p>
             </div>
 
-            <button
-              className="bs-view-all"
-              onClick={() => onProductClick?.('all-products')}
-              aria-label="View all products"
-            >
-              View All →
-            </button>
+            {/* CSS Overrides for 3D Bestseller Swiper scale and depth */}
+            <style>{`
+              .bestseller-swiper {
+                overflow: visible !important;
+                perspective: 1200px;
+                transform-style: preserve-3d;
+              }
+              .bestseller-swiper .swiper-slide {
+                transform: scale(0.82) translateZ(-30px);
+                transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease;
+                opacity: 0.4;
+                transform-style: preserve-3d;
+              }
+              .bestseller-swiper .swiper-slide-active {
+                transform: scale(1.12) translateZ(45px);
+                opacity: 1;
+                z-index: 20;
+                transform-style: preserve-3d;
+              }
+              .bestseller-swiper .swiper-slide-active .glass-3d-card {
+                box-shadow: 0 25px 50px -12px rgba(0, 95, 99, 0.22), 0 16px 32px -8px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.95);
+                border-color: rgba(255, 255, 255, 0.95);
+              }
+              .bestseller-swiper .swiper-slide-active .slide-details {
+                opacity: 1;
+                transform: translateY(0);
+              }
+              .bestseller-swiper .slide-details {
+                transition: opacity 0.5s ease, transform 0.5s ease;
+              }
+            `}</style>
+
+            {/* Carousel Wrapper */}
+            <div className="relative w-full px-10 md:px-14" style={{ transform: 'translateZ(35px)' }}>
+              <Swiper
+                modules={[Navigation, Autoplay]}
+                navigation={{
+                  prevEl: '.bestseller-prev',
+                  nextEl: '.bestseller-next',
+                }}
+                autoplay={{
+                  delay: 3000,
+                  disableOnInteraction: false,
+                }}
+                loop={displayProducts.length > 3}
+                centeredSlides={true}
+                slidesPerView={1}
+                spaceBetween={20}
+                breakpoints={{
+                  640: {
+                    slidesPerView: 2,
+                    spaceBetween: 30,
+                  },
+                  1024: {
+                    slidesPerView: 3,
+                    spaceBetween: 40,
+                  }
+                }}
+                className="bestseller-swiper pb-8"
+              >
+                {displayProducts.map((prod) => (
+                  <SwiperSlide key={prod.id}>
+                    <div className="flex flex-col items-center cursor-pointer group" onClick={() => onProductClick?.(prod.id)}>
+
+                      {/* Glass 3D Image Panel */}
+                      <div className="glass-3d-card w-full aspect-square bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-md rounded-2xl overflow-hidden border border-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] transition-all duration-500 group-hover:scale-[1.02] flex items-center justify-center relative">
+                        <Image
+                          src={prod.image || '/images/nsk_handpiece_portrait.png'}
+                          alt={prod.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover transform transition-transform duration-700 group-hover:scale-[1.04]"
+                        />
+                      </div>
+
+                      {/* Centered Details */}
+                      <div className="text-center mt-6 slide-details w-full px-2">
+                        <h3 className="text-[15px] sm:text-[16px] font-medium text-slate-800 tracking-tight leading-snug">
+                          <span className="block font-bold line-clamp-1 min-h-[22px]">{prod.title}</span>
+                          <span className="block text-slate-500 mt-0.5 line-clamp-2 min-h-[36px]">{prod.subtitle}</span>
+                        </h3>
+
+                        {/* Price */}
+                        <p className="text-[16px] font-extrabold text-[#0F2D30] mt-2 font-display">
+                          ₹ {prod.price.toLocaleString('en-IN')}
+                        </p>
+
+                        {/* Ratings */}
+                        <div className="flex items-center justify-center gap-1.5 mt-2">
+                          <div className="flex items-center text-amber-400">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${i < Math.floor(prod.rating)
+                                    ? 'fill-amber-400 stroke-amber-400'
+                                    : 'stroke-slate-300'
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[12px] font-bold text-slate-700 mt-0.5">
+                            {prod.rating}
+                            <span className="text-slate-400 font-medium ml-1">({prod.reviews})</span>
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+
+              {/* 3D Elevated Navigation Controls */}
+              <button
+                className="bestseller-prev absolute left-0 top-[40%] -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-gradient-to-br from-[#13373B] to-[#0A2022] text-white flex items-center justify-center hover:from-[#006670] hover:to-[#004d54] transition-all shadow-[0_10px_25px_rgba(0,60,65,0.35),inset_0_1px_2px_rgba(255,255,255,0.3)] border border-white/20 active:scale-95 cursor-pointer transform hover:scale-105"
+                aria-label="Previous bestseller"
+              >
+                <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+              </button>
+
+              <button
+                className="bestseller-next absolute right-0 top-[40%] -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-gradient-to-br from-[#13373B] to-[#0A2022] text-white flex items-center justify-center hover:from-[#006670] hover:to-[#004d54] transition-all shadow-[0_10px_25px_rgba(0,60,65,0.35),inset_0_1px_2px_rgba(255,255,255,0.3)] border border-white/20 active:scale-95 cursor-pointer transform hover:scale-105"
+                aria-label="Next bestseller"
+              >
+                <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+              </button>
+            </div>
+
           </div>
 
-          {/* ── Product Grid ── */}
-          <div className="bs-grid">
-            {displayProducts.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                index={index}
-                isWishlisted={isWishlisted(product.id)}
-                onProductClick={onProductClick}
-                onAddToCart={handleAddToCart}
-                onToggleWishlist={handleToggleWishlist}
-              />
-            ))}
-          </div>
+        </div>
+      </section>
 
+      {/* Mobile view */}
+      <section 
+        className="block md:hidden w-full py-12 select-none overflow-hidden relative border-y border-slate-200/40" 
+        id="products-mobile"
+        style={{
+          backgroundColor: '#f7fafb',
+          backgroundImage: `
+            linear-gradient(to bottom, rgba(248, 250, 252, 0.8), rgba(237, 248, 249, 0.6), rgba(248, 250, 252, 0.8)),
+            linear-gradient(rgba(0, 77, 84, 0.30) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 77, 84, 0.30) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 100%, 24px 24px, 24px 24px',
+        }}
+      >
+
+        {/* Ambient Gradient Glow Orb */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[340px] h-[340px] rounded-full bg-gradient-to-tr from-[#006670]/20 via-teal-300/20 to-emerald-200/15 blur-[90px] pointer-events-none z-0" />
+
+        <div className="w-full px-4 text-center relative z-10">
+
+          {/* Glass Container Card */}
+          <div className="w-full bg-white/45 backdrop-blur-xl border border-white/80 rounded-3xl p-5 shadow-[0_12px_36px_rgba(0,102,112,0.06),0_1px_2px_rgba(255,255,255,0.8)] relative overflow-hidden">
+
+            {/* Header Section */}
+            <div className="mb-8 text-left relative z-10">
+              <span className="inline-block text-[10px] font-extrabold tracking-[0.25em] text-[#006670] uppercase mb-2 font-sans bg-[#006670]/10 px-3 py-1 rounded-full border border-[#006670]/15">
+                BEST SELLERS
+              </span>
+              <h2 className="text-[28px] font-black text-slate-800 tracking-tight leading-tight mb-2 font-display">
+                Crafted for Precision.<br />Preferred by Experts.
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                Discover our most trusted products.
+              </p>
+            </div>
+
+            {/* Carousel Wrapper */}
+            <div className="relative w-full px-0">
+              <Swiper
+                modules={[Autoplay]}
+                autoplay={{
+                  delay: 3000,
+                  disableOnInteraction: false,
+                }}
+                loop={displayProducts.length > 3}
+                centeredSlides={true}
+                slidesPerView={1.2}
+                spaceBetween={16}
+                allowTouchMove={true}
+                grabCursor={true}
+                className="bestseller-swiper pb-6"
+              >
+                {displayProducts.map((prod) => (
+                  <SwiperSlide key={prod.id}>
+                    <div className="flex flex-col items-center cursor-pointer group text-center" onClick={() => onProductClick?.(prod.id)}>
+                      {/* Glass Image Panel */}
+                      <div className="w-full aspect-square bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] transition-all duration-500 group-hover:shadow-[0_12px_28px_rgba(0,95,99,0.1)] flex items-center justify-center relative">
+                        <Image
+                          src={prod.image || '/images/nsk_handpiece_portrait.png'}
+                          alt={prod.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover transform transition-transform duration-700 group-hover:scale-[1.03]"
+                        />
+                      </div>
+
+                      {/* Centered Details */}
+                      <div className="text-center mt-6 slide-details w-full px-2">
+                        <h3 className="text-[14px] sm:text-[15px] font-medium text-slate-800 tracking-tight leading-snug">
+                          <span className="block font-bold line-clamp-1 min-h-[20px]">{prod.title}</span>
+                          <span className="block text-slate-500 mt-0.5 line-clamp-2 min-h-[32px]">{prod.subtitle}</span>
+                        </h3>
+
+                        {/* Price */}
+                        <p className="text-[16px] font-extrabold text-[#0F2D30] mt-2 font-display">
+                          ₹ {prod.price.toLocaleString('en-IN')}
+                        </p>
+
+                        {/* Ratings */}
+                        <div className="flex items-center justify-center gap-1.5 mt-2">
+                          <div className="flex items-center text-amber-400">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${i < Math.floor(prod.rating)
+                                    ? 'fill-amber-400 stroke-amber-400'
+                                    : 'stroke-slate-300'
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[12px] font-bold text-slate-700 mt-0.5">
+                            {prod.rating}
+                            <span className="text-slate-400 font-medium ml-1">({prod.reviews})</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          </div>
         </div>
       </section>
     </>

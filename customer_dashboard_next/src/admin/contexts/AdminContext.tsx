@@ -32,6 +32,8 @@ interface AdminContextType {
   setUnreadNotifCount: (n: number) => void;
 }
 
+import { useAuth } from '@/hooks/useAuth';
+
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 interface AdminProviderProps {
@@ -43,7 +45,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
   children,
   initialRole = 'administrator',
 }) => {
-  const [adminRole] = useState<AdminRole>(initialRole);
+  const { user } = useAuth();
+  const actualRole: AdminRole = user?.role === 'admin' ? 'administrator' : 'viewer';
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -54,9 +57,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
 
   const hasPermission = useCallback(
     (permission: AdminPermission): boolean => {
-      return ROLE_PERMISSIONS[adminRole]?.includes(permission) ?? false;
+      if (!user || user.role !== 'admin') {
+        return false;
+      }
+      return ROLE_PERMISSIONS[actualRole]?.includes(permission) ?? false;
     },
-    [adminRole],
+    [actualRole, user],
   );
 
   const toggleSidebar = useCallback(() => {
@@ -79,7 +85,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
   return (
     <AdminContext.Provider
       value={{
-        adminRole,
+        adminRole: actualRole,
         hasPermission,
         activeSection,
         setActiveSection,

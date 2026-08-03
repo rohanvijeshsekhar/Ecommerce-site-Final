@@ -53,6 +53,7 @@ export default function StoreShell({ children }: StoreShellProps) {
     }
     else if (view === 'dealer-portal') router.push('/dealer');
     else if (view === 'combo-deals') router.push('/combo-deals');
+    else if (view === 'brands') router.push('/brands');
   };
 
   const handleProductClick = (slug: string | null) => {
@@ -123,7 +124,7 @@ export default function StoreShell({ children }: StoreShellProps) {
 
           {/* CATEGORIES */}
           <button
-            onClick={() => { router.push('/categories'); window.scrollTo(0, 0); }}
+            onClick={() => { router.push('/products'); window.scrollTo(0, 0); }}
             className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname.startsWith('/categories') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
           >
             <LayoutGrid className={`w-[20px] h-[20px] transition-all duration-150 ${pathname.startsWith('/categories') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />

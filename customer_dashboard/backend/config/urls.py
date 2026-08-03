@@ -56,8 +56,10 @@ urlpatterns = [
                 path("admin/dashboard/", include("apps.common.dashboard_urls")),
                 # Admin Enterprise Reports & Business Intelligence
                 path("admin/reports/", include("apps.common.reports_urls")),
-                # Phase 3 – Authentication
+                # Phase 3 – Authentication (v1 - legacy, preserved)
                 path("auth/", include("apps.authentication.urls")),
+                # Phase 5 – Enterprise Authentication API v2
+                path("auth/v2/", include("apps.authentication.v2_urls")),
                 # Phase 3 – Users (Profile + Addresses)
                 path("users/", include("apps.users.urls")),
                 # Phase 3 – Dealer
@@ -87,6 +89,8 @@ urlpatterns = [
                 path("support/", include("apps.support.urls")),
                 # Phase 13+ – Notifications
                 path("notifications/", include("apps.notifications.urls")),
+                # Best Sellers Module
+                path("bestsellers/", include("apps.bestsellers.urls")),
                 # Phase 13+ – Shipping & Fulfillment
                 path("", include("apps.shipping.urls")),
             ]

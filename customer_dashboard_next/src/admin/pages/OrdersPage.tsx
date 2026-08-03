@@ -74,7 +74,7 @@ const OrdersPage: React.FC = () => {
       const res = await adminOrdersService.getOrders(params);
       if (res.success && res.data) {
         setOrders(res.data);
-        
+
         // Extract stats and pagination from API meta envelope
         const meta = (res as any).meta || {};
         if (meta.stats) {
@@ -337,8 +337,8 @@ const OrdersPage: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-xs font-bold cursor-pointer transition-all
-                ${showFilters 
-                  ? 'border-[#006670] bg-[#e6f3f5]/20 text-[#006670]' 
+                ${showFilters
+                  ? 'border-[#006670] bg-[#e6f3f5]/20 text-[#006670]'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -439,5 +439,6 @@ const OrdersPage: React.FC = () => {
     </div>
   );
 };
+
 
 export default OrdersPage;

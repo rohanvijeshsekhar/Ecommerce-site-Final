@@ -50,7 +50,7 @@ class Brand(FullAuditModel):
     class Meta:
         verbose_name = "Brand"
         verbose_name_plural = "Brands"
-        ordering = ["name"]
+        ordering = ["display_order", "name"]
 
     # ── Identity ─────────────────────────────────────────────
 
@@ -66,15 +66,31 @@ class Brand(FullAuditModel):
         db_index=True,
         verbose_name="Slug",
     )
+    short_description = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="Short Description",
+    )
+    full_description = models.TextField(
+        blank=True,
+        verbose_name="Full Description",
+    )
     description = models.TextField(
         blank=True,
-        verbose_name="Description",
+        verbose_name="Legacy Description",
     )
     logo = models.ImageField(
         upload_to="brands/logos/",
         null=True,
         blank=True,
         verbose_name="Logo",
+    )
+    banner_image = models.ImageField(
+        upload_to="brands/banners/",
+        null=True,
+        blank=True,
+        verbose_name="Banner Image",
+        help_text="Hero banner displayed on the brand detail page.",
     )
     country_of_origin = models.CharField(
         max_length=100,
@@ -144,12 +160,35 @@ class Brand(FullAuditModel):
         help_text="Central brand documentation / IFU portal.",
     )
 
-    # ── Admin ────────────────────────────────────────────────
+    # ── Admin & Display ──────────────────────────────────────
 
+    display_order = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Display Order",
+        help_text="Lower numbers appear first.",
+    )
+    is_featured = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Featured Brand",
+    )
     is_active = models.BooleanField(
         default=True,
         db_index=True,
         verbose_name="Active",
+    )
+
+    # ── SEO ──────────────────────────────────────────────────
+
+    seo_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="SEO Title",
+    )
+    seo_description = models.TextField(
+        blank=True,
+        verbose_name="SEO Description",
     )
 
     # ── Managers ─────────────────────────────────────────────
@@ -228,3 +267,56 @@ class BrandDocument(AuditedModel):
 
     def __str__(self):
         return f"{self.brand.name} — {self.title}"
+
+
+# ============================================================
+# BrandPageBanner
+# ============================================================
+
+class BrandPageBanner(AuditedModel):
+    """
+    Hero Banner configuration for the main Brands listing page (/brands).
+    Fully managed via Django Admin.
+    """
+
+    title = models.CharField(
+        max_length=255,
+        default="Our Trusted Brands",
+        verbose_name="Title",
+    )
+    subtitle = models.TextField(
+        blank=True,
+        default="Explore premium dental brands trusted by clinics and professionals worldwide.",
+        verbose_name="Subtitle",
+    )
+    banner_image = models.ImageField(
+        upload_to="brands/page_banners/",
+        null=True,
+        blank=True,
+        verbose_name="Banner Image",
+    )
+    button_text = models.CharField(
+        max_length=100,
+        blank=True,
+        default="Explore Brands",
+        verbose_name="Button Text",
+    )
+    button_link = models.CharField(
+        max_length=255,
+        blank=True,
+        default="#brands-grid",
+        verbose_name="Button Link",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Active",
+    )
+
+    class Meta:
+        verbose_name = "Brand Page Banner"
+        verbose_name_plural = "Brand Page Banners"
+
+    def __str__(self):
+        return f"Brands Banner: {self.title}"
+

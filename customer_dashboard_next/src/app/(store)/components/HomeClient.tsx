@@ -124,7 +124,6 @@ export default function HomeClient({
       <Hero initialSlides={initialSlides} />
       <CategoryList onCategoryClick={handleCategoryClick} initialCategories={mappedCategories} />
       <ExploreSolutions onViewPortfolio={() => handleViewChange('portfolio')} />
-      <BrandLogos />
       <BestSellers
         onProductClick={handleProductClick}
         onOpenLoginModal={store.openLoginModal}
@@ -134,6 +133,7 @@ export default function HomeClient({
         showToast={store.showToast}
         initialProducts={mappedBestSellers}
       />
+      <BrandLogos />
       <WhyChooseBanner />
       <FeaturedCombos
         onComboClick={handleComboClick}

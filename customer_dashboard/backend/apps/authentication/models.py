@@ -35,8 +35,8 @@ def _email_token_expiry():
 
 
 def _reset_token_expiry():
-    """1-hour window for password reset — tighter for security."""
-    return timezone.now() + timedelta(hours=1)
+    """30-minute window for password reset."""
+    return timezone.now() + timedelta(minutes=30)
 
 
 # ============================================================
@@ -340,6 +340,7 @@ class DeviceSession(models.Model):
         ordering = ["-last_active_at"]
         indexes = [
             models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["user", "expires_at"]),  # M5: efficient expiry cleanup queries
         ]
 
     def __str__(self) -> str:
@@ -405,6 +406,7 @@ class AuditLog(models.Model):
         verbose_name_plural = "Audit Logs"
         ordering = ["-created_at"]
         indexes = [
+            models.Index(fields=["user"]),               # M4: admin audit log queries by user
             models.Index(fields=["action", "status"]),
             models.Index(fields=["created_at"]),
         ]

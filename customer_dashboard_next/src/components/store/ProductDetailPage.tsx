@@ -549,23 +549,24 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="hidden md:grid grid-cols-[88px_minmax(0,1fr)] gap-[8px] items-start">
 
               {/* Left Side: Vertical Thumbnails Strip (Sticky while scrolling) */}
-              <div className="flex flex-col gap-[8px] shrink-0 sticky top-28 self-start w-[88px] z-10">
+              <div className="flex flex-col gap-[10px] shrink-0 sticky top-28 self-start w-[88px] z-10">
                 {productImages.map((img: any, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`w-[88px] h-[88px] bg-white rounded-2xl flex items-center justify-center p-1 overflow-hidden transition-all duration-300 cursor-pointer border-2
+                    onMouseEnter={() => setActiveImageIndex(idx)}
+                    className={`w-[88px] h-[88px] bg-white rounded-2xl flex items-center justify-center p-1.5 overflow-hidden transition-all duration-200 cursor-pointer relative group
                       ${activeImageIndex === idx
-                        ? 'border-[#006670] shadow-[0_0_12px_rgba(0, 43, 46,0.15)] scale-[1.03] opacity-100'
-                        : 'border-slate-150/40 opacity-60 hover:opacity-100 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)]'
+                        ? 'border-2 border-[#006670] ring-2 ring-[#006670]/25 ring-offset-2 ring-offset-slate-50/50 shadow-md scale-[1.02] z-10 opacity-100'
+                        : 'border border-slate-200/80 opacity-65 hover:opacity-100 hover:border-slate-350 hover:scale-[1.01]'
                       }`}
                   >
                     <img
                       src={img.src}
                       alt={img.alt}
-                      loading="lazy"
-                      className={`w-full h-full object-cover transition-transform duration-300
-                        ${img.isLifestyle ? '' : 'filter brightness-[1.04] contrast-[1.02]'}`}
+                      loading="eager"
+                      className={`w-full h-full object-contain rounded-xl transition-transform duration-300
+                        ${img.isLifestyle ? 'object-cover' : 'filter brightness-[1.02]'}`}
                     />
                   </button>
                 ))}
@@ -580,7 +581,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     : 'bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-4'
                   }`}
               >
-                <div className={`absolute inset-0 pointer-events-none z-10 rounded-[28px] transition-all duration-300
+                <div className={`absolute inset-0 pointer-events-none z-20 rounded-[28px] transition-all duration-300
                   ${productImages[activeImageIndex]?.isLifestyle
                     ? 'shadow-[inset_0_0_24px_rgba(0,0,0,0.06)]'
                     : 'shadow-[inset_0_0_24px_rgba(0,0,0,0.04)]'
@@ -622,17 +623,26 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     />
                   </button>
                 </div>
-                <img
-                  src={productImages[activeImageIndex]?.src || '/images/nsk_handpiece_portrait.png'}
-                  alt={productImages[activeImageIndex]?.alt || ''}
-                  style={{
-                    transition: isTransitioning
-                      ? 'opacity 350ms cubic-bezier(.22,.61,.36,1), transform 350ms cubic-bezier(.22,.61,.36,1)'
-                      : 'transform 400ms ease, filter 400ms ease, opacity 350ms ease'
-                  }}
-                  className={`transform select-none transition-all duration-300 w-full h-full object-cover
-                    ${isTransitioning ? 'opacity-0 scale-[0.97]' : 'opacity-100 scale-100'}`}
-                />
+
+                {/* Seamless Stacked Image Layers (Zero Blinking / Instant Crossfade like Flipkart/Myntra) */}
+                <div className="relative w-full h-full overflow-hidden rounded-[24px]">
+                  {productImages.map((img: any, idx: number) => {
+                    const isActive = activeImageIndex === idx;
+                    return (
+                      <img
+                        key={idx}
+                        src={img.src || '/images/nsk_handpiece_portrait.png'}
+                        alt={img.alt || ''}
+                        loading="eager"
+                        className={`absolute inset-0 w-full h-full object-cover select-none transition-all duration-250 ease-out
+                          ${isActive
+                            ? 'opacity-100 scale-100 z-10'
+                            : 'opacity-0 scale-[1.01] z-0 pointer-events-none'
+                          }`}
+                      />
+                    );
+                  })}
+                </div>
 
                 {/* Elegant Circular Previous Navigation Button on Hover */}
                 <button
@@ -747,7 +757,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="gallery-mobile-pagination" />
 
               {/* Horizontal Scrollable Thumbnails Strip with Snap Scrolling */}
-              <div className="flex gap-[8px] overflow-x-auto py-2 px-1 scrollbar-none snap-x snap-mandatory justify-start">
+              <div className="flex gap-[10px] overflow-x-auto py-3 px-1 scrollbar-none snap-x snap-mandatory justify-start">
                 {productImages.map((img: any, idx: number) => (
                   <button
                     key={idx}
@@ -757,18 +767,18 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         swiperRef.slideTo(idx);
                       }
                     }}
-                    className={`w-[72px] h-[72px] bg-white rounded-2xl border flex items-center justify-center p-1 shrink-0 snap-start transition-all duration-300 cursor-pointer overflow-hidden
+                    className={`w-[72px] h-[72px] bg-white rounded-2xl flex items-center justify-center p-1.5 shrink-0 snap-start transition-all duration-200 cursor-pointer overflow-hidden relative
                       ${activeImageIndex === idx
-                        ? 'border-[#006670] border-2 shadow-[0_4px_12px_rgba(0, 43, 46,0.05)]'
-                        : 'border-slate-150/40 hover:border-slate-200'
+                        ? 'border-2 border-[#006670] ring-2 ring-[#006670]/25 ring-offset-2 ring-offset-slate-50/50 shadow-md scale-[1.02] z-10 opacity-100'
+                        : 'border border-slate-200/80 opacity-65 hover:opacity-100 hover:border-slate-350 hover:scale-[1.01]'
                       }`}
                   >
                     <img
                       src={img.src}
                       alt={img.alt}
-                      loading="lazy"
-                      className={`w-full h-full object-cover
-                        ${img.isLifestyle ? '' : 'filter brightness-[1.04] contrast-[1.02]'}`}
+                      loading="eager"
+                      className={`w-full h-full object-contain rounded-xl transition-transform duration-300
+                        ${img.isLifestyle ? 'object-cover' : 'filter brightness-[1.02]'}`}
                     />
                   </button>
                 ))}

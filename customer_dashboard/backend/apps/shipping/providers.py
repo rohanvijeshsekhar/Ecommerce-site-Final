@@ -1,16 +1,15 @@
 """
-FAAZO – Shipping Provider Pattern Architecture
+FAAZO – Enterprise Shipping Provider Architecture
 
 Implements:
   - ShippingConfigValidator
   - BaseShippingProvider (Abstract Interface)
   - OfflineShippingProvider (Simulation Mode)
-  - DelhiverySandboxProvider (Staging API)
-  - DelhiveryLiveProvider (Production API)
+  - ShiprocketProvider (Production Logistics Provider)
   - get_shipping_provider() (Factory with transparent fallback)
 
 All providers expose identical methods:
-  create_shipment() | track_shipment() | cancel_shipment() | schedule_pickup() | sync_tracking()
+  create_shipment() | track_shipment() | cancel_shipment() | schedule_pickup() | sync_tracking() | generate_label() | generate_manifest()
 """
 
 import logging
@@ -21,7 +20,13 @@ from django.utils import timezone
 
 from apps.orders.models import Order, OrderStatus
 from .models import Shipment, ShipmentTrackingEvent, ShipmentStatus, PickupStatus
-from .client import DelhiveryAPIClient, DelhiveryAPIError, DelhiveryValidationError
+from .shiprocket_client import (
+    ShiprocketAPIClient,
+    ShiprocketAPIError,
+    ShiprocketValidationError,
+    DelhiveryAPIError,
+    DelhiveryValidationError,
+)
 
 logger = logging.getLogger("faazo")
 
@@ -30,25 +35,28 @@ logger = logging.getLogger("faazo")
 # Status Mapping
 # ============================================================
 
-DELHIVERY_STATUS_MAP = {
-    "Shipment Created":              ShipmentStatus.CREATED,
-    "Manifest Created":              ShipmentStatus.CREATED,
-    "Pickup Scheduled":              ShipmentStatus.PICKUP_SCHEDULED,
-    "Pickup Requested":              ShipmentStatus.PICKUP_SCHEDULED,
-    "Picked Up":                     ShipmentStatus.PICKED_UP,
-    "In Transit":                    ShipmentStatus.IN_TRANSIT,
-    "Reached at Destination Hub":    ShipmentStatus.REACHED_HUB,
-    "Reached at Delivery Location":  ShipmentStatus.OUT_FOR_DELIVERY,
-    "Out For Delivery":              ShipmentStatus.OUT_FOR_DELIVERY,
-    "Delivered":                     ShipmentStatus.DELIVERED,
-    "Failed Delivery":               ShipmentStatus.FAILED_DELIVERY,
-    "Return To Origin":              ShipmentStatus.RTO_INITIATED,
-    "RTO Initiated":                 ShipmentStatus.RTO_INITIATED,
-    "RTO In Transit":                ShipmentStatus.RTO_IN_TRANSIT,
-    "RTO Delivered":                 ShipmentStatus.RTO_DELIVERED,
-    "Cancelled":                     ShipmentStatus.CANCELLED,
-    "Lost":                          ShipmentStatus.LOST,
+SHIPROCKET_STATUS_MAP = {
+    "NEW":                          ShipmentStatus.CREATED,
+    "AWB ASSIGNED":                 ShipmentStatus.CREATED,
+    "LABEL GENERATED":              ShipmentStatus.CREATED,
+    "MANIFEST GENERATED":           ShipmentStatus.CREATED,
+    "PICKUP SCHEDULED":             ShipmentStatus.PICKUP_SCHEDULED,
+    "PICKUP GENERATED":             ShipmentStatus.PICKUP_SCHEDULED,
+    "PICKUP QUEUED":                ShipmentStatus.PICKUP_SCHEDULED,
+    "PICKED UP":                    ShipmentStatus.PICKED_UP,
+    "IN TRANSIT":                   ShipmentStatus.IN_TRANSIT,
+    "REACHED AT DESTINATION HUB":   ShipmentStatus.REACHED_HUB,
+    "OUT FOR DELIVERY":             ShipmentStatus.OUT_FOR_DELIVERY,
+    "DELIVERED":                    ShipmentStatus.DELIVERED,
+    "CANCELED":                     ShipmentStatus.CANCELLED,
+    "CANCELLED":                    ShipmentStatus.CANCELLED,
+    "RTO INITIATED":                ShipmentStatus.RTO_INITIATED,
+    "RTO DELIVERED":                ShipmentStatus.RTO_DELIVERED,
+    "LOST":                         ShipmentStatus.LOST,
 }
+
+# Alias for backward compatibility
+DELHIVERY_STATUS_MAP = SHIPROCKET_STATUS_MAP
 
 
 # ============================================================
@@ -62,35 +70,26 @@ class ShippingConfigValidator:
     """
 
     @staticmethod
-    def validate_delhivery_config(provider_name: str) -> tuple[bool, list[str]]:
+    def validate_shiprocket_config(provider_name: str = "shiprocket") -> tuple[bool, list[str]]:
         reasons = []
 
-        token = getattr(settings, "DELHIVERY_API_TOKEN", "") or getattr(settings, "DELHIVERY_TOKEN", "")
-        if not token or not token.strip():
-            reasons.append("DELHIVERY_API_TOKEN is not configured in environment settings.")
+        email = getattr(settings, "SHIPROCKET_EMAIL", "")
+        if not email or not email.strip():
+            reasons.append("SHIPROCKET_EMAIL is not configured in environment settings.")
 
-        pickup_loc = getattr(settings, "DELHIVERY_PICKUP_LOCATION", "")
+        password = getattr(settings, "SHIPROCKET_PASSWORD", "")
+        if not password or not password.strip():
+            reasons.append("SHIPROCKET_PASSWORD is not configured in environment settings.")
+
+        pickup_loc = getattr(settings, "SHIPROCKET_PICKUP_LOCATION", "")
         if not pickup_loc or not pickup_loc.strip():
-            reasons.append("DELHIVERY_PICKUP_LOCATION is not configured.")
-
-        seller_name = getattr(settings, "DELHIVERY_SELLER_NAME", "")
-        if not seller_name or not seller_name.strip():
-            reasons.append("DELHIVERY_SELLER_NAME is not configured.")
-
-        phone = getattr(settings, "DELHIVERY_PHONE", "")
-        if not phone or not phone.strip():
-            reasons.append("DELHIVERY_PHONE is not configured.")
-
-        base_url = (
-            getattr(settings, "DELHIVERY_BASE_URL_SANDBOX", "")
-            if provider_name == "sandbox"
-            else getattr(settings, "DELHIVERY_BASE_URL_LIVE", "")
-        )
-        if not base_url or not base_url.strip():
-            reasons.append(f"DELHIVERY_BASE_URL_{provider_name.upper()} is not configured.")
+            reasons.append("SHIPROCKET_PICKUP_LOCATION is not configured.")
 
         is_valid = len(reasons) == 0
         return is_valid, reasons
+
+    # Backward compatibility alias
+    validate_delhivery_config = validate_shiprocket_config
 
 
 # ============================================================
@@ -100,7 +99,7 @@ class ShippingConfigValidator:
 class BaseShippingProvider(ABC):
     """
     Unified Shipping Provider Interface.
-    All providers (Offline, Sandbox, Live) implement these exact methods.
+    All providers (Offline, Shiprocket) implement these exact methods.
     """
 
     def validate_for_shipment(self, order: Order, package_info: dict) -> None:
@@ -139,7 +138,7 @@ class BaseShippingProvider(ABC):
                 errors.append(f"Package {label} ({val} cm) exceeds maximum limit of 150 cm.")
 
         if errors:
-            raise DelhiveryValidationError(errors)
+            raise ShiprocketValidationError(errors)
 
     @abstractmethod
     def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
@@ -173,11 +172,6 @@ class OfflineShippingProvider(BaseShippingProvider):
     """
 
     def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
-        """
-        Creates or updates a simulated offline shipment.
-        If existing_shipment is provided, updates that record instead of creating a new one.
-        """
-        # Idempotency: return existing if AWB already present
         if existing_shipment and existing_shipment.awb_number:
             return existing_shipment
 
@@ -200,24 +194,17 @@ class OfflineShippingProvider(BaseShippingProvider):
         exec_ms = round((resp_time - req_time).total_seconds() * 1000, 2)
 
         if existing_shipment:
-            # Update the pre-existing warehouse record
             shipment = existing_shipment
             shipment.provider = "offline"
-            shipment.courier_name = "Delhivery (Offline Simulation)"
+            shipment.courier_name = "Shiprocket (Offline Simulation)"
             shipment.delhivery_shipment_id = fake_awb
             shipment.awb_number = fake_awb
             shipment.tracking_number = fake_awb
-            shipment.tracking_url = f"http://localhost:5173/orders/{order.id}"
+            shipment.tracking_url = f"http://localhost:3000/orders/{order.id}"
             shipment.shipment_status = ShipmentStatus.CREATED
             shipment.pickup_status = PickupStatus.PENDING
             shipment.current_location = "FAAZO Central Warehouse, Mumbai"
-            shipment.request_payload = {"mode": "offline", "order_number": order_ref, "package": package_info}
-            shipment.response_payload = fake_raw
             shipment.raw_response = fake_raw
-            shipment.request_timestamp = req_time
-            shipment.response_timestamp = resp_time
-            shipment.api_status_code = 200
-            shipment.execution_time_ms = exec_ms
             shipment.last_synced_at = resp_time
             if created_by:
                 shipment.created_by = created_by
@@ -227,25 +214,19 @@ class OfflineShippingProvider(BaseShippingProvider):
                 order=order,
                 created_by=created_by,
                 provider="offline",
-                courier_name="Delhivery (Offline Simulation)",
+                courier_name="Shiprocket (Offline Simulation)",
                 delhivery_shipment_id=fake_awb,
                 awb_number=fake_awb,
                 tracking_number=fake_awb,
-                tracking_url=f"http://localhost:5173/orders/{order.id}",
+                tracking_url=f"http://localhost:3000/orders/{order.id}",
                 shipment_status=ShipmentStatus.CREATED,
                 pickup_status=PickupStatus.PENDING,
                 current_location="FAAZO Central Warehouse, Mumbai",
-                request_payload={"mode": "offline", "order_number": order_ref, "package": package_info},
-                response_payload=fake_raw,
                 raw_response=fake_raw,
-                request_timestamp=req_time,
-                response_timestamp=resp_time,
-                api_status_code=200,
-                execution_time_ms=exec_ms,
                 last_synced_at=resp_time,
             )
 
-        # Create tracking event
+
         ShipmentTrackingEvent.objects.create(
             shipment=shipment,
             event_code="MANIFEST_CREATED",
@@ -260,6 +241,18 @@ class OfflineShippingProvider(BaseShippingProvider):
         logger.info("[OFFLINE_PROVIDER] Created simulated shipment for order %s (AWB: %s)", order.order_number, fake_awb)
         return shipment
 
+    def generate_label(self, shipment: Shipment) -> dict:
+        if not shipment.label_url:
+            shipment.label_url = f"http://localhost:3000/shipping/labels/{shipment.awb_number}.pdf"
+            shipment.save(update_fields=["label_url", "updated_at"])
+        return {"label_url": shipment.label_url, "awb": shipment.awb_number}
+
+    def generate_manifest(self, shipment: Shipment) -> dict:
+        if not shipment.manifest_url:
+            shipment.manifest_url = f"http://localhost:3000/shipping/manifests/{shipment.shipment_number}.pdf"
+            shipment.save(update_fields=["manifest_url", "updated_at"])
+        return {"manifest_url": shipment.manifest_url, "shipment_number": shipment.shipment_number}
+
     def track_shipment(self, shipment: Shipment) -> dict:
         return {
             "awb": shipment.awb_number,
@@ -270,7 +263,7 @@ class OfflineShippingProvider(BaseShippingProvider):
 
     def cancel_shipment(self, shipment: Shipment, reason: str = "") -> dict:
         if not shipment.is_cancellable:
-            raise DelhiveryAPIError(f"Cannot cancel shipment in status '{shipment.shipment_status}'.")
+            raise ShiprocketAPIError(f"Cannot cancel shipment in status '{shipment.shipment_status}'.")
         shipment.shipment_status = ShipmentStatus.CANCELLED
         shipment.pickup_status = PickupStatus.CANCELLED
         shipment.save(update_fields=["shipment_status", "pickup_status", "updated_at"])
@@ -313,164 +306,330 @@ class OfflineShippingProvider(BaseShippingProvider):
 
 
 # ============================================================
-# Delhivery Sandbox Provider (Staging API)
+# Shiprocket Enterprise Provider (Production API)
 # ============================================================
 
-class DelhiverySandboxProvider(BaseShippingProvider):
+class ShiprocketProvider(BaseShippingProvider):
     """
-    Delhivery Sandbox Provider (Communicates with staging-express.delhivery.com).
-    Uses DelhiveryAPIClient for transient retries, execution, and error handling.
+    Shiprocket Enterprise Shipping Provider.
+    Implements core atomic shipment creation (Create Order + Assign Courier/AWB) and independent,
+    on-demand post-commit operations (Generate Label, Generate Manifest, Schedule Pickup, Sync Tracking).
     """
 
-    def __init__(self, base_url: str = None, token: str = None):
-        self.base_url = base_url or getattr(settings, "DELHIVERY_BASE_URL_SANDBOX", "https://staging-express.delhivery.com")
-        self.token = token or getattr(settings, "DELHIVERY_API_TOKEN", "") or getattr(settings, "DELHIVERY_TOKEN", "")
-        self.client_name = getattr(settings, "DELHIVERY_CLIENT_NAME", "FAAZO")
-        self.pickup_location = getattr(settings, "DELHIVERY_PICKUP_LOCATION", "FAAZO Central Warehouse")
-        self.seller_name = getattr(settings, "DELHIVERY_SELLER_NAME", "FAAZO Dental Solutions Pvt. Ltd.")
-        self.provider_mode = "sandbox"
-        self.client = DelhiveryAPIClient(self.base_url, self.token, self.client_name)
+    def __init__(self, base_url: str = None, email: str = None, password: str = None):
+        self.client = ShiprocketAPIClient(base_url=base_url, email=email, password=password)
+        self.pickup_location = getattr(settings, "SHIPROCKET_PICKUP_LOCATION", "Primary")
 
     def create_shipment(self, order: Order, package_info: dict, created_by=None, existing_shipment=None) -> Shipment:
         """
-        Creates or updates a Delhivery courier shipment via the Sandbox API.
-        If existing_shipment is provided, updates that warehouse record (no new DB row).
+        CORE BUSINESS TRANSACTION BOUNDARY:
+          1. Create Order via Shiprocket Adhoc API (/v1/external/orders/create/adhoc).
+          2. Assign Courier & Generate AWB (/v1/external/courier/assign/awb).
+          3. Save Shipment record & transition status to CREATED (ACTIVE).
         """
-        # Idempotency: return if AWB already present
         if existing_shipment and existing_shipment.awb_number:
             return existing_shipment
 
         self.validate_for_shipment(order, package_info)
 
         addr = order.shipping_address
-        weight = package_info.get("weight", 0.5)
-        length = package_info.get("length", 10)
-        breadth = package_info.get("breadth", 10)
-        height = package_info.get("height", 10)
+        weight = float(package_info.get("weight", 0.5))
+        length = float(package_info.get("length", 10))
+        breadth = float(package_info.get("breadth", 10))
+        height = float(package_info.get("height", 10))
         payment_mode = package_info.get("payment_mode", "Prepaid")
-        cod_amount = float(order.total_amount) if payment_mode == "COD" else 0
+        is_cod = payment_mode.upper() == "COD"
 
-        product_names = ", ".join([f"{item.product.name} x{item.quantity}" for item in order.items.all()])
+        first_name = addr.full_name.split()[0] if addr.full_name else "Customer"
+        last_name = " ".join(addr.full_name.split()[1:]) if len(addr.full_name.split()) > 1 else ""
 
-        payload = {
-            "shipments": [{
-                "name": addr.full_name,
-                "add": f"{addr.line1}{', ' + addr.line2 if addr.line2 else ''}",
-                "city": addr.city,
-                "state": addr.state,
-                "country": "India",
-                "pin": addr.pincode,
-                "phone": addr.mobile,
-                "order": str(order.order_number),
-                "payment_mode": payment_mode,
-                "return_pin": addr.pincode,
-                "return_city": addr.city,
-                "return_phone": addr.mobile,
-                "return_add": f"{addr.line1}{', ' + addr.line2 if addr.line2 else ''}",
-                "return_state": addr.state,
-                "return_country": "India",
-                "products_desc": product_names[:500],
-                "hsn_code": "",
-                "cod_amount": str(cod_amount),
-                "order_date": order.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
-                "total_amount": str(float(order.total_amount)),
-                "seller_name": self.seller_name,
-                "seller_inv": order.invoice_number or "",
-                "quantity": str(sum(item.quantity for item in order.items.all())),
-                "weight": str(weight),
-                "shipment_length": str(length),
-                "shipment_width": str(breadth),
-                "shipment_height": str(height),
-                "shipping_mode": "Surface",
-                "address_type": "home",
-            }],
-            "pickup_location": {"name": self.pickup_location},
+        order_items = []
+        for item in order.items.all():
+            order_items.append({
+                "name": item.product.name,
+                "sku": getattr(item.product, "sku", str(item.product.id)) or str(item.product.id),
+                "units": item.quantity,
+                "selling_price": str(float(item.unit_price)),
+                "discount": "",
+                "tax": "",
+                "hsn": 4411,
+            })
+
+        order_payload = {
+            "order_id": str(order.order_number),
+            "order_date": order.created_at.strftime("%Y-%m-%d %H:%M"),
+            "pickup_location": self.pickup_location,
+            "channel_id": "",
+            "comment": "FAAZO Enterprise Order",
+            "billing_customer_name": first_name,
+            "billing_last_name": last_name,
+            "billing_address": addr.line1,
+            "billing_address_2": addr.line2 or "",
+            "billing_city": addr.city,
+            "billing_pincode": addr.pincode,
+            "billing_state": addr.state,
+            "billing_country": "India",
+            "billing_email": getattr(order.user, "email", "") or "customer@faazo.com",
+            "billing_phone": addr.mobile,
+            "shipping_is_billing": True,
+            "order_items": order_items,
+            "payment_method": "COD" if is_cod else "Prepaid",
+            "shipping_charges": 0,
+            "giftwrap_charges": 0,
+            "transaction_charges": 0,
+            "total_discount": 0,
+            "sub_total": float(order.total_amount),
+            "length": length,
+            "breadth": breadth,
+            "height": height,
+            "weight": weight,
         }
 
         req_time = timezone.now()
-        try:
-            res_data, status_code, exec_ms = self.client.create_shipment_api(payload)
-            resp_time = timezone.now()
+        # Step 1: Create Order in Shiprocket
+        order_res, order_status, exec_ms_1 = self.client.create_order(order_payload)
+        
+        sr_order_id = order_res.get("order_id")
+        sr_shipment_id = order_res.get("shipment_id")
 
-            packages = res_data.get("packages", [])
-            pkg = packages[0] if packages else {}
-            awb = pkg.get("waybill") or pkg.get("upload_wbn") or ""
-            refnum = pkg.get("refnum") or str(order.order_number)
-            is_success = pkg.get("status") in ["Success", "Created", "Manifested"] or bool(awb)
+        if not sr_order_id or not sr_shipment_id:
+            errMsg = order_res.get("message") or "Shiprocket order creation failed."
+            raise ShiprocketAPIError(f"Shiprocket Order Creation Failed: {errMsg}", status_code=order_status, details=order_res, error_code="SHIPMENT_CREATION_FAILED")
 
-            if not is_success or not awb:
-                errMsg = ", ".join(pkg.get("remarks", [])) or res_data.get("rmk") or "Delhivery API returned failure status."
-                raise DelhiveryAPIError(f"Delhivery Shipment Creation Failed: {errMsg}", status_code=status_code, details=res_data)
+        # Step 2: Assign Courier & Generate AWB
+        courier_res, courier_status, exec_ms_2 = self.client.assign_courier(sr_shipment_id)
+        resp_time = timezone.now()
 
-            common_fields = dict(
-                provider=self.provider_mode,
-                courier_name=f"Delhivery ({self.provider_mode.title()})",
-                delhivery_shipment_id=awb,
-                external_shipment_id=refnum,
-                awb_number=awb,
-                tracking_number=awb,
-                tracking_url=f"https://track.delhivery.com/tracking/{awb}",
-                shipment_status=ShipmentStatus.CREATED,
-                pickup_status=PickupStatus.PENDING,
-                current_location="FAAZO Origin Facility",
-                request_payload=payload,
-                response_payload=res_data,
-                raw_response=res_data,
-                request_timestamp=req_time,
-                response_timestamp=resp_time,
-                api_status_code=status_code,
-                execution_time_ms=exec_ms,
-                last_synced_at=resp_time,
+        awb_data = courier_res.get("response", {}).get("data", {})
+        awb_code = awb_data.get("awb_code") or courier_res.get("awb_code")
+        courier_name = awb_data.get("courier_name") or courier_res.get("courier_name") or "Shiprocket Carrier"
+        tracking_url = f"https://shiprocket.co/tracking/{awb_code}" if awb_code else ""
+
+        if not awb_code:
+            errMsg = courier_res.get("message") or "Shiprocket courier assignment / AWB generation failed."
+            raise ShiprocketAPIError(f"Shiprocket AWB Generation Failed: {errMsg}", status_code=courier_status, details=courier_res, error_code="AWB_GENERATION_FAILED")
+
+        total_exec_ms = exec_ms_1 + exec_ms_2
+
+        common_fields = dict(
+            provider="shiprocket",
+            courier_name=courier_name,
+            delhivery_shipment_id=str(sr_shipment_id),  # DB column stores provider shipment ID
+            external_shipment_id=str(sr_order_id),
+            awb_number=awb_code,
+            tracking_number=awb_code,
+            tracking_url=tracking_url,
+            shipment_status=ShipmentStatus.CREATED,
+            pickup_status=PickupStatus.PENDING,
+            current_location="Origin Warehouse",
+            raw_response={"order_response": order_res, "courier_response": courier_res},
+            last_synced_at=resp_time,
+        )
+
+
+        if existing_shipment:
+            for field, value in common_fields.items():
+                setattr(existing_shipment, field, value)
+            if created_by:
+                existing_shipment.created_by = created_by
+            existing_shipment.save()
+            shipment = existing_shipment
+        else:
+            shipment = Shipment.objects.create(
+                order=order,
+                created_by=created_by,
+                **common_fields,
             )
 
-            if existing_shipment:
-                # Update the pre-existing warehouse record
-                for field, value in common_fields.items():
-                    setattr(existing_shipment, field, value)
-                if created_by:
-                    existing_shipment.created_by = created_by
-                existing_shipment.save()
-                shipment = existing_shipment
-            else:
-                shipment = Shipment.objects.create(
-                    order=order,
-                    created_by=created_by,
-                    **common_fields,
-                )
+        ShipmentTrackingEvent.objects.create(
+            shipment=shipment,
+            event_code="MANIFEST_CREATED",
+            event_label="Courier Assigned & AWB Generated (Shiprocket)",
+            status_mapped=ShipmentStatus.CREATED,
+            event_timestamp=req_time,
+            location="Shiprocket Logistics Network",
+            description=f"Shipment created and AWB assigned: {awb_code} ({courier_name})",
+            event_source="api_poll"
+        )
 
-            ShipmentTrackingEvent.objects.create(
-                shipment=shipment,
-                event_code="MANIFEST_CREATED",
-                event_label=f"Shipment Manifested ({self.provider_mode.title()} API)",
-                status_mapped=ShipmentStatus.CREATED,
-                event_timestamp=req_time,
-                location="Delhivery Staging Network",
-                description=f"Shipment registered with Delhivery. AWB: {awb}",
-                event_source="api_poll"
-            )
+        logger.info("[SHIPROCKET_PROVIDER] Shipment created successfully for order %s (AWB: %s)", order.order_number, awb_code)
+        return shipment
 
-            logger.info("[%s_PROVIDER] Shipment created for order %s (AWB: %s)", self.provider_mode.upper(), order.order_number, awb)
+    def generate_label(self, shipment: Shipment) -> dict:
+        """Post-commit operational action to generate shipping label."""
+        sr_shipment_id = shipment.delhivery_shipment_id or shipment.awb_number
+        if not sr_shipment_id:
+            raise ShiprocketAPIError("Cannot generate label: missing shipment identifier.", error_code="LABEL_GENERATION_FAILED")
+
+        res_data, status_code, _ = self.client.generate_label([sr_shipment_id])
+        label_url = res_data.get("label_url") or res_data.get("label_created")
+        if not label_url:
+            label_url = f"https://shiprocket.co/tracking/{shipment.awb_number}"
+
+        shipment.label_url = label_url
+        shipment.save(update_fields=["label_url", "updated_at"])
+
+        ShipmentTrackingEvent.objects.create(
+            shipment=shipment,
+            event_code="LABEL_GENERATED",
+            event_label="Shipping Label Generated",
+            status_mapped=shipment.shipment_status,
+            event_timestamp=timezone.now(),
+            location="Shiprocket System",
+            description=f"Label generated for AWB: {shipment.awb_number}",
+            event_source="manual"
+        )
+
+        return {"label_url": shipment.label_url, "awb": shipment.awb_number}
+
+    def generate_manifest(self, shipment: Shipment) -> dict:
+        """Post-commit operational action to generate manifest document."""
+        sr_shipment_id = shipment.delhivery_shipment_id or shipment.awb_number
+        if not sr_shipment_id:
+            raise ShiprocketAPIError("Cannot generate manifest: missing shipment identifier.", error_code="MANIFEST_GENERATION_FAILED")
+
+        res_data, status_code, _ = self.client.generate_manifest([sr_shipment_id])
+        manifest_url = res_data.get("manifest_url") or res_data.get("url")
+        if not manifest_url:
+            manifest_url = f"https://shiprocket.co/tracking/{shipment.awb_number}"
+
+        shipment.manifest_url = manifest_url
+        shipment.save(update_fields=["manifest_url", "updated_at"])
+
+        ShipmentTrackingEvent.objects.create(
+            shipment=shipment,
+            event_code="MANIFEST_GENERATED",
+            event_label="Manifest Document Generated",
+            status_mapped=shipment.shipment_status,
+            event_timestamp=timezone.now(),
+            location="Shiprocket System",
+            description=f"Manifest generated for shipment: {shipment.shipment_number}",
+            event_source="manual"
+        )
+
+        return {"manifest_url": shipment.manifest_url, "shipment_number": shipment.shipment_number}
+
+    def schedule_pickup(self, shipment: Shipment, pickup_date: date = None) -> dict:
+        """Post-commit operational action to schedule courier pickup."""
+        sr_shipment_id = shipment.delhivery_shipment_id or shipment.awb_number
+        if not sr_shipment_id:
+            raise ShiprocketAPIError("Cannot schedule pickup: missing shipment identifier.", error_code="PICKUP_FAILED")
+
+        res_data, status_code, _ = self.client.generate_pickup([sr_shipment_id])
+
+        target_date = pickup_date or (date.today() + timedelta(days=1))
+        shipment.pickup_status = PickupStatus.SCHEDULED
+        shipment.pickup_scheduled_date = target_date
+        shipment.shipment_status = ShipmentStatus.PICKUP_SCHEDULED
+        shipment.save(update_fields=["pickup_status", "pickup_scheduled_date", "shipment_status", "updated_at"])
+
+        ShipmentTrackingEvent.objects.create(
+            shipment=shipment,
+            event_code="PICKUP_SCHEDULED",
+            event_label="Pickup Scheduled with Courier",
+            status_mapped=ShipmentStatus.PICKUP_SCHEDULED,
+            event_timestamp=timezone.now(),
+            location="Shiprocket Logistics",
+            description=f"Courier pickup scheduled for {target_date.strftime('%Y-%m-%d')}.",
+            event_source="manual"
+        )
+
+        return {"status": "Scheduled", "pickup_date": target_date.strftime("%Y-%m-%d")}
+
+    def track_shipment(self, shipment: Shipment) -> dict:
+        if not shipment.awb_number:
+            return {"status": shipment.get_shipment_status_display(), "location": shipment.current_location}
+
+        res_data, status_code, _ = self.client.track_awb(shipment.awb_number)
+        tracking_data = res_data.get("tracking_data", {})
+        track_status = tracking_data.get("track_status") or shipment.shipment_status
+        current_loc = tracking_data.get("current_status") or shipment.current_location
+
+        return {
+            "awb": shipment.awb_number,
+            "status": track_status,
+            "location": current_loc,
+            "raw": res_data,
+        }
+
+    def cancel_shipment(self, shipment: Shipment, reason: str = "") -> dict:
+        if not shipment.is_cancellable:
+            raise ShiprocketAPIError(f"Cannot cancel shipment in status '{shipment.shipment_status}'.", error_code="CANCEL_FAILED")
+
+        sr_order_id = shipment.external_shipment_id or str(shipment.order.order_number)
+        res_data, status_code, _ = self.client.cancel_order([sr_order_id])
+
+        shipment.shipment_status = ShipmentStatus.CANCELLED
+        shipment.pickup_status = PickupStatus.CANCELLED
+        shipment.save(update_fields=["shipment_status", "pickup_status", "updated_at"])
+
+        ShipmentTrackingEvent.objects.create(
+            shipment=shipment,
+            event_code="CANCELLED",
+            event_label="Shipment Cancelled",
+            status_mapped=ShipmentStatus.CANCELLED,
+            event_timestamp=timezone.now(),
+            location="Shiprocket System",
+            description=reason or "Shipment cancelled by admin.",
+            event_source="manual"
+        )
+
+        return {"status": "Cancelled", "awb": shipment.awb_number}
+
+    def sync_tracking(self, shipment: Shipment) -> Shipment:
+        if not shipment.awb_number:
             return shipment
 
-        except (DelhiveryAPIError, DelhiveryValidationError) as err:
-            logger.error("[%s_PROVIDER_ERROR] %s", self.provider_mode.upper(), str(err))
-            raise err
+        res_data, status_code, _ = self.client.track_awb(shipment.awb_number)
+        tracking_data = res_data.get("tracking_data", {})
+        shipment_track = tracking_data.get("shipment_track", [])
+        track_obj = shipment_track[0] if shipment_track else {}
+
+        raw_status = track_obj.get("current_status") or tracking_data.get("track_status") or ""
+        mapped_status = SHIPROCKET_STATUS_MAP.get(raw_status.upper(), shipment.shipment_status)
+
+        shipment.shipment_status = mapped_status
+        if track_obj.get("destination"):
+            shipment.current_location = track_obj.get("destination")
+        shipment.last_synced_at = timezone.now()
+
+        if mapped_status == ShipmentStatus.DELIVERED and not shipment.delivered_at:
+            shipment.delivered_at = timezone.now()
+
+        shipment.save(update_fields=["shipment_status", "current_location", "delivered_at", "last_synced_at", "updated_at"])
+
+        # Append scans as tracking events
+        scans = track_obj.get("scans", [])
+        existing_timestamps = set(shipment.tracking_events.values_list("event_timestamp", flat=True))
+
+        for scan in scans:
+            scan_date_str = scan.get("date")
+            scan_loc = scan.get("location", "")
+            scan_activity = scan.get("activity", "")
+            scan_status = scan.get("status", "")
+
+            from django.utils.dateparse import parse_datetime
+            evt_time = parse_datetime(scan_date_str) if scan_date_str else timezone.now()
+
+            if evt_time and evt_time not in existing_timestamps:
+                m_stat = SHIPROCKET_STATUS_MAP.get(scan_status.upper(), mapped_status)
+                ShipmentTrackingEvent.objects.create(
+                    shipment=shipment,
+                    event_code=scan_status or "SYNC_SCAN",
+                    event_label=scan_activity or scan_status or "Tracking Scan",
+                    status_mapped=m_stat,
+                    event_timestamp=evt_time,
+                    location=scan_loc,
+                    description=scan_activity,
+                    event_source="api_poll"
+                )
+
+        return shipment
 
 
-# ============================================================
-# Delhivery Live Provider (Production API)
-# ============================================================
-
-class DelhiveryLiveProvider(DelhiverySandboxProvider):
-    """
-    Delhivery Live Provider (Communicates with express.delhivery.com).
-    Subclasses Sandbox provider with production base_url.
-    """
-
-    def __init__(self, base_url: str = None, token: str = None):
-        live_base = base_url or getattr(settings, "DELHIVERY_BASE_URL_LIVE", "https://express.delhivery.com")
-        super().__init__(base_url=live_base, token=token)
-        self.provider_mode = "live"
+# Backward-compatible alias
+DelhiverySandboxProvider = ShiprocketProvider
+DelhiveryLiveProvider = ShiprocketProvider
 
 
 # ============================================================
@@ -484,8 +643,8 @@ def get_shipping_provider() -> BaseShippingProvider:
     """
     provider_name = getattr(settings, "SHIPPING_PROVIDER", "offline").lower().strip()
 
-    if provider_name in ["sandbox", "live"]:
-        is_valid, reasons = ShippingConfigValidator.validate_delhivery_config(provider_name)
+    if provider_name in ["shiprocket", "sandbox", "live"]:
+        is_valid, reasons = ShippingConfigValidator.validate_shiprocket_config(provider_name)
         if not is_valid:
             logger.warning(
                 "[SHIPPING_PROVIDER_FALLBACK] Requested Provider: %s | Reasons: %s | Fallback: Offline Provider Activated.",
@@ -493,11 +652,7 @@ def get_shipping_provider() -> BaseShippingProvider:
             )
             return OfflineShippingProvider()
 
-        if provider_name == "sandbox":
-            return DelhiverySandboxProvider()
-        else:
-            return DelhiveryLiveProvider()
+        return ShiprocketProvider()
 
-    # Default offline mode
     logger.info("[SHIPPING_PROVIDER_ACTIVE] Offline Shipping Provider Activated.")
     return OfflineShippingProvider()

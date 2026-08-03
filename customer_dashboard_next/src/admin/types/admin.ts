@@ -580,7 +580,7 @@ export interface Customer {
   is_active: boolean;
   date_joined: string;
   last_login: string | null;
-  
+
   avatar_url: string | null;
   profession: string;
   clinic_name: string;

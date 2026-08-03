@@ -225,7 +225,7 @@ const AdminLogin: React.FC = () => {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-2.5 md:space-y-4">
+            <form onSubmit={handleSubmit} suppressHydrationWarning className="space-y-2.5 md:space-y-4">
               {/* Username */}
               <div>
                 <label className={labelBase}>Username</label>
@@ -238,6 +238,7 @@ const AdminLogin: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className={inputBase}
                     placeholder="Enter your username"
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
@@ -254,11 +255,13 @@ const AdminLogin: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className={`${inputBase} pr-10`}
                     placeholder="Enter your password"
+                    suppressHydrationWarning
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    suppressHydrationWarning
                   >
                     {showPassword ? <EyeOff className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                   </button>
@@ -273,6 +276,7 @@ const AdminLogin: React.FC = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-3 h-3 md:w-3.5 md:h-3.5 rounded border-slate-300 text-[#006670] focus:ring-[#006670] accent-[#006670] cursor-pointer"
+                  suppressHydrationWarning
                 />
                 <label htmlFor="remember-me" className="text-[11px] md:text-xs font-medium text-slate-700 cursor-pointer">
                   Remember me
@@ -284,6 +288,7 @@ const AdminLogin: React.FC = () => {
                 type="submit"
                 disabled={loading}
                 className="w-full bg-[#006670] hover:bg-[#004e56] active:bg-[#003d44] text-white font-bold text-xs md:text-sm py-2 md:py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 md:gap-2 tracking-wide"
+                suppressHydrationWarning
               >
                 {loading ? 'Signing In...' : (<>Sign In <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" /></>)}
               </button>

@@ -17,34 +17,56 @@ from django.conf import settings
 
 logger = logging.getLogger("faazo.payments")
 
-# Lazy-initialised Razorpay client singleton
+# Lazy-initialised Razorpay client singleton.
+# Reset to None whenever credentials might have changed.
 _client = None
 
 
 def is_sandbox_mode() -> bool:
-    """Checks if the system is configured to run in payment sandbox mode."""
-    key_id = settings.RAZORPAY_KEY_ID
-    key_secret = settings.RAZORPAY_KEY_SECRET
-    return (
-        not key_id 
-        or not key_secret 
-        or "REPLACE" in key_id 
-        or "REPLACE" in key_secret
-    )
+    """
+    Returns True only when Razorpay credentials are genuinely absent or contain
+    placeholder values. Does NOT enforce any key length or format restrictions —
+    credential format is entirely determined by the Razorpay Dashboard.
+    """
+    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
+    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
+
+    if not key_id or not key_secret:
+        logger.info("[Razorpay] Credentials not set — running in sandbox mode.")
+        return True
+    if "REPLACE" in key_id or "REPLACE" in key_secret:
+        logger.info("[Razorpay] Placeholder credentials detected — running in sandbox mode.")
+        return True
+
+    return False
+
+
 
 
 def _get_client():
-    """Returns a singleton Razorpay client instance."""
+    """
+    Returns a Razorpay client initialised with current settings values.
+    The client is recreated each time settings might have changed (dev restarts).
+    In production, settings are constant so this is effectively a singleton.
+    """
     global _client
+
+    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
+    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
+
+    if not key_id or not key_secret:
+        raise ValueError(
+            "RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in environment variables."
+        )
+
+    # Recreate client if it hasn't been initialised yet
     if _client is None:
-        key_id = settings.RAZORPAY_KEY_ID
-        key_secret = settings.RAZORPAY_KEY_SECRET
-        if not key_id or not key_secret:
-            raise ValueError(
-                "RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in environment variables."
-            )
         _client = razorpay.Client(auth=(key_id, key_secret))
-        logger.info("Razorpay client initialised (key_id=%s…)", key_id[:12])
+        logger.info(
+            "[Razorpay] Client initialised (key_id=%s…, secret_len=%d)",
+            key_id[:16],
+            len(key_secret),
+        )
     return _client
 
 
@@ -52,6 +74,7 @@ def create_razorpay_order(amount_paise: int, receipt: str, notes: dict = None):
     """
     Create a Razorpay order.
     If credentials are placeholders, returns a mock order structure.
+    On API failure, logs the full error and re-raises (callers decide fallback strategy).
     """
     if is_sandbox_mode():
         mock_id = f"order_mock_{uuid.uuid4().hex[:14]}"
@@ -65,17 +88,29 @@ def create_razorpay_order(amount_paise: int, receipt: str, notes: dict = None):
             "notes": notes or {},
         }
 
-    client = _get_client()
-    order_data = {
-        "amount": amount_paise,
-        "currency": "INR",
-        "receipt": receipt,
-        "notes": notes or {},
-    }
-    logger.info("Creating Razorpay order: receipt=%s amount=%d paise", receipt, amount_paise)
-    order = client.order.create(data=order_data)
-    logger.info("Razorpay order created: %s", order.get("id"))
-    return order
+    try:
+        client = _get_client()
+        order_data = {
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt,
+            "notes": notes or {},
+        }
+        logger.info("[Razorpay] Creating order: receipt=%s amount=%d paise", receipt, amount_paise)
+        order = client.order.create(data=order_data)
+        logger.info("[Razorpay] Order created: %s", order.get("id"))
+        return order
+    except Exception as e:
+        # Log the full exception including Razorpay's error body for diagnosis.
+        # Razorpay SDK raises razorpay.errors.BadRequestError for 4xx responses;
+        # the str() includes the HTTP status, error code, and description.
+        logger.error(
+            "[Razorpay] Order creation FAILED — key_id=%s… | error: %s",
+            getattr(settings, "RAZORPAY_KEY_ID", "")[:16],
+            e,
+        )
+        raise
+
 
 
 def verify_payment_signature(razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str) -> bool:

@@ -26,10 +26,12 @@ from apps.authentication.views import (
     LoginView,
     LogoutView,
     MeView,
+    PreRegisterView,
     RegisterView,
     ResendVerificationView,
     ResetPasswordView,
     TokenRefreshView,
+    VerifyAndRegisterView,
     VerifyEmailView,
 )
 
@@ -38,6 +40,8 @@ app_name = "authentication"
 urlpatterns = [
     # ── Registration ────────────────────────────────────────────
     path("register/", RegisterView.as_view(), name="register"),
+    path("pre-register/", PreRegisterView.as_view(), name="pre-register"),
+    path("verify-and-register/", VerifyAndRegisterView.as_view(), name="verify-and-register"),
     path("dealer/register/", DealerRegisterView.as_view(), name="dealer-register"),
 
     # ── Login / Logout ──────────────────────────────────────────

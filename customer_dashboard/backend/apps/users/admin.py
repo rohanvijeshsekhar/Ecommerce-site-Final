@@ -60,13 +60,14 @@ class UserAdmin(BaseUserAdmin):
         "email",
         "full_name",
         "role_badge",
+        "auth_provider",
         "is_email_verified",
         "is_phone_verified",
         "is_active",
         "date_joined",
     )
-    list_filter = ("role", "is_active", "is_email_verified", "is_staff", "date_joined")
-    search_fields = ("email", "full_name", "phone_number")
+    list_filter = ("role", "auth_provider", "is_active", "is_email_verified", "is_staff", "date_joined")
+    search_fields = ("email", "full_name", "phone_number", "google_sub")
     ordering = ("-date_joined",)
     readonly_fields = ("id", "date_joined", "last_login", "created_at", "updated_at")
 
@@ -80,7 +81,14 @@ class UserAdmin(BaseUserAdmin):
         (
             "Personal Information",
             {
-                "fields": ("full_name", "phone_number"),
+                "fields": ("full_name", "phone_number", "profile_picture"),
+            },
+        ),
+        (
+            "Authentication Provider & OAuth",
+            {
+                "fields": ("auth_provider", "google_sub"),
+                "description": "Details regarding single sign-on or credential provider.",
             },
         ),
         (

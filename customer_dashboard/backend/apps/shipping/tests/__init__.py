@@ -1,0 +1,1 @@
+# Shipping app tests package

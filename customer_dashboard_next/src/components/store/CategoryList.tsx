@@ -154,7 +154,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block w-full py-20 select-none bg-[#F8FAFC] border-y border-slate-200/60 overflow-hidden" id="categories">
+      <section className="hidden md:block w-full py-20 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="categories">
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-12">
@@ -171,8 +171,13 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           </div>
         </div>
 
-        {/* Styles override for linear scrolling Swiper wrapper */}
+        {/* Styles override for linear scrolling Swiper wrapper and hover overflow */}
         <style>{`
+          .category-swiper,
+          .category-swiper .swiper,
+          .category-swiper .swiper-wrapper {
+            overflow: visible !important;
+          }
           .category-swiper .swiper-wrapper {
             transition-timing-function: linear !important;
           }
@@ -192,11 +197,11 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
               pauseOnMouseEnter: false,
             }}
             allowTouchMove={true}
-            className="category-swiper py-4 overflow-visible"
+            className="category-swiper py-8 overflow-visible"
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-${idx}`} style={{ width: 'auto' }}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,102,112,0.1)] hover:border-[#006670]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col h-[390px] cursor-pointer group relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,102,112,0.12)] hover:border-[#006670]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col h-[390px] cursor-pointer group relative overflow-hidden">
                   {/* Top: Image Area */}
                   <div className="w-full h-[250px] bg-slate-50 flex items-center justify-center overflow-hidden relative">
                     <Image
@@ -231,7 +236,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full py-12 select-none bg-[#F8FAFC] border-y border-slate-200/60 overflow-hidden" id="categories-mobile">
+      <section className="block md:hidden w-full py-12 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="categories-mobile">
         <div className="w-full px-5">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -249,6 +254,11 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
 
           {/* Styles override for linear scrolling mobile Swiper wrapper */}
           <style>{`
+            .category-swiper-mobile,
+            .category-swiper-mobile .swiper,
+            .category-swiper-mobile .swiper-wrapper {
+              overflow: visible !important;
+            }
             .category-swiper-mobile .swiper-wrapper {
               transition-timing-function: linear !important;
             }
@@ -266,7 +276,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
               disableOnInteraction: false,
             }}
             allowTouchMove={true}
-            className="category-swiper-mobile w-full py-2"
+            className="category-swiper-mobile w-full py-4 overflow-visible"
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-mob-${idx}`}>
