@@ -102,8 +102,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (res.success && res.data) {
             setCartItemsState(mapBackendCartToFrontend(res.data));
           }
-        } catch (e) {
-          console.error(e);
+        } catch (e: any) {
+          if (e?.response?.status !== 401) {
+            console.error('Failed to load user cart:', e);
+          }
         } finally {
           setCartLoading(false);
         }
@@ -247,8 +249,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }));
             setOrders(mappedOrders);
           }
-        } catch (e) {
-          console.error('Failed to load user orders:', e);
+        } catch (e: any) {
+          if (e?.response?.status !== 401) {
+            console.error('Failed to load user orders:', e);
+          }
         }
       };
       loadOrders();
