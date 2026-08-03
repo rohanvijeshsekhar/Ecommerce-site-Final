@@ -91,6 +91,8 @@ urlpatterns = [
                 path("notifications/", include("apps.notifications.urls")),
                 # Best Sellers Module
                 path("bestsellers/", include("apps.bestsellers.urls")),
+                # Product Reviews & Ratings
+                path("", include("apps.reviews.urls")),
                 # Phase 13+ – Shipping & Fulfillment
                 path("", include("apps.shipping.urls")),
             ]

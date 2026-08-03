@@ -17,9 +17,12 @@ import {
   CreditCard,
   Building,
   Package,
+  Star,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { ordersService } from '../../lib/services/ordersService';
 import type { OrderDetail } from '../../lib/services/ordersService';
+import { ReviewModal } from './ReviewModal';
 
 interface OrderDetailPageProps {
   orderId: string;
@@ -40,6 +43,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [activeReviewProduct, setActiveReviewProduct] = useState<{ id: string; name: string } | null>(null);
 
   const fetchOrderDetail = useCallback(async () => {
     setLoading(true);
@@ -304,9 +308,20 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                       </p>
                     </div>
                   </div>
-                  <span className="text-slate-700 shrink-0 font-sans">
-                    ₹{(item.quantity * item.price).toLocaleString('en-IN')}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-700 shrink-0 font-sans">
+                      ₹{(item.quantity * item.price).toLocaleString('en-IN')}
+                    </span>
+                    {['delivered', 'DELIVERED'].includes(order.status) && (
+                      <button
+                        onClick={() => setActiveReviewProduct({ id: (item as any).product_id || (item as any).product || item.id, name: item.product_name })}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-xl border border-teal-200 transition-colors shadow-2xs"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 stroke-none" />
+                        <span>Write Review</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -565,6 +580,20 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
         </div>
       )}
 
+      {/* Review Modal Dialog */}
+      {activeReviewProduct && (
+        <ReviewModal
+          isOpen={!!activeReviewProduct}
+          onClose={() => setActiveReviewProduct(null)}
+          productId={activeReviewProduct.id}
+          productName={activeReviewProduct.name}
+          orderId={order?.id}
+          onSuccess={() => {
+            showToast?.('Review submitted successfully!');
+            setActiveReviewProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 };

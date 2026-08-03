@@ -99,6 +99,8 @@ LOCAL_APPS = [
     "apps.shipping",
     # ── Best Sellers Module ──────────────────────────────────
     "apps.bestsellers",
+    # ── Product Reviews & Ratings ────────────────────────────
+    "apps.reviews",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

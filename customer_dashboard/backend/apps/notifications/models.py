@@ -11,6 +11,7 @@ class NotificationCategory(models.TextChoices):
     WARRANTY       = "WARRANTY", "Warranty"
     DEALER         = "DEALER", "Dealer"
     OFFERS         = "OFFERS", "Offers"
+    REVIEWS        = "REVIEWS", "Reviews"
     SYSTEM         = "SYSTEM", "System"
 
 
@@ -52,6 +53,10 @@ class NotificationType(models.TextChoices):
     # Dealer
     DEALER_APPROVED       = "DEALER_APPROVED", "Dealer Application Approved"
     DEALER_REJECTED       = "DEALER_REJECTED", "Dealer Application Rejected"
+
+    # Reviews
+    REVIEW_APPROVED       = "REVIEW_APPROVED", "Review Approved"
+    REVIEW_REJECTED       = "REVIEW_REJECTED", "Review Rejected"
 
     # Offers & Marketing
     COUPON_RECEIVED       = "COUPON_RECEIVED", "Coupon Received"

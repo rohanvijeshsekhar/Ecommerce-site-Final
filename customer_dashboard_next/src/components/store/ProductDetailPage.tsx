@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { ProductReviewsSection } from './ProductReviewsSection';
 import {
   Star,
   ShoppingCart,
@@ -815,9 +816,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   ))}
                 </div>
                 <span className="text-[11px] font-bold text-slate-700 mt-0.5">
-                  4.8
+                  {productData?.average_rating ? parseFloat(productData.average_rating).toFixed(1) : '0.0'}
                   <span className="text-slate-400 font-medium ml-1.5 hover:text-[#006670] hover:underline cursor-pointer" onClick={() => setActiveTab('reviews')}>
-                    (128 Reviews)
+                    ({productData?.total_reviews ?? 0} Reviews)
                   </span>
                 </span>
               </div>
@@ -1322,39 +1323,12 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             )}
 
             {activeTab === 'reviews' && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 mb-4 border-b border-slate-200/60 pb-4">
-                  <span className="text-4xl font-black text-slate-800">4.8</span>
-                  <div>
-                    <div className="flex text-amber-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-500 stroke-amber-500" />
-                      ))}
-                    </div>
-                    <span className="text-xs text-slate-400 mt-1 block">Based on 128 verified clinical feedback</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3.5">
-                  {[
-                    { author: 'Dr. Ramesh R. (MDS)', rating: 5, date: '3 days ago', comment: 'Excellent handpiece. Handpiece noise is low and vibration is almost negligible. NSK bearings last very long if oiled regularly.' },
-                    { author: 'Dr. Neha Sharma (BDS)', rating: 4, date: '1 week ago', comment: 'Great speed and smooth chuck. Perfect for standard crown preparations and restorations. Fast delivery by FAAZO.' }
-                  ].map((rev, rIdx) => (
-                    <div key={rIdx} className="bg-white rounded-xl p-4 border border-slate-200/50 shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-slate-800">{rev.author}</span>
-                        <span className="text-[10px] text-slate-400 font-sans">{rev.date}</span>
-                      </div>
-                      <div className="flex text-amber-500 gap-0.5 mb-2">
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-amber-500 stroke-amber-500" />
-                        ))}
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed font-semibold">{rev.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ProductReviewsSection
+                productId={productData?.id || productId}
+                productSlug={productData?.slug}
+                productName={productData?.name || 'Product'}
+                showToast={showToast}
+              />
             )}
 
             {/* Application Areas Section inside panel */}

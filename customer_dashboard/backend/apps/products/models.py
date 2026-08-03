@@ -154,6 +154,26 @@ class Product(FullAuditModel):
         help_text="When this product became / will become publicly visible.",
     )
 
+    # ── Ratings & Reviews Summary ──────────────────────────────
+    average_rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.00,
+        db_index=True,
+        verbose_name="Average Rating",
+    )
+    total_reviews = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Total Approved Reviews",
+    )
+    rating_distribution = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Rating Distribution",
+        help_text='{"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}',
+    )
+
     # ── Physical ─────────────────────────────────────────────
 
     weight_kg = models.DecimalField(

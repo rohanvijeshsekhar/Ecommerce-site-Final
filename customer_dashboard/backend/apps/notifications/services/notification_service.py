@@ -73,6 +73,9 @@ class NotificationService:
         NotificationType.DEALER_APPROVED: NotificationCategory.DEALER,
         NotificationType.DEALER_REJECTED: NotificationCategory.DEALER,
 
+        NotificationType.REVIEW_APPROVED: NotificationCategory.REVIEWS,
+        NotificationType.REVIEW_REJECTED: NotificationCategory.REVIEWS,
+
         NotificationType.COUPON_RECEIVED: NotificationCategory.OFFERS,
         NotificationType.PRODUCT_BACK_IN_STOCK: NotificationCategory.OFFERS,
         NotificationType.FLASH_SALE: NotificationCategory.OFFERS,

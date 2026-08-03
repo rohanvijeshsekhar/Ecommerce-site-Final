@@ -107,7 +107,11 @@ api.interceptors.response.use(
         localStorage.removeItem('faazo_access_token');
       }
       window.dispatchEvent(new Event('faazo_auth_expired'));
-      window.location.replace('/');
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 0);
+      }
       return Promise.reject(error);
     }
 

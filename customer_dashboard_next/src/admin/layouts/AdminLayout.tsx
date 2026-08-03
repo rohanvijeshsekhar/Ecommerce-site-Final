@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { useAdmin } from '../contexts/AdminContext';
@@ -17,6 +17,7 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   useAdmin();
+  const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const pathname = usePathname();
   const isLoginPage = pathname === '/admin/login';
@@ -65,7 +66,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <Store className="h-4 w-4" /> Go to Storefront
             </Link>
             <button
-              onClick={() => logout().then(() => window.location.href = '/admin/login')}
+              onClick={() => logout().then(() => router.push('/admin/login'))}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-all shadow-lg shadow-red-900/20"
             >
               <LogOut className="h-4 w-4" /> Admin Login
