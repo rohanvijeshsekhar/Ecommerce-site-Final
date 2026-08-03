@@ -104,14 +104,19 @@ const BrandLogos: React.FC = () => {
       `}} />
 
       {/* Desktop View */}
-      <section className="hidden md:block w-full bg-white border-y border-slate-100 py-10 select-none">
+      <section className="hidden md:block w-full bg-transparent py-12 select-none">
         <div className="max-w-7xl mx-auto px-8">
-          <div className="relative overflow-hidden rounded-[2rem] bg-slate-50/80 p-8 border border-slate-200/80 shadow-xs">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-white/85 via-white/60 to-white/40 backdrop-blur-2xl p-9 border border-white/95 shadow-[0_20px_50px_-12px_rgba(0,90,100,0.14),0_6px_16px_0_rgba(0,0,0,0.04)] ring-1 ring-black/5">
           
+            {/* Ambient Glass Glow Orbs */}
+            <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#006670]/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-teal-400/25 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-32 bg-[#008C99]/15 rounded-full blur-3xl pointer-events-none" />
+
             {/* Header */}
             <div className="relative z-10 flex justify-between items-center mb-8 px-2">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#006670]/10 flex items-center justify-center border border-[#006670]/20">
+                <div className="w-9 h-9 rounded-xl bg-[#006670]/10 backdrop-blur-md flex items-center justify-center border border-[#006670]/20 shadow-inner">
                   <Sparkles className="w-4 h-4 text-[#006670]" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-display">
@@ -121,7 +126,7 @@ const BrandLogos: React.FC = () => {
               
               <Link
                 href="/brands"
-                className="group inline-flex items-center gap-2 text-sm font-bold text-[#006670] hover:text-[#004e56] px-4 py-2 rounded-full bg-white hover:bg-slate-100 border border-slate-200/80 shadow-xs transition-all duration-300"
+                className="group inline-flex items-center gap-2 text-sm font-bold text-[#006670] hover:text-[#004e56] px-4 py-2 rounded-full bg-white/60 hover:bg-white/90 border border-slate-200/60 hover:border-[#006670]/30 shadow-sm transition-all duration-300 backdrop-blur-md"
               >
                 <span>View All Brands</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -149,9 +154,13 @@ const BrandLogos: React.FC = () => {
       </section>
 
       {/* Mobile View */}
-      <section className="block md:hidden w-full bg-white border-y border-slate-100 px-4 py-6 select-none" id="brands-mobile">
-        <div className="relative overflow-hidden rounded-2xl bg-slate-50/80 p-5 border border-slate-200/80 shadow-xs">
+      <section className="block md:hidden w-full bg-transparent px-4 py-6 select-none" id="brands-mobile">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/85 via-white/55 to-white/35 backdrop-blur-xl p-6 border border-white/95 shadow-[0_16px_36px_-8px_rgba(0,90,100,0.12)] ring-1 ring-black/5">
           
+          {/* Mobile Ambient Glows */}
+          <div className="absolute -top-16 -left-16 w-48 h-48 bg-[#006670]/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-teal-400/25 rounded-full blur-2xl pointer-events-none" />
+
           {/* Header */}
           <div className="relative z-10 flex flex-col items-start gap-2.5 mb-6">
             <div className="flex items-center gap-2">
@@ -165,7 +174,7 @@ const BrandLogos: React.FC = () => {
             
             <Link
               href="/brands"
-              className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] px-3 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-xs"
+              className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] px-3 py-1.5 rounded-full bg-white/70 border border-slate-200/60 shadow-xs"
             >
               <span>View All Brands</span>
               <ArrowRight className="w-3.5 h-3.5" />
