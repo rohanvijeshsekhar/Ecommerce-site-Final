@@ -92,7 +92,7 @@ export const SupportCenterPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-left select-none pb-16 font-sans">
       
       {/* ── 1. Hero Header & Live Search Bar ── */}
-      <section className="relative bg-gradient-to-br from-[#004E56] via-[#006670] to-[#003B41] text-white pt-12 pb-20 px-4 md:px-12 overflow-hidden shadow-lg">
+      <section className="relative bg-gradient-to-br from-[#004E56] via-[#006670] to-[#003B41] text-white pt-20 md:pt-24 lg:pt-28 pb-20 px-4 md:px-12 overflow-hidden shadow-lg">
         {/* Background Decorative Pattern */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_60%)] pointer-events-none" />
 
