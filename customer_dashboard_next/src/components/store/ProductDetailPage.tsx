@@ -1591,9 +1591,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         product={{
-          id: productData?.id || slug,
+          id: productData?.id || activeProductId,
           name: productData?.name || 'Clinical Product',
-          slug: productData?.slug || slug,
+          slug: productData?.slug || activeProductId,
           price: getResolvedPrice(),
           originalPrice: getResolvedOriginalPrice(),
           image_url: productImages[0]?.src || '/images/bestseller_handpiece.png',
