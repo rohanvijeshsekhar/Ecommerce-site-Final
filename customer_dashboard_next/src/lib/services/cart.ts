@@ -134,6 +134,24 @@ export const cartService = {
   },
 
   /**
+   * POST /api/v1/cart/items/{id}/save-for-later/
+   * Move item to Save for Later.
+   */
+  async saveForLater(itemId: string): Promise<ApiResponse<CartDetails>> {
+    const res = await api.post(`cart/items/${itemId}/save-for-later/`);
+    return res.data;
+  },
+
+  /**
+   * POST /api/v1/cart/items/{id}/move-to-cart/
+   * Move saved item back to active cart.
+   */
+  async moveToCartFromSaved(itemId: string): Promise<ApiResponse<CartDetails>> {
+    const res = await api.post(`cart/items/${itemId}/move-to-cart/`);
+    return res.data;
+  },
+
+  /**
    * POST /api/v1/checkout/preview/
    * Preview total calculations before placing order.
    */

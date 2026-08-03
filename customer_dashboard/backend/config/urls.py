@@ -75,8 +75,9 @@ urlpatterns = [
                 path("",            include("apps.homepage.urls")),
                 path("combos/",     include("apps.combos.urls")),
                 path("solutions/",  include("apps.solutions.urls")),
-                # Phase 8+ – Cart
+                # Phase 8+ – Cart & Wishlist
                 path("cart/", include("apps.cart.urls")),
+                path("wishlist/", include("apps.wishlist.urls")),
                 # Phase 9+ – Checkout
                 path("checkout/", include("apps.checkout.urls")),
                 # Phase 10+ – Orders

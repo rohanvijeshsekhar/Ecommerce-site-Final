@@ -34,6 +34,11 @@ class CartItem(BaseModel):
         default=1,
         verbose_name="Quantity"
     )
+    is_saved_for_later = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Saved For Later"
+    )
 
     class Meta(BaseModel.Meta):
         verbose_name = "Cart Item"

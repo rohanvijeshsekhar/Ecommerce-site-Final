@@ -26,6 +26,7 @@ import {
   Handshake
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { api } from '../../lib/api';
 import NotificationBell from './NotificationBell';
 
@@ -128,6 +129,7 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, logout, setPendingAction } = useAuth();
+  const { wishlistCount } = useWishlist();
   const categoriesList = useCategories();
 
   // Derive avatar initials and display name
@@ -548,13 +550,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   closeAllMenus();
-                  if (isAuthenticated) {
-                    setCurrentView('wishlist');
-                    window.scrollTo(0, 0);
-                  } else {
-                    setPendingAction({ type: 'open-wishlist' });
-                    onOpenLoginModal();
-                  }
+                  router.push('/wishlist');
                 }}
                 className="relative flex flex-col items-center justify-center text-slate-800 hover:text-rose-500 transition-colors cursor-pointer"
                 aria-label="Wishlist"
@@ -562,7 +558,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <div className="relative">
                   <Heart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
                   <span className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
-                    {wishlistItems.length}
+                    {wishlistCount}
                   </span>
                 </div>
                 <span className="text-[10px] font-bold tracking-wider uppercase leading-none mt-0.5">WISHLIST</span>

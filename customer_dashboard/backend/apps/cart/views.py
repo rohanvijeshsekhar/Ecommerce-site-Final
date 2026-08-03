@@ -159,6 +159,47 @@ class CartClearView(APIView):
 
     def post(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
-        cart.items.all().delete()
+        cart.items.filter(is_saved_for_later=False).delete()
         serializer = CartSerializer(cart, context={"request": request})
-        return success_response(data=serializer.data, message="Cart cleared.")
+        return success_response(data=serializer.data, message="Active cart cleared.")
+
+
+class CartSaveForLaterView(APIView):
+    """
+    POST /api/v1/cart/items/<pk>/save-for-later/
+    Move an active cart item to Save For Later.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            cart_item = CartItem.objects.select_related('cart').get(pk=pk, cart__user=request.user)
+        except CartItem.DoesNotExist:
+            return error_response("Cart item not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        cart_item.is_saved_for_later = True
+        cart_item.save(update_fields=["is_saved_for_later"])
+
+        serializer = CartSerializer(cart_item.cart, context={"request": request})
+        return success_response(data=serializer.data, message=f"Saved '{cart_item.product.name}' for later.")
+
+
+class CartMoveToCartView(APIView):
+    """
+    POST /api/v1/cart/items/<pk>/move-to-cart/
+    Move a saved-for-later item back to active cart.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            cart_item = CartItem.objects.select_related('cart').get(pk=pk, cart__user=request.user)
+        except CartItem.DoesNotExist:
+            return error_response("Cart item not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        cart_item.is_saved_for_later = False
+        cart_item.save(update_fields=["is_saved_for_later"])
+
+        serializer = CartSerializer(cart_item.cart, context={"request": request})
+        return success_response(data=serializer.data, message=f"Moved '{cart_item.product.name}' back to cart.")
+

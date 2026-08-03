@@ -6,6 +6,7 @@ import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { ProductReviewsSection } from './ProductReviewsSection';
+import { useWishlist } from '@/contexts/WishlistContext';
 import {
   Star,
   ShoppingCart,
@@ -198,50 +199,21 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   }
 
-  const isWishlisted = wishlistItems
-    ? wishlistItems.some(item => item.id === (productData ? productData.slug : 'nsk-handpiece'))
-    : localWishlisted;
+  const { isInWishlist, toggleWishlist: toggleWishlistContext } = useWishlist();
+  const currentProdId = productData ? productData.id || productData.slug : 'nsk-handpiece';
+  const isWishlisted = isInWishlist(currentProdId) || isInWishlist(productData?.slug || '');
 
   const handleWishlistToggle = () => {
-    const itemId = productData ? productData.slug : 'nsk-handpiece';
-    const itemName = productData ? productData.name : 'NSK Pana-Max High Speed Handpiece';
-    const itemCat = productData ? (productData.category_detail?.name || 'Clinical Equipment') : 'Clinical Equipment';
-    const itemImg = productImages[0]?.src || '/images/bestseller_handpiece.png';
-
-    const item: MockCartItem = {
-      id: itemId,
-      name: itemName,
-      category: itemCat,
-      price: getResolvedPrice(),
-      qty: 1,
-      image: itemImg,
-      originalPrice: getResolvedOriginalPrice(),
-    };
-    if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
-
-    if (wishlistItems && setWishlistItems) {
-      if (isWishlisted) {
-        setWishlistItems(prev => prev.filter(w => w.id !== itemId));
-        if (showToast) showToast("Removed from Wishlist");
-      } else {
-        setWishlistItems(prev => [
-          ...prev,
-          {
-            id: itemId,
-            name: itemName,
-            category: itemCat,
-            price: getResolvedPrice(),
-            qty: 1,
-            image: itemImg,
-            originalPrice: getResolvedOriginalPrice(),
-            rating: 4.8
-          }
-        ]);
-        if (showToast) showToast("Added to Wishlist");
-      }
+    if (productData) {
+      toggleWishlistContext(productData);
     } else {
-      setLocalWishlisted(!localWishlisted);
-      if (showToast) showToast(!localWishlisted ? "Added to Wishlist" : "Removed from Wishlist");
+      toggleWishlistContext({
+        id: 'nsk-handpiece',
+        name: 'NSK Pana-Max High Speed Handpiece',
+        slug: 'nsk-handpiece',
+        price: getResolvedPrice(),
+        image_url: productImages[0]?.src || '/images/bestseller_handpiece.png',
+      });
     }
   };
 

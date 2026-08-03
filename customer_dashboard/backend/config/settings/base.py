@@ -88,6 +88,7 @@ LOCAL_APPS = [
     "apps.solutions",
     # ── Phase 8+: Commerce ──────────────────────────────────
     "apps.cart",
+    "apps.wishlist",
     "apps.checkout",
     "apps.orders",
     "apps.payments",

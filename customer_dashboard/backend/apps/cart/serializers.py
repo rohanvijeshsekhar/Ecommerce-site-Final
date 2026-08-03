@@ -36,7 +36,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = [
-            "id", "product", "product_id", "quantity", "price",
+            "id", "product", "product_id", "quantity", "is_saved_for_later", "price",
             "original_price", "discount_percentage", "total_price", "stock_available"
         ]
 
@@ -99,8 +99,13 @@ class CartItemSerializer(serializers.ModelSerializer):
 
         return data
 
+
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
+    saved_items = serializers.SerializerMethodField()
+    item_count = serializers.SerializerMethodField()
+    saved_count = serializers.SerializerMethodField()
+
     mrp_subtotal = serializers.SerializerMethodField()
     selling_subtotal = serializers.SerializerMethodField()
     savings = serializers.SerializerMethodField()
@@ -111,13 +116,34 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = [
-            "id", "items", "mrp_subtotal", "selling_subtotal",
+            "id", "items", "saved_items", "item_count", "saved_count",
+            "mrp_subtotal", "selling_subtotal",
             "savings", "shipping", "gst_amount", "total_amount"
         ]
 
+    def _get_active_items(self, obj):
+        return obj.items.filter(is_saved_for_later=False)
+
+    def _get_saved_items(self, obj):
+        return obj.items.filter(is_saved_for_later=True)
+
+    def get_items(self, obj):
+        active = self._get_active_items(obj)
+        return CartItemSerializer(active, many=True, context=self.context).data
+
+    def get_saved_items(self, obj):
+        saved = self._get_saved_items(obj)
+        return CartItemSerializer(saved, many=True, context=self.context).data
+
+    def get_item_count(self, obj):
+        return sum(item.quantity for item in self._get_active_items(obj))
+
+    def get_saved_count(self, obj):
+        return self._get_saved_items(obj).count()
+
     def get_mrp_subtotal(self, obj):
         total = Decimal("0.00")
-        for item in obj.items.all():
+        for item in self._get_active_items(obj):
             pricing = getattr(item.product, 'pricing', None)
             if pricing:
                 total += pricing.mrp * item.quantity
@@ -126,7 +152,7 @@ class CartSerializer(serializers.ModelSerializer):
     def get_selling_subtotal(self, obj):
         user = self.context['request'].user
         total = Decimal("0.00")
-        for item in obj.items.all():
+        for item in self._get_active_items(obj):
             pricing = getattr(item.product, 'pricing', None)
             if pricing:
                 if user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None:
@@ -139,13 +165,12 @@ class CartSerializer(serializers.ModelSerializer):
         return float(round(Decimal(str(self.get_mrp_subtotal(obj))) - Decimal(str(self.get_selling_subtotal(obj))), 2))
 
     def get_shipping(self, obj):
-        # Free shipping model
         return 0.0
 
     def get_gst_amount(self, obj):
         user = self.context['request'].user
         total_gst = Decimal("0.00")
-        for item in obj.items.all():
+        for item in self._get_active_items(obj):
             pricing = getattr(item.product, 'pricing', None)
             if pricing:
                 price = pricing.dealer_price if (user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None) else pricing.effective_price
@@ -158,3 +183,4 @@ class CartSerializer(serializers.ModelSerializer):
         gst = Decimal(str(self.get_gst_amount(obj)))
         shipping = Decimal(str(self.get_shipping(obj)))
         return float(round(selling + gst + shipping, 2))
+

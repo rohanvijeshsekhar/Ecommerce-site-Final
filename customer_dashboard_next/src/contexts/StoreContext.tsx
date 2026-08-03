@@ -91,6 +91,20 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }));
   };
 
+  const mapBackendSavedToFrontend = (backendCart: any): CartItem[] => {
+    if (!backendCart || !backendCart.saved_items) return [];
+    return backendCart.saved_items.map((item: any) => ({
+      id: item.product.slug,
+      name: item.product.name,
+      category: item.product.category_name,
+      price: item.price,
+      qty: item.quantity,
+      image: item.product.image_url || '',
+      originalPrice: item.original_price,
+      cartItemId: item.id,
+    }));
+  };
+
   // Sync cart from backend or local storage
   useEffect(() => {
     if (isAuthenticated) {
@@ -101,6 +115,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           const res = await cartService.get();
           if (res.success && res.data) {
             setCartItemsState(mapBackendCartToFrontend(res.data));
+            setSavedForLaterItems(mapBackendSavedToFrontend(res.data));
           }
         } catch (e: any) {
           if (e?.response?.status !== 401) {
