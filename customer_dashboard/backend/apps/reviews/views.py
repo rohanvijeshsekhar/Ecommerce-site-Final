@@ -58,9 +58,9 @@ class PublicProductReviewsView(APIView):
         # Resolve product by ID or slug
         try:
             if identifier.count("-") == 4 and len(identifier) == 36:
-                product = Product.objects.get(id=identifier, is_active=True)
+                product = Product.objects.get(id=identifier, is_deleted=False)
             else:
-                product = Product.objects.get(slug=identifier, is_active=True)
+                product = Product.objects.get(slug=identifier, is_deleted=False)
         except Product.DoesNotExist:
             return _error("Product not found.", status_code=status.HTTP_404_NOT_FOUND)
 
