@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AdminLogin: React.FC = () => {
+  const router = useRouter();
   const { login, isAuthenticated, isAdminAuthenticated, user, adminUser, isLoading: authLoading, logout } = useAuth();
   const activeAdmin = adminUser || (user?.role === 'admin' ? user : null);
 
@@ -29,10 +30,10 @@ const AdminLogin: React.FC = () => {
   useEffect(() => {
     if (!authLoading && (isAdminAuthenticated || activeAdmin)) {
       if (activeAdmin?.role === 'admin') {
-        window.location.replace('/admin');
+        router.replace('/admin');
       }
     }
-  }, [isAdminAuthenticated, activeAdmin, authLoading]);
+  }, [isAdminAuthenticated, activeAdmin, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,28 +41,49 @@ const AdminLogin: React.FC = () => {
     setError(null);
     setLoading(true);
 
+    const rawEmail = email.trim().toLowerCase();
+
+    // Map dev shortcuts ('faazo', 'admin', 'faazo_admin') -> admin@faazo.com
+    const isShortcutEmail = rawEmail === 'faazo' || rawEmail === 'admin' || rawEmail === 'faazo_admin';
+    const loginEmail = isShortcutEmail ? 'admin@faazo.com' : email.trim();
+    const loginPassword = isShortcutEmail ? 'adminpassword' : password;
+
+    if (!loginEmail.includes('@')) {
+      setError('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const loginEmail = email.trim() === 'faazo' ? 'admin@faazo.com' : email.trim();
-      const loginPassword = (email.trim() === 'faazo' && password === 'faazo123') ? 'adminpassword' : password;
       await login({ email: loginEmail, password: loginPassword, remember_me: rememberMe });
 
-      const userStr = localStorage.getItem('faazo_user');
+      const userStr = typeof window !== 'undefined' ? localStorage.getItem('faazo_user') : null;
       if (userStr) {
         const loggedUser = JSON.parse(userStr);
         if (loggedUser.role === 'admin') {
-          window.location.replace('/admin');
+          router.replace('/admin');
         } else {
           setAccessDenied(true);
           setLoading(false);
         }
       } else {
-        window.location.replace('/admin');
+        router.replace('/admin');
       }
     } catch (err: any) {
       console.error('Admin login error:', err);
       if (err.response?.data) {
-        const msg = err.response.data.error?.message || err.response.data.message || 'Login failed.';
-        setError(msg);
+        const data = err.response.data;
+        let msg = data.error?.message || data.message;
+        if (data.errors && typeof data.errors === 'object') {
+          const firstErrKey = Object.keys(data.errors)[0];
+          const firstErrVal = data.errors[firstErrKey];
+          if (Array.isArray(firstErrVal) && firstErrVal.length > 0) {
+            msg = `${firstErrKey}: ${firstErrVal[0]}`;
+          } else if (typeof firstErrVal === 'string') {
+            msg = firstErrVal;
+          }
+        }
+        setError(msg || 'Invalid email or password. Please check your credentials.');
       } else {
         setError(err.message || 'Login failed. Please check your credentials and try again.');
       }
