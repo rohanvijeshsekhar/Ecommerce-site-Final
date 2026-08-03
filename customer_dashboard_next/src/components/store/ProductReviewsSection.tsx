@@ -15,6 +15,7 @@ import {
   X,
   AlertCircle,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -184,20 +185,11 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             Based on {summary.total_reviews} verified customer review{summary.total_reviews === 1 ? '' : 's'}
           </span>
 
-          {/* Write / Edit Review Button */}
-          {isAuthenticated ? (
-            <button
-              onClick={() => setIsReviewModalOpen(true)}
-              className="mt-5 w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md shadow-teal-700/20 transition-all cursor-pointer"
-            >
-              <MessageSquarePlus className="w-4 h-4" />
-              <span>{eligibility?.is_edit ? 'Edit Your Review' : 'Write a Review'}</span>
-            </button>
-          ) : (
-            <p className="mt-4 text-[11px] font-semibold text-slate-400 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200/60">
-              Only verified purchasers can submit reviews
-            </p>
-          )}
+          {/* Verified Purchaser Notice */}
+          <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 font-semibold flex items-center justify-center gap-2 leading-tight">
+            <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
+            <span>Reviews are exclusively submitted by verified buyers from their <strong>My Orders</strong> page after delivery.</span>
+          </div>
         </div>
 
         {/* Rating Distribution Progress Bars */}
