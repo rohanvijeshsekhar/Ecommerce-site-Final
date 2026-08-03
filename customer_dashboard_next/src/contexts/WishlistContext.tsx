@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { wishlistService, WishlistItemData } from '@/lib/services/wishlistService';
-import { useCart } from '@/contexts/CartContext';
+import { useStore } from '@/contexts/StoreContext';
 import { showToast } from '@/components/store/Toast';
 
 const GUEST_WISHLIST_KEY = 'faazo_guest_wishlist';
@@ -24,7 +24,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const { addItem } = useCart();
+  const { addItemToCart } = useStore();
 
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -194,7 +194,15 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const prodId = getProdId(product);
     if (!prodId) return;
 
-    await addItem(product, 1);
+    const cartItem = {
+      id: product.slug || prodId,
+      name: product.name || 'Clinical Product',
+      category: product.category_name || product.category || '',
+      price: product.pricing?.effective_price || product.price || 0,
+      qty: 1,
+      image: product.image_url || product.image || '',
+    };
+    addItemToCart(cartItem);
     await removeFromWishlist(prodId);
 
     if (isAuthenticated) {
