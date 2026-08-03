@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from apps.support.models import SupportTicket, SupportMessage, TicketTimeline
+from apps.support.models import SupportTicket, SupportMessage, TicketTimeline, FAQCategory, FAQItem, FAQFeedback
 from apps.orders.models import Order
 from apps.products.models import Product
 
@@ -71,3 +71,44 @@ class SupportTicketSerializer(serializers.ModelSerializer):
             "assigned_admin", "assigned_admin_detail", "messages", "timeline",
             "created_at", "updated_at", "resolved_at"
         ]
+
+
+class FAQItemSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
+
+    class Meta:
+        model = FAQItem
+        fields = [
+            "id",
+            "category",
+            "category_name",
+            "category_slug",
+            "question",
+            "slug",
+            "answer",
+            "action_button_label",
+            "action_button_url",
+            "action_button_type",
+            "icon_name",
+            "display_order",
+            "is_featured",
+            "helpful_count",
+            "unhelpful_count",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class FAQCategorySerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FAQCategory
+        fields = ["id", "name", "slug", "icon", "display_order", "items"]
+        read_only_fields = fields
+
+    def get_items(self, obj):
+        active_items = obj.items.filter(is_active=True).order_by("display_order", "created_at")
+        return FAQItemSerializer(active_items, many=True).data
+

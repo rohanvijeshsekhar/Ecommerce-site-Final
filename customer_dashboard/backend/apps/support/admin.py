@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.support.models import SupportTicket, SupportMessage, TicketTimeline
+from apps.support.models import SupportTicket, SupportMessage, TicketTimeline, FAQCategory, FAQItem, FAQFeedback
 
 class SupportMessageInline(admin.TabularInline):
     model = SupportMessage
@@ -21,3 +21,27 @@ class SupportTicketAdmin(admin.ModelAdmin):
     search_fields = ["ticket_number", "subject", "description", "user__email", "user__full_name"]
     readonly_fields = ["ticket_number", "created_at", "updated_at", "resolved_at"]
     inlines = [SupportMessageInline, TicketTimelineInline]
+
+
+@admin.register(FAQCategory)
+class FAQCategoryAdmin(admin.ModelAdmin):
+    list_display = ["name", "slug", "icon", "display_order", "is_active"]
+    list_editable = ["display_order", "is_active"]
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(FAQItem)
+class FAQItemAdmin(admin.ModelAdmin):
+    list_display = ["question", "category", "action_button_label", "is_featured", "display_order", "helpful_count", "unhelpful_count", "is_active"]
+    list_filter = ["category", "is_featured", "is_active", "action_button_type"]
+    list_editable = ["display_order", "is_featured", "is_active"]
+    search_fields = ["question", "answer", "slug"]
+    prepopulated_fields = {"slug": ("question",)}
+
+
+@admin.register(FAQFeedback)
+class FAQFeedbackAdmin(admin.ModelAdmin):
+    list_display = ["faq", "is_helpful", "user", "ip_address", "created_at"]
+    list_filter = ["is_helpful", "created_at"]
+    readonly_fields = ["faq", "user", "is_helpful", "ip_address", "created_at"]
+

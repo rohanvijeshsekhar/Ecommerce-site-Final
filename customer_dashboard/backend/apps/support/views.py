@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.exceptions import ValidationError
 
@@ -11,10 +11,12 @@ from apps.common.responses import success_response, error_response
 from apps.common.permissions import IsAdmin
 from apps.support.models import (
     SupportTicket, SupportMessage, TicketTimeline,
-    TicketStatus, TicketPriority, TicketCategory
+    TicketStatus, TicketPriority, TicketCategory,
+    FAQCategory, FAQItem, FAQFeedback
 )
 from apps.support.serializers import (
-    SupportTicketSerializer, SupportMessageSerializer, TicketTimelineSerializer
+    SupportTicketSerializer, SupportMessageSerializer, TicketTimelineSerializer,
+    FAQCategorySerializer, FAQItemSerializer
 )
 from apps.notifications.models import Notification
 
@@ -386,3 +388,94 @@ class SupportAdminUserListView(APIView):
         admins = get_user_model().objects.filter(Q(role="admin") | Q(is_superuser=True))
         serializer = UserMinimalSerializer(admins, many=True)
         return success_response(data=serializer.data, message="Admins retrieved.")
+
+
+class FAQListView(APIView):
+    """
+    Public Endpoint: List active FAQ categories and items.
+    Query parameters:
+      - search: string (Filter by question, answer, or category name)
+      - category: string (Filter by category slug)
+      - featured: true/false
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        search = request.query_params.get("search", "").strip()
+        category_slug = request.query_params.get("category", "").strip()
+        featured = request.query_params.get("featured")
+
+        if search:
+            faqs = FAQItem.objects.filter(
+                Q(question__icontains=search) |
+                Q(answer__icontains=search) |
+                Q(category__name__icontains=search),
+                is_active=True,
+            ).select_related("category").order_by("display_order", "created_at")
+
+            serializer = FAQItemSerializer(faqs, many=True)
+            return success_response(
+                data={"search_mode": True, "items": serializer.data},
+                message=f"Found {faqs.count()} matching FAQs.",
+            )
+
+        categories = FAQCategory.objects.filter(is_active=True).prefetch_related("items").order_by("display_order", "name")
+        if category_slug:
+            categories = categories.filter(slug=category_slug)
+
+        category_serializer = FAQCategorySerializer(categories, many=True)
+
+        # Featured FAQs
+        featured_faqs = FAQItem.objects.filter(is_featured=True, is_active=True).select_related("category").order_by("display_order")[:6]
+        featured_serializer = FAQItemSerializer(featured_faqs, many=True)
+
+        return success_response(
+            data={
+                "featured_faqs": featured_serializer.data,
+                "categories": category_serializer.data,
+            },
+            message="FAQ topics retrieved.",
+        )
+
+
+class FAQFeedbackView(APIView):
+    """
+    Public Endpoint: Submit feedback for an FAQ item ("Did this answer your question?").
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk):
+        try:
+            faq = FAQItem.objects.get(id=pk, is_active=True)
+        except FAQItem.DoesNotExist:
+            return error_response(message="FAQ item not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        is_helpful = request.data.get("is_helpful", True)
+        if isinstance(is_helpful, str):
+            is_helpful = is_helpful.lower() == "true"
+
+        user = request.user if request.user.is_authenticated else None
+        ip_address = request.META.get("REMOTE_ADDR")
+
+        FAQFeedback.objects.create(
+            faq=faq,
+            user=user,
+            is_helpful=bool(is_helpful),
+            ip_address=ip_address,
+        )
+
+        if is_helpful:
+            faq.helpful_count += 1
+            faq.save(update_fields=["helpful_count"])
+        else:
+            faq.unhelpful_count += 1
+            faq.save(update_fields=["unhelpful_count"])
+
+        return success_response(
+            data={
+                "helpful_count": faq.helpful_count,
+                "unhelpful_count": faq.unhelpful_count,
+            },
+            message="Thank you for your feedback!",
+        )
+

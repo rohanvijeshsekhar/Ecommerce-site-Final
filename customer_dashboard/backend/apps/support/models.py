@@ -1,4 +1,5 @@
 import os
+import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -190,3 +191,85 @@ class TicketTimeline(BaseModel):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Timeline entries cannot be deleted.")
+
+
+# ============================================================
+# Tier-1 Customer Support FAQ System
+# ============================================================
+
+class FAQCategory(BaseModel):
+    name = models.CharField(max_length=100, verbose_name="Category Name")
+    slug = models.SlugField(max_length=120, unique=True, db_index=True)
+    icon = models.CharField(max_length=50, default="HelpCircle", verbose_name="Icon Name")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta(BaseModel.Meta):
+        db_table = "faq_categories"
+        verbose_name = "FAQ Category"
+        verbose_name_plural = "FAQ Categories"
+        ordering = ["display_order", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class ActionButtonType(models.TextChoices):
+    TRACK_ORDER = "track_order", "Track Order"
+    VIEW_ORDERS = "view_orders", "View Orders"
+    RETRY_PAYMENT = "retry_payment", "Retry Payment"
+    REQUEST_RETURN = "request_return", "Request Return"
+    CUSTOM_LINK = "custom_link", "Custom Link"
+
+
+class FAQItem(BaseModel):
+    category = models.ForeignKey(
+        FAQCategory,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Category",
+    )
+    question = models.CharField(max_length=255, verbose_name="Question")
+    slug = models.SlugField(max_length=280, unique=True, db_index=True)
+    answer = models.TextField(verbose_name="Answer Content (Markdown Supported)")
+
+    action_button_label = models.CharField(max_length=100, blank=True, default="", verbose_name="Action Button Label")
+    action_button_url = models.CharField(max_length=255, blank=True, default="", verbose_name="Action Button Target URL")
+    action_button_type = models.CharField(
+        max_length=30,
+        choices=ActionButtonType.choices,
+        default=ActionButtonType.CUSTOM_LINK,
+        blank=True,
+    )
+
+    icon_name = models.CharField(max_length=50, default="HelpCircle", verbose_name="Icon Name")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
+    is_featured = models.BooleanField(default=True, db_index=True, verbose_name="Featured on Support Center Landing")
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    helpful_count = models.PositiveIntegerField(default=0)
+    unhelpful_count = models.PositiveIntegerField(default=0)
+
+    class Meta(BaseModel.Meta):
+        db_table = "faq_items"
+        verbose_name = "FAQ Item"
+        verbose_name_plural = "FAQ Items"
+        ordering = ["display_order", "created_at"]
+
+    def __str__(self):
+        return self.question
+
+
+class FAQFeedback(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    faq = models.ForeignKey(FAQItem, on_delete=models.CASCADE, related_name="feedback_entries")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    is_helpful = models.BooleanField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "faq_feedback"
+        verbose_name = "FAQ Feedback"
+        verbose_name_plural = "FAQ Feedback Entries"
+

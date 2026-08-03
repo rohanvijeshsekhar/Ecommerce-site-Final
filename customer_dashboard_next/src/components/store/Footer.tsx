@@ -149,12 +149,12 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
               Support
             </h4>
             <ul className="space-y-3 text-xs">
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Help Center</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Shipping & Delivery</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Returns & Refunds</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Warranty</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Terms & Conditions</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Privacy Policy</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Support Center</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Shipping & Delivery</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Returns & Refunds</a></li>
+              <li><a href="/warranty" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Warranty Claims</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Terms & Conditions</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Privacy Policy</a></li>
             </ul>
           </div>
 

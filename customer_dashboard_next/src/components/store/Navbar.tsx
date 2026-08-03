@@ -77,10 +77,10 @@ interface DropdownItem {
 
 
 const supportDropdown: DropdownItem[] = [
-  { name: 'Help Center', desc: 'Device manuals, setup videos, and troubleshooting.', href: '#support' },
-  { name: 'Warranty', desc: 'Register hardware and inspect active coverages.', href: '#support' },
-  { name: 'Service & Repairs', desc: 'Book direct on-site servicing and component repairs.', href: '#support' },
-  { name: 'Contact Support', desc: 'Emergency 24/7 technical hotline for clinics.', href: '#support' }
+  { name: 'Support Center', desc: 'FAQs, order tracking, returns, and instant self-service.', href: '/support' },
+  { name: 'Warranty Registration', desc: 'Register hardware and inspect active coverages.', href: '/warranty' },
+  { name: 'Service & Repairs', desc: 'Book direct on-site servicing and component repairs.', href: '/support' },
+  { name: 'Contact Support', desc: 'Emergency 24/7 technical hotline & WhatsApp support.', href: '/support' }
 ];
 
 const aboutDropdown: DropdownItem[] = [
