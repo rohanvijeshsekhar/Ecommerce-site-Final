@@ -33,23 +33,36 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
 
+  const title = `${product.name} | FAAZO Dental Solutions`;
+  const description = product.short_description || `Buy genuine ${product.name} on FAAZO. Premium clinical quality, full manufacturer warranty, and free door-step delivery.`;
+  const canonicalUrl = `${baseUrl}/products/${slug}`;
+
   return {
-    title: `${product.name} | FAAZO Dental Solutions`,
-    description: product.short_description || `Buy genuine ${product.name} on FAAZO. Premium clinical quality, full manufacturer warranty, and free door-step delivery.`,
+    title,
+    description,
     alternates: {
-      canonical: `${baseUrl}/products/${slug}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${product.name} | FAAZO Dental Solutions`,
-      description: product.short_description || `Buy genuine ${product.name} on FAAZO.`,
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: 'FAAZO Dental Solutions',
+      type: 'website',
       images: [
         {
           url: imageUrl,
-          width: 800,
-          height: 600,
+          width: 1200,
+          height: 630,
           alt: product.name,
         },
       ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
     },
   };
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star, Share2 } from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { ShareModal } from './ShareModal';
 
 export const WishlistPage: React.FC = () => {
   const router = useRouter();
@@ -116,13 +117,21 @@ export const WishlistPage: React.FC = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-5 border-t border-slate-100 mt-4">
+                  <div className="pt-5 border-t border-slate-100 mt-4 flex items-center gap-2">
                     <button
                       onClick={() => moveToCart(product)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                     >
                       <ShoppingBag className="w-4 h-4" />
                       <span>Move to Cart</span>
+                    </button>
+
+                    <button
+                      onClick={() => setShareProduct(product)}
+                      className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
+                      title="Share Product"
+                    >
+                      <Share2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -132,6 +141,13 @@ export const WishlistPage: React.FC = () => {
         )}
 
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={!!shareProduct}
+        onClose={() => setShareProduct(null)}
+        product={shareProduct}
+      />
     </div>
   );
 };

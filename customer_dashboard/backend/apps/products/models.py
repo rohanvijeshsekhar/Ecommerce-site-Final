@@ -15,6 +15,7 @@ Design decisions:
 """
 
 from django.db import models
+from django.conf import settings
 from django.utils.text import slugify
 
 from apps.common.mixins import AuditedModel, FullAuditModel
@@ -436,3 +437,55 @@ class ProductDocument(AuditedModel):
 
     def __str__(self):
         return f"{self.product.name} — {self.title}"
+
+
+# ============================================================
+# Product Share Analytics Log
+# ============================================================
+
+class SharePlatform(models.TextChoices):
+    WHATSAPP = "whatsapp", "WhatsApp"
+    TELEGRAM = "telegram", "Telegram"
+    FACEBOOK = "facebook", "Facebook"
+    TWITTER = "twitter", "X (Twitter)"
+    LINKEDIN = "linkedin", "LinkedIn"
+    EMAIL = "email", "Email"
+    COPY_LINK = "copy_link", "Copy Link"
+    NATIVE_SHARE = "native_share", "Native Share"
+    OTHER = "other", "Other"
+
+
+class ProductShareLog(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="share_logs",
+        verbose_name="Product",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="product_shares",
+        verbose_name="User",
+    )
+    platform = models.CharField(
+        max_length=30,
+        choices=SharePlatform.choices,
+        default=SharePlatform.COPY_LINK,
+        db_index=True,
+        verbose_name="Platform",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP Address")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Created At")
+
+    class Meta:
+        db_table = "product_share_logs"
+        verbose_name = "Product Share Log"
+        verbose_name_plural = "Product Share Logs"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Share ({self.platform}) for {self.product.name} at {self.created_at}"
+

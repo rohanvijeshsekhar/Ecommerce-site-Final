@@ -232,11 +232,35 @@ class ProductViewSet(BaseModelViewSet):
     @action(detail=True, methods=["delete"], url_path=r"documents/(?P<doc_id>[^/.]+)",
             permission_classes=[IsAuthenticated, IsAdmin])
     def delete_document(self, request, slug=None, doc_id=None):
-        """DELETE /api/v1/products/{slug}/documents/{doc_id}/ — delete product document."""
-        product = self.get_object()
         try:
             doc = product.documents.get(id=doc_id)
         except ProductDocument.DoesNotExist:
             return error_response("Document not found.", status_code=status.HTTP_404_NOT_FOUND)
         doc.delete()
         return success_response(message="Document deleted.")
+
+    @action(detail=True, methods=["post"], url_path="share-log", permission_classes=[AllowAny])
+    def log_share(self, request, slug=None):
+        """
+        POST /api/v1/products/{slug}/share-log/
+        Record product share analytics event.
+        Body: { "platform": "whatsapp" | "facebook" | "twitter" | "linkedin" | "email" | "copy_link" | "native_share" }
+        """
+        product = self.get_object()
+        platform = request.data.get("platform", "copy_link")
+        user = request.user if request.user.is_authenticated else None
+        ip_address = request.META.get("REMOTE_ADDR")
+
+        from .models import ProductShareLog
+        share_log = ProductShareLog.objects.create(
+            product=product,
+            user=user,
+            platform=platform,
+            ip_address=ip_address,
+        )
+
+        return success_response(
+            data={"id": str(share_log.id), "platform": share_log.platform},
+            message="Share event logged.",
+        )
+

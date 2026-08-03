@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import Product, ProductImage, ProductAttribute, ProductDocument
+from .models import Product, ProductImage, ProductAttribute, ProductDocument, ProductShareLog
+
+# ... existing code ...
+
+@admin.register(ProductShareLog)
+class ProductShareLogAdmin(admin.ModelAdmin):
+    list_display = ("product", "platform", "user", "ip_address", "created_at")
+    list_filter = ("platform", "created_at")
+    search_fields = ("product__name", "user__email", "ip_address")
+    readonly_fields = ("product", "user", "platform", "ip_address", "created_at")
+
 
 
 class ProductImageInline(admin.TabularInline):

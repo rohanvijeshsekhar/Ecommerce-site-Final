@@ -7,6 +7,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { ProductReviewsSection } from './ProductReviewsSection';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { ShareModal } from './ShareModal';
 import {
   Star,
   ShoppingCart,
@@ -74,6 +75,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const [productData, setProductData] = useState<any>(null);
   const [fetching, setFetching] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const getStaticProductDetail = (slug: string): any => {
     const sp = allProducts.find(p => p.id === slug || p.id.replace(/-/g, '') === slug.replace(/-/g, ''));
@@ -964,11 +966,11 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 {isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}
               </button>
               <button
-                onClick={copyToClipboard}
+                onClick={() => setIsShareModalOpen(true)}
                 className="flex items-center gap-1.5 hover:text-[#006670] transition-colors cursor-pointer"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                {copiedLink ? 'Link Copied!' : 'Share Product'}
+                <span>Share Product</span>
               </button>
             </div>
 
@@ -1583,6 +1585,20 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        product={{
+          id: productData?.id || slug,
+          name: productData?.name || 'Clinical Product',
+          slug: productData?.slug || slug,
+          price: getResolvedPrice(),
+          originalPrice: getResolvedOriginalPrice(),
+          image_url: productImages[0]?.src || '/images/bestseller_handpiece.png',
+        }}
+      />
     </div>
   );
 };
