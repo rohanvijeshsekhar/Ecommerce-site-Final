@@ -45,12 +45,9 @@ def is_sandbox_mode() -> bool:
 
 def _get_client():
     """
-    Returns a Razorpay client initialised with current settings values.
-    The client is recreated each time settings might have changed (dev restarts).
-    In production, settings are constant so this is effectively a singleton.
+    Returns a Razorpay client initialised dynamically with current settings values.
+    Ensures credentials (KEY_ID & KEY_SECRET) are always strictly in sync.
     """
-    global _client
-
     key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
     key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
 
@@ -59,15 +56,7 @@ def _get_client():
             "RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in environment variables."
         )
 
-    # Recreate client if it hasn't been initialised yet
-    if _client is None:
-        _client = razorpay.Client(auth=(key_id, key_secret))
-        logger.info(
-            "[Razorpay] Client initialised (key_id=%s…, secret_len=%d)",
-            key_id[:16],
-            len(key_secret),
-        )
-    return _client
+    return razorpay.Client(auth=(key_id, key_secret))
 
 
 def create_razorpay_order(amount_paise: int, receipt: str, notes: dict = None):

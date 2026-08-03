@@ -189,45 +189,13 @@ class CreatePaymentOrderView(APIView):
             idempotency_key = f"{base_idempotency_key}:{uuid.uuid4().hex[:8]}"
 
         if existing:
-            is_mock_order = existing.razorpay_order_id.startswith("order_mock_")
-
-            if not is_mock_order:
-                # Check if this order was created with the current key_id.
-                # If credentials were rotated, the order belongs to the old key and
-                # Razorpay will reject it with "Invalid Token" when the frontend
-                # opens the modal with the new key. Supersede it in that case.
-                stored_key = (existing.gateway_response or {}).get("key_id", "")
-                current_key = settings.RAZORPAY_KEY_ID
-                key_mismatch = stored_key and stored_key != current_key
-
-                if not key_mismatch:
-                    # Return the existing active Razorpay order (idempotent — same active checkout)
-                    logger.info("Returning active payment order: %s", existing.razorpay_order_id)
-                    return success_response(
-                        data={
-                            "razorpay_order_id": existing.razorpay_order_id,
-                            "amount": int(existing.amount * 100),
-                            "currency": existing.currency,
-                            "key_id": current_key,
-                            "payment_id": str(existing.id),
-                        },
-                        message="Payment order already exists.",
-                    )
-
-                # Credentials were rotated — the old Razorpay order belongs to a
-                # different key. Supersede it with a fresh order under the current key.
-                logger.info(
-                    "Key mismatch detected (stored=%s current=%s). "
-                    "Superseding stale order %s with fresh one.",
-                    stored_key[:16] if stored_key else "unknown",
-                    current_key[:16],
-                    existing.razorpay_order_id,
-                )
-
-            # Stale sandbox record — supersede it in-place with a fresh real Razorpay order.
+            # Supersede existing CREATED payment record with a fresh Razorpay order.
+            # Reusing an already attempted or stale Razorpay order causes "Invalid Token"
+            # errors inside Razorpay Checkout JS modal.
             logger.info(
-                "Superseding stale sandbox payment record %s with fresh real Razorpay order.",
+                "Superseding existing payment record %s (%s) with fresh Razorpay order.",
                 existing.id,
+                existing.razorpay_order_id,
             )
             amount_paise = int(total_amount * 100)
             receipt = f"faazo_{uuid.uuid4().hex[:12]}"
