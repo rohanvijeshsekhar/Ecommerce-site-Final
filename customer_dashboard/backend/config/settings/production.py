@@ -117,3 +117,14 @@ LOGGING = {
         },
     },
 }
+
+
+# ============================================================
+# Celery – Production Overrides
+# ============================================================
+# REDIS_URL must be set in production environment variables.
+# Eager mode is explicitly disabled — tasks MUST run through
+# the real Redis → Worker pipeline in production.
+# There is no fallback. Missing Redis = visible failure.
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_EAGER_PROPAGATES = False

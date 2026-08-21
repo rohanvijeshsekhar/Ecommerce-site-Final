@@ -1,0 +1,20 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Return Request Update - FAAZO Dental Solutions{% endblock %}
+
+{% block content %}
+<h2 style="color: #dc2626; margin-top: 0;">Return Request Status Update</h2>
+
+<p>Hello <strong>{{ first_name|default:"Doctor" }}</strong>,</p>
+
+<p>We are writing regarding your return request for <strong>Order #{{ order_number }}</strong>.</p>
+
+<div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #991b1b;"><strong>Status:</strong> Request Declined</p>
+  <p style="margin: 0; font-size: 14px; color: #991b1b;"><strong>Reason:</strong> {{ rejection_reason|default:"The submitted request does not meet company return eligibility guidelines." }}</p>
+</div>
+
+<p>If you have any questions or require additional assistance, please contact our support team at <a href="mailto:faazodental@gmail.com">faazodental@gmail.com</a>.</p>
+
+<p>Best regards,<br>FAAZO Customer Support</p>
+{% endblock %}

@@ -197,37 +197,46 @@ const Navbar: React.FC<NavbarProps> = ({
       return;
     }
     const delayDebounce = setTimeout(() => {
-      const fetchProducts = api.get(`products/?search=${encodeURIComponent(searchQuery)}&page_size=5`);
-      const fetchCombos = api.get(`combos/?search=${encodeURIComponent(searchQuery)}&page_size=5`);
-      
+      const fetchProducts = api.get(`products/suggestions/?q=${encodeURIComponent(searchQuery)}`);
+      const fetchCombos = api.get(`combos/?search=${encodeURIComponent(searchQuery)}&page_size=3`);
+
       Promise.all([fetchProducts, fetchCombos])
         .then(([prodRes, comboRes]) => {
           const prodData = prodRes.data?.data ?? prodRes.data?.results ?? prodRes.data ?? [];
           const comboData = comboRes.data?.data ?? comboRes.data?.results ?? comboRes.data ?? [];
-          
+
           const productsMapped = prodData.map((p: any) => ({
-            id: p.slug,
+            id: p.slug || p.id,
             title: p.name,
             category: p.category_name || 'Product',
             type: 'product'
           }));
-          
+
           const combosMapped = comboData.map((c: any) => ({
-            id: c.slug,
+            id: c.slug || c.id,
             title: c.title,
             category: 'Combo Deal',
             type: 'combo'
           }));
-          
+
           setDynamicSearchResults([...productsMapped, ...combosMapped]);
         })
         .catch(() => {});
     }, 300);
-    
+
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
   const filteredSearch = dynamicSearchResults;
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    closeAllMenus();
+    setSearchQuery('');
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  };
 
   const handleSearchProductClick = (id: string, _category: string, type?: string) => {
     closeAllMenus();
@@ -236,12 +245,11 @@ const Navbar: React.FC<NavbarProps> = ({
       if (setActiveComboId) {
         setActiveComboId(id);
       }
-      setCurrentView('combo-detail');
+      router.push(`/combo-deals/${id}`);
     } else {
       setActiveProductId(id);
-      setCurrentView('detail');
+      router.push(`/products/${id}`);
     }
-    window.scrollTo(0, 0);
   };
 
   // Mobile accordions state
@@ -359,6 +367,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
       {/* Main Premium Navbar */}
       <header
+        suppressHydrationWarning
         className={`fixed top-0 left-0 right-0 z-50 w-full flex flex-col transition-all duration-300 ease-in-out select-none
           h-[100px] ${scrolled ? 'lg:h-[124px] bg-white/95 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_2px_20px_rgba(0,0,0,0.03)]' : 'lg:h-[160px] bg-white border-b border-slate-200/40'}`}
       >
@@ -432,6 +441,9 @@ const Navbar: React.FC<NavbarProps> = ({
                     setIsCartOpen(false);
                     setIsAccountOpen(false);
                     setActiveMenu(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearchSubmit(e);
                   }}
                   placeholder="Search for..."
                   className="flex-grow h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-[14px] font-medium text-slate-800 placeholder-slate-400"
@@ -595,9 +607,9 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Navbar Container */}
-        <div className="flex lg:hidden w-full h-[60px] items-center justify-between px-3.5 sm:px-5 relative z-50">
+        <div suppressHydrationWarning className="flex lg:hidden w-full h-[60px] items-center justify-between px-3.5 sm:px-5 relative z-50">
           {/* Left-aligned FAAZO Logo */}
-          <a href="#" className="transition-transform active:scale-95 flex items-center" onClick={(e) => { e.preventDefault(); closeAllMenus(); setActiveProductId(null); setCurrentView('home'); }}>
+          <a href="#" className="transition-transform active:scale-95 flex items-center shrink-0" onClick={(e) => { e.preventDefault(); closeAllMenus(); setActiveProductId(null); setCurrentView('home'); }}>
             <FaazoLogo onlyIcon={true} />
           </a>
 
@@ -624,6 +636,9 @@ const Navbar: React.FC<NavbarProps> = ({
                   setIsCartOpen(false);
                   setIsAccountOpen(false);
                   setActiveMenu(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearchSubmit(e);
                 }}
                 placeholder="Search for..."
                 className="flex-grow min-w-0 h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-[12px] font-medium text-slate-800 placeholder-slate-400"
@@ -976,7 +991,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {/* 9. Slide-down Search Suggestion Overlay */}
       {isSearchOpen && (
         <div
-          className={`fixed left-0 right-0 z-48 bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-[0_20px_40px_rgba(0,0,0,0.06)] animate-in slide-in-from-top duration-300 ease-out text-left select-none top-[60px] lg:top-[160px] ${scrolled ? 'lg:top-[124px]' : 'lg:top-[160px]'} search-overlay-container`}
+          className={`fixed left-0 right-0 z-48 bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-[0_20px_40px_rgba(0,0,0,0.06)] animate-in slide-in-from-top duration-300 ease-out text-left select-none top-[96px] lg:top-[160px] ${scrolled ? 'lg:top-[124px]' : 'lg:top-[160px]'} search-overlay-container`}
           style={{ height: '360px' }}
         >
           <div className="max-w-3xl mx-auto px-6 pt-8 pb-10 flex flex-col justify-start h-full">
@@ -1177,7 +1192,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
       {/* 11. Slide-in Mobile Navigation Drawer (Right Side) */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 z-50 w-3/5 bg-white shadow-2xl flex flex-col justify-between transition-transform duration-500 ease-out select-none lg:hidden
+        className={`fixed top-0 right-0 bottom-0 z-50 w-full max-w-[320px] sm:max-w-xs bg-white shadow-2xl flex flex-col justify-between transition-transform duration-500 ease-out select-none lg:hidden
           ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full invisible'}`}
       >
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">

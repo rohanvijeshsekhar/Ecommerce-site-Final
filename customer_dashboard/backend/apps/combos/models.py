@@ -4,8 +4,10 @@ from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import FullAuditModel
 from apps.common.managers import ActiveManager, SoftDeleteManager
+
 
 
 class ComboDealStatus(models.TextChoices):
@@ -30,8 +32,9 @@ class ComboDeal(FullAuditModel):
     # ── Content ──────────────────────────────────────────────
     short_description = models.TextField(blank=True, max_length=500, verbose_name="Short Description")
     full_description = models.TextField(blank=True, verbose_name="Full Description")
-    thumbnail = models.ImageField(upload_to="combos/thumbnails/", null=True, blank=True, verbose_name="Thumbnail")
-    banner = models.ImageField(upload_to="combos/banners/", null=True, blank=True, verbose_name="Banner")
+    thumbnail = OptimizedImageField(upload_to="combos/thumbnails/", null=True, blank=True, verbose_name="Thumbnail")
+    banner = OptimizedImageField(upload_to="combos/banners/", null=True, blank=True, verbose_name="Banner")
+
 
     # ── Pricing ──────────────────────────────────────────────
     original_price = models.DecimalField(
@@ -191,7 +194,7 @@ class ComboDealImage(models.Model):
         related_name="images",
         verbose_name="Combo Deal",
     )
-    image = models.ImageField(upload_to="combos/gallery/", verbose_name="Image")
+    image = OptimizedImageField(upload_to="combos/gallery/", verbose_name="Image")
     alt_text = models.CharField(max_length=200, blank=True, verbose_name="Alt Text")
     sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Sort Order")
 
@@ -211,7 +214,8 @@ class ComboDealBannerSetting(models.Model):
         default="Equip your clinical workflows with carefully curated packages of leading tools. Save big vs buying individual components.",
         verbose_name="Description"
     )
-    banner_image = models.ImageField(upload_to="combos/banner/", null=True, blank=True, verbose_name="Banner Image")
+    banner_image = OptimizedImageField(upload_to="combos/banner/", null=True, blank=True, verbose_name="Banner Image")
+
 
     class Meta:
         verbose_name = "Combo Deal Banner Setting"

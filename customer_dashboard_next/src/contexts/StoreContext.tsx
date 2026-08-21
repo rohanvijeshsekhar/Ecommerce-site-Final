@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { CartItem } from '../types/pendingAction';
@@ -49,13 +50,53 @@ export interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const router = useRouter();
   const { isAuthenticated, user, pendingAction, setPendingAction } = useAuth();
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('dashboard');
 
-  const [checkoutSource, setCheckoutSource] = useState<'cart' | 'buy-now'>('cart');
-  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+  const [checkoutSource, setCheckoutSourceState] = useState<'cart' | 'buy-now'>('cart');
+  const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(null);
+  const [completedOrderData, setCompletedOrderDataState] = useState<any | null>(null);
+
+  // Hydrate session storage state safely on client mount to prevent SSR hydration mismatches
+  useEffect(() => {
+    try {
+      const savedSource = sessionStorage.getItem('faazo_checkout_source');
+      if (savedSource === 'buy-now' || savedSource === 'cart') {
+        setCheckoutSourceState(savedSource);
+      }
+      const savedBuyNow = sessionStorage.getItem('faazo_buy_now_item');
+      if (savedBuyNow) {
+        setBuyNowItemState(JSON.parse(savedBuyNow));
+      }
+      const savedCompleted = sessionStorage.getItem('faazo_completed_order');
+      if (savedCompleted) {
+        setCompletedOrderDataState(JSON.parse(savedCompleted));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setCheckoutSource = (source: 'cart' | 'buy-now') => {
+    setCheckoutSourceState(source);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('faazo_checkout_source', source);
+    }
+  };
+
+  const setBuyNowItem = (item: CartItem | null) => {
+    setBuyNowItemState(item);
+    if (typeof window !== 'undefined') {
+      if (item) {
+        sessionStorage.setItem('faazo_buy_now_item', JSON.stringify(item));
+      } else {
+        sessionStorage.removeItem('faazo_buy_now_item');
+      }
+    }
+  };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Cart/wishlist sync hooks
@@ -66,7 +107,17 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [savedForLaterItems, setSavedForLaterItems] = useLocalStorage<CartItem[]>('faazo_saved', []);
   const [wishlistItems, setWishlistItems] = useLocalStorage<CartItem[]>('faazo_wishlist', []);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [completedOrderData, setCompletedOrderData] = useState<any | null>(null);
+
+  const setCompletedOrderData = (data: any) => {
+    setCompletedOrderDataState(data);
+    if (typeof window !== 'undefined' && data) {
+      try {
+        sessionStorage.setItem('faazo_completed_order', JSON.stringify(data));
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -118,7 +169,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setSavedForLaterItems(mapBackendSavedToFrontend(res.data));
           }
         } catch (e: any) {
-          if (e?.response?.status !== 401) {
+          if (e?.response?.status !== 401 && e?.response?.status !== 403) {
             console.error('Failed to load user cart:', e);
           }
         } finally {
@@ -302,7 +353,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     setCheckoutSource('buy-now');
     setBuyNowItem(item);
-    // Routing transitions should be handled by Router.push('/checkout') by the caller
+    router.push('/checkout');
   };
 
   return (

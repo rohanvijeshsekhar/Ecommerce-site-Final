@@ -21,6 +21,50 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data }) => {
         <ExecutiveKpiCards data={data.kpis} />
       </section>
 
+      {/* Financial Breakdown Section (Gross Sales, Refunds, Net Sales, Taxable Sales, GST Included) */}
+      {data.kpis?.financials && (
+        <section className="bg-gradient-to-r from-teal-900 via-[#004d54] to-slate-900 rounded-2xl p-5 text-white shadow-lg border border-teal-800/50">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-teal-700/50">
+            <div>
+              <h3 className="text-sm font-bold tracking-wide uppercase text-teal-300">Financial Audit Summary</h3>
+              <p className="text-xs text-teal-100/80 mt-0.5">GST-Inclusive Revenue &amp; Refund Ledger Breakdown</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-black rounded-full border border-emerald-500/30">
+                Net Sales: {data.kpis.financials.net_sales_formatted}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4 pt-1">
+            <div>
+              <div className="text-[11px] font-medium text-teal-200/80 uppercase">Gross Sales</div>
+              <div className="text-lg font-black text-white mt-1">{data.kpis.financials.gross_sales_formatted}</div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-medium text-rose-300/90 uppercase">Refunds Deducted</div>
+              <div className="text-lg font-black text-rose-300 mt-1">{data.kpis.financials.refunds_formatted}</div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-bold text-emerald-300 uppercase">Net Revenue</div>
+              <div className="text-lg font-black text-emerald-300 mt-1">{data.kpis.financials.net_sales_formatted}</div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-medium text-teal-200/80 uppercase">Taxable Sales</div>
+              <div className="text-lg font-black text-white mt-1">{data.kpis.financials.taxable_sales_formatted}</div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-medium text-amber-300/90 uppercase">GST Included</div>
+              <div className="text-lg font-black text-amber-300 mt-1">{data.kpis.financials.gst_included_formatted}</div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Section 2: Large Revenue Chart */}
       <section>
         <RevenueAnalyticsChart data={data.revenue_analytics} />

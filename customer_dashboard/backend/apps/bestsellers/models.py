@@ -1,4 +1,5 @@
 from django.db import models
+from apps.common.image_optimizer import OptimizedImageField
 
 
 class BestSellerBanner(models.Model):
@@ -19,7 +20,7 @@ class BestSellerBanner(models.Model):
         verbose_name="Banner Subtitle",
         help_text="Optional short description displayed over the banner image",
     )
-    banner_image = models.ImageField(
+    banner_image = OptimizedImageField(
         upload_to="bestsellers/banners/",
         null=True,
         blank=True,

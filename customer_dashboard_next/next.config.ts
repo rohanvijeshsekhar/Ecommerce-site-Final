@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: "standalone",
 
+  // Move dev indicator to bottom-right away from the sidebar
+  devIndicators: {
+    position: "bottom-right",
+  },
+
   // Redirect /admin to Vite app during Phase 1
   async rewrites() {
     return [

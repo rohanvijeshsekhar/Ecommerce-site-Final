@@ -26,10 +26,17 @@ class Command(BaseCommand):
             default="ORDER_CONFIRMED",
             help="Notification type (e.g. ORDER_PLACED, ORDER_CONFIRMED, ORDER_SHIPPED, PASSWORD_CHANGED, FLASH_SALE).",
         )
+        parser.add_argument(
+            "--channels",
+            nargs="+",
+            default=None,
+            help="Delivery channels (e.g. IN_APP EMAIL SMS). Defaults to default channels for the notification type.",
+        )
 
     def handle(self, *args, **options):
         email = options.get("email")
         notif_type = options.get("type", "ORDER_CONFIRMED").upper()
+        channels = options.get("channels")
 
         if not email:
             user = User.objects.first()
@@ -45,6 +52,7 @@ class Command(BaseCommand):
         notif = NotificationService.create(
             user=user,
             notification_type=notif_type,
+            channels=channels,
             context={
                 "first_name": user.full_name or "Doctor",
                 "order_number": "100889",

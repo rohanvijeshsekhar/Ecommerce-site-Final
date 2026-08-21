@@ -1,5 +1,4 @@
-import React from 'react';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Providers from '../providers/Providers';
@@ -16,6 +15,14 @@ const interDisplay = Inter({
   variable: '--font-display',
   display: 'swap',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: 'FAAZO Dental Solutions | Premium Dental Equipment Marketplace',

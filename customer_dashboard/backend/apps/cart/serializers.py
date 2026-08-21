@@ -108,6 +108,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     mrp_subtotal = serializers.SerializerMethodField()
     selling_subtotal = serializers.SerializerMethodField()
+    taxable_subtotal = serializers.SerializerMethodField()
     savings = serializers.SerializerMethodField()
     shipping = serializers.SerializerMethodField()
     gst_amount = serializers.SerializerMethodField()
@@ -117,7 +118,7 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = [
             "id", "items", "saved_items", "item_count", "saved_count",
-            "mrp_subtotal", "selling_subtotal",
+            "mrp_subtotal", "selling_subtotal", "taxable_subtotal",
             "savings", "shipping", "gst_amount", "total_amount"
         ]
 
@@ -141,6 +142,29 @@ class CartSerializer(serializers.ModelSerializer):
     def get_saved_count(self, obj):
         return self._get_saved_items(obj).count()
 
+    def _calculate_tax_summary(self, obj):
+        from apps.common.tax_engine import calculate_order_tax_summary, get_warehouse_state
+        user = self.context['request'].user
+        line_items = []
+        for item in self._get_active_items(obj):
+            pricing = getattr(item.product, 'pricing', None)
+            if pricing:
+                price = (
+                    pricing.dealer_price
+                    if (user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None)
+                    else pricing.effective_price
+                )
+                line_items.append({
+                    "inclusive_price": price,
+                    "gst_rate": pricing.gst_percentage,
+                    "quantity": item.quantity
+                })
+        return calculate_order_tax_summary(
+            line_items=line_items,
+            shipping_fee=Decimal("0.00"),
+            is_intra_state=True
+        )
+
     def get_mrp_subtotal(self, obj):
         total = Decimal("0.00")
         for item in self._get_active_items(obj):
@@ -150,16 +174,12 @@ class CartSerializer(serializers.ModelSerializer):
         return float(round(total, 2))
 
     def get_selling_subtotal(self, obj):
-        user = self.context['request'].user
-        total = Decimal("0.00")
-        for item in self._get_active_items(obj):
-            pricing = getattr(item.product, 'pricing', None)
-            if pricing:
-                if user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None:
-                    total += pricing.dealer_price * item.quantity
-                else:
-                    total += pricing.effective_price * item.quantity
-        return float(round(total, 2))
+        summary = self._calculate_tax_summary(obj)
+        return float(summary["selling_subtotal"])
+
+    def get_taxable_subtotal(self, obj):
+        summary = self._calculate_tax_summary(obj)
+        return float(summary["taxable_subtotal"])
 
     def get_savings(self, obj):
         return float(round(Decimal(str(self.get_mrp_subtotal(obj))) - Decimal(str(self.get_selling_subtotal(obj))), 2))
@@ -168,19 +188,10 @@ class CartSerializer(serializers.ModelSerializer):
         return 0.0
 
     def get_gst_amount(self, obj):
-        user = self.context['request'].user
-        total_gst = Decimal("0.00")
-        for item in self._get_active_items(obj):
-            pricing = getattr(item.product, 'pricing', None)
-            if pricing:
-                price = pricing.dealer_price if (user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None) else pricing.effective_price
-                gst_rate = pricing.gst_percentage / Decimal("100.00")
-                total_gst += price * item.quantity * gst_rate
-        return float(round(total_gst, 2))
+        summary = self._calculate_tax_summary(obj)
+        return float(summary["total_gst"])
 
     def get_total_amount(self, obj):
-        selling = Decimal(str(self.get_selling_subtotal(obj)))
-        gst = Decimal(str(self.get_gst_amount(obj)))
-        shipping = Decimal(str(self.get_shipping(obj)))
-        return float(round(selling + gst + shipping, 2))
+        summary = self._calculate_tax_summary(obj)
+        return float(summary["total_amount"])
 

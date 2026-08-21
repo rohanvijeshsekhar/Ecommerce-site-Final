@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Heart, FileText, Compass, CreditCard, Package, Check, RefreshCw, Star } from 'lucide-react';
+import { Search, Heart, FileText, Compass, CreditCard, Package, Check, RefreshCw, Star, Download } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { ordersService } from '../../lib/services/ordersService';
+import { useStore } from '../../contexts/StoreContext';
 
 interface MockCartItem {
   id: string;
@@ -113,7 +115,7 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({
   const warrantyCount = orders.filter(o => o.status === 'delivered' && o.items.some(i => i.category === 'Clinical Equipment')).length;
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[104px] lg:pt-[172px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -354,11 +356,12 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({
                                 Reorder
                               </button>
                               <button
-                                onClick={() => alert(`Mocking invoice print for ${order.id}...`)}
-                                className="px-3 py-2 text-slate-400 hover:text-[#006670] hover:bg-slate-50 rounded-lg cursor-pointer"
-                                title="Download Bill Invoice"
+                                onClick={() => ordersService.downloadInvoice(order.id, (order as any).invoice_number, showToast)}
+                                className="px-3.5 py-2 border border-slate-200 hover:border-[#006670] bg-white rounded-lg text-[10.5px] font-extrabold text-slate-700 hover:text-[#006670] uppercase tracking-wide cursor-pointer transition-colors flex items-center gap-1.5"
+                                title="Download GST Tax Invoice PDF"
                               >
-                                <FileText className="w-4 h-4" />
+                                <Download className="w-3.5 h-3.5 text-[#006670]" />
+                                Download Invoice
                               </button>
                             </div>
 

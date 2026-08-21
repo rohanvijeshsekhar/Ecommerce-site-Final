@@ -43,10 +43,10 @@ class OTPService:
     @classmethod
     def is_mobile_number(cls, target: str) -> bool:
         """
-        Check if target is a phone number (contains digits/leading +).
+        Check if target is a phone number (contains digits/leading + and no @).
         """
         cleaned = target.strip()
-        return cleaned.startswith("+") or (cleaned.replace("-", "").replace(" ", "").isdigit() and "@" not in cleaned)
+        return "@" not in cleaned and any(c.isdigit() for c in cleaned)
 
     @classmethod
     def send_otp(
@@ -60,6 +60,14 @@ class OTPService:
         Generate and dispatch a new OTP with rate limiting and cooldown checks.
         """
         target = target.strip()
+        if cls.is_mobile_number(target):
+            from apps.common.utils import normalize_phone_number
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            try:
+                target = normalize_phone_number(target, allow_empty=False)
+            except DjangoValidationError as exc:
+                return False, "Enter a valid mobile number (e.g. 9876543210 or +919876543210)."
+
         now = timezone.now()
 
         # 1. Cooldown Check (e.g. 60 seconds between resends)
@@ -135,6 +143,14 @@ class OTPService:
         Enforces single-use, expiry, and max attempts.
         """
         target = target.strip()
+        if cls.is_mobile_number(target):
+            from apps.common.utils import normalize_phone_number
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            try:
+                target = normalize_phone_number(target, allow_empty=False)
+            except DjangoValidationError as exc:
+                return False, "Enter a valid mobile number (e.g. 9876543210 or +919876543210)."
+
         raw_otp = raw_otp.strip()
 
         if not raw_otp or len(raw_otp) != 6:

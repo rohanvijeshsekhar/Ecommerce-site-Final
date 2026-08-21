@@ -1,0 +1,14 @@
+Order Cancelled - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+Your order #{{ order_number }} has been cancelled.
+
+Order Number: #{{ order_number }}
+Reason: {{ reason|default:"Requested by customer" }}
+{% if refund_amount %}Refund Amount: ₹{{ refund_amount }}{% endif %}
+
+If you have questions, please contact support@faazo.com.
+
+Best regards,
+FAAZO Dental Solutions Team

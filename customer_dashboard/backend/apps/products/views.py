@@ -2,6 +2,10 @@
 FAAZO – Product Views
 """
 
+from decimal import Decimal
+from django.db.models import Case, When, Value, IntegerField, F, Q, Sum
+from django.db.models.functions import Coalesce
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -12,6 +16,7 @@ from apps.common.permissions import IsAdmin
 from apps.common.responses import success_response, error_response
 
 from .models import Product, ProductImage, ProductAttribute, ProductStatus, ProductDocument
+from .filters import ProductFilterSet
 from .serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
@@ -19,6 +24,7 @@ from .serializers import (
     ProductImageSerializer,
     ProductAttributeSerializer,
     ProductDocumentSerializer,
+    ProductSuggestionSerializer,
 )
 
 
@@ -33,9 +39,9 @@ class ProductViewSet(BaseModelViewSet):
     lookup_field = "slug"
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    filterset_fields = ["status", "is_featured", "brand", "category"]
+    filterset_class = ProductFilterSet
     search_fields    = ["name", "sku", "short_description", "tags"]
-    ordering_fields  = ["name", "created_at", "status"]
+    ordering_fields  = ["name", "created_at", "launched_at", "status", "effective_price_value", "total_units_sold", "relevance_score"]
     ordering         = ["-created_at"]
 
     def get_queryset(self):
@@ -46,12 +52,116 @@ class ProductViewSet(BaseModelViewSet):
         # Non-admins only see active published products
         if not (self.request.user.is_authenticated and self.request.user.role == "admin"):
             qs = qs.filter(status=ProductStatus.ACTIVE)
+
+        # Annotate selling price for price sorting
+        qs = qs.annotate(
+            effective_price_value=Coalesce(F("pricing__selling_price"), Value(Decimal("0.00")))
+        )
+
+        # Annotate units sold for popular sorting (valid non-cancelled orders)
+        valid_order_statuses = ["processing", "packed", "shipped", "delivered"]
+        qs = qs.annotate(
+            total_units_sold=Coalesce(
+                Sum(
+                    "orderitem__quantity",
+                    filter=Q(orderitem__order__status__in=valid_order_statuses)
+                ),
+                Value(0)
+            )
+        )
+
+        # Annotate relevance if search query 'q' is present
+        query_param = self.request.query_params.get("q", "").strip() if getattr(self, "request", None) else ""
+        if query_param:
+            relevance = Case(
+                When(name__iexact=query_param, then=Value(100)),
+                When(name__istartswith=query_param, then=Value(80)),
+                When(name__icontains=query_param, then=Value(60)),
+                When(sku__iexact=query_param, then=Value(55)),
+                When(sku__icontains=query_param, then=Value(50)),
+                When(brand__name__icontains=query_param, then=Value(40)),
+                When(category__name__icontains=query_param, then=Value(35)),
+                When(category__parent__name__icontains=query_param, then=Value(32)),
+                When(category__parent__parent__name__icontains=query_param, then=Value(30)),
+                When(short_description__icontains=query_param, then=Value(20)),
+                When(long_description__icontains=query_param, then=Value(15)),
+                When(tags__icontains=query_param, then=Value(10)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            qs = qs.annotate(relevance_score=relevance)
+
+        # Handle custom ordering parameter mapping
+        ordering_param = self.request.query_params.get("ordering", "").strip() if getattr(self, "request", None) else ""
+        if ordering_param:
+            if ordering_param in ["price_asc", "price"]:
+                qs = qs.order_by("effective_price_value", "-created_at")
+            elif ordering_param in ["price_desc", "-price"]:
+                qs = qs.order_by("-effective_price_value", "-created_at")
+            elif ordering_param in ["newest", "-newest"]:
+                qs = qs.order_by("-launched_at", "-created_at")
+            elif ordering_param in ["popular", "-popular"]:
+                qs = qs.order_by("-total_units_sold", "-total_reviews", "-created_at")
+            elif ordering_param in ["relevance", "-relevance"]:
+                if query_param:
+                    qs = qs.order_by("-relevance_score", "-created_at")
+                else:
+                    qs = qs.order_by("-created_at")
+        elif query_param:
+            qs = qs.order_by("-relevance_score", "-created_at")
+
         return qs
 
+    @action(detail=False, methods=["get"], url_path="suggestions", permission_classes=[AllowAny])
+    def suggestions(self, request):
+        """
+        GET /api/v1/products/suggestions/?q=term
+        Returns up to 8 lightweight product search suggestions for header autocomplete.
+        """
+        q = request.query_params.get("q", "").strip()
+        qs = Product.objects.filter(status=ProductStatus.ACTIVE).select_related("category", "brand").prefetch_related("images")
+
+        if q:
+            qs = ProductFilterSet(data={"q": q}, queryset=qs).qs
+            relevance = Case(
+                When(name__iexact=q, then=Value(100)),
+                When(name__istartswith=q, then=Value(80)),
+                When(name__icontains=q, then=Value(60)),
+                When(sku__iexact=q, then=Value(55)),
+                When(sku__icontains=q, then=Value(50)),
+                When(brand__name__icontains=q, then=Value(40)),
+                When(category__name__icontains=q, then=Value(35)),
+                When(category__parent__name__icontains=q, then=Value(32)),
+                When(category__parent__parent__name__icontains=q, then=Value(30)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            qs = qs.annotate(relevance_score=relevance).order_by("-relevance_score", "-created_at")
+        else:
+            qs = qs.order_by("-created_at")
+
+        suggestions_qs = list(qs[:8])
+        serializer = ProductSuggestionSerializer(suggestions_qs, many=True, context={"request": request})
+        return success_response(data=serializer.data)
+
+
     def get_permissions(self):
-        if self.action in ("list", "retrieve"):
+        if self.action in ("list", "retrieve", "suggestions"):
             return [AllowAny()]
         return [IsAuthenticated(), IsAdmin()]
+
+    def filter_queryset(self, queryset):
+        q_param = self.request.query_params.get("q", "").strip() if getattr(self, "request", None) else ""
+        ordering_param = self.request.query_params.get("ordering", "").strip() if getattr(self, "request", None) else ""
+
+        if ordering_param in ["price_asc", "price_desc", "price", "-price", "newest", "-newest", "popular", "-popular", "relevance", "-relevance"] or (q_param and not ordering_param):
+            from rest_framework import filters
+            for backend in list(self.filter_backends):
+                if backend == filters.OrderingFilter:
+                    continue
+                queryset = backend().filter_queryset(self.request, queryset, self)
+            return queryset
+        return super().filter_queryset(queryset)
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):

@@ -1,0 +1,15 @@
+Payment Successful - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+We have received your payment of ₹{{ total_amount }} for Order #{{ order_number }}.
+
+Order Number: #{{ order_number }}
+Payment ID: {{ payment_id|default:"Razorpay Payment" }}
+Amount Paid: ₹{{ total_amount }}
+
+View order details: {{ action_url|default:'http://localhost:5173/orders' }}
+
+Thank you,
+FAAZO Dental Solutions Team
+support@faazo.com

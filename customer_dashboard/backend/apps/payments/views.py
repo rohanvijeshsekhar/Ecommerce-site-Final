@@ -38,8 +38,19 @@ from apps.users.models import Address
 
 from .models import Payment, PaymentStatus, WebhookEvent
 from . import services as razorpay_service
+import logging
 
 logger = logging.getLogger("faazo.payments")
+
+
+def _make_json_serializable(obj):
+    if isinstance(obj, Decimal):
+        return float(round(obj, 2))
+    elif isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_make_json_serializable(i) for i in obj]
+    return obj
 
 
 def _resolve_cart_items(user, items_data):
@@ -134,6 +145,12 @@ class CreatePaymentOrderView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
+        # Pre-payment address completeness & Shiprocket serviceability gate
+        from apps.checkout.views import _validate_address_and_serviceability
+        addr_err = _validate_address_and_serviceability(address)
+        if addr_err:
+            return addr_err
+
         # Resolve cart items
         cart_items, is_buy_now, err = _resolve_cart_items(user, items_data)
         if err:
@@ -147,7 +164,7 @@ class CreatePaymentOrderView(APIView):
             return inv_err
 
         # Calculate pricing using existing checkout logic
-        pricing = calculate_checkout_pricing(user, cart_items, delivery_method)
+        pricing = calculate_checkout_pricing(user, cart_items, delivery_method, address)
         total_amount = Decimal(str(pricing["total_amount"]))
 
         if total_amount <= 0:
@@ -237,7 +254,7 @@ class CreatePaymentOrderView(APIView):
                     {"product_id": str(item.product.id), "quantity": item.quantity}
                     for item in cart_items
                 ],
-                "pricing": pricing,
+                "pricing": _make_json_serializable(pricing),
             }
 
             try:
@@ -324,7 +341,7 @@ class CreatePaymentOrderView(APIView):
                 {"product_id": str(item.product.id), "quantity": item.quantity}
                 for item in cart_items
             ],
-            "pricing": pricing,
+            "pricing": _make_json_serializable(pricing),
         }
 
         # Save payment record.
@@ -437,14 +454,43 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
                 order_notes = "MANUAL_REVIEW_REQUIRED: Delivery address missing post-checkout."
 
         pricing = checkout["pricing"]
+        snap = checkout.get("address_snapshot", {})
+
+        shipping_full_name = snap.get("full_name") or getattr(address, "full_name", "")
+        shipping_mobile = snap.get("mobile") or getattr(address, "mobile", "")
+        shipping_line1 = snap.get("line1") or getattr(address, "line1", "")
+        shipping_line2 = snap.get("line2") or getattr(address, "line2", "")
+        shipping_city = snap.get("city") or getattr(address, "city", "")
+        shipping_state = snap.get("state") or getattr(address, "state", "")
+        shipping_pincode = snap.get("pincode") or getattr(address, "pincode", "")
+        shipping_country = snap.get("country", "India")
 
         order = Order.objects.create(
             user=user,
             shipping_address=address,
+            shipping_full_name=shipping_full_name,
+            shipping_mobile=shipping_mobile,
+            shipping_line1=shipping_line1,
+            shipping_line2=shipping_line2,
+            shipping_city=shipping_city,
+            shipping_state=shipping_state,
+            shipping_pincode=shipping_pincode,
+            shipping_country=shipping_country,
+            shipping_address_snapshot=snap or {
+                "full_name": shipping_full_name,
+                "mobile": shipping_mobile,
+                "line1": shipping_line1,
+                "line2": shipping_line2,
+                "city": shipping_city,
+                "state": shipping_state,
+                "pincode": shipping_pincode,
+                "country": shipping_country,
+            },
             status=OrderStatus.PROCESSING,
             payment_method=checkout.get("payment_method", "razorpay"),
             mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
             selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
+            taxable_subtotal=Decimal(str(pricing.get("taxable_subtotal", pricing["selling_subtotal"]))),
             gst_amount=Decimal(str(pricing["gst_amount"])),
             shipping_fee=Decimal(str(pricing["shipping_fee"])),
             total_amount=Decimal(str(pricing["total_amount"])),
@@ -460,6 +506,12 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
         )
 
         from django.db.models import F
+        from apps.common.tax_engine import extract_gst_from_inclusive, determine_is_intra_state, get_warehouse_state
+
+        warehouse_state = get_warehouse_state()
+        delivery_state = address.state if address else warehouse_state
+        is_intra = determine_is_intra_state(warehouse_state, delivery_state)
+
         # Create order items and reserve inventory atomically
         for item_data in checkout["items"]:
             try:
@@ -479,14 +531,30 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
                     )
                     else pricing_obj.effective_price
                 )
+                gst_rate = pricing_obj.gst_percentage
+                hsn_code = getattr(pricing_obj, "hsn_code", "") or ""
             else:
                 price = Decimal("0.00")
+                gst_rate = Decimal("18.00")
+                hsn_code = ""
+
+            qty = item_data["quantity"]
+            breakdown = extract_gst_from_inclusive(price, gst_rate, qty, is_intra)
 
             OrderItem.objects.create(
                 order=order,
                 product=product,
-                quantity=item_data["quantity"],
-                price=price,
+                quantity=qty,
+                price=breakdown["unit_price_inclusive"],
+                gst_rate=breakdown["gst_rate"],
+                hsn_code=hsn_code,
+                taxable_value_per_unit=breakdown["taxable_value_per_unit"],
+                taxable_subtotal=breakdown["taxable_subtotal"],
+                cgst_amount=breakdown["cgst_amount"],
+                sgst_amount=breakdown["sgst_amount"],
+                igst_amount=breakdown["igst_amount"],
+                total_gst_amount=breakdown["total_gst_amount"],
+                is_intra_state=breakdown["is_intra_state"],
             )
 
             # Fix 2: Atomic Inventory Reservation (F expression + select_for_update)
@@ -511,6 +579,13 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
             locked_payment.gateway_response = gateway_response
         locked_payment.save()
 
+        # Dispatch post-order-success notification (IN_APP + EMAIL + PDF Invoice) after DB commit
+        from apps.orders.tasks import dispatch_order_success_notification
+        order_id_str = str(order.id)
+        transaction.on_commit(
+            lambda: dispatch_order_success_notification(order_id_str)
+        )
+
         logger.info("Payment captured and Order created: payment=%s order=%s", locked_payment.id, order.id)
         return order
 
@@ -533,7 +608,7 @@ class VerifyPaymentView(APIView):
         razorpay_signature = request.data.get("razorpay_signature", "").strip()
         payment_id = request.data.get("payment_id", "").strip()
 
-        if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature, payment_id]):
+        if not payment_id or not razorpay_payment_id or not razorpay_signature:
             return error_response(
                 "Missing required payment verification fields.",
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -553,6 +628,9 @@ class VerifyPaymentView(APIView):
                         "Payment record not found.",
                         status_code=status.HTTP_404_NOT_FOUND,
                     )
+
+                if not razorpay_order_id:
+                    razorpay_order_id = payment.razorpay_order_id
 
                 # Fix 4: Payment Verification Hardening (Strict Server-Side Validation)
                 if payment.razorpay_order_id != razorpay_order_id:

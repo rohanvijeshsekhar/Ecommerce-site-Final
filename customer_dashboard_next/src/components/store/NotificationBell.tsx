@@ -47,20 +47,22 @@ export default function NotificationBell({ onOpenLoginModal }: NotificationBellP
   }, [isAuthenticated]);
 
   const fetchUnreadCount = async () => {
+    if (!isAuthenticated) return;
     try {
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
-    } catch (err) {
+    } catch {
       // Ignore background fetch errors
     }
   };
 
   const fetchRecentNotifications = async () => {
+    if (!isAuthenticated) return;
     setIsLoading(true);
     try {
       const data = await notificationService.getNotifications({ page: 1, page_size: 6 });
-      setNotifications(data.results);
-    } catch (err) {
+      setNotifications(data.results || []);
+    } catch {
       // Gracefully handle error
     } finally {
       setIsLoading(false);

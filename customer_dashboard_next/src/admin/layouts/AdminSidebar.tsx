@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
   BarChart3, Bell, UserCog, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare
+  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +33,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'bestsellers',  label: 'Best Sellers',     icon: 'Star',      path: '/admin/bestsellers'  },
       { id: 'reviews',      label: 'Reviews',          icon: 'MessageSquare', path: '/admin/reviews' },
       { id: 'solutions',    label: 'Explore Solutions',icon: 'Layers',    path: '/admin/solutions'    },
+      { id: 'blog',         label: 'Blog CMS',         icon: 'BookOpen',  path: '/admin/blog'         },
     ],
   },
   {
@@ -78,7 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
-  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare
+  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen
 };
 
 const AdminSidebar: React.FC = () => {
@@ -91,7 +92,7 @@ const AdminSidebar: React.FC = () => {
 
   const isActive = (path: string) => {
     if (path === '/admin') return pathname === '/admin' || pathname === '/admin/dashboard';
-    return pathname.startsWith(path);
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   const handleLogout = async () => {
@@ -114,7 +115,10 @@ const AdminSidebar: React.FC = () => {
       <div className="relative group" onMouseEnter={() => setHoveredTooltip(item.id)} onMouseLeave={() => setHoveredTooltip(null)}>
         <Link
           href={item.path}
-          onClick={() => setMobileSidebarOpen(false)}
+          prefetch={true}
+          onClick={() => {
+            setMobileSidebarOpen(false);
+          }}
           className={`flex items-center gap-3 transition-all duration-250 select-none relative group/link
             ${collapsed 
               ? 'justify-center mx-2 px-3 py-2.5 rounded-xl' 

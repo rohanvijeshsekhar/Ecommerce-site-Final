@@ -37,3 +37,14 @@ razorpay>=1.4,<2.0
 # Google OAuth Token Verification
 google-auth>=2.20.0,<3.0
 
+# Async Task Queue
+celery>=5.3,<6.0
+
+# Redis – Celery broker + result backend client
+redis>=5.0,<6.0
+
+# PDF Generation (GST Tax Invoices)
+reportlab>=4.0,<6.0
+
+# Phone Number Normalization & Validation (E.164)
+phonenumbers>=8.13.0,<10.0

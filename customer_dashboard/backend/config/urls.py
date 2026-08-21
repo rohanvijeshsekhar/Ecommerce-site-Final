@@ -96,6 +96,10 @@ urlpatterns = [
                 path("", include("apps.reviews.urls")),
                 # Phase 13+ – Shipping & Fulfillment
                 path("", include("apps.shipping.urls")),
+                # Phase 4 – Returns & Refunds
+                path("", include("apps.returns.urls")),
+                # Blog & Content Management CMS
+                path("blog/", include("apps.blog.urls")),
             ]
         ),
     ),

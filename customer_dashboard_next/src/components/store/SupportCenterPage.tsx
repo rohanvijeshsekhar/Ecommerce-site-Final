@@ -63,7 +63,7 @@ export const SupportCenterPage: React.FC = () => {
   const fetchLatestOrder = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await ordersService.getOrders({ page_size: 1 });
+      const res = await ordersService.getOrders({ page: 1 });
       if (res.data && res.data.length > 0) {
         setLatestOrderNumber(res.data[0].order_number);
       }

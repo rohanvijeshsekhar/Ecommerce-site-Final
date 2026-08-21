@@ -89,7 +89,7 @@ class PaymentModuleTests(APITestCase):
         # Verify payment record is created in db
         payment = Payment.objects.get(id=response.data['data']['payment_id'])
         self.assertEqual(payment.status, PaymentStatus.CREATED)
-        self.assertEqual(payment.amount, Decimal("28320.00")) # (12000*2) * 1.18 = 28320
+        self.assertEqual(payment.amount, Decimal("24000.00")) # GST inclusive customer total = 24000.00
 
     def test_verify_payment_signature_and_creation(self):
         # First, create payment order
@@ -135,7 +135,7 @@ class PaymentModuleTests(APITestCase):
         order_id = response.data['data']['id']
         order = Order.objects.get(id=order_id)
         self.assertEqual(order.user, self.user)
-        self.assertEqual(order.total_amount, Decimal("28320.00"))
+        self.assertEqual(order.total_amount, Decimal("24000.00"))
 
         # 2. Cart is cleared
         self.assertEqual(CartItem.objects.filter(cart=self.cart).count(), 0)
@@ -256,7 +256,7 @@ class PaymentModuleTests(APITestCase):
         payment = Payment.objects.get(id=payment_id)
         self.assertEqual(payment.status, PaymentStatus.CAPTURED)
         self.assertIsNotNone(payment.order)
-        self.assertEqual(payment.order.total_amount, Decimal("28320.00"))
+        self.assertEqual(payment.order.total_amount, Decimal("24000.00"))
 
     def test_verify_payment_signature_failure_rollback(self):
         # Create payment order
@@ -410,3 +410,68 @@ class PaymentModuleTests(APITestCase):
         )
         self.assertEqual(res2.status_code, status.HTTP_200_OK)
         self.assertEqual(res2.data['message'], "Event already processed.")
+
+    def test_payment_order_unserviceable_pincode_blocked(self):
+        from unittest.mock import patch
+        from django.test import override_settings
+        with override_settings(SHIPPING_PROVIDER="shiprocket"):
+            with patch("apps.shipping.pincode_service.PincodeServiceabilityEngine.check") as mock_check:
+                mock_check.return_value = {
+                    "is_serviceable": False,
+                    "destination_pincode": "400001",
+                    "message": "Delivery is currently unavailable for PIN code 400001.",
+                    "available_couriers": [],
+                }
+                url = reverse("payment-create-order")
+                payload = {
+                    "address_id": str(self.address.id),
+                    "items": [{"product_id": str(self.product.id), "quantity": 1}],
+                }
+                res = self.client.post(url, payload, format="json")
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["error"]["code"], "PINCODE_NOT_SERVICEABLE")
+
+    def test_payment_verification_populates_immutable_order_snapshot(self):
+        from django.test import override_settings
+        from django.conf import settings
+        import hmac
+        import hashlib
+        with override_settings(SHIPPING_PROVIDER="offline"):
+            url_create = reverse("payment-create-order")
+            payload_create = {
+                "address_id": str(self.address.id),
+                "items": [{"product_id": str(self.product.id), "quantity": 1}],
+            }
+            res_create = self.client.post(url_create, payload_create, format="json")
+            self.assertEqual(res_create.status_code, status.HTTP_200_OK)
+            razorpay_order_id = res_create.data["data"]["razorpay_order_id"]
+            payment_id = res_create.data["data"]["payment_id"]
+
+            key_secret = settings.RAZORPAY_KEY_SECRET
+            if key_secret and "REPLACE" not in key_secret:
+                rz_signature = hmac.new(
+                    key_secret.encode("utf-8"),
+                    f"{razorpay_order_id}|pay_mock_12345".encode("utf-8"),
+                    hashlib.sha256
+                ).hexdigest()
+            else:
+                rz_signature = f"sig_mock_{razorpay_order_id}_pay_mock_12345"
+
+            url_verify = reverse("payment-verify")
+            payload_verify = {
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_payment_id": "pay_mock_12345",
+                "razorpay_signature": rz_signature,
+                "payment_id": payment_id,
+            }
+            res_verify = self.client.post(url_verify, payload_verify, format="json")
+            self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
+
+            order_id = res_verify.data["data"]["id"]
+            order = Order.objects.get(id=order_id)
+            self.assertEqual(order.shipping_full_name, "Dr. Test User")
+            self.assertEqual(order.shipping_line1, "123 Clinic Row")
+            self.assertEqual(order.shipping_city, "Mumbai")
+            self.assertEqual(order.shipping_state, "Maharashtra")
+            self.assertEqual(order.shipping_pincode, "400001")
+            self.assertEqual(order.shipping_country, "India")

@@ -15,7 +15,9 @@ Design decisions:
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
+from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import BaseModel
+
 
 
 # ============================================================
@@ -35,14 +37,14 @@ class HeroSlide(BaseModel):
         verbose_name_plural = "Hero Slides"
         ordering = ["sort_order", "created_at"]
 
-    desktop_image = models.ImageField(
+    desktop_image = OptimizedImageField(
         upload_to="homepage/hero/desktop/",
         null=True,
         blank=True,
         verbose_name="Desktop Image",
         help_text="Recommended: 1440×480 px or 3:1 aspect ratio.",
     )
-    mobile_image = models.ImageField(
+    mobile_image = OptimizedImageField(
         upload_to="homepage/hero/mobile/",
         null=True,
         blank=True,
@@ -110,7 +112,7 @@ class HomepageCategory(BaseModel):
         related_name="homepage_showcases",
         verbose_name="Catalogue Category",
     )
-    card_image = models.ImageField(
+    card_image = OptimizedImageField(
         upload_to="homepage/categories/",
         null=True,
         blank=True,
@@ -173,7 +175,7 @@ class HomepageBrand(BaseModel):
         related_name="homepage_showcases",
         verbose_name="Brand",
     )
-    logo_override = models.ImageField(
+    logo_override = OptimizedImageField(
         upload_to="homepage/brands/",
         null=True,
         blank=True,
@@ -218,7 +220,7 @@ class BestSeller(BaseModel):
         related_name="best_seller_entries",
         verbose_name="Product",
     )
-    display_image = models.ImageField(
+    display_image = OptimizedImageField(
         upload_to="homepage/bestsellers/",
         null=True,
         blank=True,
@@ -335,7 +337,7 @@ class LimitedTimeOffer(BaseModel):
         verbose_name_plural = "Limited Time Offers"
         ordering = ["sort_order", "created_at"]
 
-    banner_image = models.ImageField(
+    banner_image = OptimizedImageField(
         upload_to="homepage/offers/",
         null=True,
         blank=True,
@@ -413,7 +415,7 @@ class ExploreSolution(BaseModel):
         related_name="explore_solution_entries",
         verbose_name="Category",
     )
-    image = models.ImageField(
+    image = OptimizedImageField(
         upload_to="homepage/solutions/",
         null=True,
         blank=True,
@@ -467,7 +469,7 @@ class Testimonial(BaseModel):
         blank=True,
         verbose_name="Clinic Name",
     )
-    photo = models.ImageField(
+    photo = OptimizedImageField(
         upload_to="homepage/testimonials/",
         null=True,
         blank=True,

@@ -5,6 +5,7 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsApprovedDealer
 from apps.common.responses import success_response, error_response
 from apps.products.models import Product
 from apps.users.models import Address
@@ -20,19 +21,26 @@ def is_valid_uuid(val):
         return False
 
 # Helper pricing calculator
-def calculate_checkout_pricing(user, cart_items, delivery_method):
+def calculate_checkout_pricing(user, cart_items, delivery_method, address=None):
+    from apps.common.tax_engine import calculate_order_tax_summary, determine_is_intra_state, get_warehouse_state
+
     mrp_subtotal = Decimal("0.00")
-    selling_subtotal = Decimal("0.00")
-    gst_amount = Decimal("0.00")
+    line_items = []
 
     for item in cart_items:
         pricing = getattr(item.product, 'pricing', None)
         if pricing:
             mrp_subtotal += pricing.mrp * item.quantity
             price = pricing.dealer_price if (user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None) else pricing.effective_price
-            selling_subtotal += price * item.quantity
-            gst_rate = pricing.gst_percentage / Decimal("100.00")
-            gst_amount += price * item.quantity * gst_rate
+            gst_rate = pricing.gst_percentage
+            hsn_code = getattr(pricing, 'hsn_code', '') or ''
+            line_items.append({
+                "inclusive_price": price,
+                "gst_rate": gst_rate,
+                "hsn_code": hsn_code,
+                "quantity": item.quantity,
+                "product": item.product
+            })
 
     delivery_fee = {
         'standard': Decimal("0.00"),
@@ -40,17 +48,96 @@ def calculate_checkout_pricing(user, cart_items, delivery_method):
         'install': Decimal("3500.00"),
     }.get(delivery_method, Decimal("0.00"))
 
-    savings = mrp_subtotal - selling_subtotal
-    total_amount = selling_subtotal + gst_amount + delivery_fee
+    warehouse_state = get_warehouse_state()
+    delivery_state = address.state if address else warehouse_state
+    is_intra = determine_is_intra_state(warehouse_state, delivery_state)
+
+    summary = calculate_order_tax_summary(
+        line_items=line_items,
+        shipping_fee=delivery_fee,
+        is_intra_state=is_intra
+    )
+
+    savings = mrp_subtotal - summary["selling_subtotal"]
 
     return {
-        "mrp_subtotal": float(round(mrp_subtotal, 2)),
-        "selling_subtotal": float(round(selling_subtotal, 2)),
-        "gst_amount": float(round(gst_amount, 2)),
-        "shipping_fee": float(round(delivery_fee, 2)),
-        "total_amount": float(round(total_amount, 2)),
-        "savings": float(round(savings, 2))
+        "mrp_subtotal": float(summary["selling_subtotal"] + savings),
+        "selling_subtotal": float(summary["selling_subtotal"]),
+        "taxable_subtotal": float(summary["taxable_subtotal"]),
+        "gst_amount": float(summary["total_gst"]),
+        "shipping_fee": float(summary["shipping_fee"]),
+        "total_amount": float(summary["total_amount"]),
+        "savings": float(savings if savings > Decimal("0.00") else Decimal("0.00")),
+        "is_intra_state": is_intra,
+        "line_breakdowns": summary["line_breakdowns"],
     }
+
+def _validate_address_and_serviceability(address, weight_kg=1.0):
+    """
+    Validates deliverability of the given address:
+      1. Minimum field lengths (name, mobile, line1, city, state, pincode)
+      2. Pincode and state consistency
+      3. Authoritative Shiprocket serviceability check
+    Returns error_response or None if valid.
+    """
+    if not address or not address.full_name or len(address.full_name.strip()) < 3:
+        return error_response(
+            "Shipping address is missing recipient name (min 3 characters).",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_ADDRESS_NAME",
+        )
+
+    from apps.common.validators import PHONE_REGEX
+    clean_mobile = str(address.mobile).strip().replace(" ", "").replace("-", "")
+    if not PHONE_REGEX.match(clean_mobile):
+        return error_response(
+            "Shipping address has an invalid mobile number (10 digits, starting with 6-9).",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_ADDRESS_PHONE",
+        )
+
+    if not address.line1 or len(address.line1.strip()) < 5:
+        return error_response(
+            "Shipping address line 1 is too short (min 5 characters required for delivery).",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_ADDRESS_LINE1",
+        )
+
+    if not address.city or len(address.city.strip()) < 2:
+        return error_response(
+            "Shipping address city is missing or invalid.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_ADDRESS_CITY",
+        )
+
+    if not address.state or len(address.state.strip()) < 2:
+        return error_response(
+            "Shipping address state is missing or invalid.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_ADDRESS_STATE",
+        )
+
+    from apps.common.postal_data import validate_pincode_state_match
+    is_valid_pin, pin_err = validate_pincode_state_match(address.pincode, address.state)
+    if not is_valid_pin:
+        return error_response(
+            pin_err,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="INVALID_PINCODE_STATE_MISMATCH",
+        )
+
+    from apps.shipping.pincode_service import PincodeServiceabilityEngine
+    srv = PincodeServiceabilityEngine.check(destination_pincode=address.pincode, weight_kg=weight_kg)
+    if not srv.get("is_serviceable", False):
+        return error_response(
+            srv.get("message", "Delivery is currently unavailable for this pincode."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="PINCODE_NOT_SERVICEABLE",
+            details=srv,
+        )
+
+    return None
+
 
 class CheckoutPreviewView(APIView):
     permission_classes = [IsAuthenticated]
@@ -66,6 +153,11 @@ class CheckoutPreviewView(APIView):
             address = Address.objects.get(pk=address_id, user=request.user)
         except (Address.DoesNotExist, ValueError):
             return error_response("Selected shipping address was not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        # Pre-flight address completeness & Shiprocket serviceability gate
+        addr_err = _validate_address_and_serviceability(address)
+        if addr_err:
+            return addr_err
 
         items_data = request.data.get("items")
         if items_data:
@@ -104,11 +196,11 @@ class CheckoutPreviewView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
 
-        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method)
+        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
         return success_response(data=pricing, message="Checkout pricing preview calculated.")
 
 class CheckoutPlaceView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsApprovedDealer]
 
     def post(self, request):
         address_id = request.data.get("address_id")
@@ -123,6 +215,11 @@ class CheckoutPlaceView(APIView):
             address = Address.objects.get(pk=address_id, user=request.user)
         except (Address.DoesNotExist, ValueError):
             return error_response("Selected shipping address was not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        # Pre-flight address completeness & Shiprocket serviceability gate
+        addr_err = _validate_address_and_serviceability(address)
+        if addr_err:
+            return addr_err
 
         # Save clinic GST number if provided during checkout
         if gst_number and hasattr(request.user, 'profile'):
@@ -169,32 +266,63 @@ class CheckoutPlaceView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
 
-        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method)
+        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
 
-        # Atomically place order, adjust stock, and clear cart
+        # Atomically place order, adjust stock, snapshot tax fields, and clear cart
         try:
             with transaction.atomic():
                 order = Order.objects.create(
                     user=request.user,
                     shipping_address=address,
+                    shipping_full_name=address.full_name,
+                    shipping_mobile=address.mobile,
+                    shipping_line1=address.line1,
+                    shipping_line2=address.line2 or "",
+                    shipping_city=address.city,
+                    shipping_state=address.state,
+                    shipping_pincode=address.pincode,
+                    shipping_country="India",
+                    shipping_address_snapshot={
+                        "full_name": address.full_name,
+                        "mobile": address.mobile,
+                        "line1": address.line1,
+                        "line2": address.line2 or "",
+                        "city": address.city,
+                        "state": address.state,
+                        "pincode": address.pincode,
+                        "country": "India",
+                        "label": address.label,
+                    },
                     status=OrderStatus.PROCESSING,
                     payment_method=payment_method,
                     mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
                     selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
+                    taxable_subtotal=Decimal(str(pricing["taxable_subtotal"])),
                     gst_amount=Decimal(str(pricing["gst_amount"])),
                     shipping_fee=Decimal(str(pricing["shipping_fee"])),
                     total_amount=Decimal(str(pricing["total_amount"]))
                 )
 
-                for item in cart_items:
+                line_breakdowns = pricing["line_breakdowns"]
+                for idx, item in enumerate(cart_items):
                     pricing_obj = getattr(item.product, 'pricing', None)
-                    price = pricing_obj.dealer_price if (request.user.role == 'dealer' and request.user.dealer_status == 'approved' and pricing_obj.dealer_price is not None) else pricing_obj.effective_price
+                    breakdown = line_breakdowns[idx]
+                    hsn = getattr(pricing_obj, 'hsn_code', '') or ''
 
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
                         quantity=item.quantity,
-                        price=price
+                        price=breakdown["unit_price_inclusive"],
+                        gst_rate=breakdown["gst_rate"],
+                        hsn_code=hsn,
+                        taxable_value_per_unit=breakdown["taxable_value_per_unit"],
+                        taxable_subtotal=breakdown["taxable_subtotal"],
+                        cgst_amount=breakdown["cgst_amount"],
+                        sgst_amount=breakdown["sgst_amount"],
+                        igst_amount=breakdown["igst_amount"],
+                        total_gst_amount=breakdown["total_gst_amount"],
+                        is_intra_state=breakdown["is_intra_state"],
                     )
 
                     # Reserve inventory stock
@@ -206,6 +334,13 @@ class CheckoutPlaceView(APIView):
                 # Clear cart if not buy_now
                 if not is_buy_now:
                     Cart.objects.get(user=request.user).items.all().delete()
+
+                # Dispatch post-order-success notification (IN_APP + EMAIL + PDF Invoice) after DB commit
+                from apps.orders.tasks import dispatch_order_success_notification
+                order_id_str = str(order.id)
+                transaction.on_commit(
+                    lambda: dispatch_order_success_notification(order_id_str)
+                )
 
                 # Build response matching the frontend orderData expectations
                 items_serialized = []

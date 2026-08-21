@@ -46,7 +46,7 @@ const AdminLogin: React.FC = () => {
     // Map dev shortcuts ('faazo', 'admin', 'faazo_admin') -> admin@faazo.com
     const isShortcutEmail = rawEmail === 'faazo' || rawEmail === 'admin' || rawEmail === 'faazo_admin';
     const loginEmail = isShortcutEmail ? 'admin@faazo.com' : email.trim();
-    const loginPassword = isShortcutEmail ? 'adminpassword' : password;
+    const loginPassword = isShortcutEmail ? 'Admin@faazo123' : password;
 
     if (!loginEmail.includes('@')) {
       setError('Please enter a valid email address.');
@@ -57,16 +57,20 @@ const AdminLogin: React.FC = () => {
     try {
       await login({ email: loginEmail, password: loginPassword, remember_me: rememberMe });
 
-      const userStr = typeof window !== 'undefined' ? localStorage.getItem('faazo_user') : null;
-      if (userStr) {
-        const loggedUser = JSON.parse(userStr);
-        if (loggedUser.role === 'admin') {
-          router.replace('/admin');
-        } else {
-          setAccessDenied(true);
-          setLoading(false);
-        }
+      // Read role from AuthContext user state. AuthContext.login() calls handleAuthSuccess()
+      // which calls setUser(data.user) synchronously before this line executes.
+      // We use a state snapshot from the closure. If user is not yet updated in React state
+      // (React batches state updates), we fall back to allowing the router to redirect and
+      // letting AdminLayout enforce the role guard — which it already does.
+      //
+      // Do NOT read from localStorage. The user object in localStorage (faazo_user) is the
+      // non-sensitive identity record; the access token is never in localStorage.
+      const loggedUser = user;
+      if (loggedUser && loggedUser.role !== 'admin') {
+        setAccessDenied(true);
+        setLoading(false);
       } else {
+        // Either confirmed admin, or user state not yet flushed — AdminLayout will enforce.
         router.replace('/admin');
       }
     } catch (err: any) {
@@ -97,8 +101,7 @@ const AdminLogin: React.FC = () => {
       setAccessDenied(false);
     } catch (err) {
       console.error('Failed to log out:', err);
-      // Fallback: clear tokens and reload
-      localStorage.removeItem('faazo_refresh_token');
+      // Fallback: clear identity cache and reload
       localStorage.removeItem('faazo_user');
       window.location.reload();
     }

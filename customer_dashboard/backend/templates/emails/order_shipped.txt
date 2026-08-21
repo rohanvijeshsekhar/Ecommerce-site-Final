@@ -1,0 +1,16 @@
+Order Shipped - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+Your order #{{ order_number }} has been shipped via {{ courier_name|default:"Courier Partner" }}.
+
+Order Number: #{{ order_number }}
+Courier: {{ courier_name|default:"Courier Partner" }}
+Tracking AWB: {{ awb_number|default:"N/A" }}
+{% if delivery_otp %}Delivery OTP: {{ delivery_otp }}{% endif %}
+
+Track online: {{ action_url|default:'http://localhost:5173/orders' }}
+
+Best regards,
+FAAZO Dental Solutions Team
+support@faazo.com

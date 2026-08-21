@@ -179,3 +179,38 @@ def fetch_payment_details(payment_id: str) -> dict:
     except Exception as e:
         logger.error("Failed to fetch payment details for %s: %s", payment_id, e)
         return {}
+
+
+def create_razorpay_refund(payment_id: str, amount_paise: int, notes: dict = None, speed: str = "normal") -> dict:
+    """
+    Create a Razorpay refund for a captured payment.
+    If sandbox mode, returns a simulated mock refund response.
+    """
+    if payment_id.startswith("pay_mock_") or is_sandbox_mode():
+        mock_refund_id = f"rfnd_mock_{uuid.uuid4().hex[:14]}"
+        logger.info("[SANDBOX MODE] Simulating Razorpay refund: payment=%s amount=%d paise, id=%s", payment_id, amount_paise, mock_refund_id)
+        return {
+            "id": mock_refund_id,
+            "entity": "refund",
+            "amount": amount_paise,
+            "currency": "INR",
+            "payment_id": payment_id,
+            "notes": notes or {},
+            "status": "processed",
+            "speed_processed": speed,
+        }
+
+    client = _get_client()
+    try:
+        data = {
+            "amount": amount_paise,
+            "speed": speed,
+            "notes": notes or {},
+        }
+        logger.info("[Razorpay] Initiating refund for payment %s amount %d paise", payment_id, amount_paise)
+        refund_res = client.payment.refund(payment_id, data)
+        logger.info("[Razorpay] Refund SUCCESS: %s (payment=%s)", refund_res.get("id"), payment_id)
+        return refund_res
+    except Exception as e:
+        logger.error("[Razorpay] Refund FAILED for payment %s: %s", payment_id, e, exc_info=True)
+        raise

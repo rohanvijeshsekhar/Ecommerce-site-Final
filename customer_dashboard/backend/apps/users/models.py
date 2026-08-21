@@ -17,7 +17,9 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.utils import timezone
 
+from apps.common.image_optimizer import OptimizedImageField
 from apps.users.managers import UserManager
+
 
 
 # ============================================================
@@ -198,6 +200,18 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=["role", "is_active"]),
         ]
 
+    def clean(self):
+        super().clean()
+        if self.phone_number:
+            from apps.common.utils import normalize_phone_number
+            self.phone_number = normalize_phone_number(self.phone_number)
+
+    def save(self, *args, **kwargs):
+        if self.phone_number:
+            from apps.common.utils import normalize_phone_number
+            self.phone_number = normalize_phone_number(self.phone_number)
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.full_name} <{self.email}>"
 
@@ -253,6 +267,31 @@ class User(AbstractBaseUser, PermissionsMixin):
     def phone_verified(self, value: bool) -> None:
         self.is_phone_verified = value
 
+    @property
+    def dealer_status(self) -> str | None:
+        """
+        Return the dealer application status string, or None for non-dealers.
+
+        Security guarantee:
+        - Non-dealer users always return None.
+        - Dealer-role users with NO DealerApplication record return "pending".
+          They are NEVER treated as approved without an explicit DB record.
+        - Only a dealer whose DealerApplication.status is APPROVED will receive
+          "approved" here, which is the only status that unlocks dealer pricing.
+        """
+        if self.role != UserRole.DEALER:
+            return None
+        try:
+            return self.dealer_application.status
+        except Exception:
+            # Dealer role but no application — safe fallback is "pending", never "approved"
+            return "pending"
+
+    @property
+    def is_approved_dealer(self) -> bool:
+        """Convenience boolean: True only when dealer application is APPROVED."""
+        return self.dealer_status == "approved"
+
 
 
 # ============================================================
@@ -279,7 +318,7 @@ class UserProfile(models.Model):
         related_name="profile",
         verbose_name="User",
     )
-    avatar = models.ImageField(
+    avatar = OptimizedImageField(
         upload_to="avatars/",
         null=True,
         blank=True,

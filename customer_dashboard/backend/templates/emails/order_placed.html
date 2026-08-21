@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Order Confirmation #{{ order_number }} - FAAZO Dental Solutions</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        /* ========== CLIENT RESETS ========== */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+
+        /* ========== BASE STYLING ========== */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #F1F5F9;
+            color: #1E293B;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .email-wrapper {
+            width: 100%;
+            background-color: #F1F5F9;
+            padding: 36px 16px;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 12px 30px -10px rgba(0, 95, 99, 0.08), 0 2px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        /* 1. TOP WHITE LOGO BAR */
+        .logo-header {
+            background-color: #FFFFFF;
+            padding: 28px 24px 20px;
+            text-align: center;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+
+        .logo-header img {
+            height: 40px;
+            width: auto;
+            display: inline-block;
+            border: 0;
+        }
+
+        /* 2. TEAL ORDER CONFIRMED BANNER */
+        .teal-banner {
+            background-color: #005F63;
+            background: linear-gradient(135deg, #005F63 0%, #087378 50%, #005F63 100%);
+            padding: 24px 24px 28px;
+            text-align: center;
+            color: #FFFFFF;
+        }
+
+        .check-badge {
+            display: inline-block;
+            background-color: #34D399;
+            color: #FFFFFF;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        }
+
+        .banner-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.3px;
+        }
+
+        .banner-subtitle {
+            font-size: 13.5px;
+            color: #B2E5E7;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* 3. MAIN BODY CONTENT */
+        .body-content {
+            padding: 32px 30px 24px;
+            background-color: #FFFFFF;
+        }
+
+        .greeting {
+            font-size: 17px;
+            font-weight: 800;
+            color: #0F172A;
+            margin: 0 0 10px 0;
+        }
+
+        .intro-p {
+            font-size: 14px;
+            line-height: 1.65;
+            color: #475569;
+            margin: 0 0 24px 0;
+        }
+
+        /* 4. ORDER OVERVIEW SUMMARY CARD */
+        .order-summary-box {
+            background-color: #EAF8F8;
+            border: 1.5px solid #B2E5E7;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            color: #64748B;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+
+        .summary-order-num {
+            font-size: 16px;
+            font-weight: 800;
+            color: #005F63;
+            margin: 0;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
+
+        .summary-amount {
+            font-size: 18px;
+            font-weight: 800;
+            color: #005F63;
+            margin: 0;
+            text-align: right;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
+
+        /* 5. TWO-COLUMN ADDRESS & PAYMENT CARD */
+        .info-grid-box {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 28px;
+        }
+
+        .info-col-title {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #005F63;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+        }
+
+        .info-text {
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: #334155;
+            margin: 0;
+        }
+
+        .info-tag {
+            display: inline-block;
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid #A7F3D0;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        /* 6. ORDER ITEMS TABLE */
+        .items-heading {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: #005F63;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .items-table th {
+            background-color: #F8FAFC;
+            text-align: left;
+            padding: 11px 14px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #64748B;
+            font-weight: 700;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .items-table td {
+            padding: 12px 14px;
+            font-size: 13px;
+            border-bottom: 1px solid #F1F5F9;
+            color: #334155;
+        }
+
+        .item-name-cell {
+            font-weight: 600;
+            color: #1E293B;
+            line-height: 1.4;
+        }
+
+        .item-qty-cell {
+            text-align: center;
+            color: #64748B;
+            font-weight: 600;
+        }
+
+        .item-price-cell {
+            text-align: right;
+            font-weight: 700;
+            color: #0F172A;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
+
+        .summary-sub-row td {
+            padding: 8px 14px;
+            font-size: 12px;
+            color: #64748B;
+            border-bottom: 1px solid #F1F5F9;
+            background-color: #FAFCFD;
+        }
+
+        .summary-sub-val {
+            text-align: right;
+            font-weight: 600;
+            color: #334155;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
+
+        .total-highlight-row td {
+            background-color: #EAF8F8;
+            padding: 13px 14px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #005F63;
+            border-bottom: none;
+            border-top: 1.5px solid #005F63;
+        }
+
+        .total-highlight-val {
+            text-align: right;
+            font-size: 16px;
+            font-weight: 800;
+            color: #005F63;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
+
+        /* 7. REAL DOCUMENT ATTACHMENT CARD (Executive PDF Invoice) */
+        .pdf-attachment-card {
+            background: #FAFCFD;
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 26px;
+        }
+
+        .pdf-badge-icon {
+            display: inline-block;
+            background-color: #EAF8F8;
+            border: 1px solid #005F63;
+            color: #005F63;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .pdf-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0F172A;
+            margin: 0 0 2px 0;
+        }
+
+        .pdf-subtitle {
+            font-size: 11.5px;
+            color: #64748B;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* 8. ORDER PROGRESS STEPPER & DUAL ACTIONS */
+        .stepper-box {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 16px;
+            margin-bottom: 22px;
+            text-align: center;
+        }
+
+        .stepper-title {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #005F63;
+            font-weight: 800;
+            margin: 0 0 14px 0;
+            text-align: left;
+        }
+
+        .step-col {
+            vertical-align: top;
+            text-align: center;
+        }
+
+        .step-circle {
+            width: 26px;
+            height: 26px;
+            line-height: 26px;
+            border-radius: 50%;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .step-done {
+            background-color: #005F63;
+            color: #FFFFFF;
+        }
+
+        .step-active {
+            background-color: #EAF8F8;
+            border: 2px solid #005F63;
+            color: #005F63;
+        }
+
+        .step-future {
+            background-color: #E2E8F0;
+            color: #94A3B8;
+        }
+
+        .step-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .step-line {
+            height: 2px;
+            background-color: #CBD5E1;
+            vertical-align: middle;
+            padding: 0 2px;
+        }
+
+        .step-line-done {
+            background-color: #005F63;
+        }
+
+        .dual-cta-wrap {
+            text-align: center;
+            margin: 6px 0 16px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background-color: #005F63;
+            background: linear-gradient(135deg, #005F63 0%, #0B7C80 100%);
+            color: #FFFFFF !important;
+            padding: 13px 28px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 13.5px;
+            letter-spacing: 0.2px;
+            box-shadow: 0 4px 12px rgba(0, 95, 99, 0.22);
+            margin: 4px;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            background-color: #FFFFFF;
+            border: 1.5px solid #CBD5E1;
+            color: #005F63 !important;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 13.5px;
+            margin: 4px;
+        }
+
+        .dispatch-note {
+            font-size: 11px;
+            color: #64748B;
+            line-height: 1.5;
+            text-align: center;
+            margin: 8px 0 0 0;
+        }
+
+        /* 9. CLINICAL ASSURANCE BADGES */
+        .assurance-bar {
+            background-color: #F8FAFC;
+            border-top: 1px solid #E2E8F0;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 14px 20px;
+            text-align: center;
+        }
+
+        .assurance-item {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            margin: 3px 12px;
+        }
+
+        .assurance-dot {
+            color: #005F63;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        /* 10. REAL COMPLIANT FOOTER */
+        .email-footer {
+            text-align: center;
+            padding: 24px 28px;
+            font-size: 11.5px;
+            color: #94A3B8;
+            background-color: #FFFFFF;
+            line-height: 1.6;
+        }
+
+        .footer-brand {
+            font-size: 13px;
+            font-weight: 800;
+            color: #005F63;
+            margin: 0 0 2px 0;
+            letter-spacing: 1.5px;
+        }
+
+        .footer-company {
+            font-size: 11px;
+            color: #64748B;
+            margin: 0 0 10px 0;
+        }
+
+        .footer-contacts a {
+            color: #005F63;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-legal {
+            font-size: 10.5px;
+            color: #94A3B8;
+            margin: 10px 0 0 0;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 620px) {
+            .email-wrapper { padding: 12px 6px !important; }
+            .logo-header { padding: 20px 16px 16px !important; }
+            .teal-banner { padding: 20px 16px 24px !important; }
+            .body-content { padding: 20px 16px 20px !important; }
+            .order-summary-box { padding: 14px 16px !important; }
+            .info-grid-box { padding: 14px 16px !important; }
+            .banner-title { font-size: 20px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
+            <tr>
+                <td>
+                    <div class="email-container">
+
+                        <!-- 1. WHITE LOGO HEADER -->
+                        <div class="logo-header" style="background-color: #FFFFFF; padding: 28px 24px 20px; text-align: center;">
+                            <img src="cid:faazo-logo" alt="FAAZO" style="height: 40px; width: auto; display: inline-block; border: 0;" />
+                        </div>
+
+                        <!-- 2. TEAL BANNER -->
+                        <div class="teal-banner" style="background-color: #005F63; background: linear-gradient(135deg, #005F63 0%, #087378 50%, #005F63 100%); padding: 24px 24px 28px; text-align: center; color: #FFFFFF;">
+                            <div class="check-badge" style="display: inline-block; background-color: #34D399; color: #FFFFFF; width: 36px; height: 36px; line-height: 36px; border-radius: 8px; font-size: 20px; font-weight: 900; text-align: center; margin-bottom: 10px;">&#10003;</div>
+                            <h1 class="banner-title" style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px 0;">Order Confirmed!</h1>
+                            <p class="banner-subtitle" style="font-size: 13.5px; color: #B2E5E7; margin: 0; font-weight: 500;">Your order has been successfully placed</p>
+                        </div>
+
+                        <!-- 3. BODY CONTENT -->
+                        <div class="body-content" style="padding: 32px 30px 24px; background-color: #FFFFFF;">
+                            <p class="greeting" style="font-size: 17px; font-weight: 800; color: #0F172A; margin: 0 0 10px 0;">Hello {{ first_name }},</p>
+                            <p class="intro-p" style="font-size: 14px; line-height: 1.65; color: #475569; margin: 0 0 24px 0;">
+                                Thank you for your purchase! We have successfully received your order and our clinical fulfillment team is preparing it for dispatch. You will receive tracking updates as your order progresses.
+                            </p>
+
+                            <!-- 4. ORDER SUMMARY CARD -->
+                            <div class="order-summary-box" style="background-color: #EAF8F8; border: 1.5px solid #B2E5E7; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="vertical-align: top; width: 55%;">
+                                            <p class="summary-label" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px; color: #64748B; font-weight: 700; margin: 0 0 4px 0;">ORDER NUMBER</p>
+                                            <p class="summary-order-num" style="font-size: 16px; font-weight: 800; color: #005F63; margin: 0;">#{{ order_number }}</p>
+                                        </td>
+                                        <td style="vertical-align: top; text-align: right; width: 45%;">
+                                            <p class="summary-label" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px; color: #64748B; font-weight: 700; margin: 0 0 4px 0; text-align: right;">TOTAL AMOUNT</p>
+                                            <p class="summary-amount" style="font-size: 18px; font-weight: 800; color: #005F63; margin: 0; text-align: right;">₹{{ total_amount }}</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 5. DELIVERY ADDRESS & PAYMENT INFO (REAL CUSTOMER DETAILS) -->
+                            <div class="info-grid-box" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="vertical-align: top; width: 52%; padding-right: 14px;">
+                                            <p class="info-col-title" style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px; color: #005F63; font-weight: 800; margin: 0 0 8px 0;">📍 Delivery Destination</p>
+                                            <p class="info-text" style="font-size: 12.5px; line-height: 1.55; color: #334155; margin: 0;">
+                                                <strong>{{ shipping_name|default:first_name }}</strong><br>
+                                                {% if shipping_address_line1 %}{{ shipping_address_line1 }}<br>{% endif %}
+                                                {% if shipping_address_line2 %}{{ shipping_address_line2 }}<br>{% endif %}
+                                                {% if shipping_city %}{{ shipping_city }}, {% endif %}{{ shipping_state }} - {{ shipping_pincode }}<br>
+                                                {% if phone %}<span style="color: #64748B;">📞 {{ phone }}</span>{% endif %}
+                                            </p>
+                                        </td>
+                                        <td style="vertical-align: top; width: 48%; padding-left: 14px; border-left: 1px solid #E2E8F0;">
+                                            <p class="info-col-title" style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px; color: #005F63; font-weight: 800; margin: 0 0 8px 0;">💳 Payment & Dispatch</p>
+                                            <p class="info-text" style="font-size: 12.5px; line-height: 1.55; color: #334155; margin: 0;">
+                                                <strong>Method:</strong> {{ payment_method|default:"Online (Razorpay)" }}<br>
+                                                <strong>Order Date:</strong> {{ order_date|default:"Today" }}<br>
+                                                <span class="info-tag" style="display: inline-block; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; margin-top: 4px;">● Payment Verified</span>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 6. ORDER ITEMS BREAKDOWN -->
+                            {% if items %}
+                            <p class="items-heading" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; color: #005F63; font-weight: 800; margin: 0 0 10px 0;">ORDER ITEMS</p>
+                            <table class="items-table" role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px; border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden;">
+                                <thead>
+                                    <tr>
+                                        <th style="background-color: #F8FAFC; text-align: left; padding: 11px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #64748B; font-weight: 700; border-bottom: 1px solid #E2E8F0; width: 56%;">ITEM DESCRIPTION</th>
+                                        <th style="background-color: #F8FAFC; text-align: center; padding: 11px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #64748B; font-weight: 700; border-bottom: 1px solid #E2E8F0; width: 14%;">QTY</th>
+                                        <th style="background-color: #F8FAFC; text-align: right; padding: 11px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #64748B; font-weight: 700; border-bottom: 1px solid #E2E8F0; width: 30%;">PRICE (INCL. GST)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td class="item-name-cell" style="padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #F1F5F9; color: #1E293B; font-weight: 600;">{{ item.name }}</td>
+                                        <td class="item-qty-cell" style="padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #F1F5F9; text-align: center; color: #64748B; font-weight: 600;">{{ item.qty }}</td>
+                                        <td class="item-price-cell" style="padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #F1F5F9; text-align: right; font-weight: 700; color: #0F172A;">₹{{ item.price }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="summary-sub-row">
+                                        <td colspan="2" style="padding: 8px 14px; font-size: 12px; color: #64748B; border-bottom: 1px solid #F1F5F9; background-color: #FAFCFD;">Clinical Express Delivery</td>
+                                        <td class="summary-sub-val" style="text-align: right; font-weight: 700; color: #047857; padding: 8px 14px; border-bottom: 1px solid #F1F5F9; background-color: #FAFCFD;">FREE</td>
+                                    </tr>
+                                    <tr class="total-highlight-row">
+                                        <td colspan="2" style="background-color: #EAF8F8; padding: 13px 14px; font-size: 14px; font-weight: 800; color: #005F63; border-bottom: none; border-top: 1.5px solid #005F63;">Total Paid (All Taxes Included)</td>
+                                        <td class="total-highlight-val" style="background-color: #EAF8F8; padding: 13px 14px; text-align: right; font-size: 16px; font-weight: 800; color: #005F63; border-bottom: none; border-top: 1.5px solid #005F63;">₹{{ total_amount }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {% endif %}
+
+                            <!-- 7. REAL PDF ATTACHMENT CARD (Executive Invoice Document Box) -->
+                            <div class="pdf-attachment-card" style="background: #FAFCFD; border: 1px solid #CBD5E1; border-radius: 12px; padding: 14px 18px; margin-bottom: 26px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="width: 50px; vertical-align: middle;">
+                                            <span class="pdf-badge-icon" style="display: inline-block; background-color: #EAF8F8; border: 1px solid #005F63; color: #005F63; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;">PDF</span>
+                                        </td>
+                                        <td style="vertical-align: middle; padding-left: 12px;">
+                                            <p class="pdf-title" style="font-size: 13px; font-weight: 700; color: #0F172A; margin: 0 0 2px 0;">FAAZO-Invoice-{{ invoice_number }}.pdf</p>
+                                            <p class="pdf-subtitle" style="font-size: 11.5px; color: #64748B; margin: 0;">Official GST Tax Invoice attached for clinic accounting & tax records.</p>
+                                        </td>
+                                        <td style="width: 80px; vertical-align: middle; text-align: right;">
+                                            <span style="font-size: 11px; color: #005F63; font-weight: 700; background: #EAF8F8; padding: 4px 8px; border-radius: 4px;">📎 Attached</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 8. ORDER FULFILLMENT TRACKER & DUAL ACTIONS -->
+                            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 14px; margin-bottom: 22px;">
+                                <p style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px; color: #005F63; font-weight: 800; margin: 0 0 12px 0; text-align: left;">📦 Live Fulfillment Status</p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <!-- Step 1: Placed -->
+                                        <td style="text-align: center; padding: 2px;">
+                                            <span style="display: inline-block; background: #005F63; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 20px;">&#10003; Placed</span>
+                                        </td>
+                                        <!-- Arrow 1 -->
+                                        <td style="color: #94A3B8; text-align: center; font-size: 12px; padding: 0 1px; width: 14px;">&rarr;</td>
+                                        <!-- Step 2: Packing -->
+                                        <td style="text-align: center; padding: 2px;">
+                                            <span style="display: inline-block; background: #EAF8F8; border: 1.5px solid #005F63; color: #005F63; font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px;">● Packing</span>
+                                        </td>
+                                        <!-- Arrow 2 -->
+                                        <td style="color: #CBD5E1; text-align: center; font-size: 12px; padding: 0 1px; width: 14px;">&rarr;</td>
+                                        <!-- Step 3: Shipped -->
+                                        <td style="text-align: center; padding: 2px;">
+                                            <span style="display: inline-block; background: #F1F5F9; color: #94A3B8; font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 20px;">Shipped</span>
+                                        </td>
+                                        <!-- Arrow 3 -->
+                                        <td style="color: #CBD5E1; text-align: center; font-size: 12px; padding: 0 1px; width: 14px;">&rarr;</td>
+                                        <!-- Step 4: Delivered -->
+                                        <td style="text-align: center; padding: 2px;">
+                                            <span style="display: inline-block; background: #F1F5F9; color: #94A3B8; font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 20px;">Delivered</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- DUAL ACTION BUTTONS -->
+                            <div class="dual-cta-wrap" style="text-align: center; margin: 6px 0 16px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                    <tr>
+                                        <td style="padding: 4px;">
+                                            <a href="{{ action_url }}" class="btn-primary" style="display: inline-block; background-color: #005F63; background: linear-gradient(135deg, #005F63 0%, #0B7C80 100%); color: #FFFFFF !important; padding: 13px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; letter-spacing: 0.2px; box-shadow: 0 4px 12px rgba(0, 95, 99, 0.22);">📦 Track Live Shipment &rarr;</a>
+                                        </td>
+                                        <td style="padding: 4px;">
+                                            <a href="{{ action_url }}" class="btn-secondary" style="display: inline-block; background-color: #FFFFFF; border: 1.5px solid #CBD5E1; color: #005F63 !important; padding: 12px 22px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px;">📋 View Full Order</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p class="dispatch-note" style="font-size: 11px; color: #64748B; line-height: 1.5; text-align: center; margin: 8px 0 0 0;">
+                                    Need immediate adjustments or clinical split shipment? Reach our fulfillment desk via <a href="mailto:support@faazo.com" style="color: #005F63; text-decoration: underline; font-weight: 600;">support@faazo.com</a>
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <!-- 9. CLINICAL ASSURANCE BADGES -->
+                        <div class="assurance-bar" style="background-color: #F8FAFC; border-top: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; padding: 14px 20px; text-align: center;">
+                            <span class="assurance-item" style="display: inline-block; font-size: 11px; font-weight: 600; color: #475569; margin: 3px 12px;"><span class="assurance-dot" style="color: #005F63; font-weight: bold; margin-right: 4px;">✔</span> 100% Genuine Supplies</span>
+                            <span class="assurance-item" style="display: inline-block; font-size: 11px; font-weight: 600; color: #475569; margin: 3px 12px;"><span class="assurance-dot" style="color: #005F63; font-weight: bold; margin-right: 4px;">✔</span> Temperature-Controlled Logistics</span>
+                            <span class="assurance-item" style="display: inline-block; font-size: 11px; font-weight: 600; color: #475569; margin: 3px 12px;"><span class="assurance-dot" style="color: #005F63; font-weight: bold; margin-right: 4px;">✔</span> 100% GST Compliant</span>
+                        </div>
+
+                        <!-- 10. REAL COMPLIANT FOOTER -->
+                        <div class="email-footer" style="text-align: center; padding: 24px 28px; font-size: 11.5px; color: #94A3B8; background-color: #FFFFFF; line-height: 1.6;">
+                            <p class="footer-brand" style="font-size: 13px; font-weight: 800; color: #005F63; margin: 0 0 2px 0; letter-spacing: 1.5px;">FAAZO DENTAL SOLUTIONS</p>
+                            <p class="footer-company" style="font-size: 11px; color: #64748B; margin: 0 0 8px 0;">India's Dedicated B2B Marketplace for Clinical Dental Equipment & Supplies</p>
+                            <p class="footer-contacts" style="margin: 0 0 8px 0; color: #64748B;">
+                                Need help? Email <a href="mailto:support@faazo.com" style="color: #005F63; text-decoration: none; font-weight: 600;">support@faazo.com</a> &bull; Clinical Helpline: <a href="tel:+919289188852" style="color: #005F63; text-decoration: none; font-weight: 600;">+91 92891 88852</a>
+                            </p>
+                            <p class="footer-legal" style="font-size: 10.5px; color: #94A3B8; margin: 0;">
+                                &copy; 2026 FAAZO Dental Solutions Pvt. Ltd. All rights reserved.<br>
+                                Registered Office: Medical Device Innovation Hub, New Delhi, India.
+                            </p>
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

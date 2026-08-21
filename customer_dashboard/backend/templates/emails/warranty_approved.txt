@@ -1,0 +1,15 @@
+Warranty Approved - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+Your warranty registration for product {{ product_name }} has been approved.
+
+Product: {{ product_name }}
+Serial Number: {{ serial_number|default:"N/A" }}
+Warranty Period: {{ warranty_period|default:"1 Year" }}
+
+View warranty certificates online: {{ action_url|default:'http://localhost:5173/warranty' }}
+
+Best regards,
+FAAZO Customer Support
+support@faazo.com

@@ -634,10 +634,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className={labelBase}>Mobile Number <span className="text-slate-400 font-normal">(Optional)</span></label>
+                  <label className={labelBase}>Mobile Number</label>
                   <div className="relative">
                     <Phone className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 pointer-events-none" />
-                    <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
+                    <input type="tel" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
                       className={inputBase} placeholder="9876543210" />
                   </div>
                   {fieldErrors.phone_number && <p className="mt-1 text-[11px] md:text-xs text-rose-500">{fieldErrors.phone_number[0]}</p>}
@@ -878,7 +878,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                       maxLength={6}
                       required
                       value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => {
+                        setOtpCode(e.target.value.replace(/\D/g, ''));
+                        setApiError(null);
+                      }}
                       className={`${inputBase} text-center font-mono text-sm md:text-base font-bold tracking-[0.3em] md:tracking-[0.4em]`}
                       placeholder="000000"
                       autoFocus
@@ -897,10 +900,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { onClose(); resetForm(); }}
-                    className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                    onClick={() => handleModeChange('login')}
+                    className="text-[11px] text-[#006670] hover:underline font-semibold cursor-pointer"
                   >
-                    Skip for now
+                    ← Back to Sign In
                   </button>
                 </div>
 

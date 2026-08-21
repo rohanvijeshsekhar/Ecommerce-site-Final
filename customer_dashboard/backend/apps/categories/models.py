@@ -13,7 +13,9 @@ Design decisions:
 from django.db import models
 from django.utils.text import slugify
 
+from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import BaseModel
+
 
 
 # ============================================================
@@ -72,7 +74,7 @@ class Category(BaseModel):
 
     # ── Display ──────────────────────────────────────────────
 
-    image = models.ImageField(
+    image = OptimizedImageField(
         upload_to="categories/images/",
         null=True,
         blank=True,

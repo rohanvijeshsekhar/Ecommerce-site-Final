@@ -41,7 +41,7 @@ TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=0)
 # HttpOnly cookie is the secure transport mechanism for refresh tokens.
 # Never change REFRESH_COOKIE_HTTPONLY — it must always be True.
 REFRESH_COOKIE_NAME = "faazo_refresh"
-REFRESH_COOKIE_PATH = "/api/v1/auth/"   # narrowed path — not sent on every request
+REFRESH_COOKIE_PATH = "/"   # Root path ensures cookie is sent on refresh and API calls
 REFRESH_COOKIE_HTTPONLY = True
 REFRESH_COOKIE_SECURE = env.bool("COOKIE_SECURE", default=False)  # True in prod
 REFRESH_COOKIE_SAMESITE = env("COOKIE_SAMESITE", default="Lax")    # Lax in dev/prod-same-domain
@@ -102,6 +102,10 @@ LOCAL_APPS = [
     "apps.bestsellers",
     # ── Product Reviews & Ratings ────────────────────────────
     "apps.reviews",
+    # ── Returns & Refunds ────────────────────────────────────
+    "apps.returns",
+    # ── Blog & Content Management CMS ────────────────────────
+    "apps.blog",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -515,11 +519,19 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
 # SMS_PROVIDER options: 'sangamam' | 'mock'
 SMS_PROVIDER = env("SMS_PROVIDER", default="mock").lower()
 
-# Sangamam v1.0 Signed API credentials
-SANGAMAM_ACCESS_TOKEN     = env("SANGAMAM_ACCESS_TOKEN", default="")
-SANGAMAM_ACCESS_TOKEN_KEY = env("SANGAMAM_ACCESS_TOKEN_KEY", default="")
-SANGAMAM_TEMPLATE_ID      = env("SANGAMAM_TEMPLATE_ID", default="")
-SANGAMAM_SENDER_HEADER    = env("SANGAMAM_SENDER_HEADER", default="FAZODT")
+# Sangamam Online SMS Transactional API credentials & Approved DLT Template IDs
+SANGAMAM_API_BASE_URL       = env("SANGAMAM_API_BASE_URL", default="https://fastsms.sangamamonline.in/api/sms/v1.0/send-sms")
+SANGAMAM_ACCESS_TOKEN       = env("SANGAMAM_ACCESS_TOKEN", default="")
+SANGAMAM_ACCESS_TOKEN_KEY   = env("SANGAMAM_ACCESS_TOKEN_KEY", default="")
+SANGAMAM_SENDER_ID          = env("SANGAMAM_SENDER_ID", default=env("SANGAMAM_SENDER_HEADER", default="FAZODT"))
+SANGAMAM_ENTITY_ID          = env("SANGAMAM_ENTITY_ID", default="1701178461438263453")
+SANGAMAM_OTP_TEMPLATE_ID    = env("SANGAMAM_OTP_TEMPLATE_ID", default="1777178496391306366")
+SANGAMAM_ORDER_TEMPLATE_ID  = env("SANGAMAM_ORDER_TEMPLATE_ID", default="1777178496694995515")
+SANGAMAM_REFUND_TEMPLATE_ID = env("SANGAMAM_REFUND_TEMPLATE_ID", default="1777178496731822406")
+SANGAMAM_RETURN_TEMPLATE_ID = env("SANGAMAM_RETURN_TEMPLATE_ID", default="1777178496718140338")
+SANGAMAM_SHIPPED_TEMPLATE_ID = env("SANGAMAM_SHIPPED_TEMPLATE_ID", default="1777178496710209320")
+SANGAMAM_SENDER_HEADER     = SANGAMAM_SENDER_ID
+SANGAMAM_TEMPLATE_ID       = SANGAMAM_ORDER_TEMPLATE_ID
 
 # Legacy MSG91 (kept for reference)
 MSG91_AUTHKEY    = env("MSG91_AUTHKEY", default="")
@@ -549,7 +561,8 @@ SHIPPING_PROVIDER = env("SHIPPING_PROVIDER", default="offline").lower()
 SHIPROCKET_BASE_URL = env("SHIPROCKET_BASE_URL", default="https://apiv2.shiprocket.in")
 SHIPROCKET_EMAIL = env("SHIPROCKET_EMAIL", default="")
 SHIPROCKET_PASSWORD = env("SHIPROCKET_PASSWORD", default="")
-SHIPROCKET_PICKUP_LOCATION = env("SHIPROCKET_PICKUP_LOCATION", default="Primary")
+SHIPROCKET_PICKUP_LOCATION = env("SHIPROCKET_PICKUP_LOCATION", default="warehouse")
+SHIPROCKET_PICKUP_PINCODE = env("SHIPROCKET_PICKUP_PINCODE", default="695101")
 SHIPROCKET_WEBHOOK_SECRET = env("SHIPROCKET_WEBHOOK_SECRET", default="")
 SHIPROCKET_TOKEN_CACHE_TTL = env.int("SHIPROCKET_TOKEN_CACHE_TTL", default=864000)
 
@@ -562,4 +575,47 @@ DELHIVERY_PICKUP_LOCATION = SHIPROCKET_PICKUP_LOCATION
 DELHIVERY_SELLER_NAME = "FAAZO Dental Solutions Pvt. Ltd."
 DELHIVERY_PHONE = "9876543210"
 DELHIVERY_EMAIL = SHIPROCKET_EMAIL
+
+# ── FAAZO Tax & Warehouse Configuration ──────────────────────────────────────
+# FAAZO_WAREHOUSE_STATE: Registered seller/warehouse state for GST intra/inter-state tax determination.
+# FAAZO_SELLER_GSTIN: Seller's 15-digit GST Identification Number for Tax Invoices.
+FAAZO_WAREHOUSE_STATE = env.str("FAAZO_WAREHOUSE_STATE", default="Maharashtra").strip()
+FAAZO_SELLER_GSTIN = env.str("FAAZO_SELLER_GSTIN", default="").strip()
+
+
+# ============================================================
+# Redis & Celery Task Queue Configuration
+# ============================================================
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 300  # 5 minutes hard execution limit
+CELERY_TASK_SOFT_TIME_LIMIT = 240  # 4 minutes soft execution limit
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Periodic Celery Beat schedule for Transactional Outbox sweeper
+CELERY_BEAT_SCHEDULE = {
+    "sweep-pending-outbox-events": {
+        "task": "faazo.orders.sweep_pending_outbox_events",
+        "schedule": 60.0,  # Runs every 60 seconds
+    },
+}
+
+
+# ============================================================
+# Server-Side Image Optimization (WebP Pipeline)
+# ============================================================
+IMAGE_OPTIMIZER_ENABLED = env.bool("IMAGE_OPTIMIZER_ENABLED", default=True)
+IMAGE_OPTIMIZER_WEBP_QUALITY = env.int("IMAGE_OPTIMIZER_WEBP_QUALITY", default=82)
+IMAGE_OPTIMIZER_MAX_DIMENSION = env.int("IMAGE_OPTIMIZER_MAX_DIMENSION", default=2000)
+IMAGE_OPTIMIZER_MAX_SIZE_MB = env.int("IMAGE_OPTIMIZER_MAX_SIZE_MB", default=15)
+
+
 

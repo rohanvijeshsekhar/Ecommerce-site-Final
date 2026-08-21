@@ -1,4 +1,5 @@
 import csv
+import uuid
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -12,6 +13,28 @@ from apps.common.permissions import IsAdmin
 from apps.inventory.models import ProductInventory
 from .models import Order, OrderItem, OrderStatus, OrderStatusHistory
 from .serializers import OrderSerializer
+
+
+def _get_order_by_pk_or_number(pk_str, user=None, is_admin=False):
+    """
+    Helper to look up Order by either UUID primary key, order_number, or invoice_number.
+    """
+    pk_str = str(pk_str).strip()
+    try:
+        uuid.UUID(pk_str)
+        query = Q(pk=pk_str)
+    except (ValueError, TypeError, AttributeError):
+        query = Q(order_number__iexact=pk_str) | Q(invoice_number__iexact=pk_str)
+
+    qs = Order.objects.prefetch_related(
+        'items__product__images',
+        'shipping_address',
+        'status_history__changed_by'
+    )
+    if not is_admin and user and user.is_authenticated:
+        qs = qs.filter(user=user)
+
+    return qs.filter(query).first()
 
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -66,13 +89,9 @@ class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.prefetch_related(
-                'items__product__images', 
-                'shipping_address',
-                'status_history__changed_by'
-            ).get(pk=pk, user=request.user)
-        except Order.DoesNotExist:
+        is_admin = getattr(request.user, 'role', '') == 'admin' or getattr(request.user, 'is_staff', False)
+        order = _get_order_by_pk_or_number(pk, user=request.user, is_admin=is_admin)
+        if not order:
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         serializer = OrderSerializer(order)
@@ -89,7 +108,10 @@ class OrderCancelView(APIView):
 
         try:
             with transaction.atomic():
-                order = Order.objects.select_for_update().get(pk=pk, user=request.user)
+                is_admin = getattr(request.user, 'role', '') == 'admin' or getattr(request.user, 'is_staff', False)
+                order = _get_order_by_pk_or_number(pk, user=request.user, is_admin=is_admin)
+                if not order:
+                    return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
                 # Check if order can be cancelled (before shipment)
                 if order.status in [OrderStatus.SHIPPED, OrderStatus.DELIVERED]:
@@ -320,6 +342,38 @@ class AdminOrderDetailView(APIView):
                             inventory.reserved_stock = max(0, inventory.reserved_stock - item.quantity)
                             inventory.save()
 
+                    # Trigger ORDER_SHIPPED Notification asynchronously upon transaction commit (with idempotency protection)
+                    cust_name = (
+                        getattr(order.user, "full_name", None)
+                        or getattr(order.user, "first_name", None)
+                        or getattr(getattr(order, "shipping_address", None), "full_name", None)
+                        or "Doctor"
+                    )
+                    cust_phone = (
+                        getattr(order.user, "phone_number", None)
+                        or getattr(getattr(order.user, "profile", None), "phone_number", None)
+                        or getattr(getattr(order, "shipping_address", None), "mobile", None)
+                    )
+                    ord_num = order.order_number or str(order.id)[:8]
+                    order_obj = order
+
+                    transaction.on_commit(
+                        lambda: NotificationService.create(
+                            user=order_obj.user,
+                            notification_type=NotificationType.ORDER_SHIPPED,
+                            title="Order Shipped",
+                            message=f"Your order #{ord_num} has been shipped.",
+                            idempotency_key=f"order_shipped_{order_obj.id}",
+                            channels=[DeliveryChannel.IN_APP, DeliveryChannel.EMAIL, DeliveryChannel.SMS],
+                            context={
+                                "customer_name": cust_name,
+                                "order_number": ord_num,
+                                "phone": cust_phone,
+                            },
+                            metadata={"order_id": str(order_obj.id), "order_number": ord_num},
+                        )
+                    )
+
                 # B: Transition to Cancelled -> Release reserved stock back to available pool
                 elif new_status == OrderStatus.CANCELLED and old_status in [OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.PENDING_PAYMENT]:
                     for item in order.items.all():
@@ -371,4 +425,32 @@ class AdminOrderExportView(APIView):
                 order.items.count()
             ])
 
+        return response
+
+
+class OrderInvoiceView(APIView):
+    """
+    GET /api/v1/orders/<pk>/invoice/
+
+    Download official computer-generated GST Tax Invoice PDF for an order.
+    Customers can download their own order invoices; Admin users can download any invoice.
+    Accepts Order UUID, order_number, or invoice_number.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from .invoice import generate_gst_invoice_pdf
+
+        is_admin = getattr(request.user, 'role', '') == 'admin' or getattr(request.user, 'is_staff', False)
+        order = _get_order_by_pk_or_number(pk, user=request.user, is_admin=is_admin)
+
+        if not order:
+            return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        pdf_bytes = generate_gst_invoice_pdf(order)
+        inv_num = order.invoice_number or f"INV-{order.order_number}"
+        filename = f"FAAZO-Invoice-{inv_num}.pdf"
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response

@@ -164,3 +164,29 @@ class ProductStatusCountSerializer(serializers.Serializer):
     archived     = serializers.IntegerField()
     discontinued = serializers.IntegerField()
     total        = serializers.IntegerField()
+
+
+# ── Search Suggestions ────────────────────────────────────────────────────────
+
+class ProductSuggestionSerializer(serializers.ModelSerializer):
+    """Slim, lightweight serializer for header search autocomplete suggestions."""
+
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    primary_image = serializers.SerializerMethodField()
+    type          = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "slug", "sku", "category_name", "primary_image", "type"]
+        read_only_fields = fields
+
+    def get_primary_image(self, obj):
+        img = obj.primary_image
+        if img and img.image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
+
+    def get_type(self, obj):
+        return "product"
+

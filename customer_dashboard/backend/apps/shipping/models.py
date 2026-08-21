@@ -108,7 +108,7 @@ class Shipment(BaseModel):
     # ── Delhivery & Provider Identifiers ─────────────────────
     courier_name = models.CharField(
         max_length=100,
-        default="Delhivery",
+        default="Shiprocket",
         verbose_name="Courier Name",
     )
     delhivery_shipment_id = models.CharField(

@@ -25,6 +25,7 @@ Views in this module:
 
 import logging
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from rest_framework import status
@@ -58,6 +59,19 @@ from apps.users.models import UserRole
 
 logger = logging.getLogger("faazo.auth")
 User = get_user_model()
+
+
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    """Set the HttpOnly refresh token cookie on a DRF Response."""
+    response.set_cookie(
+        key=getattr(settings, "REFRESH_COOKIE_NAME", "faazo_refresh"),
+        value=refresh_token,
+        max_age=getattr(settings, "REFRESH_COOKIE_MAX_AGE", 7 * 24 * 60 * 60),
+        path=getattr(settings, "REFRESH_COOKIE_PATH", "/"),
+        httponly=getattr(settings, "REFRESH_COOKIE_HTTPONLY", True),
+        secure=getattr(settings, "REFRESH_COOKIE_SECURE", False),
+        samesite=getattr(settings, "REFRESH_COOKIE_SAMESITE", "Lax"),
+    )
 
 
 
@@ -263,6 +277,8 @@ class VerifyAndRegisterView(APIView):
     def post(self, request):
         from django.core.cache import cache
         from apps.authentication.services import OTPService
+        from apps.common.utils import normalize_phone_number
+        from django.core.exceptions import ValidationError as DjangoValidationError
 
         phone = request.data.get("phone_number", "").strip()
         otp_code = request.data.get("otp_code", "").strip()
@@ -270,9 +286,14 @@ class VerifyAndRegisterView(APIView):
         if not phone or not otp_code:
             return _error("phone_number and otp_code are required.", status_code=400)
 
+        try:
+            norm_phone = normalize_phone_number(phone, allow_empty=False)
+        except DjangoValidationError:
+            norm_phone = phone
+
         # Verify the OTP
         verified, msg = OTPService.verify_otp(
-            target=phone,
+            target=norm_phone,
             purpose="registration",
             raw_otp=otp_code,
             ip_address=_get_client_ip(request),
@@ -281,54 +302,96 @@ class VerifyAndRegisterView(APIView):
             return _error(msg, status_code=400)
 
         # Retrieve pending registration data
-        cache_key = f"pending_reg_{phone}"
+        cache_key = f"pending_reg_{norm_phone}"
         pending = cache.get(cache_key)
-        if not pending:
-            return _error(
-                "Registration session expired. Please start registration again.",
-                status_code=400,
+        if not pending and phone != norm_phone:
+            # Fallback check for unnormalized cache key if any
+            pending = cache.get(f"pending_reg_{phone}")
+
+        if pending:
+            # Final uniqueness check (race condition guard)
+            if User.objects.filter(email=pending["email"]).exists():
+                cache.delete(cache_key)
+                user = User.objects.filter(email=pending["email"]).first()
+                if user:
+                    user.is_phone_verified = True
+                    user.save(update_fields=["is_phone_verified"])
+                    tokens = JWTService.generate_tokens_for_user(user)
+                    return _ok(
+                        data={
+                            "access": tokens["access"],
+                            "refresh": tokens["refresh"],
+                            "user": UserMinimalSerializer(user).data,
+                        },
+                        message="Phone verified successfully! Welcome to FAAZO.",
+                        status_code=status.HTTP_200_OK,
+                    )
+                return _error("An account with this email already exists.", status_code=400)
+
+            if User.objects.filter(phone_number=norm_phone).exists():
+                cache.delete(cache_key)
+                return _error("This phone number is already registered to another account.", status_code=400)
+
+            # Create the user account
+            user = User.objects.create_user(
+                email=pending["email"],
+                full_name=pending["full_name"],
+                password=pending["password"],
+                phone_number=norm_phone,
+                role=UserRole.CUSTOMER,
             )
 
-        # Final uniqueness check (race condition guard)
-        if User.objects.filter(email=pending["email"]).exists():
+            # Mark phone as verified
+            user.is_phone_verified = True
+            user.save(update_fields=["is_phone_verified"])
+
+            # Clear cache entry
             cache.delete(cache_key)
-            return _error("An account with this email already exists.", status_code=400)
+            if phone != norm_phone:
+                cache.delete(f"pending_reg_{phone}")
 
-        # Create the user account
-        user = User.objects.create_user(
-            email=pending["email"],
-            full_name=pending["full_name"],
-            password=pending["password"],
-            phone_number=phone,
-            role=UserRole.CUSTOMER,
-        )
+            # Generate tokens and send welcome email
+            tokens = JWTService.generate_tokens_for_user(user)
+            try:
+                raw_token = TokenService.generate_email_verification_token(user)
+                EmailService.send_welcome_verify(user, raw_token)
+            except Exception:
+                pass  # Don't fail registration if email fails
 
-        # Mark phone as verified
-        profile = getattr(user, "userprofile", None)
-        if profile:
-            profile.phone_verified = True
-            profile.save(update_fields=["phone_verified"])
+            logger.info("[VERIFY-AND-REGISTER] Account created for %s (phone=%s).", user.email, norm_phone)
+            return _ok(
+                data={
+                    "access": tokens["access"],
+                    "refresh": tokens["refresh"],
+                    "user": UserMinimalSerializer(user).data,
+                },
+                message="Phone verified! Your account has been created successfully.",
+                status_code=status.HTTP_201_CREATED,
+            )
 
-        # Clear cache entry
-        cache.delete(cache_key)
+        # If not in cache, check if user already exists in DB (e.g. Dealer registration or re-verification flow)
+        user = User.objects.filter(phone_number=norm_phone).first()
+        if not user and phone != norm_phone:
+            user = User.objects.filter(phone_number=phone).first()
 
-        # Generate tokens and send welcome email
-        tokens = JWTService.generate_tokens_for_user(user)
-        try:
-            raw_token = TokenService.generate_email_verification_token(user)
-            EmailService.send_welcome_verify(user, raw_token)
-        except Exception:
-            pass  # Don't fail registration if email fails
+        if user:
+            user.is_phone_verified = True
+            user.save(update_fields=["is_phone_verified"])
+            tokens = JWTService.generate_tokens_for_user(user)
+            logger.info("[VERIFY-AND-REGISTER] Phone verified for existing user %s (phone=%s).", user.email, norm_phone)
+            return _ok(
+                data={
+                    "access": tokens["access"],
+                    "refresh": tokens["refresh"],
+                    "user": UserMinimalSerializer(user).data,
+                },
+                message="Phone verified successfully! Welcome to FAAZO.",
+                status_code=status.HTTP_200_OK,
+            )
 
-        logger.info("[VERIFY-AND-REGISTER] Account created for %s (phone=%s).", user.email, phone)
-        return _ok(
-            data={
-                "access": tokens["access"],
-                "refresh": tokens["refresh"],
-                "user": UserMinimalSerializer(user).data,
-            },
-            message="Phone verified! Your account has been created successfully.",
-            status_code=status.HTTP_201_CREATED,
+        return _error(
+            "Registration session expired. Please start registration again.",
+            status_code=400,
         )
 
 
@@ -523,7 +586,7 @@ class LoginView(APIView):
 
         logger.info("[LOGIN_SUCCESS] %s logged in from IP %s (remember_me=%s).", email, ip, remember_me)
 
-        return _ok(
+        response = _ok(
             data={
                 "access": tokens["access"],
                 "refresh": tokens["refresh"],
@@ -531,6 +594,8 @@ class LoginView(APIView):
             },
             message="Login successful.",
         )
+        _set_refresh_cookie(response, tokens["refresh"])
+        return response
 
 
 # ──────────────────────────────────────────────────────────────

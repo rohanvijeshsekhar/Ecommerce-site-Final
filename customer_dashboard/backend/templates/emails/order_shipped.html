@@ -1,0 +1,34 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Order #{{ order_number }} Shipped - FAAZO{% endblock %}
+{% block content %}
+<h2 style="color: #0052cc; margin-top: 0;">Your Order is On Its Way!</h2>
+<p>Dear {{ first_name }},</p>
+<p>Great news! Your order <strong>#{{ order_number }}</strong> has been shipped via <strong>{{ courier_name|default:"Courier Partner" }}</strong>.</p>
+
+<h3>Shipment Information</h3>
+<table class="table">
+  <tbody>
+    <tr>
+      <th>Order Number</th>
+      <td>#{{ order_number }}</td>
+    </tr>
+    <tr>
+      <th>Courier Name</th>
+      <td>{{ courier_name|default:"BlueDart / Delhivery" }}</td>
+    </tr>
+    <tr>
+      <th>Tracking AWB</th>
+      <td><strong>{{ awb_number|default:"N/A" }}</strong></td>
+    </tr>
+    {% if delivery_otp %}
+    <tr>
+      <th>Delivery OTP</th>
+      <td><strong style="color: #0052cc; font-size: 18px;">{{ delivery_otp }}</strong></td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<p style="margin-top: 24px;">You can track your package live using the tracking link below:</p>
+<a href="{{ action_url|default:'http://localhost:5173/orders' }}" class="btn">Track Shipment</a>
+{% endblock %}

@@ -20,6 +20,8 @@ from django.utils.text import slugify
 
 from apps.common.mixins import AuditedModel, FullAuditModel
 from apps.common.managers import ActiveManager, SoftDeleteManager
+from apps.common.image_optimizer import OptimizedImageField
+
 
 
 # ============================================================
@@ -147,6 +149,12 @@ class Product(FullAuditModel):
         db_index=True,
         verbose_name="Featured",
         help_text="Pinned in homepage featured section.",
+    )
+    is_returnable = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Is Returnable",
+        help_text="Determines if product is eligible for return/replacement under company policy.",
     )
     launched_at = models.DateTimeField(
         null=True,
@@ -305,7 +313,7 @@ class ProductImage(models.Model):
         related_name="images",
         verbose_name="Product",
     )
-    image = models.ImageField(
+    image = OptimizedImageField(
         upload_to="products/images/",
         verbose_name="Image",
     )

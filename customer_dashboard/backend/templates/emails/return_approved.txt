@@ -1,0 +1,10 @@
+Hello {{ first_name|default:"Doctor" }},
+
+Your return request for Order #{{ order_number }} has been APPROVED.
+Next Step: Courier Pickup Scheduling.
+
+Please pack the item securely in original packaging with all included accessories.
+View pickup details: http://localhost:3000/orders/{{ metadata.order_id }}
+
+Best regards,
+FAAZO Support Team

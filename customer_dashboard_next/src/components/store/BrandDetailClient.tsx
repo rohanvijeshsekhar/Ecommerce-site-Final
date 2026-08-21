@@ -236,14 +236,15 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
       store.setWishlistItems(store.wishlistItems.filter(i => String(i.id) !== prod.id));
       store.showToast(`Removed ${prod.name} from Wishlist`);
     } else {
-      store.setWishlistItems([...store.wishlistItems, {
+      store.addItemToWishlist({
         id: prod.id,
         name: prod.name,
         slug: prod.slug,
         price: prod.pricing?.selling_price || 0,
         image: prod.image || '',
         category: prod.category_name || '',
-      }]);
+        qty: 1,
+      });
       store.showToast(`Added ${prod.name} to Wishlist!`);
     }
   };
@@ -251,14 +252,14 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   // Add to Cart handler
   const handleAddToCart = (e: React.MouseEvent, prod: ProductItem) => {
     e.stopPropagation();
-    store.addToCart({
+    store.addItemToCart({
       id: prod.id,
       name: prod.name,
       slug: prod.slug,
       price: prod.pricing?.selling_price || 0,
-      mrp: prod.pricing?.mrp || prod.pricing?.selling_price || 0,
       image: prod.image || '',
-      quantity: 1,
+      category: prod.category_name || '',
+      qty: 1,
     });
     store.showToast(`Added ${prod.name} to Bag!`);
   };
@@ -266,16 +267,15 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   // Buy Now handler
   const handleBuyNow = (e: React.MouseEvent, prod: ProductItem) => {
     e.stopPropagation();
-    store.addToCart({
+    store.handleBuyNowDirect({
       id: prod.id,
       name: prod.name,
       slug: prod.slug,
       price: prod.pricing?.selling_price || 0,
-      mrp: prod.pricing?.mrp || prod.pricing?.selling_price || 0,
       image: prod.image || '',
-      quantity: 1,
+      category: prod.category_name || '',
+      qty: 1,
     });
-    router.push('/checkout');
   };
 
   const logoSrc = getAbsoluteImageUrl(brand?.logo_url || brand?.logo);
@@ -307,17 +307,12 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
         </div>
       ) : brand ? (
         <div className="w-full relative overflow-hidden bg-slate-900 border-b border-slate-200/50 shadow-md">
-          {/* Background image or gradient */}
-          {bannerSrc ? (
-            <img
-              src={bannerSrc}
-              alt={brand.name}
-              loading="lazy"
-              className="w-full h-[220px] sm:h-[320px] md:h-[380px] object-cover opacity-80"
-            />
-          ) : (
-            <div className="w-full h-[220px] sm:h-[320px] md:h-[380px] bg-gradient-to-r from-[#00383D] via-[#005B63] to-[#004248]" />
-          )}
+          <img
+            src={bannerSrc || '/images/brands_hero_bg.png'}
+            alt={brand.name}
+            loading="eager"
+            className="w-full h-[240px] sm:h-[320px] md:h-[380px] object-cover opacity-85 brightness-[0.95]"
+          />
 
           {/* Overlay with brand details */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/85 to-slate-950/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20 py-6">

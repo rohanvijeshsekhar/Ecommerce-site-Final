@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
+
+from apps.common.image_optimizer import OptimizedImageField
 from apps.products.models import Product
 
 
@@ -9,10 +11,11 @@ class ClinicalSolution(models.Model):
     short_description = models.TextField(blank=True, verbose_name="Short Description")
     description = models.TextField(blank=True, verbose_name="Detailed Description / Clinical Overview")
     
-    banner_image = models.ImageField(upload_to="solutions/banners/", null=True, blank=True, verbose_name="Banner Image")
+    banner_image = OptimizedImageField(upload_to="solutions/banners/", null=True, blank=True, verbose_name="Banner Image")
     banner_image_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Banner Image URL")
-    thumbnail_image = models.ImageField(upload_to="solutions/thumbnails/", null=True, blank=True, verbose_name="Thumbnail Image")
+    thumbnail_image = OptimizedImageField(upload_to="solutions/thumbnails/", null=True, blank=True, verbose_name="Thumbnail Image")
     thumbnail_image_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Thumbnail Image URL")
+
     
     display_order = models.IntegerField(default=0, verbose_name="Display Order")
     is_active = models.BooleanField(default=True, verbose_name="Is Active")

@@ -142,17 +142,13 @@ export default function BrandsClient() {
       
       {/* ── TOP HERO BANNER (Full width edge-to-edge) ── */}
       {banner && banner.is_active && (
-        <div className="w-full relative overflow-hidden group h-[220px] sm:h-[320px] md:h-[400px] bg-slate-900 border-b border-slate-200/50 shadow-md">
-          {banner.banner_image_url ? (
-            <img
-              src={banner.banner_image_url}
-              alt={banner.title}
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-85"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-[#00383D] via-[#005B63] to-[#004248]" />
-          )}
+        <div className="w-full relative overflow-hidden group h-[240px] sm:h-[340px] md:h-[420px] bg-slate-950 border-b border-slate-200/50 shadow-lg">
+          <img
+            src={banner?.banner_image_url || '/images/brands_hero_bg.png'}
+            alt={banner?.title || 'Our Trusted Brands'}
+            loading="eager"
+            className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 opacity-90 brightness-[0.95]"
+          />
 
           {/* Glassmorphism Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20">

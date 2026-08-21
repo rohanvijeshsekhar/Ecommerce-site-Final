@@ -1,0 +1,23 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Order #{{ order_number }} Delivered - FAAZO{% endblock %}
+{% block content %}
+<h2 style="color: #16a34a; margin-top: 0;">Order Delivered Successfully!</h2>
+<p>Dear {{ first_name }},</p>
+<p>Your order <strong>#{{ order_number }}</strong> has been delivered. We hope you are satisfied with your products!</p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <th>Order Number</th>
+      <td>#{{ order_number }}</td>
+    </tr>
+    <tr>
+      <th>Delivery Date</th>
+      <td>{{ delivery_date|default:"Today" }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="margin-top: 24px;">Thank you for choosing FAAZO Dental Solutions. Please let us know if you need any assistance.</p>
+<a href="{{ action_url|default:'http://localhost:5173/orders' }}" class="btn">View Order History</a>
+{% endblock %}

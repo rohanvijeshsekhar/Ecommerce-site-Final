@@ -1,0 +1,27 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Tax Invoice for Order #{{ order_number }} - FAAZO{% endblock %}
+{% block content %}
+<h2 style="color: #0052cc; margin-top: 0;">Tax Invoice</h2>
+<p>Dear {{ first_name }},</p>
+<p>Please find attached the official Tax Invoice for your order <strong>#{{ order_number }}</strong>.</p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <th>Order Number</th>
+      <td>#{{ order_number }}</td>
+    </tr>
+    <tr>
+      <th>Invoice Number</th>
+      <td>{{ invoice_number|default:"INV-FAAZO" }}</td>
+    </tr>
+    <tr>
+      <th>Total Amount</th>
+      <td><strong>₹{{ total_amount }}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="margin-top: 24px;">If you have any questions regarding your invoice or GST details, please reach out to accounting@faazo.com.</p>
+<a href="{{ action_url|default:'http://localhost:5173/orders' }}" class="btn">View Order Account</a>
+{% endblock %}

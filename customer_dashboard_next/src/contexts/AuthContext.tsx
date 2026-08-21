@@ -7,7 +7,7 @@ import type { UserMinimal, AuthResponseData, DeviceSessionData } from '../lib/se
 import { usersService } from '../lib/services/users';
 import type { UserProfile } from '../lib/services/users';
 import axios from 'axios';
-import { setAccessToken } from '../lib/api';
+import { setAccessToken, performInitialAuth } from '../lib/api';
 import type { PendingAction } from '../types/pendingAction';
 
 
@@ -57,70 +57,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initialize auth on mount.
   //
   // Strategy (two-phase):
-  //   Phase 1 (synchronous) — Restore user immediately from localStorage so the
-  //     UI never flashes "logged out". The locally-cached access token is also
-  //     restored so that the very first API request is authenticated.
+  //   Phase 1 (synchronous) — Restore the user identity object from localStorage
+  //     so the UI never flashes "logged out" on refresh. The access token is NOT
+  //     restored here — it lives only in memory and is absent after a page refresh.
   //
-  //   Phase 2 (async, background) — Silently call the refresh endpoint to obtain a
-  //     fresh access token via the HttpOnly cookie. On success the new token replaces
-  //     the cached one and user data is refreshed from /me/.
+  //   Phase 2 (async, background) — Silently call the v2/refresh/ endpoint.
+  //     The HttpOnly faazo_refresh cookie is sent automatically by the browser.
+  //     On success: fresh access token is stored in memory and user data is
+  //     refreshed from /me/. This is the canonical path to restore auth after reload.
   //
-  //   If Phase 2 fails (network error, cookie absent in cross-origin dev, token
-  //     expired) the user is NOT logged out here. The cached user + access token
-  //     remain valid for subsequent requests. Genuine expiry is handled by the 401
-  //     interceptor in api.ts which retries the refresh on the first real 401.
+  //   If Phase 2 fails (network error, cookie absent, token expired):
+  //     The user identity is kept in React state (preventing a flash), but the
+  //     access token remains null. The first real API request will return 401 and
+  //     the 401 interceptor will attempt one final refresh. Only if that also fails
+  //     is the user truly logged out.
   useEffect(() => {
     const initializeAuth = async () => {
-      // ── Phase 1: restore from localStorage (synchronous, no flicker) ──────
+      // ── Phase 1: restore non-sensitive user identity (synchronous, no flicker) ──
       const cachedUser = localStorage.getItem('faazo_user');
       if (cachedUser) {
         try {
           const parsedUser = JSON.parse(cachedUser);
           setUser(parsedUser);
-          // Restore access token so the request interceptor sends it immediately.
-          const cachedToken = localStorage.getItem('faazo_access_token');
-          if (cachedToken) {
-            setAccessToken(cachedToken);
-          }
+          // Access token is intentionally NOT restored from any persistent storage.
+          // It will be obtained in Phase 2 via the HttpOnly refresh cookie.
         } catch {
           // Corrupt cache — wipe and start fresh
           localStorage.removeItem('faazo_user');
-          localStorage.removeItem('faazo_access_token');
         }
       }
 
-      // ── Phase 2: background silent refresh via HttpOnly cookie ────────────
+      // ── Phase 2: background silent refresh via HttpOnly cookie ────────────────
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/';
-        const refreshRes = await axios.post(
-          `${apiUrl}auth/v2/refresh/`,
-          {},
-          { withCredentials: true }
-        );
-        const refreshData = refreshRes.data?.data ?? refreshRes.data;
-        const { access } = refreshData;
-        setAccessToken(access);
+        const access = await performInitialAuth();
+        if (access) {
+          // Re-fetch user profile to get the latest server-side state.
+          const userRes = await authService.getMe();
+          if (userRes.success && userRes.data) {
+            setUser(userRes.data);
+            localStorage.setItem('faazo_user', JSON.stringify(userRes.data));
 
-        // Re-fetch user profile to get the latest server-side state.
-        const userRes = await authService.getMe();
-        if (userRes.success && userRes.data) {
-          setUser(userRes.data);
-          localStorage.setItem('faazo_user', JSON.stringify(userRes.data));
-
-          const profileRes = await usersService.getProfile();
-          if (profileRes.success && profileRes.data) {
-            setProfile(profileRes.data);
+            const profileRes = await usersService.getProfile();
+            if (profileRes.success && profileRes.data) {
+              setProfile(profileRes.data);
+            }
           }
         }
       } catch {
-        // Background refresh failed — this is normal in cross-origin dev
-        // (SameSite=Lax blocks the cookie on cross-origin POST).
-        //
-        // DO NOT clear the user here.
-        // The cached user + localStorage access token are still valid.
-        // Real token expiry is handled by the 401 retry interceptor in api.ts.
-        // That interceptor will call refresh, and only evict the user if refresh
-        // also fails (i.e. the token is genuinely expired / revoked).
+        // Silently handled
       }
 
       setIsLoading(false);
@@ -295,7 +279,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAccessToken(null);
     localStorage.removeItem('faazo_session_key');
     localStorage.removeItem('faazo_user');
-    localStorage.removeItem('faazo_access_token');
     setUser(null);
     setProfile(null);
   };

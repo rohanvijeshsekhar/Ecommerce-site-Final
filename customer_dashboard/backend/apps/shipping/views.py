@@ -274,19 +274,20 @@ class AdminCreateCourierShipmentView(APIView):
             shipment.save(update_fields=["packing_status", "updated_at"])
 
         if shipment.shipment_status != ShipmentStatus.NOT_CREATED and shipment.awb_number:
-            return error_response(
-                f"Courier shipment already exists "
-                f"(status: '{shipment.shipment_status}', AWB: '{shipment.awb_number}').",
-                status_code=status.HTTP_400_BAD_REQUEST,
+            serializer = ShipmentSerializer(shipment)
+            return success_response(
+                data=serializer.data,
+                message=f"Courier shipment already exists (AWB: {shipment.awb_number}).",
+                status_code=status.HTTP_200_OK,
             )
         # ──────────────────────────────────────────────────────────────────
 
         package_info = {
-            "weight":       float(request.data.get("weight",  shipment.weight)),
-            "length":       float(request.data.get("length",  shipment.length)),
-            "breadth":      float(request.data.get("breadth", shipment.width)),
-            "height":       float(request.data.get("height",  shipment.height)),
-            "payment_mode": request.data.get("payment_mode", "Prepaid"),
+            "weight":       float(request.data.get("weight") or shipment.weight or 1.0),
+            "length":       float(request.data.get("length") or shipment.length or 10.0),
+            "breadth":      float(request.data.get("breadth") or request.data.get("width") or shipment.width or 10.0),
+            "height":       float(request.data.get("height") or shipment.height or 10.0),
+            "payment_mode": request.data.get("payment_mode") or "Prepaid",
         }
 
         try:
@@ -426,10 +427,15 @@ class AdminShipmentListView(APIView):
         elif order_type == "customer":
             shipments = shipments.filter(order__user__role="customer")
 
+        # Filter by Order ID
+        order_id_filter = request.query_params.get("order_id")
+        if order_id_filter:
+            shipments = shipments.filter(order__id=order_id_filter)
+
         # Global Search
         search = request.query_params.get("search", "").strip()
         if search:
-            shipments = shipments.filter(
+            search_q = (
                 Q(shipment_number__icontains=search) |
                 Q(awb_number__icontains=search) |
                 Q(tracking_number__icontains=search) |
@@ -439,7 +445,16 @@ class AdminShipmentListView(APIView):
                 Q(order__shipping_address__full_name__icontains=search) |
                 Q(order__shipping_address__mobile__icontains=search) |
                 Q(courier_reference__icontains=search)
-            ).distinct()
+            )
+            # If search is a valid UUID, search by order ID directly
+            import uuid
+            try:
+                uuid.UUID(search)
+                search_q |= Q(order__id=search)
+            except ValueError:
+                pass
+
+            shipments = shipments.filter(search_q).distinct()
 
         # Date filters
         pickup_date = request.query_params.get("pickup_date")
@@ -501,26 +516,16 @@ class AdminShipmentLabelView(APIView):
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        # Generate or return existing shipping label URL
-        if not shipment.label_url:
-            shipment.label_url = f"https://express.delhivery.com/api/v1/packages/label/?waybill={shipment.awb_number}"
-            shipment.save(update_fields=["label_url", "updated_at"])
-
-        from .models import ShipmentEvent
-        ShipmentEvent.objects.create(
-            shipment=shipment,
-            event_code="LABEL_GENERATED",
-            event_label="Shipping Label Generated",
-            status_mapped=shipment.shipment_status,
-            description=f"Shipping label generated for AWB: {shipment.awb_number}",
-            event_source="manual",
-            created_by=request.user,
-        )
-
-        return success_response(
-            data={"label_url": shipment.label_url, "awb": shipment.awb_number},
-            message="Shipping label generated successfully.",
-        )
+        try:
+            svc = ShiprocketService()
+            result = svc.generate_label(shipment)
+            return success_response(
+                data=result,
+                message="Shipping label generated successfully.",
+            )
+        except Exception as e:
+            logger.exception("Error generating label for shipment %s: %s", pk, e)
+            return error_response(f"Failed to generate label: {str(e)}", status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminShipmentManifestView(APIView):
@@ -533,25 +538,16 @@ class AdminShipmentManifestView(APIView):
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        if not shipment.manifest_url:
-            shipment.manifest_url = f"https://express.delhivery.com/api/v1/manifest/?waybill={shipment.awb_number}"
-            shipment.save(update_fields=["manifest_url", "updated_at"])
-
-        from .models import ShipmentEvent
-        ShipmentEvent.objects.create(
-            shipment=shipment,
-            event_code="MANIFEST_GENERATED",
-            event_label="Manifest Document Generated",
-            status_mapped=shipment.shipment_status,
-            description=f"Manifest document created for shipment {shipment.shipment_number}",
-            event_source="manual",
-            created_by=request.user,
-        )
-
-        return success_response(
-            data={"manifest_url": shipment.manifest_url, "shipment_number": shipment.shipment_number},
-            message="Manifest generated successfully.",
-        )
+        try:
+            svc = ShiprocketService()
+            result = svc.generate_manifest(shipment)
+            return success_response(
+                data=result,
+                message="Manifest generated successfully.",
+            )
+        except Exception as e:
+            logger.exception("Error generating manifest for shipment %s: %s", pk, e)
+            return error_response(f"Failed to generate manifest: {str(e)}", status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminShipmentBulkActionView(APIView):

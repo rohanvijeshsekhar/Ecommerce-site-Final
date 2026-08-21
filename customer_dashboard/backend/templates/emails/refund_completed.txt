@@ -1,0 +1,7 @@
+Hello {{ first_name|default:"Doctor" }},
+
+Your refund of ₹{{ total_amount|default:amount }} for Order #{{ order_number }} has been processed.
+Reference ID: {{ razorpay_refund_id|default:"Processed" }}
+Credit Window: 5-7 business days depending on your payment provider.
+
+Thank you for choosing FAAZO Dental Solutions.

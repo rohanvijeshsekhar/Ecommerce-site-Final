@@ -37,6 +37,9 @@ class ProductPricing(AuditedModel):
         verbose_name = "Product Pricing"
         verbose_name_plural = "Product Pricing"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["selling_price"]),
+        ]
 
     # ── Core relationship ─────────────────────────────────────────────────────
 
@@ -63,8 +66,8 @@ class ProductPricing(AuditedModel):
         decimal_places=2,
         default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
-        verbose_name="Selling Price",
-        help_text="Standard selling price. Must be ≤ MRP.",
+        verbose_name="Selling Price (GST Inclusive)",
+        help_text="Final customer-facing price INCLUDING GST. Must be ≤ MRP. Example: if taxable value is ₹1,000 and GST is 18%, enter ₹1,180.",
     )
 
     offer_price = models.DecimalField(
@@ -73,8 +76,8 @@ class ProductPricing(AuditedModel):
         null=True,
         blank=True,
         validators=[MinValueValidator(Decimal("0.00"))],
-        verbose_name="Offer Price",
-        help_text="Temporary discounted price. Must be ≤ Selling Price.",
+        verbose_name="Offer Price (GST Inclusive)",
+        help_text="Temporary discounted GST-inclusive price. Must be ≤ Selling Price.",
     )
 
     dealer_price = models.DecimalField(
@@ -83,8 +86,8 @@ class ProductPricing(AuditedModel):
         null=True,
         blank=True,
         validators=[MinValueValidator(Decimal("0.00"))],
-        verbose_name="Dealer Price",
-        help_text="Special wholesale price for verified dealers only. Must be ≤ Selling Price.",
+        verbose_name="Dealer Price (GST Inclusive)",
+        help_text="GST-inclusive wholesale price for verified dealers only. Must be ≤ Selling Price.",
     )
 
     # ── Tax ───────────────────────────────────────────────────────────────────
@@ -94,8 +97,22 @@ class ProductPricing(AuditedModel):
         decimal_places=2,
         default=Decimal("18.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
-        verbose_name="GST Percentage (%)",
-        help_text="Applicable GST slab (e.g. 0, 5, 12, 18, 28).",
+        verbose_name="GST Rate (%)",
+        help_text="Applicable GST slab (0, 5, 12, 18, 28). All selling prices are GST-INCLUSIVE.",
+    )
+
+    hsn_code = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        verbose_name="HSN Code",
+        help_text="Harmonised System of Nomenclature code. Required for GST invoices.",
+    )
+
+    tax_inclusive = models.BooleanField(
+        default=True,
+        verbose_name="Tax Inclusive Pricing",
+        help_text="If True (default), all admin-entered prices include GST. GST is extracted at checkout, not added on top.",
     )
 
     # ── Offer window ──────────────────────────────────────────────────────────

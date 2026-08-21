@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { CheckCircle2, ArrowRight, Download, Home, Phone, Shield, Star } from 'lucide-react';
+import { ordersService } from '../../lib/services/ordersService';
+import { useStore } from '../../contexts/StoreContext';
 
 interface MockCartItem {
   id: string;
@@ -48,8 +50,16 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   setCurrentView,
   setActiveTrackingOrderId,
 }) => {
-  // Generate random order ID if not passed
-  const orderId = orderData?.id || 'FZ-2026-8945';
+  const store = useStore();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeOrder = orderData || (mounted ? store?.completedOrderData : null);
+  // Order ID from actual order or fallback
+  const orderId = activeOrder?.id || activeOrder?.order_number || 'FZ-2026-8945';
   const deliveryEstimation = 'Wednesday, Jun 24';
 
   const defaultItems = [
@@ -64,8 +74,8 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
     }
   ];
 
-  const items = orderData?.items || defaultItems;
-  const address = orderData?.address || {
+  const items: MockCartItem[] = activeOrder?.items || defaultItems;
+  const address = activeOrder?.address || {
     type: 'Primary Clinic',
     dentist: 'Dr. Aditya Sharma',
     clinic: 'Aesthetic Dental Care Center',
@@ -75,7 +85,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
     phone: '9876543210',
   };
 
-  const pricing = orderData?.pricing || {
+  const pricing = activeOrder?.pricing || {
     subtotal: 18999,
     shipping: 0,
     gst: 3419,
@@ -117,11 +127,11 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
           <div className="grid grid-cols-2 max-w-sm mx-auto gap-4 bg-slate-50 border border-slate-100 p-4.5 rounded-2xl mt-6 text-left">
             <div>
               <span className="text-[9px] font-extrabold uppercase text-slate-400 block tracking-wider">Order Reference</span>
-              <span className="text-xs font-black text-slate-800 block mt-0.5">{orderId}</span>
+              <span suppressHydrationWarning className="text-xs font-black text-slate-800 block mt-0.5">{orderId}</span>
             </div>
             <div>
               <span className="text-[9px] font-extrabold uppercase text-slate-400 block tracking-wider">Est. Delivery</span>
-              <span className="text-xs font-black text-[#006670] block mt-0.5">{deliveryEstimation}</span>
+              <span suppressHydrationWarning className="text-xs font-black text-[#006670] block mt-0.5">{deliveryEstimation}</span>
             </div>
           </div>
 
@@ -135,7 +145,19 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => alert(`Mocking Invoice Download...\nReceipt FAAZO_${orderId}.pdf saved.`)}
+              onClick={() => {
+                const targetId =
+                  orderData?.id ||
+                  (orderData as any)?.order_number ||
+                  (orderData as any)?.invoice_number ||
+                  store?.completedOrderData?.id ||
+                  store?.completedOrderData?.order_number ||
+                  store?.completedOrderData?.invoice_number ||
+                  orderId;
+
+                const invNum = (orderData as any)?.invoice_number || store?.completedOrderData?.invoice_number;
+                ordersService.downloadInvoice(targetId, invNum, store?.showToast);
+              }}
               className="px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-[#006670] border border-slate-200 text-xs tracking-wider font-extrabold uppercase transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Download className="w-4 h-4" />

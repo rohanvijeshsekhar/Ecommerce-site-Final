@@ -138,7 +138,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         key=getattr(settings, "REFRESH_COOKIE_NAME", "faazo_refresh"),
         value=refresh_token,
         max_age=getattr(settings, "REFRESH_COOKIE_MAX_AGE", 7 * 24 * 60 * 60),
-        path=getattr(settings, "REFRESH_COOKIE_PATH", "/api/v1/auth/"),
+        path=getattr(settings, "REFRESH_COOKIE_PATH", "/"),
         httponly=getattr(settings, "REFRESH_COOKIE_HTTPONLY", True),
         secure=getattr(settings, "REFRESH_COOKIE_SECURE", False),
         samesite=getattr(settings, "REFRESH_COOKIE_SAMESITE", "Lax"),
@@ -152,7 +152,7 @@ def _delete_refresh_cookie(response: Response) -> None:
     """
     response.delete_cookie(
         key=getattr(settings, "REFRESH_COOKIE_NAME", "faazo_refresh"),
-        path=getattr(settings, "REFRESH_COOKIE_PATH", "/api/v1/auth/"),
+        path=getattr(settings, "REFRESH_COOKIE_PATH", "/"),
         samesite=getattr(settings, "REFRESH_COOKIE_SAMESITE", "Lax"),
     )
 

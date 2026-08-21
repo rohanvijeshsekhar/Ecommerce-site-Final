@@ -16,12 +16,12 @@ class NotificationTemplateEngine:
         NotificationType.ORDER_PLACED: {
             "title": "Order Placed Successfully",
             "message": "Hi {first_name}, your order #{order_number} for ₹{total_amount} has been placed.",
-            "sms": "FAAZO: Hi {first_name}, your order #{order_number} for Rs.{total_amount} has been placed. Thank you for shopping with FAAZO!",
+            "sms": "Hi, Thanks for shopping at FAZODENT. Your order {order_number} is being processed and will be on its way soon. Visit www.fazo.in for updates. FAZODENT",
         },
         NotificationType.ORDER_CONFIRMED: {
             "title": "Order Confirmed",
             "message": "Your order #{order_number} has been confirmed and is being processed.",
-            "sms": "FAAZO: Order #{order_number} confirmed! We are preparing your item(s). Track your order on www.fazo.in.",
+            "sms": "Hi, Thanks for shopping at FAZODENT. Your order {order_number} is being processed and will be on its way soon. Visit www.fazo.in for updates. FAZODENT",
         },
         NotificationType.ORDER_PACKED: {
             "title": "Order Packed",
@@ -30,8 +30,8 @@ class NotificationTemplateEngine:
         },
         NotificationType.ORDER_SHIPPED: {
             "title": "Order Shipped",
-            "message": "Your order #{order_number} has been shipped via {courier_name}. AWB: {awb_number}.",
-            "sms": "FAAZO: Order #{order_number} shipped via {courier_name} (AWB: {awb_number}). Track on www.fazo.in.",
+            "message": "Your order #{order_number} has been shipped.",
+            "sms": "Hi {customer_name}, Your order {order_number} is on its way and will arrive in 2-3 business days. Visit www.fazo.in for updates. FAZODENT",
         },
         NotificationType.OUT_FOR_DELIVERY: {
             "title": "Out For Delivery",
@@ -51,12 +51,17 @@ class NotificationTemplateEngine:
         NotificationType.REFUND_INITIATED: {
             "title": "Refund Initiated",
             "message": "Refund of ₹{refund_amount} for order #{order_number} has been initiated.",
-            "sms": "FAAZO: Refund of Rs.{refund_amount} for order #{order_number} initiated. Will reflect in 3-5 business days.",
+            "sms": "Hi {customer_name}, your order {order_number} refund {refund_amount} is processed to your card/bank account & will reflect in 7-10 business days. Thank you for your patience. FAZODENT",
         },
         NotificationType.REFUND_COMPLETED: {
             "title": "Refund Completed",
-            "message": "Refund of ₹{refund_amount} for order #{order_number} completed. Reference: {txn_id}.",
-            "sms": "FAAZO: Refund of Rs.{refund_amount} for order #{order_number} completed. Ref: {txn_id}.",
+            "message": "Refund of ₹{refund_amount} for order #{order_number} completed.",
+            "sms": "Hi {customer_name}, your order {order_number} refund {refund_amount} is processed to your card/bank account & will reflect in 7-10 business days. Thank you for your patience. FAZODENT",
+        },
+        NotificationType.RETURN_REQUESTED: {
+            "title": "Return Request Received",
+            "message": "We have received your return request for order #{order_number}.",
+            "sms": "Hi {customer_name}, we're sorry you didn't like your order. Please return it within {return_window} for a full refund. We'll process your refund once we receive your return. FAZODENT",
         },
         NotificationType.PASSWORD_CHANGED: {
             "title": "Password Changed Successfully",

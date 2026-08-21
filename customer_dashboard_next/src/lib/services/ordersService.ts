@@ -99,4 +99,30 @@ export const ordersService = {
     const response = await api.post('shipping/calculate-cost/', data);
     return response.data;
   },
+
+  async downloadInvoice(orderId: string, invoiceNumber?: string, showToast?: (msg: string) => void): Promise<void> {
+    if (!orderId) return;
+    try {
+      showToast?.('Downloading GST Tax Invoice PDF...');
+      const response = await api.get(`orders/${orderId}/invoice/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = invoiceNumber
+        ? `FAAZO-Invoice-${invoiceNumber}.pdf`
+        : `FAAZO-Invoice-${orderId}.pdf`;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      showToast?.('Downloaded GST Tax Invoice PDF.');
+    } catch (err: any) {
+      console.error('Failed to download invoice PDF:', err);
+      showToast?.('Failed to download invoice PDF. Please try again.');
+    }
+  },
 };

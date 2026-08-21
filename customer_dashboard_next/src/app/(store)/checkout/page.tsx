@@ -11,6 +11,12 @@ export default function CheckoutRoute() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const store = useStore();
+  const [isOrderPlaced, setIsOrderPlaced] = React.useState(false);
+
+  // Determine cart items source (Direct Buy Now item or general Shopping Cart items)
+  const activeCheckoutItems = store.checkoutSource === 'buy-now' && store.buyNowItem
+    ? [store.buyNowItem]
+    : store.cartItems;
 
   // Authentication Guard: Redirect to homepage if user is unauthenticated
   useEffect(() => {
@@ -20,6 +26,23 @@ export default function CheckoutRoute() {
       router.push('/');
     }
   }, [isAuthenticated, isLoading, router, store]);
+
+  // Empty Cart Guard: only redirect if cart is genuinely empty on page load
+  // We intentionally skip this if the cart just loaded (cartLoading) or if order was just placed
+  useEffect(() => {
+    if (
+      !isOrderPlaced &&
+      !isLoading &&
+      !store.cartLoading &&
+      isAuthenticated &&
+      activeCheckoutItems.length === 0 &&
+      store.checkoutSource !== 'buy-now'
+    ) {
+      store.showToast('Your cart is empty. Please add items to proceed with checkout.');
+      router.push('/cart');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOrderPlaced, store.cartLoading, isAuthenticated, isLoading, activeCheckoutItems.length, store.checkoutSource]);
 
   if (isLoading) {
     return (
@@ -47,11 +70,19 @@ export default function CheckoutRoute() {
   };
 
   const handlePlaceOrderSuccess = (orderData: any) => {
+    setIsOrderPlaced(true);
     store.setCompletedOrderData(orderData);
-    // Clear cart items
-    store.setCartItems([]);
-    store.setBuyNowItem(null);
-    router.push('/order-success');
+    // Navigate cleanly to order success page
+    router.replace('/order-success');
+    // Clear checkout items after transition
+    setTimeout(() => {
+      store.setCartItems([]);
+      store.setBuyNowItem(null);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('faazo_checkout_source');
+        sessionStorage.removeItem('faazo_buy_now_item');
+      }
+    }, 500);
   };
 
   const handleBackCheckout = () => {
@@ -61,11 +92,6 @@ export default function CheckoutRoute() {
       router.push('/cart');
     }
   };
-
-  // Determine cart items source (Direct Buy Now item or general Shopping Cart items)
-  const activeCheckoutItems = store.checkoutSource === 'buy-now' && store.buyNowItem
-    ? [store.buyNowItem]
-    : store.cartItems;
 
   return (
     <>

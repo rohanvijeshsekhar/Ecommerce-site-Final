@@ -74,14 +74,20 @@ class ComboDealReadSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        # Expose dealer price only if user is logged in and has role 'dealer' or 'admin'
+        # Expose dealer_price only to admins or approved dealers.
+        # Pending/rejected dealers and customers receive retail pricing only.
         request = self.context.get("request")
         user = request.user if request else None
 
         is_privileged = False
         if user and user.is_authenticated:
             role = getattr(user, "role", None)
-            is_privileged = role in ("dealer", "admin")
+            if role == "admin":
+                is_privileged = True
+            elif role == "dealer":
+                # Only approved dealers may see the wholesale price
+                dealer_status = getattr(user, "dealer_status", None)
+                is_privileged = dealer_status == "approved"
 
         if not is_privileged:
             representation.pop("dealer_price", None)

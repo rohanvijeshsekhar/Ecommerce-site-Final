@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Support Ticket Update - FAAZO{% endblock %}
+{% block content %}
+<h2 style="color: #0052cc; margin-top: 0;">Support Ticket Reply</h2>
+<p>Dear {{ first_name }},</p>
+<p>There is a new update on your support ticket <strong>#{{ ticket_id|default:"SUP-FAAZO" }}</strong>.</p>
+
+<div style="background-color: #f8fafc; border-left: 4px solid #0052cc; padding: 16px; margin: 16px 0; border-radius: 4px;">
+  <p style="margin: 0;"><strong>Message:</strong></p>
+  <p style="margin-top: 8px; color: #475569;">{{ reply_message|default:"A customer support representative has updated your ticket." }}</p>
+</div>
+
+<a href="{{ action_url|default:'http://localhost:5173/support' }}" class="btn">View Support Ticket</a>
+{% endblock %}

@@ -82,6 +82,7 @@ export interface Shipment {
   courier_service_type: string;
   awb_number: string;
   tracking_number: string;
+  tracking_url?: string;
   reference_number: string;
   shipment_status: ShipmentStatus;
   packing_status: PackingStatus;
@@ -276,7 +277,7 @@ export const adminShippingService = {
   getShipmentByOrderId: async (orderId: string): Promise<APIResponse<Shipment | null>> => {
     try {
       const listRes = await api.get('/shipping/admin/shipments/', {
-        params: { search: orderId, page_size: 5 },
+        params: { order_id: orderId, search: orderId, page_size: 5 },
       });
       const listData = listRes.data;
       if (!listData.success || !Array.isArray(listData.data) || listData.data.length === 0) {

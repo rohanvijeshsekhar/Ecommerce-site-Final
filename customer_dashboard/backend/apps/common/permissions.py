@@ -68,8 +68,7 @@ class IsAdmin(BasePermission):
         role = getattr(user, "role", None)
         if role is None:
             return False
-        role_name = getattr(role, "name", None) or str(role)
-        return role_name == "admin"
+        return str(role) == "admin"
 
 
 class IsDealer(BasePermission):
@@ -85,8 +84,9 @@ class IsDealer(BasePermission):
         role = getattr(user, "role", None)
         if role is None:
             return False
-        role_name = getattr(role, "name", None) or str(role)
-        return role_name == "dealer"
+        # Use str(role) which gives the stored value (e.g. "dealer")
+        # NOT role.name which gives the enum attribute name (e.g. "DEALER")
+        return str(role) == "dealer"
 
 
 class IsCustomer(BasePermission):
@@ -102,8 +102,7 @@ class IsCustomer(BasePermission):
         role = getattr(user, "role", None)
         if role is None:
             return False
-        role_name = getattr(role, "name", None) or str(role)
-        return role_name == "customer"
+        return str(role) == "customer"
 
 
 class IsAdminOrDealer(BasePermission):

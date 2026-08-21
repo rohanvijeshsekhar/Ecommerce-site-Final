@@ -143,9 +143,11 @@ class NotificationService:
         )
 
         # Requirement 1 & 10: Determine Target Channels
-        target_channels = channels or [DeliveryChannel.IN_APP]
+        target_channels = list(channels) if channels else [DeliveryChannel.IN_APP]
         if notification_type in SMSChannel.ALLOWED_SMS_TYPES and DeliveryChannel.SMS not in target_channels:
             target_channels.append(DeliveryChannel.SMS)
+        if notification_type in EmailChannel.ALLOWED_EMAIL_TYPES and DeliveryChannel.EMAIL not in target_channels:
+            target_channels.append(DeliveryChannel.EMAIL)
 
         # Execute Deliveries via Channel Handlers
         deliveries = []

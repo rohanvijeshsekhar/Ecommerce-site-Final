@@ -180,7 +180,15 @@ class RegisterSerializer(serializers.Serializer):
     def validate_phone_number(self, value: str) -> str:
         if not value:
             return value
-        value = value.strip()
+        from apps.common.utils import normalize_phone_number
+        try:
+            value = normalize_phone_number(value, allow_empty=True)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages) if hasattr(exc, "messages") else str(exc)) from exc
+
+        if not value:
+            return value
+
         if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError(
                 "An account with this mobile number already exists."
@@ -207,7 +215,7 @@ class DealerRegisterSerializer(serializers.Serializer):
 
     full_name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
-    phone_number = serializers.CharField(max_length=15, required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
     confirm_password = serializers.CharField(
         write_only=True, style={"input_type": "password"}
@@ -244,7 +252,15 @@ class DealerRegisterSerializer(serializers.Serializer):
     def validate_phone_number(self, value: str) -> str:
         if not value:
             return value
-        value = value.strip()
+        from apps.common.utils import normalize_phone_number
+        try:
+            value = normalize_phone_number(value, allow_empty=True)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages) if hasattr(exc, "messages") else str(exc)) from exc
+
+        if not value:
+            return value
+
         if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError(
                 "An account with this mobile number already exists."

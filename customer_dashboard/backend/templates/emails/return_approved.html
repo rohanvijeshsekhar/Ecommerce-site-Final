@@ -1,0 +1,24 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Return Approved - FAAZO Dental Solutions{% endblock %}
+
+{% block content %}
+<h2 style="color: #0052cc; margin-top: 0;">Return Request Approved</h2>
+
+<p>Hello <strong>{{ first_name|default:"Doctor" }}</strong>,</p>
+
+<p>Great news! Your return request for <strong>Order #{{ order_number }}</strong> has been <strong>APPROVED</strong>.</p>
+
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b;"><strong>Next Step:</strong> Courier Pickup Scheduling</p>
+  <p style="margin: 0; font-size: 14px; color: #64748b;">Please pack the item securely in its original packaging along with all included accessories.</p>
+</div>
+
+<p>Our courier partner will visit your clinic to pick up the package. Once received and inspected at our warehouse, your refund/replacement will be dispatched immediately.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="http://localhost:3000/orders/{{ metadata.order_id }}" style="background-color: #0052cc; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">View Pickup Details</a>
+</div>
+
+<p>Best regards,<br>FAAZO Support Team</p>
+{% endblock %}

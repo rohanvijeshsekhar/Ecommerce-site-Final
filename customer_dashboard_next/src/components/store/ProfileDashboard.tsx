@@ -17,6 +17,8 @@ import type { Address } from '../../lib/services/users';
 import type { CartItem } from '../../types/pendingAction';
 import OrderDetailPage from './OrderDetailPage';
 import { getStatusLabel } from '@/lib/utils';
+import { ordersService } from '../../lib/services/ordersService';
+import { INDIAN_STATES } from '@/lib/constants/indianStates';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -566,23 +568,65 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   };
 
   const handleSaveAddress = async () => {
+    if (!addressForm.full_name || addressForm.full_name.trim().length < 3) {
+      fireToast('Recipient name must be at least 3 characters.');
+      return;
+    }
+    const cleanMobile = (addressForm.mobile || '').replace(/\D/g, '');
+    if (cleanMobile.length < 10) {
+      fireToast('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (!addressForm.line1 || addressForm.line1.trim().length < 5) {
+      fireToast('Street address line 1 must be at least 5 characters.');
+      return;
+    }
+    if (!addressForm.city || addressForm.city.trim().length < 2) {
+      fireToast('Please enter a valid city name.');
+      return;
+    }
+    if (!addressForm.state || addressForm.state.trim().length < 2) {
+      fireToast('Please select a valid State.');
+      return;
+    }
+    const pin = (addressForm.pincode || '').trim();
+    if (!/^\d{6}$/.test(pin)) {
+      fireToast('Pincode must be exactly 6 digits.');
+      return;
+    }
+
     setAddressSaving(true);
     try {
       if (editingAddress) {
         const res = await usersService.updateAddress(editingAddress.id, addressForm as any);
         if (res.success && res.data) {
           setAddresses(prev => prev.map(a => a.id === editingAddress.id ? res.data! : a));
-          fireToast('Address updated!');
+          fireToast('Address updated successfully!');
+          resetAddressForm();
+        } else {
+          const errs = (res as any)?.errors;
+          const msg = errs ? Object.values(errs).flat().join(' ') : (res as any)?.message || 'Failed to update address.';
+          fireToast(msg);
         }
       } else {
         const res = await usersService.createAddress(addressForm as any);
         if (res.success && res.data) {
           setAddresses(prev => [...prev, res.data!]);
-          fireToast('Address added!');
+          fireToast('Address added successfully!');
+          resetAddressForm();
+        } else {
+          const errs = (res as any)?.errors;
+          const msg = errs ? Object.values(errs).flat().join(' ') : (res as any)?.message || 'Failed to create address.';
+          fireToast(msg);
         }
       }
-      resetAddressForm();
-    } catch { fireToast('Failed to save address.'); }
+    } catch (err: any) {
+      const backendErrors = err?.response?.data?.errors;
+      const errorMsg = backendErrors
+        ? Object.values(backendErrors).flat().join(' ')
+        : err?.response?.data?.message || 'Failed to save address.';
+      fireToast(errorMsg);
+    }
     finally { setAddressSaving(false); }
   };
 
@@ -854,7 +898,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   <button onClick={() => handleReorder(order)} className="flex items-center gap-1.5 text-xs font-black text-[#005B63] hover:underline uppercase tracking-wide cursor-pointer">
                     <RefreshCw className="w-3.5 h-3.5" /> Reorder Items
                   </button>
-                  <button onClick={() => fireToast('Downloading invoice...')} className="flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer ml-auto">
+                  <button onClick={() => ordersService.downloadInvoice(order.id, (order as any).invoice_number, fireToast)} className="flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer ml-auto">
                     <FileText className="w-3.5 h-3.5" /> Invoice
                   </button>
                   <button 
@@ -1114,21 +1158,44 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             {([
               { key: 'label', label: 'Address Label (e.g. Clinic, Lab, Head Office)', placeholder: 'e.g. Primary Clinic' },
               { key: 'full_name', label: 'Dentist / Contact Name', placeholder: 'Dr. Jane Smith' },
-              { key: 'mobile', label: '10-Digit Mobile Number', placeholder: '+91 98765 43210' },
-              { key: 'line1', label: 'Street Address, Clinic Suite', placeholder: 'Flat 101, Main Road' },
+              { key: 'mobile', label: '10-Digit Mobile Number', placeholder: '9876543210' },
+              { key: 'line1', label: 'Street Address, Clinic Suite (Min 5 chars)', placeholder: 'Flat 101, Main Road, Medical Complex' },
               { key: 'line2', label: 'Area, Landmark (Optional)', placeholder: 'Opp. Central Metro Station' },
               { key: 'city', label: 'City', placeholder: 'Mumbai' },
-              { key: 'state', label: 'State', placeholder: 'Maharashtra' },
-              { key: 'pincode', label: 'Pincode', placeholder: '400001' },
+              { key: 'state', label: 'State / Union Territory', placeholder: 'Select State' },
+              { key: 'pincode', label: '6-Digit Pincode', placeholder: '400001' },
             ] as const).map(f => (
               <div key={f.key} className={f.key === 'line1' || f.key === 'line2' ? 'md:col-span-2' : ''}>
                 <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">{f.label}</label>
-                <input
-                  type="text" placeholder={f.placeholder}
-                  value={(addressForm as any)[f.key] || ''}
-                  onChange={e => setAddressForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
-                />
+                {f.key === 'state' ? (
+                  <div className="relative">
+                    <select
+                      value={addressForm.state || ''}
+                      onChange={e => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
+                      className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                    >
+                      <option value="">— Select State / UT —</option>
+                      {INDIAN_STATES.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                ) : (
+                  <input
+                    type={f.key === 'mobile' || f.key === 'pincode' ? 'tel' : 'text'}
+                    maxLength={f.key === 'pincode' ? 6 : f.key === 'mobile' ? 10 : 255}
+                    placeholder={f.placeholder}
+                    value={(addressForm as any)[f.key] || ''}
+                    onChange={e => {
+                      const val = (f.key === 'pincode' || f.key === 'mobile')
+                        ? e.target.value.replace(/\D/g, '')
+                        : e.target.value;
+                      setAddressForm(prev => ({ ...prev, [f.key]: val }));
+                    }}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                  />
+                )}
               </div>
             ))}
             <div>

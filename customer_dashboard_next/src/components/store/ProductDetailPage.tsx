@@ -1298,7 +1298,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
             {activeTab === 'reviews' && (
               <ProductReviewsSection
-                productId={productData?.id || productId}
+                productId={productData?.id || activeProductId || ''}
                 productSlug={productData?.slug}
                 productName={productData?.name || 'Product'}
                 showToast={showToast}

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function WarrantyPage() {
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[180px] pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
           <span className="text-xs font-black tracking-widest text-[#006670] uppercase">

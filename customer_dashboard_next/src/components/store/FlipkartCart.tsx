@@ -440,7 +440,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
 
                 {backendCart && (
                   <div className="flex justify-between">
-                    <span>Medical IGST tax</span>
+                    <span>GST (Included)</span>
                     <span className="font-semibold text-slate-800">₹{gstAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}

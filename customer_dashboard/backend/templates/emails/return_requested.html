@@ -1,0 +1,25 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Return Request Received - FAAZO Dental Solutions{% endblock %}
+
+{% block content %}
+<h2 style="color: #0052cc; margin-top: 0;">Return Request Received</h2>
+
+<p>Hello <strong>{{ first_name|default:"Doctor" }}</strong>,</p>
+
+<p>We have received your return request for <strong>Order #{{ order_number }}</strong>.</p>
+
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b;"><strong>Return Request ID:</strong> {{ return_id|default:metadata.return_id }}</p>
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b;"><strong>Reason:</strong> {{ reason|default:"Product inspection request" }}</p>
+  <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Status:</strong> Under Review by Support Team</p>
+</div>
+
+<p>Our quality assurance team will review your request within 24-48 hours. Once approved, we will schedule a pickup for your item.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="http://localhost:3000/orders/{{ metadata.order_id }}" style="background-color: #0052cc; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">Track Return Status</a>
+</div>
+
+<p>Thank you for trusting FAAZO Dental Solutions.</p>
+{% endblock %}

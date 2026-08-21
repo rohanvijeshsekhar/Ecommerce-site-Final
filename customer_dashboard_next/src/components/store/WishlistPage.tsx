@@ -9,9 +9,10 @@ import { ShareModal } from './ShareModal';
 export const WishlistPage: React.FC = () => {
   const router = useRouter();
   const { wishlistItems, removeFromWishlist, moveToCart, loading } = useWishlist();
+  const [shareProduct, setShareProduct] = useState<any>(null);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-left pt-28 pb-16 font-sans select-none">
+    <div className="min-h-screen bg-slate-50 text-left pt-[104px] lg:pt-[172px] pb-16 font-sans select-none">
       <div className="max-w-6xl mx-auto px-4 md:px-12 space-y-8">
         
         {/* Header */}

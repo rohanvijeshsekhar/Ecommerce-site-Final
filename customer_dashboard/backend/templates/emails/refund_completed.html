@@ -1,0 +1,19 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Refund Processed Successfully - FAAZO Dental Solutions{% endblock %}
+
+{% block content %}
+<h2 style="color: #16a34a; margin-top: 0;">Refund Processed Successfully</h2>
+
+<p>Hello <strong>{{ first_name|default:"Doctor" }}</strong>,</p>
+
+<p>Your refund of <strong>₹{{ total_amount|default:amount }}</strong> for <strong>Order #{{ order_number }}</strong> has been processed via Razorpay.</p>
+
+<div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #166534;"><strong>Refund Amount:</strong> ₹{{ total_amount|default:amount }}</p>
+  <p style="margin: 0 0 8px 0; font-size: 14px; color: #166534;"><strong>Reference ID:</strong> {{ razorpay_refund_id|default:"Processed" }}</p>
+  <p style="margin: 0; font-size: 14px; color: #166534;"><strong>Credit Window:</strong> 5-7 business days depending on your bank/payment provider.</p>
+</div>
+
+<p>Thank you for choosing FAAZO Dental Solutions.</p>
+{% endblock %}

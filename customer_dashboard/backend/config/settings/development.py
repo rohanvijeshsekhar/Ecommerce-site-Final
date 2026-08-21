@@ -42,9 +42,13 @@ CORS_ALLOWED_ORIGINS = [
 
 
 # ============================================================
-# Email – Log to console during development
+# Email – Configurable via environment (defaults to console for dev)
 # ============================================================
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+
+# Celery in Development – Execute tasks in-process immediately
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)
+CELERY_TASK_EAGER_PROPAGATES = True
 
 
 # ============================================================
@@ -75,3 +79,20 @@ SIMPLE_JWT = {
 LOGIN_FAIL_MAX_ATTEMPTS = 999999
 LOGIN_FAIL_LOCKOUT_MINUTES = 1
 
+
+# ============================================================
+# Celery – Development Overrides
+# ============================================================
+# The standard dev workflow uses real Redis + a Celery worker.
+# Run: celery -A config worker -l INFO
+#
+# CELERY_TASK_ALWAYS_EAGER stays False here.
+# To enable eager mode as a temporary fallback, add to .env:
+#   CELERY_TASK_ALWAYS_EAGER=True
+#
+# If eager mode IS enabled in dev, propagate exceptions immediately
+# so task bugs surface rather than being swallowed.
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Store task results in development so result.get() works in shell.
+CELERY_TASK_STORE_EAGER_RESULT = True

@@ -8,7 +8,9 @@ and image/video media attachments with admin moderation workflows.
 import uuid
 from django.conf import settings
 from django.db import models
+from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import FullAuditModel, AuditedModel
+
 
 
 class ReviewStatus(models.TextChoices):
@@ -107,7 +109,7 @@ class ReviewMedia(AuditedModel):
         verbose_name="Media Type",
     )
     file = models.FileField(upload_to="reviews/%Y/%m/", verbose_name="File")
-    thumbnail = models.ImageField(
+    thumbnail = OptimizedImageField(
         upload_to="reviews/thumbnails/%Y/%m/",
         null=True,
         blank=True,

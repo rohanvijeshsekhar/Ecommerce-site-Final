@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
 
   // Base pages
-  const routes = ['', '/products', '/combo-deals', '/cart', '/wishlist', '/profile', '/dealer'].map(
+  const routes = ['', '/products', '/combo-deals', '/blog', '/cart', '/wishlist', '/profile', '/dealer'].map(
     (route) => ({
       url: `${baseUrl}${route}`,
       lastModified: new Date(),
@@ -65,5 +65,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap combos fetch failed:', e);
   }
 
-  return [...routes, ...categoryRoutes, ...productRoutes, ...comboRoutes];
+  // Dynamic published blog posts
+  let blogRoutes: any[] = [];
+  try {
+    const blogRes = await serverFetch<any>('blog/?page_size=100');
+    const blogPosts = blogRes?.data ?? [];
+    if (Array.isArray(blogPosts)) {
+      blogRoutes = blogPosts.map((post: any) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: new Date(post.updated_at || post.published_at || Date.now()),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      }));
+    }
+  } catch (e) {
+    console.error('Sitemap blog posts fetch failed:', e);
+  }
+
+  return [...routes, ...categoryRoutes, ...productRoutes, ...comboRoutes, ...blogRoutes];
 }

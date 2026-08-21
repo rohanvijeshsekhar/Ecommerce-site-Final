@@ -57,8 +57,10 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const data = await wishlistService.getWishlist();
         setWishlistItems(data.items || []);
-      } catch (err) {
-        console.error('Error fetching wishlist:', err);
+      } catch (err: any) {
+        if (err?.response?.status !== 401 && err?.response?.status !== 403) {
+          console.error('Error fetching wishlist:', err);
+        }
       } finally {
         setLoading(false);
       }

@@ -1,0 +1,17 @@
+FAAZO DENTAL SOLUTIONS
+====================================
+
+Hello {{ first_name }},
+
+Thank you for your purchase! We have successfully received your order and our clinical fulfillment team is preparing it for dispatch.
+
+Order Number: {{ order_number }}
+Total Amount (GST Included): Rs. {{ total_amount }}
+
+Official GST Tax Invoice Attached:
+Your computer-generated GST Tax Invoice ({{ invoice_number }}) is attached to this email as a PDF file for your records.
+
+Track your order in your dashboard: {{ action_url }}
+
+Thank you for choosing FAAZO Dental Solutions.
+support@faazo.com

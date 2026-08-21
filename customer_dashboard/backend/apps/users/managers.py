@@ -34,6 +34,10 @@ class UserManager(BaseUserManager):
             raise ValueError("A full name is required.")
 
         email = self.normalize_email(email)
+        if extra_fields.get("phone_number"):
+            from apps.common.utils import normalize_phone_number
+            extra_fields["phone_number"] = normalize_phone_number(extra_fields["phone_number"])
+
         user = self.model(email=email, full_name=full_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

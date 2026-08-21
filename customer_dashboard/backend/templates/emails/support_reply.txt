@@ -1,0 +1,14 @@
+Support Ticket Update - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+There is a new update on your support ticket #{{ ticket_id|default:"SUP-FAAZO" }}.
+
+Message:
+{{ reply_message|default:"A customer support representative has updated your ticket." }}
+
+View ticket online: {{ action_url|default:'http://localhost:5173/support' }}
+
+Best regards,
+FAAZO Support Team
+support@faazo.com

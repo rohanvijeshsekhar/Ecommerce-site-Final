@@ -215,13 +215,13 @@ export default function BestSellersClient() {
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-[100px] lg:pt-[160px]">
       
       {/* ── TOP SECTION: Full Width Hero Banner (Extends Edge to Edge Left & Right) ── */}
-      {!loading && banner && banner.is_active && banner.banner_image_url && (
-        <div className="w-full relative overflow-hidden group h-[240px] sm:h-[340px] md:h-[440px] bg-slate-900 border-b border-slate-200/50 shadow-md">
+      {!loading && banner && banner.is_active && (
+        <div className="w-full relative overflow-hidden group h-[240px] sm:h-[340px] md:h-[440px] bg-slate-950 border-b border-slate-200/50 shadow-md">
           <img
-            src={banner.banner_image_url}
+            src={banner.banner_image_url || '/images/brands_hero_bg.png'}
             alt={banner.title || 'Best Sellers Banner'}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
+            loading="eager"
+            className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 opacity-90 brightness-[0.95]"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/75 to-transparent/30 flex items-center px-6 sm:px-12 lg:px-20">
             <div className="max-w-4xl w-full space-y-2.5 sm:space-y-4">

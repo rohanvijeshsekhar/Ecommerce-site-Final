@@ -1,0 +1,10 @@
+Hello {{ first_name|default:"Doctor" }},
+
+We are writing regarding your return request for Order #{{ order_number }}.
+Status: Request Declined
+Reason: {{ rejection_reason|default:"The submitted request does not meet company return eligibility guidelines." }}
+
+If you have questions, please email faazodental@gmail.com.
+
+Best regards,
+FAAZO Customer Support

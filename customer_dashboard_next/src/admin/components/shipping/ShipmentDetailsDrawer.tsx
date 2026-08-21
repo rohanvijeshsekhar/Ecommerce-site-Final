@@ -129,7 +129,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
   };
 
   const handleCancelShipment = () => {
-    if (!window.confirm('Are you sure you want to cancel this shipment with Delhivery?')) return;
+    if (!window.confirm('Are you sure you want to cancel this shipment with Shiprocket?')) return;
     doAction('cancel', () => adminShippingService.cancelShipment(shipment.id, 'Cancelled by admin.'),
       'Shipment cancelled.');
   };
@@ -159,7 +159,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                 {courierSubmitted ? `AWB: ${shipment.awb_number}` : 'Courier Shipment Not Yet Created'}
               </h2>
               <p className="text-xs text-teal-200/90 font-medium">
-                Order: <span className="font-mono text-emerald-300 font-bold">{shipment.order_number}</span> • {shipment.courier_name || 'Delhivery'}
+                Order: <span className="font-mono text-emerald-300 font-bold">{shipment.order_number}</span> • {shipment.courier_name || 'Shiprocket'}
               </p>
             </div>
             <button
@@ -253,7 +253,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                 ══════════════════════════════════════════════════════════════ */}
             <div className={`px-6 py-4 border-b ${courierSubmitted ? 'bg-indigo-50/40 border-indigo-100' : 'bg-slate-50/50 border-slate-100'}`}>
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700 mb-3 flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5" /> Courier Workflow (Delhivery)
+                <Truck className="w-3.5 h-3.5" /> Courier Workflow (Shiprocket)
               </p>
 
               {/* LOCKED — packing not complete */}
@@ -263,7 +263,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                   <div>
                     <p className="font-semibold text-slate-700">Courier actions locked</p>
                     <p className="text-slate-500 mt-0.5">
-                      Delhivery shipment creation is blocked until the packing workflow reaches{' '}
+                      Shiprocket shipment creation is blocked until the packing workflow reaches{' '}
                       <strong className="text-amber-700">Ready for Pickup</strong>.
                       Advance the warehouse workflow above.
                     </p>
@@ -275,7 +275,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
               {canCreateCourier && (
                 <div className="space-y-2">
                   <p className="text-xs text-green-700 font-medium">
-                    ✅ Packing complete. You can now create the Delhivery courier shipment.
+                    ✅ Packing complete. You can now create the Shiprocket courier shipment.
                   </p>
                   <button
                     onClick={handleCreateCourier}
@@ -283,7 +283,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#006670] text-white rounded-xl font-bold text-sm hover:bg-[#004d40] shadow-md transition disabled:opacity-50 animate-in fade-in duration-300"
                   >
                     <Truck className={`w-4 h-4 ${loadingAction === 'create_courier' ? 'animate-spin' : ''}`} />
-                    Create Courier Shipment with Delhivery
+                    Create Courier Shipment with Shiprocket
                   </button>
                 </div>
               )}

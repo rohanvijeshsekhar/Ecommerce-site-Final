@@ -1,0 +1,10 @@
+Hello {{ first_name|default:"Doctor" }},
+
+We have received your return request for Order #{{ order_number }}.
+Return Request ID: {{ return_id|default:metadata.return_id }}
+Status: Under Review by Support Team
+
+Our team will review your request within 24-48 hours.
+Track status: http://localhost:3000/orders/{{ metadata.order_id }}
+
+Thank you for choosing FAAZO Dental Solutions.

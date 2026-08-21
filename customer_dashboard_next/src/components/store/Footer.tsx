@@ -54,15 +54,13 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
             <div className="flex items-center mb-6">
               <a 
                 href="#" 
-                className="h-9 block cursor-pointer transition-opacity duration-250 hover:opacity-80 active:scale-95" 
+                className="inline-block cursor-pointer transition-opacity duration-250 hover:opacity-80 active:scale-95" 
                 onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
               >
-                <Image 
+                <img 
                   src="/images/Artboard 1@4x (1).png" 
                   alt="FAAZO Logo" 
-                  width={140}
-                  height={36}
-                  className="h-full w-auto object-contain brightness-0 invert"
+                  className="h-7 w-auto object-contain brightness-0 invert"
                 />
               </a>
             </div>
@@ -150,11 +148,11 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
             </h4>
             <ul className="space-y-3 text-xs">
               <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Support Center</a></li>
-              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Shipping & Delivery</a></li>
-              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Returns & Refunds</a></li>
+              <li><a href="/shipping-policy" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Shipping & Delivery</a></li>
+              <li><a href="/refund-policy" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Returns & Refunds</a></li>
               <li><a href="/warranty" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Warranty Claims</a></li>
-              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Terms & Conditions</a></li>
-              <li><a href="/support" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Privacy Policy</a></li>
+              <li><a href="/terms-and-conditions" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Terms & Conditions</a></li>
+              <li><a href="/privacy-policy" className="text-[#B8B8B8] hover:text-white transition-colors duration-250 group hover:underline underline-offset-4 decoration-[#0B7C80] decoration-2 block">Privacy Policy</a></li>
             </ul>
           </div>
 
@@ -205,14 +203,15 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
               © {new Date().getFullYear()} FAAZO Dental Solutions. All Rights Reserved.
             </p>
             <div className="flex items-center gap-6 text-xs text-[#888888]">
-              <a href="#" className="hover:text-white transition-colors duration-250">Privacy Policy</a>
+              <a href="/privacy-policy" className="hover:text-white transition-colors duration-250">Privacy Policy</a>
               <span>•</span>
-              <a href="#" className="hover:text-white transition-colors duration-250">Terms of Service</a>
+              <a href="/terms-and-conditions" className="hover:text-white transition-colors duration-250">Terms of Service</a>
               <span>•</span>
-              <a href="#" className="hover:text-[#0B7C80] transition-colors duration-250">Security</a>
+              <a href="/refund-policy" className="hover:text-white transition-colors duration-250">Refund Policy</a>
             </div>
           </div>
         </div>
+
       </footer>
 
       {/* Mobile view */}
@@ -222,15 +221,13 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
           <div className="flex flex-col items-start">
             <a 
               href="#" 
-              className="h-8 block cursor-pointer transition-opacity mb-4" 
+              className="inline-block cursor-pointer transition-opacity mb-4" 
               onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
             >
-              <Image 
+              <img 
                 src="/images/Artboard 1@4x (1).png" 
                 alt="FAAZO Logo" 
-                width={120}
-                height={32}
-                className="h-full w-auto object-contain brightness-0 invert"
+                className="h-6 w-auto object-contain brightness-0 invert"
               />
             </a>
             <p className="text-xs text-[#888888] leading-relaxed">
@@ -278,12 +275,14 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
           </div>
 
           <div>
-            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-4">Support</h4>
+            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-4">Support & Legal</h4>
             <ul className="space-y-2.5 text-xs grid grid-cols-2 gap-x-4 gap-y-2.5">
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white">Help Center</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white">Delivery</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white">Returns</a></li>
-              <li><a href="#" className="text-[#B8B8B8] hover:text-white">Warranty</a></li>
+              <li><a href="/support" className="text-[#B8B8B8] hover:text-white">Help Center</a></li>
+              <li><a href="/shipping-policy" className="text-[#B8B8B8] hover:text-white">Delivery SLA</a></li>
+              <li><a href="/refund-policy" className="text-[#B8B8B8] hover:text-white">Returns & Refunds</a></li>
+              <li><a href="/terms-and-conditions" className="text-[#B8B8B8] hover:text-white">Terms & Conditions</a></li>
+              <li><a href="/privacy-policy" className="text-[#B8B8B8] hover:text-white">Privacy Policy</a></li>
+              <li><a href="/warranty" className="text-[#B8B8B8] hover:text-white">Warranty Claims</a></li>
             </ul>
           </div>
 

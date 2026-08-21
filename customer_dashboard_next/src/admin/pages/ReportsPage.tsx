@@ -125,9 +125,19 @@ export const ReportsPage: React.FC = () => {
     csvContent += `Period,${period}\r\n\r\n`;
 
     if (overviewData) {
+      csvContent += 'EXECUTIVE FINANCIAL AUDIT\r\n';
+      const fin = overviewData.kpis.financials;
+      if (fin) {
+        csvContent += `Gross Sales,${fin.gross_sales_formatted}\r\n`;
+        csvContent += `Refunds Deducted,${fin.refunds_formatted}\r\n`;
+        csvContent += `Net Sales,${fin.net_sales_formatted}\r\n`;
+        csvContent += `Taxable Sales,${fin.taxable_sales_formatted}\r\n`;
+        csvContent += `GST Included,${fin.gst_included_formatted}\r\n\r\n`;
+      }
       csvContent += 'EXECUTIVE KPIS\r\n';
-      csvContent += `Total Revenue,${overviewData.kpis.revenue.formatted},Growth,${overviewData.kpis.revenue.growth}%\r\n`;
-      csvContent += `Total Orders,${overviewData.kpis.orders.formatted},Growth,${overviewData.kpis.orders.growth}%\r\n`;
+      csvContent += `Net Revenue,${overviewData.kpis.revenue.formatted},Growth,${overviewData.kpis.revenue.growth}%\r\n`;
+      csvContent += `Valid Orders,${overviewData.kpis.orders.formatted},Total Attempts,${overviewData.kpis.orders.total_attempts || overviewData.kpis.orders.value},Growth,${overviewData.kpis.orders.growth}%\r\n`;
+      csvContent += `Average Order Value,${overviewData.kpis.aov.formatted},Growth,${overviewData.kpis.aov.growth}%\r\n`;
       csvContent += `Active Customers,${overviewData.kpis.customers.formatted},Growth,${overviewData.kpis.customers.growth}%\r\n`;
     }
 

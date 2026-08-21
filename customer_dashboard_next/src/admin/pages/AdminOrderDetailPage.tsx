@@ -11,7 +11,7 @@
  *   - Horizontal Order Progress Tracker (Placed → Processing → Packed → Shipment Created → Picked Up → In Transit → Delivered)
  *   - 70 / 30 Responsive Split Layout
  *   - Left: Items Ordered (Amazon Seller style), Customer Profile & Address, Payment Summary, Order Audit Timeline
- *   - Right: Shipment & Fulfillment Card (Delhivery Dashboard), Warehouse Quick Workflow Controls, Admin Notes (Toggle Edit), Warranty Overview
+ *   - Right: Shipment & Fulfillment Card (Shiprocket Dashboard), Warehouse Quick Workflow Controls, Admin Notes (Toggle Edit), Warranty Overview
  *   - Read-only by default with clean inline edit toggles
  */
 
@@ -29,7 +29,7 @@ import { useToast } from '../components/Toast';
 import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import StatusBadge from '../components/StatusBadge';
 import { adminOrdersService } from '../services/adminService';
-import type { OrderDetail } from '../../services/ordersService';
+import { ordersService, OrderDetail } from '../../lib/services/ordersService';
 import {
   adminShippingService,
   SHIPMENT_STATUS_LABELS,
@@ -161,17 +161,11 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
     setValidationErrors([]);
     try {
       let res;
-      if (shipment && shipment.id) {
-        res = await adminShippingService.createCourierShipment(shipment.id, {
-          weight: parseFloat(weight),
-          length: parseFloat(length),
-          breadth: parseFloat(breadth),
-          height: parseFloat(height),
-          payment_mode: paymentMode,
-          pickup_date: pickupDate || undefined,
-        });
-      } else {
-        res = await adminShippingService.createShipment({
+      let targetShipmentId = shipment?.id;
+
+      if (!targetShipmentId) {
+        // Step 1: Create local warehouse shipment record
+        const createRes = await adminShippingService.createShipment({
           order_id: order.id,
           weight: parseFloat(weight),
           length: parseFloat(length),
@@ -180,10 +174,35 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
           payment_mode: paymentMode,
           pickup_date: pickupDate || undefined,
         });
+
+        if (!createRes.success || !createRes.data) {
+          const errs = createRes.error?.details;
+          if (Array.isArray(errs) && errs.length > 0) {
+            setValidationErrors(errs);
+            setView('review');
+          } else {
+            toast.error(createRes.error?.message || createRes.message || 'Failed to create warehouse shipment record.');
+            setView('form');
+          }
+          setCreating(false);
+          return;
+        }
+
+        targetShipmentId = createRes.data.id;
       }
 
-      if (res.success && res.data) {
-        toast.success(`Shipment created! AWB: ${res.data.awb_number}`);
+      // Step 2: Dispatch to Shiprocket, assign courier & generate AWB
+      res = await adminShippingService.createCourierShipment(targetShipmentId, {
+        weight: parseFloat(weight),
+        length: parseFloat(length),
+        breadth: parseFloat(breadth),
+        height: parseFloat(height),
+        payment_mode: paymentMode,
+        pickup_date: pickupDate || undefined,
+      });
+
+      if (res.success && res.data && res.data.awb_number) {
+        toast.success(`Shipment created with Shiprocket! AWB: ${res.data.awb_number}`);
         onShipmentCreated(res.data);
         setView('done');
       } else {
@@ -192,7 +211,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
           setValidationErrors(errs);
           setView('review');
         } else {
-          toast.error(res.error?.message || res.message || 'Failed to create shipment.');
+          toast.error(res.error?.message || res.message || 'Failed to generate Shiprocket AWB.');
           setView('form');
         }
       }
@@ -202,7 +221,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
         setValidationErrors(errs);
         setView('review');
       } else {
-        toast.error(err?.response?.data?.error?.message || 'Failed to create shipment.');
+        toast.error(err?.response?.data?.error?.message || 'Failed to create courier shipment.');
         setView('form');
       }
     } finally {
@@ -216,7 +235,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
     try {
       const res = await adminShippingService.syncTracking(shipment.id);
       if (res.success && res.data) {
-        toast.success(res.message || 'Tracking synced with Delhivery.');
+        toast.success(res.message || 'Tracking synced with Shiprocket.');
         onShipmentUpdated(res.data);
       } else {
         toast.error(res.message || 'Sync failed.');
@@ -230,7 +249,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
 
   const handleCancel = async () => {
     if (!shipment) return;
-    if (!window.confirm('Are you sure you want to cancel this shipment with Delhivery?')) return;
+    if (!window.confirm('Are you sure you want to cancel this shipment with Shiprocket?')) return;
     setCancelling(true);
     try {
       const res = await adminShippingService.cancelShipment(shipment.id);
@@ -292,7 +311,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#006670]">Delhivery Express</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#006670]">Shiprocket Courier</span>
                 <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
                   {shipment.provider || 'offline'}
                 </span>
@@ -364,7 +383,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
             </button>
 
             <a
-              href={`https://www.delhivery.com/track/package/${shipment.awb_number}`}
+              href={shipment.tracking_url || `https://shiprocket.co/tracking/${shipment.awb_number}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-2 px-3 text-[10px] font-extrabold uppercase border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
@@ -391,7 +410,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-[10px] font-extrabold uppercase text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-xl transition-all cursor-pointer"
               >
                 <XCircle className="w-3 h-3" />
-                {cancelling ? 'Cancelling...' : 'Cancel Delhivery Shipment'}
+                {cancelling ? 'Cancelling...' : 'Cancel Shiprocket Shipment'}
               </button>
             )}
           </div>
@@ -453,7 +472,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
             {order.status === 'processing'
-              ? 'Pack order first. Click "Mark as Packed" to enable Delhivery creation.'
+              ? 'Pack order first. Click "Mark as Packed" to enable Shiprocket creation.'
               : 'Shipment can be created once order is in Packed status.'}
           </p>
         </div>
@@ -556,7 +575,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
         <div className="bg-slate-800 px-4 py-3 flex items-center justify-between text-white">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Step 2 of 2</p>
-            <p className="text-xs font-black">Confirm Delhivery Shipment</p>
+            <p className="text-xs font-black">Confirm Shiprocket Shipment</p>
           </div>
           <button onClick={() => setView('form')} className="p-1 hover:text-white text-slate-400">
             <X className="w-4 h-4" />
@@ -577,7 +596,7 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
 
           <div className="bg-slate-50 rounded-xl p-3 space-y-1.5">
             <div className="flex justify-between"><span className="text-slate-400">Customer</span><span className="font-bold text-slate-800">{addr?.full_name || order.customer_name}</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Courier</span><span className="font-bold text-[#006670]">Delhivery Surface</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Courier</span><span className="font-bold text-[#006670]">Shiprocket Courier</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Weight</span><span className="font-bold text-slate-800">{weight} kg ({length}x{breadth}x{height} cm)</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Payment</span><span className="font-bold text-slate-800">{paymentMode}</span></div>
           </div>
@@ -790,11 +809,18 @@ const AdminOrderDetailPage: React.FC = () => {
             Copy ID
           </button>
           <button
+            onClick={() => ordersService.downloadInvoice(order.id, order.invoice_number)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold rounded-xl transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download PDF Invoice
+          </button>
+          <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-slate-400" />
-            Print Invoice
+            Print
           </button>
           <a
             href={`mailto:${order.customer_email}`}
@@ -1097,7 +1123,10 @@ const AdminOrderDetailPage: React.FC = () => {
               setShipment(s);
               fetchOrder();
             }}
-            onShipmentUpdated={(s) => setShipment(s)}
+            onShipmentUpdated={(s) => {
+              setShipment(s);
+              fetchOrder();
+            }}
           />
 
           {/* RIGHT CARD 2: Warehouse Workflow Quick Controls */}
@@ -1120,7 +1149,7 @@ const AdminOrderDetailPage: React.FC = () => {
             {order.status === 'packed' && !shipment && (
               <div className="p-3 bg-[#006670]/5 border border-[#006670]/20 rounded-xl text-xs text-slate-700 space-y-1">
                 <p className="font-extrabold text-[#006670]">Next Step: Create Shipment</p>
-                <p className="text-[11px] text-slate-500">Fill out package weight & dimensions in the card above to generate Delhivery AWB.</p>
+                <p className="text-[11px] text-slate-500">Fill out package weight & dimensions in the card above to generate Shiprocket AWB.</p>
               </div>
             )}
 

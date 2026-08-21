@@ -31,12 +31,25 @@ class EmailAuthBackend(ModelBackend):
 
         from apps.users.models import User
         from apps.authentication.services import LockoutService, AuditService
+        from apps.common.utils import normalize_phone_number
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        # Flexible lookup: case-insensitive email or canonical phone number match
+        norm_phone = None
+        if "@" not in identifier and any(c.isdigit() for c in identifier):
+            try:
+                norm_phone = normalize_phone_number(identifier, allow_empty=True)
+            except DjangoValidationError:
+                norm_phone = None
+
+        query = Q(email__iexact=identifier)
+        if norm_phone:
+            query |= Q(phone_number=norm_phone)
+        else:
+            query |= Q(phone_number=identifier)
 
         try:
-            # Flexible lookup: case-insensitive email or phone number match
-            user = User.objects.get(
-                Q(email__iexact=identifier) | Q(phone_number=identifier)
-            )
+            user = User.objects.get(query)
         except User.DoesNotExist:
             # Run the hasher to mitigate timing attacks
             User().set_password(password)

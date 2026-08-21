@@ -88,32 +88,102 @@ class ReportsAnalyticsService:
         return 0.0
 
     @classmethod
+    def _compute_period_financials(cls, start, end):
+        """
+        Computes Decimal financial metrics for a time period:
+        - gross_sales: Sum of Order.total_amount for valid orders (GST Inclusive)
+        - refunds: Sum of Refund.amount for successful refunds
+        - net_sales: gross_sales - refunds
+        - taxable_sales: Sum of OrderItem.taxable_subtotal (with historical fallback)
+        - gst_included: Sum of OrderItem.total_gst_amount (with historical fallback)
+        """
+        from apps.returns.models import Refund, RefundStatus
+        valid_orders_q = Q(status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
+
+        valid_orders = Order.objects.filter(created_at__gte=start, created_at__lte=end).filter(valid_orders_q)
+
+        gross_sales_val = valid_orders.aggregate(total=Sum('total_amount'))['total']
+        gross_sales = Decimal(str(gross_sales_val)) if gross_sales_val is not None else Decimal('0.00')
+
+        # Successful Refunds in period (RefundStatus.SUCCESS = "success")
+        refund_qs = Refund.objects.filter(status=RefundStatus.SUCCESS, created_at__gte=start, created_at__lte=end)
+        refunds_val = refund_qs.aggregate(total=Sum('amount'))['total']
+        refunds = Decimal(str(refunds_val)) if refunds_val is not None else Decimal('0.00')
+
+        net_sales = gross_sales - refunds
+
+        # OrderItems for valid orders in period
+        valid_order_items = OrderItem.objects.filter(
+            order__created_at__gte=start,
+            order__created_at__lte=end,
+            order__status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+        ).select_related('product', 'product__pricing')
+
+        taxable_sales = Decimal('0.00')
+        gst_included = Decimal('0.00')
+
+        for item in valid_order_items:
+            qty = Decimal(str(item.quantity))
+            unit_price = Decimal(str(item.price))
+            gross_line = unit_price * qty
+
+            if item.taxable_subtotal is not None and item.total_gst_amount is not None:
+                taxable_sales += Decimal(str(item.taxable_subtotal))
+                gst_included += Decimal(str(item.total_gst_amount))
+            elif item.gst_rate is not None:
+                rate = Decimal(str(item.gst_rate))
+                taxable_line = (gross_line / (Decimal('1.0') + (rate / Decimal('100.0')))).quantize(Decimal('0.01'))
+                gst_line = gross_line - taxable_line
+                taxable_sales += taxable_line
+                gst_included += gst_line
+            else:
+                rate_val = Decimal('18.00')
+                pricing = getattr(item.product, 'pricing', None) if item.product else None
+                if pricing:
+                    rate_attr = getattr(pricing, 'gst_percentage', None) or getattr(pricing, 'gst_rate', None)
+                    if rate_attr is not None:
+                        rate_val = Decimal(str(rate_attr))
+                taxable_line = (gross_line / (Decimal('1.0') + (rate_val / Decimal('100.0')))).quantize(Decimal('0.01'))
+                gst_line = gross_line - taxable_line
+                taxable_sales += taxable_line
+                gst_included += gst_line
+
+        return {
+            'gross_sales': gross_sales,
+            'refunds': refunds,
+            'net_sales': net_sales,
+            'taxable_sales': taxable_sales,
+            'gst_included': gst_included,
+            'valid_orders_count': valid_orders.count(),
+        }
+
+    @classmethod
     def get_executive_kpis(cls, date_info: dict):
-        """Section 1: Executive KPI Cards - 100% Real DB Query."""
+        """Section 1: Executive KPI Cards - 100% Real DB Query with Decimal Financial Breakdown."""
         start = date_info['start_date']
         end = date_info['end_date']
         p_start = date_info['prev_start_date']
         p_end = date_info['prev_end_date']
 
-        valid_orders_q = Q(status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
-
         # Current Period Stats
         curr_orders = Order.objects.filter(created_at__gte=start, created_at__lte=end)
-        curr_valid_orders = curr_orders.filter(valid_orders_q)
-        
-        curr_rev = float(curr_valid_orders.aggregate(total=Sum('total_amount'))['total'] or 0.0)
         curr_order_count = curr_orders.count()
-        curr_valid_count = curr_valid_orders.count()
-        curr_aov = curr_rev / curr_valid_count if curr_valid_count > 0 else 0.0
+        curr_fin = cls._compute_period_financials(start, end)
+        curr_valid_count = curr_fin['valid_orders_count']
+        curr_other_attempts = max(0, curr_order_count - curr_valid_count)
 
         # Previous Period Stats
         prev_orders = Order.objects.filter(created_at__gte=p_start, created_at__lte=p_end)
-        prev_valid_orders = prev_orders.filter(valid_orders_q)
-        
-        prev_rev = float(prev_valid_orders.aggregate(total=Sum('total_amount'))['total'] or 0.0)
         prev_order_count = prev_orders.count()
-        prev_valid_count = prev_valid_orders.count()
-        prev_aov = prev_rev / prev_valid_count if prev_valid_count > 0 else 0.0
+        prev_fin = cls._compute_period_financials(p_start, p_end)
+        prev_valid_count = prev_fin['valid_orders_count']
+        prev_other_attempts = max(0, prev_order_count - prev_valid_count)
+
+        # AOV = gross_sales / valid_orders_count
+        curr_gross = curr_fin['gross_sales']
+        prev_gross = prev_fin['gross_sales']
+        curr_aov = float(curr_gross / Decimal(str(curr_valid_count))) if curr_valid_count > 0 else 0.0
+        prev_aov = float(prev_gross / Decimal(str(prev_valid_count))) if prev_valid_count > 0 else 0.0
 
         # Customers & Dealers
         total_customers = User.objects.filter(role='customer').count()
@@ -124,22 +194,34 @@ class ReportsAnalyticsService:
         curr_new_dealers = DealerApplication.objects.filter(status=DealerStatus.APPROVED, created_at__gte=start, created_at__lte=end).count()
         prev_new_dealers = DealerApplication.objects.filter(status=DealerStatus.APPROVED, created_at__gte=p_start, created_at__lte=p_end).count()
 
-        # Real Conversion Rate: Completed Paid Orders / Total Customers (or Total Order Attempts)
+        # Real Conversion Rate: Valid Paid Orders / Total Customers
         curr_conversion = round((curr_valid_count / max(1, total_customers)) * 100.0, 1) if total_customers > 0 else 0.0
         prev_conversion = round((prev_valid_count / max(1, total_customers)) * 100.0, 1) if total_customers > 0 else 0.0
 
+        curr_net = float(curr_fin['net_sales'])
+        prev_net = float(prev_fin['net_sales'])
+
         return {
             'revenue': {
-                'value': curr_rev,
-                'formatted': f"₹{curr_rev:,.2f}",
-                'prev_value': prev_rev,
-                'growth': cls.calc_growth(curr_rev, prev_rev),
+                'value': curr_net,
+                'formatted': f"₹{curr_net:,.2f}",
+                'gross_sales': float(curr_fin['gross_sales']),
+                'gross_sales_formatted': f"₹{float(curr_fin['gross_sales']):,.2f}",
+                'refunds': float(curr_fin['refunds']),
+                'refunds_formatted': f"₹{float(curr_fin['refunds']):,.2f}",
+                'net_sales': curr_net,
+                'net_sales_formatted': f"₹{curr_net:,.2f}",
+                'prev_value': prev_net,
+                'growth': cls.calc_growth(curr_net, prev_net),
             },
             'orders': {
-                'value': curr_order_count,
-                'formatted': f"{curr_order_count:,}",
-                'prev_value': prev_order_count,
-                'growth': cls.calc_growth(curr_order_count, prev_order_count),
+                'value': curr_valid_count,  # Primary Orders metric represents valid paid orders
+                'formatted': f"{curr_valid_count:,}",
+                'total_attempts': curr_order_count,
+                'other_attempts': curr_other_attempts,
+                'subtitle': f"{curr_valid_count} valid orders ({curr_other_attempts} other attempts)",
+                'prev_value': prev_valid_count,
+                'growth': cls.calc_growth(curr_valid_count, prev_valid_count),
             },
             'customers': {
                 'value': total_customers,
@@ -164,6 +246,18 @@ class ReportsAnalyticsService:
                 'formatted': f"{curr_conversion}%",
                 'prev_value': prev_conversion,
                 'growth': cls.calc_growth(curr_conversion, prev_conversion),
+            },
+            'financials': {
+                'gross_sales': float(curr_fin['gross_sales']),
+                'gross_sales_formatted': f"₹{float(curr_fin['gross_sales']):,.2f}",
+                'refunds': float(curr_fin['refunds']),
+                'refunds_formatted': f"₹{float(curr_fin['refunds']):,.2f}",
+                'net_sales': float(curr_fin['net_sales']),
+                'net_sales_formatted': f"₹{float(curr_fin['net_sales']):,.2f}",
+                'taxable_sales': float(curr_fin['taxable_sales']),
+                'taxable_sales_formatted': f"₹{float(curr_fin['taxable_sales']):,.2f}",
+                'gst_included': float(curr_fin['gst_included']),
+                'gst_included_formatted': f"₹{float(curr_fin['gst_included']):,.2f}",
             }
         }
 
@@ -214,8 +308,9 @@ class ReportsAnalyticsService:
 
             curr_day += timedelta(days=1)
 
-        total_rev = sum(revenue_series)
-        total_ords = sum(orders_series)
+        fin = cls._compute_period_financials(start, end)
+        total_rev = float(fin['net_sales'])
+        total_ords = fin['valid_orders_count']
 
         return {
             'labels': labels,
@@ -223,8 +318,13 @@ class ReportsAnalyticsService:
             'orders_series': orders_series,
             'aov_series': aov_series,
             'total_revenue': round(total_rev, 2),
+            'gross_sales': float(fin['gross_sales']),
+            'refunds': float(fin['refunds']),
+            'net_sales': float(fin['net_sales']),
+            'taxable_sales': float(fin['taxable_sales']),
+            'gst_included': float(fin['gst_included']),
             'total_orders': total_ords,
-            'avg_order_value': round(total_rev / max(1, total_ords), 2) if total_ords > 0 else 0.0
+            'avg_order_value': round(float(fin['gross_sales'] / Decimal(str(total_ords))), 2) if total_ords > 0 else 0.0
         }
 
     @classmethod

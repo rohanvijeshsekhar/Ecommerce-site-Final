@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   Clock,
   Printer,
+  Download,
   X,
   CreditCard,
   Building,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { ordersService } from '../../lib/services/ordersService';
 import type { OrderDetail } from '../../lib/services/ordersService';
+import { api } from '../../lib/api';
 import { ReviewModal } from './ReviewModal';
 
 interface OrderDetailPageProps {
@@ -43,7 +45,33 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [activeReviewProduct, setActiveReviewProduct] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDownloadPDF = async () => {
+    if (!order) return;
+    setDownloadingPDF(true);
+    try {
+      const response = await api.get(`/orders/${order.id}/invoice/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `FAAZO-Invoice-${order.invoice_number || order.order_number}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showToast?.('Downloaded GST Tax Invoice PDF.');
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      showToast?.('Failed to download invoice PDF.');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   const fetchOrderDetail = useCallback(async () => {
     setLoading(true);
@@ -151,11 +179,19 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
           <div className="flex gap-2.5">
             <button
+              onClick={handleDownloadPDF}
+              disabled={downloadingPDF}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#006670] hover:bg-[#00555e] text-white rounded-xl text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all disabled:opacity-50"
+            >
+              <Printer className="w-4.5 h-4.5" />
+              {downloadingPDF ? 'Downloading...' : 'Download Invoice (PDF)'}
+            </button>
+            <button
               onClick={() => setShowInvoiceModal(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-[#e6f3f5] border border-[#006670]/10 hover:border-[#006670]/25 text-[#006670] rounded-xl text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all"
             >
-              <Printer className="w-4.5 h-4.5" />
-              Download Invoice
+              <FileText className="w-4.5 h-4.5" />
+              Preview Invoice
             </button>
             {isCancellable && (
               <button
@@ -433,11 +469,19 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
               </span>
               <div className="flex gap-2">
                 <button
+                  onClick={handleDownloadPDF}
+                  disabled={downloadingPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {downloadingPDF ? 'Downloading...' : 'Download PDF'}
+                </button>
+                <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer border border-slate-200"
                 >
                   <Printer className="w-4 h-4" />
-                  Print / Save PDF
+                  Print
                 </button>
                 <button
                   onClick={() => setShowInvoiceModal(false)}

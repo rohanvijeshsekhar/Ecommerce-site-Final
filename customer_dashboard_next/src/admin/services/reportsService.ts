@@ -12,12 +12,31 @@ export interface DatePeriodInfo {
   days: number;
 }
 
+export interface FinancialsBreakdown {
+  gross_sales: number;
+  gross_sales_formatted: string;
+  refunds: number;
+  refunds_formatted: string;
+  net_sales: number;
+  net_sales_formatted: string;
+  taxable_sales: number;
+  taxable_sales_formatted: string;
+  gst_included: number;
+  gst_included_formatted: string;
+}
+
 export interface KpiMetric {
   value: number;
   formatted: string;
   prev_value?: number;
   growth: number;
   new_in_period?: number;
+  total_attempts?: number;
+  other_attempts?: number;
+  subtitle?: string;
+  gross_sales?: number;
+  refunds?: number;
+  net_sales?: number;
 }
 
 export interface ExecutiveKpisData {
@@ -27,6 +46,7 @@ export interface ExecutiveKpisData {
   dealers: KpiMetric;
   aov: KpiMetric;
   conversion_rate: KpiMetric;
+  financials?: FinancialsBreakdown;
 }
 
 export interface RevenueAnalyticsData {

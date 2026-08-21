@@ -20,7 +20,7 @@ import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import StatCard from '../components/StatCard';
 import type { ColumnDef } from '../types/admin';
 import { adminOrdersService } from '../services/adminService';
-import type { OrderDetail } from '../../services/ordersService';
+import { ordersService, OrderDetail } from '../../lib/services/ordersService';
 
 const OrdersPage: React.FC = () => {
   useBreadcrumbSync([
@@ -88,11 +88,16 @@ const OrdersPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
+      if (err?.response?.status === 401) {
+        toast.error('Admin session expired. Please log in again.');
+        router.push('/admin/login');
+        return;
+      }
       toast.error('Failed to load orders data.');
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, startDate, endDate, toast]);
+  }, [page, pageSize, search, statusFilter, startDate, endDate, toast, router]);
 
   useEffect(() => {
     fetchOrders();
@@ -247,13 +252,22 @@ const OrdersPage: React.FC = () => {
       key: 'actions',
       header: 'Actions',
       render: (_, row) => (
-        <button
-          onClick={() => router.push(`/admin/orders/${row.id}`)}
-          className="p-1.5 hover:bg-slate-50 text-[#006670] hover:text-[#004e56] rounded-lg transition-colors cursor-pointer"
-          title="View Order Details"
-        >
-          <Eye className="w-4.5 h-4.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => router.push(`/admin/orders/${row.id}`)}
+            className="p-1.5 hover:bg-slate-50 text-[#006670] hover:text-[#004e56] rounded-lg transition-colors cursor-pointer"
+            title="View Order Details"
+          >
+            <Eye className="w-4.5 h-4.5" />
+          </button>
+          <button
+            onClick={() => ordersService.downloadInvoice(row.id, row.invoice_number)}
+            className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-[#006670] rounded-lg transition-colors cursor-pointer"
+            title="Download GST Tax Invoice PDF"
+          >
+            <Download className="w-4.5 h-4.5" />
+          </button>
+        </div>
       ),
     },
   ];

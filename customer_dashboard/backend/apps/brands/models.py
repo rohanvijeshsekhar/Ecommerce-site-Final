@@ -13,8 +13,10 @@ Design decisions:
 from django.db import models
 from django.utils.text import slugify
 
+from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import AuditedModel, FullAuditModel
 from apps.common.managers import ActiveManager, SoftDeleteManager
+
 
 
 # ============================================================
@@ -79,13 +81,13 @@ class Brand(FullAuditModel):
         blank=True,
         verbose_name="Legacy Description",
     )
-    logo = models.ImageField(
+    logo = OptimizedImageField(
         upload_to="brands/logos/",
         null=True,
         blank=True,
         verbose_name="Logo",
     )
-    banner_image = models.ImageField(
+    banner_image = OptimizedImageField(
         upload_to="brands/banners/",
         null=True,
         blank=True,
@@ -289,7 +291,7 @@ class BrandPageBanner(AuditedModel):
         default="Explore premium dental brands trusted by clinics and professionals worldwide.",
         verbose_name="Subtitle",
     )
-    banner_image = models.ImageField(
+    banner_image = OptimizedImageField(
         upload_to="brands/page_banners/",
         null=True,
         blank=True,

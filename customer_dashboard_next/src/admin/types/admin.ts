@@ -10,7 +10,8 @@ export type AdminRole =
   | 'sales_executive'
   | 'support_executive'
   | 'inventory_manager'
-  | 'dealer_manager';
+  | 'dealer_manager'
+  | 'viewer';
 
 export const ROLE_LABELS: Record<AdminRole, string> = {
   administrator: 'Administrator',
@@ -19,6 +20,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   support_executive: 'Support Executive',
   inventory_manager: 'Inventory Manager',
   dealer_manager: 'Dealer Manager',
+  viewer: 'Viewer',
 };
 
 // ── Permissions ───────────────────────────────────────────────────────────────
@@ -89,6 +91,11 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     'customers.view', 'orders.view',
     'reports.view',
   ],
+  viewer: [
+    'products.view', 'categories.view', 'brands.view',
+    'inventory.view', 'pricing.view', 'orders.view',
+    'reports.view',
+  ],
 };
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -96,7 +103,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 export type AdminSection =
   | 'dashboard'
   | 'homepage'
-  | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions'
+  | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews' | 'blog'
   | 'inventory' | 'pricing'
   | 'orders' | 'fulfillment'
   | 'customers' | 'dealers'

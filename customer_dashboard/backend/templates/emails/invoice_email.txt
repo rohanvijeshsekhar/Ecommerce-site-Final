@@ -1,0 +1,13 @@
+Tax Invoice - FAAZO Dental Solutions
+
+Dear {{ first_name }},
+
+Please find attached the official Tax Invoice for your order #{{ order_number }}.
+
+Order Number: #{{ order_number }}
+Invoice Number: {{ invoice_number|default:"INV-FAAZO" }}
+Total Amount: ₹{{ total_amount }}
+
+Best regards,
+FAAZO Accounts & Billing Team
+support@faazo.com

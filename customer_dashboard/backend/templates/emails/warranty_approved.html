@@ -1,0 +1,27 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Warranty Approved - FAAZO{% endblock %}
+{% block content %}
+<h2 style="color: #16a34a; margin-top: 0;">Warranty Approved!</h2>
+<p>Dear {{ first_name }},</p>
+<p>Your warranty registration for product <strong>{{ product_name }}</strong> has been verified and approved.</p>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <th>Product</th>
+      <td>{{ product_name }}</td>
+    </tr>
+    <tr>
+      <th>Serial Number</th>
+      <td><strong>{{ serial_number|default:"N/A" }}</strong></td>
+    </tr>
+    <tr>
+      <th>Warranty Period</th>
+      <td>{{ warranty_period|default:"1 Year" }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="margin-top: 24px;">Your product is now fully protected under the FAAZO Manufacturer Warranty.</p>
+<a href="{{ action_url|default:'http://localhost:5173/warranty' }}" class="btn">View Warranty Certificates</a>
+{% endblock %}

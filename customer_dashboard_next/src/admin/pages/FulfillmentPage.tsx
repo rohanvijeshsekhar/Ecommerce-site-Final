@@ -396,7 +396,7 @@ const FulfillmentPage: React.FC = () => {
     <div className="space-y-6 select-none text-left font-sans animate-in fade-in duration-200">
       <SectionHeader
         title="Fulfillment"
-        subtitle="Manage Delhivery shipments, tracking sync, and delivery lifecycle"
+        subtitle="Manage Shiprocket shipments, tracking sync, and delivery lifecycle"
         actions={
           <button
             onClick={fetchData}

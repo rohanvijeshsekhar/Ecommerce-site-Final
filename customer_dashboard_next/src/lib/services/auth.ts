@@ -97,8 +97,12 @@ export const authService = {
 
   /** C1: No body needed -- refresh token is read from the HttpOnly cookie by the backend. */
   async logout(): Promise<ApiResponse<null>> {
-    const response = await api.post('auth/v2/logout/');
-    return response.data;
+    try {
+      const response = await api.post('auth/v2/logout/');
+      return response.data;
+    } catch {
+      return { success: true, message: 'Logged out locally.', data: null };
+    }
   },
 
   async getMe(): Promise<ApiResponse<any>> {

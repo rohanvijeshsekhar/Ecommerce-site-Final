@@ -105,6 +105,7 @@ class AddressSerializer(serializers.ModelSerializer):
     """
     Full address serializer for CRUD operations.
     user is set automatically from request.user — never from input.
+    Validates field lengths, Indian phone numbers, official states, and postal consistency.
     """
 
     class Meta:
@@ -126,24 +127,47 @@ class AddressSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
-    def validate_pincode(self, value: str) -> str:
-        """Validate Indian 6-digit pincode format."""
-        value = value.strip()
-        if not value.isdigit() or len(value) != 6:
-            raise serializers.ValidationError(
-                "Pincode must be a 6-digit number."
-            )
-        return value
+    def validate_full_name(self, value: str) -> str:
+        from apps.common.validators import validate_contact_name
+        return validate_contact_name(value)
 
     def validate_mobile(self, value: str) -> str:
-        """Basic mobile number validation."""
-        value = value.strip()
-        digits = value.lstrip("+")
-        if not digits.isdigit() or len(digits) < 10:
+        from apps.common.validators import validate_phone_number
+        return validate_phone_number(value)
+
+    def validate_line1(self, value: str) -> str:
+        from apps.common.validators import validate_address_line
+        return validate_address_line(value, min_length=5)
+
+    def validate_city(self, value: str) -> str:
+        from apps.common.validators import validate_city_name
+        return validate_city_name(value)
+
+    def validate_state(self, value: str) -> str:
+        from apps.common.postal_data import normalize_indian_state, is_valid_indian_state
+        canonical = normalize_indian_state(value)
+        if not canonical or not is_valid_indian_state(canonical):
             raise serializers.ValidationError(
-                "Enter a valid mobile number (minimum 10 digits)."
+                f"'{value}' is not a recognized Indian State or Union Territory. Please select a valid state."
             )
-        return value
+        return canonical
+
+    def validate_pincode(self, value: str) -> str:
+        from apps.common.validators import validate_pincode
+        return validate_pincode(value)
+
+    def validate(self, attrs):
+        # Cross-validate state and pincode
+        state = attrs.get("state") or (self.instance.state if self.instance else None)
+        pincode = attrs.get("pincode") or (self.instance.pincode if self.instance else None)
+
+        if state and pincode:
+            from apps.common.postal_data import validate_pincode_state_match
+            is_valid, err_msg = validate_pincode_state_match(pincode, state)
+            if not is_valid:
+                raise serializers.ValidationError({"pincode": err_msg})
+
+        return attrs
 
     def create(self, validated_data):
         user = self.context["request"].user

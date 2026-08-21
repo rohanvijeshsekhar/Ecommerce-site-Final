@@ -5,14 +5,19 @@ import { useState, useEffect, useCallback } from 'react';
  * Reads from localStorage on mount and syncs writes back.
  */
 export function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+
+  // Initialize from localStorage after mounting on the client to prevent SSR hydration mismatches
+  useEffect(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
+      if (item !== null) {
+        setStoredValue(JSON.parse(item) as T);
+      }
     } catch {
-      return initialValue;
+      // ignore
     }
-  });
+  }, [key]);
 
   const setValue: React.Dispatch<React.SetStateAction<T>> = useCallback(
     (value) => {

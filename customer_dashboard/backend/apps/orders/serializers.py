@@ -21,7 +21,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product_name", "product_slug", "image_url", "quantity", "price"]
+        fields = [
+            "id", "product_name", "product_slug", "image_url", "quantity", "price",
+            "gst_rate", "hsn_code", "taxable_value_per_unit", "taxable_subtotal",
+            "cgst_amount", "sgst_amount", "igst_amount", "total_gst_amount", "is_intra_state"
+        ]
 
     def get_image_url(self, obj):
         primary = obj.product.images.filter(is_primary=True).first()
@@ -53,7 +57,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             "id", "order_number", "invoice_number", "shipping_address_label", 
             "shipping_address_detail", "status", "payment_method",
-            "mrp_subtotal", "selling_subtotal", "gst_amount", "shipping_fee",
+            "mrp_subtotal", "selling_subtotal", "taxable_subtotal", "gst_amount", "shipping_fee",
             "total_amount", "items", "created_at", "updated_at",
             "status_history", "razorpay_payment_id", "razorpay_order_id",
             "payment_status", "customer_email", "customer_name",

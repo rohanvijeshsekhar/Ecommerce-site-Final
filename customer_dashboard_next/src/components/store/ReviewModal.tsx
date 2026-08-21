@@ -113,7 +113,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     }
 
     setError(null);
-    setSelectedFiles((prev) => [...prev, ...previews]);
     setSelectedFiles((prev) => [...prev, ...validFiles]);
   };
 

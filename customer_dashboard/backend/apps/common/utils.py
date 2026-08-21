@@ -164,3 +164,71 @@ def hash_token(token: str) -> str:
     Uses SHA-256. Used for refresh token storage.
     """
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+# ============================================================
+# Phone Number Normalization & Validation (E.164)
+# ============================================================
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
+
+
+def normalize_phone_number(
+    phone: str | None,
+    default_region: str = "IN",
+    allow_empty: bool = True,
+) -> str | None:
+    """
+    Normalize any valid phone number into canonical E.164 format (+91XXXXXXXXXX).
+
+    Supported Indian & international formats:
+        9876543210       → +919876543210
+        09876543210      → +919876543210
+        919876543210     → +919876543210
+        +919876543210    → +919876543210
+        +91 98765 43210  → +919876543210
+        +91-98765-43210  → +919876543210
+
+    Rejects:
+        - Invalid numbers (e.g. 12345, letters, impossible area/country codes)
+        - Empty values if allow_empty=False
+
+    Returns:
+        Canonical E.164 formatted string (e.g. '+919876543210') or None if empty.
+    """
+    if phone is None:
+        if allow_empty:
+            return None
+        raise DjangoValidationError("Phone number is required.")
+
+    raw = str(phone).strip()
+    if not raw:
+        if allow_empty:
+            return None
+        raise DjangoValidationError("Phone number cannot be blank.")
+
+    try:
+        parsed = phonenumbers.parse(raw, default_region)
+    except NumberParseException as exc:
+        raise DjangoValidationError(
+            "Enter a valid mobile number (e.g. 9876543210 or +919876543210)."
+        ) from exc
+
+    if not phonenumbers.is_valid_number(parsed):
+        raise DjangoValidationError(
+            "Enter a valid mobile number (e.g. 9876543210 or +919876543210)."
+        )
+
+    return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+
+
+# Re-export Image Optimizer utilities
+from apps.common.image_optimizer import (
+    OptimizedImageField,
+    optimize_image_to_webp,
+    sanitize_image_filename,
+    validate_image_file,
+)
+

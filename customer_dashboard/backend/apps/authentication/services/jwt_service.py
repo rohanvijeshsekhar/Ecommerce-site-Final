@@ -128,9 +128,31 @@ class JWTService:
             # Check if matching session exists and is active
             session = DeviceSession.objects.filter(session_key=jti).first()
 
-            # REUSE DETECTION: If token is blacklisted or session is revoked/inactive
-            is_blacklisted = BlacklistedToken.objects.filter(token__jti=jti).exists()
-            if is_blacklisted or (session and not session.is_active):
+            # REUSE DETECTION WITH GRACE WINDOW:
+            # If token was recently blacklisted (within 10s grace window due to parallel browser refresh),
+            # safely issue fresh tokens without revoking user sessions.
+            bt = BlacklistedToken.objects.filter(token__jti=jti).select_related("token").first()
+            if bt:
+                time_since_blacklisted = (timezone.now() - bt.blacklisted_at).total_seconds()
+                if time_since_blacklisted <= 10.0:
+                    logger.warning(
+                        "[TOKEN_REFRESH_GRACE] Concurrent refresh request for %s within %.2fs grace window.",
+                        user.email, time_since_blacklisted
+                    )
+                    new_refresh = RefreshToken.for_user(user)
+                    new_refresh["email"] = user.email
+                    new_refresh["role"] = user.role
+                    new_refresh["full_name"] = user.full_name
+                    refresh_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME", timedelta(days=7))
+                    payload = {
+                        "access": str(new_refresh.access_token),
+                        "refresh": str(new_refresh),
+                        "access_expires_in": int(settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=60)).total_seconds()),
+                        "refresh_expires_in": int(refresh_lifetime.total_seconds()),
+                    }
+                    return True, payload, "Token refreshed successfully (grace period)."
+
+            if bt or (session and not session.is_active):
                 logger.critical(
                     f"[SECURITY ALERT] Refresh token reuse detected for user {user.email}! Revoking all sessions."
                 )

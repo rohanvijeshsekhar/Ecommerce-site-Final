@@ -40,6 +40,9 @@ class NotificationType(models.TextChoices):
     ORDER_CANCELLED       = "ORDER_CANCELLED", "Order Cancelled"
     REFUND_INITIATED      = "REFUND_INITIATED", "Refund Initiated"
     REFUND_COMPLETED      = "REFUND_COMPLETED", "Refund Completed"
+    RETURN_REQUESTED      = "RETURN_REQUESTED", "Return Requested"
+    RETURN_APPROVED       = "RETURN_APPROVED", "Return Approved"
+    RETURN_REJECTED       = "RETURN_REJECTED", "Return Rejected"
 
     # Support
     SUPPORT_CREATED       = "SUPPORT_CREATED", "Support Ticket Created"

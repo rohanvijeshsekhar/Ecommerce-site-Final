@@ -30,6 +30,11 @@ urlpatterns = [
         name="shipping-pincode-check",
     ),
     path(
+        "shipping/check-serviceability/",
+        PincodeServiceabilityView.as_view(),
+        name="shipping-check-serviceability",
+    ),
+    path(
         "shipping/calculate-cost/",
         ShippingCostCalculateView.as_view(),
         name="shipping-calculate-cost",
