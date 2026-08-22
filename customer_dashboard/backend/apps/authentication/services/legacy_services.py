@@ -78,12 +78,7 @@ class TokenService:
 
     @classmethod
     def generate_password_reset_token(cls, user) -> Optional[str]:
-        # Mandatory Requirement 2: Google-only accounts without password cannot request reset tokens
-        if not user.has_usable_password() or getattr(user, "auth_provider", "") == "google":
-            logger.info("Password reset request skipped for Google-only account %s", user.email)
-            return None
-
-        # Mandatory Requirement 4: Invalidate all prior unused reset tokens for this user
+        # Invalidate all prior unused reset tokens for this user
         PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
 
         raw_token = secrets.token_hex(cls.TOKEN_BYTES)

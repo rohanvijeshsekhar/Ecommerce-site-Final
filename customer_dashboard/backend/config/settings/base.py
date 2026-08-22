@@ -599,6 +599,8 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300  # 5 minutes hard execution limit
 CELERY_TASK_SOFT_TIME_LIMIT = 240  # 4 minutes soft execution limit
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Periodic Celery Beat schedule for Transactional Outbox sweeper
 CELERY_BEAT_SCHEDULE = {

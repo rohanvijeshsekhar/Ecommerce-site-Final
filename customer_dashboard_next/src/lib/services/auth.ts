@@ -121,11 +121,28 @@ export const authService = {
   },
 
   async forgotPassword(email: string): Promise<ApiResponse<null>> {
-    const response = await api.post('auth/v2/password/forgot/', { email });
+    const response = await api.post('auth/v2/password/forgot/', { email: email.trim().toLowerCase() });
     return response.data;
   },
 
-  async resetPassword(payload: any): Promise<ApiResponse<null>> {
+  async verifyPasswordResetOtp(email: string, code: string): Promise<ApiResponse<{ reset_token: string }>> {
+    const response = await api.post('auth/v2/otp/verify/', {
+      target: email.trim().toLowerCase(),
+      purpose: 'password_reset',
+      code: code.trim(),
+    });
+    return response.data;
+  },
+
+  async resendPasswordResetOtp(email: string): Promise<ApiResponse<null>> {
+    const response = await api.post('auth/v2/otp/resend/', {
+      target: email.trim().toLowerCase(),
+      purpose: 'password_reset',
+    });
+    return response.data;
+  },
+
+  async resetPassword(payload: { token: string; password: string; confirm_password?: string }): Promise<ApiResponse<null>> {
     const response = await api.post('auth/v2/password/reset/', payload);
     return response.data;
   },

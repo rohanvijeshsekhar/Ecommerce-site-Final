@@ -98,7 +98,11 @@ class OTPService:
         # 4. Generate & Hash OTP
         otp_code = cls.generate_otp()
         otp_hash = cls.hash_otp(otp_code)
-        expires_at = now + timedelta(minutes=cls.EXPIRATION_MINUTES)
+        
+        is_password_reset = purpose in (OtpPurpose.PASSWORD_RESET, "password_reset")
+        expiration_minutes = 5 if is_password_reset else cls.EXPIRATION_MINUTES
+        max_attempts = 5 if is_password_reset else cls.MAX_ATTEMPTS
+        expires_at = now + timedelta(minutes=expiration_minutes)
 
         # 5. Save OTP Record
         otp_record = OTPRecord.objects.create(
@@ -107,7 +111,7 @@ class OTPService:
             purpose=purpose,
             otp_hash=otp_hash,
             expires_at=expires_at,
-            max_attempts=cls.MAX_ATTEMPTS,
+            max_attempts=max_attempts,
             ip_address=ip_address,
         )
 
@@ -115,7 +119,7 @@ class OTPService:
         if cls.is_mobile_number(target):
             dispatched = get_sms_provider().send_otp(target, otp_code, purpose)
         else:
-            dispatched = EmailOTPProvider().send_otp(target, otp_code, purpose)
+            dispatched = EmailOTPProvider().send_otp(target, otp_code, purpose, user=user)
 
         if not dispatched:
             return False, "Failed to dispatch OTP. Please try again."
@@ -158,7 +162,7 @@ class OTPService:
 
         now = timezone.now()
         otp_record = (
-            OTPRecord.objects.filter(target=target, purpose=purpose, is_used=False)
+            OTPRecord.objects.filter(target=target, purpose=purpose)
             .order_by("-created_at")
             .first()
         )
@@ -173,9 +177,11 @@ class OTPService:
             )
             return False, "Invalid or expired OTP code."
 
-        if otp_record.attempts >= otp_record.max_attempts:
-            otp_record.is_used = True
-            otp_record.save(update_fields=["is_used"])
+        # If already used without reaching max attempts, it was consumed successfully
+        if otp_record.is_used and otp_record.attempts < otp_record.max_attempts:
+            return False, "Invalid or expired OTP code."
+
+        if otp_record.attempts >= otp_record.max_attempts or otp_record.is_used:
             AuditService.log_event(
                 action="OTP_FAILED",
                 user=user,
@@ -200,7 +206,8 @@ class OTPService:
                 from apps.users.models import User
                 target_user = User.objects.filter(phone_number=target).first()
 
-            if target_user:
+            # Safety Rule 10: Do NOT set user.is_email_verified as a side effect of password reset
+            if target_user and purpose not in (OtpPurpose.PASSWORD_RESET, "password_reset"):
                 if cls.is_mobile_number(target):
                     target_user.is_phone_verified = True
                     target_user.save(update_fields=["is_phone_verified"])
@@ -217,7 +224,9 @@ class OTPService:
             )
             return True, "OTP verified successfully."
         else:
-            otp_record.save(update_fields=["attempts"])
+            if otp_record.attempts >= otp_record.max_attempts:
+                otp_record.is_used = True
+            otp_record.save(update_fields=["attempts", "is_used"])
             remaining = max(0, otp_record.max_attempts - otp_record.attempts)
             AuditService.log_event(
                 action="OTP_FAILED",
@@ -227,3 +236,39 @@ class OTPService:
                 details={"target": target, "attempts": otp_record.attempts},
             )
             return False, f"Invalid OTP code. {remaining} attempt(s) remaining."
+
+    @classmethod
+    def verify_password_reset_otp(
+        cls,
+        email: str,
+        raw_otp: str,
+        ip_address: str | None = None,
+    ) -> Tuple[bool, str | None, str]:
+        """
+        Verify an OTP submitted specifically for password reset.
+        On success, issues a single-use 10-minute server-side PasswordResetToken.
+        """
+        from apps.users.models import User
+        from apps.authentication.services.legacy_services import TokenService
+
+        email_normalized = email.strip().lower()
+        success, message = cls.verify_otp(
+            target=email_normalized,
+            purpose=OtpPurpose.PASSWORD_RESET,
+            raw_otp=raw_otp,
+            ip_address=ip_address,
+        )
+        if not success:
+            return False, None, message
+
+        user = User.objects.filter(email__iexact=email_normalized).first()
+        if not user or not user.is_active:
+            return False, None, "User account not found or inactive."
+
+        # Issue 10-minute single-use reset authorization token
+        raw_token = TokenService.generate_password_reset_token(user)
+        if not raw_token:
+            return False, None, "Unable to generate reset authorization token."
+
+        return True, raw_token, "OTP verified successfully."
+

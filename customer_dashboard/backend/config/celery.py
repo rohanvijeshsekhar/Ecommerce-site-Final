@@ -36,6 +36,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # relying solely on Celery's filename-based autodiscover in INSTALLED_APPS.
 app.autodiscover_tasks([
     "apps.common",           # apps/common/tasks.py  → faazo.infra.*
+    "apps.authentication",   # apps/authentication/tasks.py → faazo.auth.*
     "apps.notifications",    # apps/notifications/tasks.py → faazo.notifications.*
     "apps.orders",           # apps/orders/tasks.py  → faazo.orders.*
     "apps.shipping",         # apps/shipping/tasks.py → faazo.shipping.*

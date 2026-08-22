@@ -793,9 +793,15 @@ class ForgotPasswordView(APIView):
         # Silently skip if user doesn't exist (anti-enumeration)
         try:
             user = User.objects.get(email=email, is_active=True)
-            raw_token = TokenService.generate_password_reset_token(user)
-            EmailService.send_password_reset(user, raw_token)
-            logger.info("[PASSWORD_RESET_REQUEST] Reset email sent to %s.", email)
+            from apps.authentication.services import OTPService
+            from apps.authentication.models import OtpPurpose
+            OTPService.send_otp(
+                target=email,
+                purpose=OtpPurpose.PASSWORD_RESET,
+                user=user,
+                ip_address=_get_client_ip(request),
+            )
+            logger.info("[PASSWORD_RESET_REQUEST] Reset OTP sent to %s.", email)
         except User.DoesNotExist:
             logger.info(
                 "[PASSWORD_RESET_REQUEST] Email %s not found — silently ignored.", email
@@ -805,7 +811,7 @@ class ForgotPasswordView(APIView):
         return _ok(
             message=(
                 "If an account exists with this email address, "
-                "a password reset link has been sent."
+                "a verification code has been sent to your email."
             )
         )
 
@@ -839,24 +845,26 @@ class ResetPasswordView(APIView):
         raw_token = data["token"]
 
         # Validate token (does not consume it yet)
-        is_valid, message, token_obj = TokenService.validate_password_reset_token(raw_token)
-        if not is_valid:
+        is_valid, user, message = TokenService.validate_password_reset_token(raw_token)
+        if not is_valid or not user:
             return _error(message, status_code=400)
 
-        user = token_obj.user
+        # Consume the token and set new password + blacklist all sessions
+        success, consume_msg = TokenService.consume_password_reset_token(raw_token, data["password"])
+        if not success:
+            return _error(consume_msg, status_code=400)
 
-        # Set new password + blacklist all sessions
-        AuthService.change_password(user, data["password"])
-
-        # Consume the token
-        TokenService.consume_password_reset_token(token_obj)
-
-        # Send confirmation email
-        EmailService.send_password_reset_success(user)
+        # Send confirmation email async
+        try:
+            from apps.authentication.tasks import send_password_reset_success_async
+            send_password_reset_success_async.delay(user_id=str(user.pk))
+        except Exception:
+            EmailService.send_password_reset_success(user)
 
         logger.info(
             "[PASSWORD_RESET_COMPLETE] Password reset successful for %s.", user.email
         )
+
 
         return _ok(
             message=(

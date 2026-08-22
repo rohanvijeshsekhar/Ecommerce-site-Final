@@ -13,6 +13,8 @@ interface ReviewItem {
   image: string;
 }
 
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80';
+
 const STATIC_REVIEWS: ReviewItem[] = [
   {
     id: 'testimonial-1',
@@ -20,7 +22,7 @@ const STATIC_REVIEWS: ReviewItem[] = [
     clinic: 'Smile Dental Clinic, Mumbai',
     quote: 'Faazo has transformed how we source dental equipment. The quality is outstanding and delivery is always on time. Highly recommend!',
     rating: 5,
-    image: '/images/testimonial_1.png',
+    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
   },
   {
     id: 'testimonial-2',
@@ -28,7 +30,7 @@ const STATIC_REVIEWS: ReviewItem[] = [
     clinic: 'Advanced Dental Care, Bangalore',
     quote: 'Exceptional product range and competitive pricing. The NSK handpieces we ordered have made a significant difference in our patient outcomes.',
     rating: 5,
-    image: '/images/testimonial_2.png',
+    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
   },
   {
     id: 'testimonial-3',
@@ -36,7 +38,7 @@ const STATIC_REVIEWS: ReviewItem[] = [
     clinic: 'City Dental Hub, Delhi',
     quote: 'Best place to source professional dental equipment. The team is knowledgeable and the after-sales support is excellent.',
     rating: 5,
-    image: '/images/testimonial_3.png',
+    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80',
   },
 ];
 
@@ -56,7 +58,7 @@ const Testimonials: React.FC = () => {
             clinic: t.clinic_name || 'Dental Clinic',
             quote: t.review || '',
             rating: Number(t.rating) || 5,
-            image: t.photo_url || (t.photo ? getAbsoluteImageUrl(t.photo) : '') || '/images/testimonial_1.png',
+            image: t.photo_url || (t.photo ? getAbsoluteImageUrl(t.photo) : '') || DEFAULT_AVATAR,
           }));
           setReviews(mapped);
         }
@@ -73,22 +75,13 @@ const Testimonials: React.FC = () => {
     const base = reviews.length > 0 ? reviews : STATIC_REVIEWS;
     if (!base || base.length === 0) return [];
     
-    // Repeat enough items so the half-track is always longer than standard screens
-    const targetCount = Math.max(6, base.length);
-    const repeatTimes = Math.ceil(targetCount / base.length);
-    
-    const singleSet: ReviewItem[] = [];
-    for (let i = 0; i < repeatTimes; i++) {
-      singleSet.push(...base);
-    }
-    
-    // Return two identical copies for a seamless 0% -> -50% translateX loop
-    return [...singleSet, ...singleSet];
+    // Repeat the base list so we have enough items to loop continuously without visual gaps
+    return [...base, ...base, ...base, ...base];
   }, [reviews]);
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style>{`
         @keyframes testimonials-marquee-anim {
           0% {
             transform: translateX(0);
@@ -98,45 +91,44 @@ const Testimonials: React.FC = () => {
           }
         }
         .testimonials-marquee-track {
-          display: flex;
           width: max-content;
+          display: flex;
           animation: testimonials-marquee-anim 36s linear infinite;
         }
         .testimonials-marquee-track:hover {
           animation-play-state: paused;
         }
         .testimonials-mask {
-          mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
+          mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
         @media (max-width: 768px) {
           .testimonials-marquee-track {
-            animation-duration: 26s;
+            animation-duration: 24s;
           }
         }
-      `}} />
+      `}</style>
 
-      {/* Desktop View - Continuous Infinite Left-Scrolling Marquee */}
+      {/* Desktop / Tablet View */}
       <section className="hidden md:block w-full bg-[#F2FBFB] border-y border-[#E2E8F0] py-20 relative overflow-hidden select-none" id="testimonials">
-        {/* Ambient Glass Glow Orbs */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#005F63]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-[#45AFED]/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-40 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+        {/* Glow Spheres */}
+        <div className="absolute top-1/2 left-10 -translate-y-1/2 w-96 h-96 bg-[#005F63]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 right-10 -translate-y-1/2 w-96 h-96 bg-[#45AFED]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-8 relative z-10 mb-10">
-          {/* Section Header */}
-          <div className="text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#005F63]/10 text-[#005F63] text-xs font-extrabold uppercase tracking-wider mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Verified Clinical Feedback</span>
-            </div>
-            <h2 className="text-3.5xl font-black text-slate-800 tracking-tight font-display">
-              What Dentists & Surgeons Say
-            </h2>
-            <p className="text-sm font-medium text-slate-500 mt-1">
-              Trusted by thousands of dental clinics across India for equipment reliability and after-sales support.
-            </p>
+        {/* Section Header */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#005F63]/10 border border-[#005F63]/20 mb-4 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-[#005F63]" />
+            <span className="text-xs font-black text-[#005F63] uppercase tracking-wider">
+              Trusted by 10,000+ Dentists Nationwide
+            </span>
           </div>
+          <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight font-display">
+            What Practitioners Say About FAAZO
+          </h2>
+          <p className="text-slate-500 font-semibold text-sm max-w-xl mx-auto mt-2">
+            Real feedback from clinics across India using our clinical-grade instruments & equipment.
+          </p>
         </div>
 
         {/* Infinite Scrolling Track */}
@@ -145,28 +137,23 @@ const Testimonials: React.FC = () => {
             {marqueeItems.map((rev, idx) => (
               <div 
                 key={`desk-testimonial-${rev.id}-${idx}`} 
-                className="group relative w-[390px] lg:w-[420px] flex-shrink-0 rounded-3xl bg-white/40 hover:bg-white/60 backdrop-blur-2xl p-7 border border-white/70 shadow-[0_12px_36px_-8px_rgba(0,95,99,0.08),0_2px_8px_0_rgba(255,255,255,0.5)_inset] hover:shadow-[0_20px_48px_-6px_rgba(0,95,99,0.18),0_2px_12px_0_rgba(255,255,255,0.7)_inset] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                className="w-[380px] flex-shrink-0 rounded-3xl bg-white/45 backdrop-blur-xl p-7 border border-white/70 shadow-[0_20px_50px_-12px_rgba(0,95,99,0.1),0_2px_8px_0_rgba(255,255,255,0.6)_inset] text-left flex flex-col justify-between transition-all duration-300 hover:shadow-[0_24px_60px_-8px_rgba(0,95,99,0.18),0_2px_8px_0_rgba(255,255,255,0.8)_inset] hover:-translate-y-1 group"
               >
-                {/* Subtle Glass Top Specular Highlight */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent rounded-t-3xl" />
-
                 <div>
-                  {/* Glass Top Row: Quote Icon & Star Rating */}
+                  {/* Top Quote + Rating Badge */}
                   <div className="flex items-center justify-between mb-5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#005F63]/10 flex items-center justify-center text-[#005F63] border border-[#005F63]/20 shadow-inner backdrop-blur-md">
-                      <Quote className="w-5 h-5 transform -scale-x-100" />
+                    <div className="w-10 h-10 rounded-2xl bg-[#005F63]/10 flex items-center justify-center text-[#005F63] border border-[#005F63]/20 backdrop-blur-md">
+                      <Quote className="w-4 h-4 transform -scale-x-100" />
                     </div>
-
-                    <div className="flex items-center gap-1 bg-white/60 border border-white/80 px-3 py-1 rounded-full shadow-2xs backdrop-blur-md">
+                    <div className="flex items-center gap-1 bg-white/60 border border-white/80 px-2.5 py-1 rounded-full backdrop-blur-md">
                       {[...Array(rev.rating)].map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-amber-500 stroke-amber-500" />
                       ))}
-                      <span className="text-xs font-black text-amber-700 ml-1">5.0</span>
                     </div>
                   </div>
 
                   {/* Testimonial Quote Text */}
-                  <p className="text-[13.5px] font-semibold text-slate-800 italic leading-relaxed min-h-[76px] mb-6 whitespace-normal text-left">
+                  <p className="text-sm font-semibold text-slate-800 italic leading-relaxed mb-6 whitespace-normal">
                     &quot;{rev.quote}&quot;
                   </p>
                 </div>
@@ -175,11 +162,13 @@ const Testimonials: React.FC = () => {
                 <div className="flex items-center gap-3.5 pt-4 border-t border-white/40">
                   <div className="relative flex-shrink-0">
                     <img 
-                      src={rev.image || '/images/testimonial_1.png'} 
+                      src={rev.image || DEFAULT_AVATAR} 
                       alt={rev.name} 
                       className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow-sm"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/testimonial_1.png';
+                        const target = e.currentTarget;
+                        target.onerror = null;
+                        target.src = DEFAULT_AVATAR;
                       }}
                     />
                     <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#005F63] text-white flex items-center justify-center shadow-xs">
@@ -202,14 +191,9 @@ const Testimonials: React.FC = () => {
         </div>
       </section>
 
-      {/* Mobile View - Continuous Infinite Left-Scrolling Marquee */}
+      {/* Mobile View */}
       <section className="block md:hidden w-full bg-[#F2FBFB] border-y border-[#E2E8F0] px-4 py-10 relative overflow-hidden select-none" id="testimonials-mobile">
-        {/* Mobile Glass Glow Orbs */}
-        <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#005F63]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#45AFED]/15 rounded-full blur-3xl pointer-events-none" />
-
         <div className="relative z-10">
-          {/* Header */}
           <div className="mb-6 px-1 text-left">
             <span className="text-[10px] font-extrabold tracking-wider text-[#005F63] uppercase block mb-1">
               Verified Reviews
@@ -219,7 +203,6 @@ const Testimonials: React.FC = () => {
             </h2>
           </div>
 
-          {/* Mobile Infinite Scrolling Track */}
           <div className="relative z-10 w-full overflow-hidden testimonials-mask py-2">
             <div className="testimonials-marquee-track flex items-stretch gap-4">
               {marqueeItems.map((rev, idx) => (
@@ -247,11 +230,13 @@ const Testimonials: React.FC = () => {
                   <div className="flex items-center gap-3 pt-3.5 border-t border-white/40">
                     <div className="relative flex-shrink-0">
                       <img 
-                        src={rev.image || '/images/testimonial_1.png'} 
+                        src={rev.image || DEFAULT_AVATAR} 
                         alt={rev.name} 
                         className="w-9 h-9 rounded-full object-cover border-2 border-white/80 shadow-xs"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/testimonial_1.png';
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = DEFAULT_AVATAR;
                         }}
                       />
                       <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#005F63] text-white flex items-center justify-center">

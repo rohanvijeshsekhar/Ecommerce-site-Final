@@ -72,7 +72,7 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 pt-32 pb-12">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
         {/* Top Header Banner */}
         <div className="bg-[#006670] p-6 text-white text-center relative overflow-hidden">
@@ -111,9 +111,19 @@ function ResetPasswordForm() {
               )}
 
               {error && (
-                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2 text-xs text-rose-600 font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl flex flex-col gap-2 text-xs text-rose-600 font-medium">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                  {(error.toLowerCase().includes('used') || error.toLowerCase().includes('expired') || error.toLowerCase().includes('superseded') || error.toLowerCase().includes('invalid')) && (
+                    <Link
+                      href="/forgot-password"
+                      className="self-start inline-flex items-center gap-1.5 text-[11px] font-bold text-[#006670] hover:underline mt-1 bg-white/80 px-2.5 py-1 rounded-lg border border-rose-200/60"
+                    >
+                      Request a New Reset Link <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                 </div>
               )}
 

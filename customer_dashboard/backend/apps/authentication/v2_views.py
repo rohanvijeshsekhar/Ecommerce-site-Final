@@ -515,10 +515,21 @@ class OTPVerifyView(APIView):
         data = serializer.validated_data
         ip = _get_client_ip(request)
         user = request.user if request.user.is_authenticated else None
+        purpose = data["purpose"]
+
+        if purpose in ("password_reset", "OtpPurpose.PASSWORD_RESET"):
+            success, reset_token, message = OTPService.verify_password_reset_otp(
+                email=data["target"],
+                raw_otp=data["code"],
+                ip_address=ip,
+            )
+            if not success:
+                return _error(message, status_code=400)
+            return _ok(data={"reset_token": reset_token}, message=message)
 
         success, message = OTPService.verify_otp(
             target=data["target"],
-            purpose=data["purpose"],
+            purpose=purpose,
             raw_otp=data["code"],
             user=user,
             ip_address=ip,
@@ -528,6 +539,7 @@ class OTPVerifyView(APIView):
             return _error(message, status_code=400)
 
         return _ok(message=message)
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -916,7 +928,7 @@ class ForgotPasswordV2View(APIView):
         user_agent = _get_user_agent(request)
 
         user = User.objects.filter(email=email).first()
-        generic_message = "If an account exists, password reset instructions have been sent."
+        generic_message = "If an account exists, a 6-digit verification code has been sent to your email."
 
         if not user:
             AuditService.log_event(
@@ -925,18 +937,6 @@ class ForgotPasswordV2View(APIView):
                 ip_address=ip,
                 user_agent=user_agent,
                 details={"email": email},
-            )
-            return _ok(message=generic_message)
-
-        # Mandatory Requirement 2: Skip password reset for Google-only accounts without password
-        if not user.has_usable_password() or getattr(user, "auth_provider", "") == "google":
-            AuditService.log_event(
-                action="PASSWORD_RESET_SKIPPED_GOOGLE_ACCOUNT",
-                user=user,
-                status="SUCCESS",
-                ip_address=ip,
-                user_agent=user_agent,
-                details={"email": email, "reason": "Google-only account cannot request password reset"},
             )
             return _ok(message=generic_message)
 
@@ -953,19 +953,25 @@ class ForgotPasswordV2View(APIView):
             )
             return _ok(message=generic_message)
 
-        raw_token = TokenService.generate_password_reset_token(user)
-        if raw_token:
-            EmailService.send_password_reset_email(user, raw_token)
-            AuditService.log_event(
-                action="PASSWORD_RESET_REQUESTED",
-                user=user,
-                status="SUCCESS",
-                ip_address=ip,
-                user_agent=user_agent,
-                details={"email": email},
-            )
+        # Send 6-digit OTP to user's registered email
+        success, msg = OTPService.send_otp(
+            target=email,
+            purpose=OtpPurpose.PASSWORD_RESET,
+            user=user,
+            ip_address=ip,
+        )
+
+        AuditService.log_event(
+            action="PASSWORD_RESET_REQUESTED",
+            user=user,
+            status="SUCCESS" if success else "FAILURE",
+            ip_address=ip,
+            user_agent=user_agent,
+            details={"email": email},
+        )
 
         return _ok(message=generic_message)
+
 
 
 @extend_schema(tags=["Authentication v2"])
@@ -1042,6 +1048,13 @@ class ResetPasswordV2View(APIView):
             details={"email": user.email},
         )
 
+        try:
+            from apps.authentication.tasks import send_password_reset_success_async
+            send_password_reset_success_async.delay(user_id=str(user.pk))
+        except Exception:
+            EmailService.send_password_reset_success(user)
+
         return _ok(message="Password reset successfully. Please log in with your new password.")
+
 
 
