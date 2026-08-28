@@ -18,6 +18,7 @@ from apps.users.models import User, UserRole, UserProfile
 from apps.products.models import Product, ProductStatus
 from apps.inventory.models import ProductInventory
 from apps.categories.models import Category
+from apps.brands.models import Brand
 from apps.dealer.models import DealerApplication, DealerStatus
 from apps.payments.models import Payment, PaymentStatus
 from apps.warranty.models import WarrantyRegistration, WarrantyRegistrationStatus
@@ -574,5 +575,105 @@ class DashboardPaymentsView(APIView):
                 'pending_payments': created,
                 'cod_orders': cod_orders,
                 'online_orders': online_orders
+            }
+        })
+
+
+class DashboardSearchView(APIView):
+    """
+    Unified Admin Global Search API.
+    GET /api/v1/admin/dashboard/search/?q=<query>
+    Searches across Products, Orders, Customers, Dealers, Brands, and Categories.
+    """
+    permission_classes = [IsAdminUserPermission]
+
+    def get(self, request):
+        q = request.query_params.get('q', '').strip()
+        if not q or len(q) < 2:
+            return Response({
+                'success': True,
+                'data': {
+                    'products': [],
+                    'orders': [],
+                    'customers': [],
+                    'dealers': [],
+                    'brands': [],
+                    'categories': [],
+                    'total_results': 0
+                }
+            })
+
+        products = []
+        for p in Product.objects.filter(is_deleted=False).filter(Q(name__icontains=q) | Q(sku__icontains=q))[:5]:
+            products.append({
+                'id': str(p.id),
+                'title': p.name,
+                'subtitle': f"SKU: {p.sku or 'N/A'} • {p.get_status_display() if hasattr(p, 'get_status_display') else p.status}",
+                'link': '/admin/products',
+                'type': 'product'
+            })
+
+        orders = []
+        for o in Order.objects.filter(Q(order_number__icontains=q) | Q(user__full_name__icontains=q) | Q(user__email__icontains=q))[:5]:
+            orders.append({
+                'id': str(o.id),
+                'title': f"Order #{o.order_number or str(o.id)[:8]}",
+                'subtitle': f"₹{float(o.total_amount):,.2f} • {o.get_status_display()}",
+                'link': f"/admin/orders/{o.id}",
+                'type': 'order'
+            })
+
+        customers = []
+        for c in User.objects.filter(role=UserRole.CUSTOMER).filter(Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone_number__icontains=q))[:5]:
+            customers.append({
+                'id': str(c.id),
+                'title': c.get_full_name() or c.email,
+                'subtitle': f"{c.email} • {c.phone_number or 'No phone'}",
+                'link': f"/admin/customers/{c.id}",
+                'type': 'customer'
+            })
+
+        dealers = []
+        for d in DealerApplication.objects.filter(Q(company_name__icontains=q) | Q(user__full_name__icontains=q) | Q(user__email__icontains=q))[:5]:
+            dealers.append({
+                'id': str(d.id),
+                'title': d.company_name,
+                'subtitle': f"Status: {d.get_status_display()} • {d.user.email if d.user else ''}",
+                'link': f"/admin/dealers/{d.id}",
+                'type': 'dealer'
+            })
+
+        brands = []
+        for b in Brand.objects.filter(is_active=True).filter(Q(name__icontains=q) | Q(slug__icontains=q))[:5]:
+            brands.append({
+                'id': str(b.id),
+                'title': b.name,
+                'subtitle': f"Brand • {b.country_of_origin or 'Global'}",
+                'link': '/admin/brands',
+                'type': 'brand'
+            })
+
+        categories = []
+        for cat in Category.objects.filter(is_active=True, is_deleted=False).filter(Q(name__icontains=q) | Q(slug__icontains=q))[:5]:
+            categories.append({
+                'id': str(cat.id),
+                'title': cat.name,
+                'subtitle': f"Category • {cat.slug}",
+                'link': '/admin/categories',
+                'type': 'category'
+            })
+
+        total = len(products) + len(orders) + len(customers) + len(dealers) + len(brands) + len(categories)
+
+        return Response({
+            'success': True,
+            'data': {
+                'products': products,
+                'orders': orders,
+                'customers': customers,
+                'dealers': dealers,
+                'brands': brands,
+                'categories': categories,
+                'total_results': total
             }
         })

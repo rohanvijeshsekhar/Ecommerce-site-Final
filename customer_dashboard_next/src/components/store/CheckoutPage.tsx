@@ -756,11 +756,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         },
       };
 
+      const isDev = process.env.NODE_ENV !== 'production';
       const isSandbox =
-        rzOrder.razorpay_order_id.startsWith('order_mock_') ||
-        !rzOrder.key_id ||
-        rzOrder.key_id.includes('REPLACE') ||
-        rzOrder.key_id === '';
+        isDev && (
+          rzOrder.razorpay_order_id.startsWith('order_mock_') ||
+          !rzOrder.key_id ||
+          rzOrder.key_id.includes('REPLACE') ||
+          rzOrder.key_id === ''
+        );
 
       if (isSandbox) {
         setSandboxOrderData({
@@ -773,6 +776,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         });
         setShowSandboxModal(true);
         setIsPlacing(false);
+        return;
+      }
+
+      if (!rzOrder.key_id && !isDev) {
+        setIsPlacing(false);
+        showToast?.('Payment gateway error: Razorpay key is not configured.');
         return;
       }
 
@@ -2113,7 +2122,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       {/* ============================================================ */}
       {/* MODAL: RAZORPAY SANDBOX SIMULATION                           */}
       {/* ============================================================ */}
-      {showSandboxModal && sandboxOrderData && (
+      {process.env.NODE_ENV !== 'production' && showSandboxModal && sandboxOrderData && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100/80 text-center space-y-6 animate-scale-in">
             <div className="flex justify-center">

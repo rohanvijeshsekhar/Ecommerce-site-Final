@@ -13,6 +13,7 @@ from .dashboard_views import (
     DashboardDealersView,
     DashboardInventoryView,
     DashboardPaymentsView,
+    DashboardSearchView,
 )
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path("dealers/", DashboardDealersView.as_view(), name="admin-dashboard-dealers"),
     path("inventory/", DashboardInventoryView.as_view(), name="admin-dashboard-inventory"),
     path("payments/", DashboardPaymentsView.as_view(), name="admin-dashboard-payments"),
+    path("search/", DashboardSearchView.as_view(), name="admin-dashboard-search"),
 ]

@@ -14,72 +14,6 @@ import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { dashboardService } from '../services/adminService';
 
-const ANALYTICS_DATA: Record<string, Record<string, { labels: string[]; values: number[]; dates: string[] }>> = {
-  '7 Days': {
-    'Revenue': {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      values: [12000, 24000, 18000, 35000, 29000, 42000, 38000],
-      dates: ['July 1', 'July 2', 'July 3', 'July 4', 'July 5', 'July 6', 'July 7']
-    },
-    'Orders': {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      values: [3, 6, 4, 9, 7, 12, 10],
-      dates: ['July 1', 'July 2', 'July 3', 'July 4', 'July 5', 'July 6', 'July 7']
-    }
-  },
-  '30 Days': {
-    'Revenue': {
-      labels: ['W1', 'W2', 'W3', 'W4'],
-      values: [120000, 185000, 290000, 340000],
-      dates: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    },
-    'Orders': {
-      labels: ['W1', 'W2', 'W3', 'W4'],
-      values: [42, 58, 85, 96],
-      dates: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    }
-  },
-  '90 Days': {
-    'Revenue': {
-      labels: ['Apr', 'May', 'Jun'],
-      values: [450000, 720000, 890000],
-      dates: ['April 2026', 'May 2026', 'June 2026']
-    },
-    'Orders': {
-      labels: ['Apr', 'May', 'Jun'],
-      values: [120, 195, 245],
-      dates: ['April 2026', 'May 2026', 'June 2026']
-    }
-  },
-  '1 Year': {
-    'Revenue': {
-      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-      values: [1420000, 1850000, 2490000, 3120000],
-      dates: ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026']
-    },
-    'Orders': {
-      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-      values: [480, 590, 810, 990],
-      dates: ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026']
-    }
-  }
-};
-
-const RECENT_ORDERS = [
-  { id: 'ORD-9024', customer: 'Dr. Amit Patel', avatar: 'AP', amount: '₹1,24,500', status: 'Completed', date: 'Jul 7, 2026' },
-  { id: 'ORD-9023', customer: 'Dr. Sneha Rao', avatar: 'SR', amount: '₹48,900', status: 'Processing', date: 'Jul 7, 2026' },
-  { id: 'ORD-9022', customer: 'Care Dental Clinic', avatar: 'CD', amount: '₹2,10,000', status: 'Shipped', date: 'Jul 6, 2026' },
-  { id: 'ORD-9021', customer: 'Dr. Vikram Malhotra', avatar: 'VM', amount: '₹15,200', status: 'Completed', date: 'Jul 6, 2026' },
-  { id: 'ORD-9020', customer: 'Apex Dental Lab', avatar: 'AD', amount: '₹89,000', status: 'Pending', date: 'Jul 5, 2026' },
-];
-
-const RECENT_ACTIVITIES = [
-  { type: 'product', title: 'Product listed', desc: 'Samsung S24 listed under Dental Chairs', time: '2 hours ago' },
-  { type: 'brand', title: 'Brand adjusted', desc: 'Apple brand metadata and warranty policy adjusted', time: '4 hours ago' },
-  { type: 'combo', title: 'Combo published', desc: 'Orthodontic Starter Kit combo now live', time: 'Yesterday' },
-  { type: 'stock', title: 'Inventory updated', desc: 'Added 50 units to NSK Pana-Max Air Turbine stock', time: '2 days ago' },
-];
-
 const AdminDashboard: React.FC = () => {
   useBreadcrumbSync([{ label: 'Dashboard' }]);
   const router = useRouter();
@@ -90,7 +24,6 @@ const AdminDashboard: React.FC = () => {
   const [dateStr, setDateStr] = useState('');
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'7 Days' | '30 Days' | '90 Days' | '1 Year'>('7 Days');
   const [analyticsMetric, setAnalyticsMetric] = useState<'Revenue' | 'Orders'>('Revenue');
-  const [useDemoData, setUseDemoData] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overviewData, setOverviewData] = useState<any | null>(null);
@@ -134,12 +67,10 @@ const AdminDashboard: React.FC = () => {
       if (res.success && res.data) {
         setOverviewData(res.data);
       } else {
-        // Fall back to demo mode gracefully when unauthenticated / 401
-        setUseDemoData(true);
+        setError(res.message || 'Failed to fetch dashboard data.');
       }
-    } catch {
-      // Fall back to demo mode gracefully when unauthenticated / 401
-      setUseDemoData(true);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load dashboard overview.');
     } finally {
       setLoading(false);
     }
@@ -151,10 +82,8 @@ const AdminDashboard: React.FC = () => {
 
   const adminName = user?.full_name?.split(' ')[0] || 'Admin';
 
-  // SVG Chart Calculation (Live data or Demo fallback)
-  const currentChart = useDemoData
-    ? ANALYTICS_DATA[analyticsPeriod][analyticsMetric]
-    : (overviewData?.chart?.[analyticsMetric] || { labels: [], values: [], dates: [] });
+  // SVG Chart Calculation from Live Backend Data
+  const currentChart = overviewData?.chart?.[analyticsMetric] || { labels: [], values: [], dates: [] };
 
   const svgHeight = 180;
   const svgWidth = 600;
@@ -175,15 +104,6 @@ const AdminDashboard: React.FC = () => {
   const areaPath = points.length > 0 
     ? `${linePath} L ${points[points.length - 1].x} ${svgHeight - paddingY} L ${points[0].x} ${svgHeight - paddingY} Z`
     : '';
-
-  // Get Stock List to render
-  const stockItemsToRender = (!useDemoData && overviewData?.inventory_health?.items?.length)
-    ? overviewData.inventory_health.items.slice(0, 3)
-    : [
-        { name: 'Contra-angle speed handpiece', sku: 'NSK-CA-802', current_stock: 2, low_stock_threshold: 5 },
-        { name: 'LED cordless curing light', sku: 'DENT-CL-04', current_stock: 1, low_stock_threshold: 3 },
-        { name: '3D intraoral scanner pro', sku: 'SCAN-3D-X', current_stock: 0, low_stock_threshold: 2 },
-      ];
 
 
   return (
@@ -222,7 +142,7 @@ const AdminDashboard: React.FC = () => {
           <span>Fetching live production database analytics for {analyticsPeriod}...</span>
         </div>
       )}
-      {error && !useDemoData && (
+      {error && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-semibold flex items-center justify-between">
           <span>⚠️ {error}</span>
           <button onClick={() => loadData(analyticsPeriod)} className="underline hover:text-amber-950 font-bold">Retry</button>
@@ -234,10 +154,10 @@ const AdminDashboard: React.FC = () => {
         {[
           {
             title: 'Revenue',
-            value: useDemoData ? '₹1.84L' : (overviewData?.kpis?.revenue?.value || '₹0.00'),
-            trend: useDemoData ? '+18.00%' : (overviewData?.kpis?.revenue?.trend || '0.00%'),
+            value: overviewData?.kpis?.revenue?.value || '₹0.00',
+            trend: overviewData?.kpis?.revenue?.trend || '0.00%',
             trendType: overviewData?.kpis?.revenue?.trend_type || 'up',
-            desc: useDemoData ? 'vs last month' : (overviewData?.kpis?.revenue?.desc || 'vs previous period'),
+            desc: overviewData?.kpis?.revenue?.desc || 'vs previous period',
             icon: IndianRupee,
             bgColor: 'bg-gradient-to-br from-amber-500/15 via-yellow-400/5 to-white/90 border-amber-500/30 shadow-[0_8px_32px_0_rgba(245,158,11,0.08)]',
             iconColor: 'bg-gradient-to-br from-amber-400 to-amber-500 text-amber-950 shadow-sm border border-amber-300/80 font-black',
@@ -245,10 +165,10 @@ const AdminDashboard: React.FC = () => {
           },
           {
             title: 'Orders',
-            value: useDemoData ? '42' : (overviewData?.kpis?.orders?.value || '0'),
-            trend: useDemoData ? '+8.20%' : (overviewData?.kpis?.orders?.trend || '0.00%'),
+            value: overviewData?.kpis?.orders?.value || '0',
+            trend: overviewData?.kpis?.orders?.trend || '0.00%',
             trendType: overviewData?.kpis?.orders?.trend_type || 'up',
-            desc: useDemoData ? 'vs last week' : (overviewData?.kpis?.orders?.desc || 'vs previous period'),
+            desc: overviewData?.kpis?.orders?.desc || 'vs previous period',
             icon: ShoppingBag,
             bgColor: 'bg-gradient-to-br from-[#5D5FEF]/12 via-[#5D5FEF]/5 to-white/80 border-[#5D5FEF]/20 shadow-[0_8px_32px_0_rgba(93,95,239,0.06)]',
             iconColor: 'bg-[#5D5FEF] text-white shadow-xs',
@@ -256,21 +176,21 @@ const AdminDashboard: React.FC = () => {
           },
           {
             title: 'Customers',
-            value: useDemoData ? '842' : (overviewData?.kpis?.customers?.value || '0'),
-            trend: '+14.80%',
+            value: overviewData?.kpis?.customers?.value || '0',
+            trend: `${overviewData?.kpis?.customers?.new_period ?? 0} new`,
             trendType: 'up',
-            desc: useDemoData ? 'active accounts' : (overviewData?.kpis?.customers?.desc || 'registered accounts'),
+            desc: overviewData?.kpis?.customers?.desc || 'registered accounts',
             icon: Users,
-            bgColor: 'bg-gradient-to-br from-[#10B981]/12 via-[#10B981]/5 to-white/80 border-[#10B981]/20 shadow-[0_8px_32px_0_rgba(16,185,129,0.06)]',
+            bgColor: 'bg-gradient-to-br from-[#10B981]/12 via-[#10B981]/5 to-white/80 border-[#10B981]/20 shadow-[0_8px_32px_0_rgba(160,185,129,0.06)]',
             iconColor: 'bg-[#10B981] text-white shadow-xs',
             trendColor: 'text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20'
           },
           {
             title: 'Products',
-            value: useDemoData ? '10' : (overviewData?.kpis?.products?.value || '0'),
-            trend: '+4.10%',
+            value: overviewData?.kpis?.products?.value || '0',
+            trend: `${overviewData?.kpis?.products?.active ?? 0} active`,
             trendType: 'up',
-            desc: useDemoData ? 'active listings' : (overviewData?.kpis?.products?.desc || 'catalog items'),
+            desc: overviewData?.kpis?.products?.desc || 'catalog items',
             icon: Package,
             bgColor: 'bg-gradient-to-br from-[#EC4899]/12 via-[#EC4899]/5 to-white/80 border-[#EC4899]/20 shadow-[0_8px_32px_0_rgba(236,72,153,0.06)]',
             iconColor: 'bg-[#EC4899] text-white shadow-xs',
@@ -363,18 +283,6 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   ))}
                 </div>
-
-                {/* Live vs Demo Toggle */}
-                <button
-                  onClick={() => setUseDemoData(!useDemoData)}
-                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded-xl border transition-colors ${
-                    !useDemoData 
-                      ? 'border-[#005F63]/25 bg-[#005F63]/5 text-[#005F63]' 
-                      : 'border-slate-200 text-slate-455 hover:bg-slate-50'
-                  }`}
-                >
-                  {!useDemoData ? 'Live data' : 'Demo view'}
-                </button>
               </div>
             </div>
 
@@ -545,20 +453,14 @@ const AdminDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-teal-500/10">
-                  {((overviewData?.recent_orders && overviewData.recent_orders.length > 0)
-                    ? overviewData.recent_orders
-                    : (useDemoData ? RECENT_ORDERS : (overviewData?.recent_orders || []))
-                  ).length === 0 ? (
+                  {(!overviewData?.recent_orders || overviewData.recent_orders.length === 0) ? (
                     <tr>
                       <td colSpan={5} className="py-10 text-center text-slate-400 text-xs font-semibold">
                         No recent orders found in database.
                       </td>
                     </tr>
                   ) : (
-                    ((overviewData?.recent_orders && overviewData.recent_orders.length > 0)
-                      ? overviewData.recent_orders
-                      : (useDemoData ? RECENT_ORDERS : (overviewData?.recent_orders || []))
-                    ).map((ord: any, i: number) => (
+                    overviewData.recent_orders.map((ord: any, i: number) => (
                       <tr 
                         key={i} 
                         onClick={() => navigate(ord.raw_id ? `/admin/orders/${ord.raw_id}` : '/admin/orders')}

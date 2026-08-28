@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -16,16 +16,18 @@ import {
   Sparkles,
   ShoppingBag,
   RotateCcw,
-  Building2
+  Building2,
+  AlertTriangle
 } from 'lucide-react';
+import { api, getAbsoluteImageUrl } from '@/lib/api';
 
 interface OfferItem {
   id: string;
   title: string;
-  badge: 'Limited Time' | 'Bundle Offer' | 'Exclusive' | 'Best Value' | 'Buy More Save More';
-  category: 'Handpieces' | 'Equipment' | 'Imaging' | 'Materials' | 'Endodontics';
+  badge: string;
+  category: string;
   brand: string;
-  offerType: 'Limited Time' | 'Bundle Offer' | 'Exclusive' | 'Best Value' | 'Buy More Save More';
+  offerType: string;
   description: string;
   originalPrice: number;
   discountedPrice: number;
@@ -35,122 +37,63 @@ interface OfferItem {
   popularRank: number;
 }
 
-const MOCK_OFFERS: OfferItem[] = [
-  {
-    id: 'special-offer-1',
-    title: 'Woodpecker LED.F Curing Light & Scaler Combo',
-    badge: 'Bundle Offer',
-    category: 'Equipment',
-    brand: 'Woodpecker',
-    offerType: 'Bundle Offer',
-    description: 'High-intensity LED curing light paired with digital piezoelectric scaler for clinical operatory precision.',
-    originalPrice: 18500,
-    discountedPrice: 13800,
-    savingsText: 'Save ₹4,700 (25% OFF)',
-    validityText: 'Valid till end of month • 6 Units Left',
-    image: '/images/combo_implants.png',
-    popularRank: 1
-  },
-  {
-    id: 'special-offer-2',
-    title: 'NSK Pana-Max Plus High-Speed Handpiece (Pack of 3)',
-    badge: 'Best Value',
-    category: 'Handpieces',
-    brand: 'NSK',
-    offerType: 'Buy More Save More',
-    description: 'Clean-head system with push-button chuck and micro-precision ceramic bearings for durability.',
-    originalPrice: 24000,
-    discountedPrice: 17900,
-    savingsText: 'Save ₹6,100 (25% OFF)',
-    validityText: 'Official NSK Warranty Included',
-    image: '/images/handpiece_pro.png',
-    popularRank: 2
-  },
-  {
-    id: 'special-offer-3',
-    title: '3M Filtek Z250 Universal Restorative Kit',
-    badge: 'Exclusive',
-    category: 'Materials',
-    brand: '3M',
-    offerType: 'Exclusive',
-    description: 'Microhybrid composite resin syringes with Scotchbond universal adhesive primer kit.',
-    originalPrice: 12800,
-    discountedPrice: 9950,
-    savingsText: 'Save ₹2,850 (22% OFF)',
-    validityText: 'Certified 3M India Direct Stock',
-    image: '/images/category_materials.png',
-    popularRank: 3
-  },
-  {
-    id: 'special-offer-4',
-    title: 'Carestream CS 2200 Intraoral X-Ray Generator System',
-    badge: 'Limited Time',
-    category: 'Imaging',
-    brand: 'Carestream',
-    offerType: 'Limited Time',
-    description: 'High-frequency 70kV generator with focal spot 0.4mm for ultra-sharp digital radiograph diagnostics.',
-    originalPrice: 165000,
-    discountedPrice: 138000,
-    savingsText: 'Save ₹27,000 (16% OFF)',
-    validityText: 'Includes Free On-Site Installation',
-    image: '/images/category_imaging.png',
-    popularRank: 4
-  },
-  {
-    id: 'special-offer-5',
-    title: 'Dentsply Sirona WaveOne Gold Endodontic Kit',
-    badge: 'Bundle Offer',
-    category: 'Endodontics',
-    brand: 'Dentsply Sirona',
-    offerType: 'Bundle Offer',
-    description: 'Reciprocating NiTi files + paper points + obturator core package for root canal procedures.',
-    originalPrice: 15400,
-    discountedPrice: 11900,
-    savingsText: 'Save ₹3,500 (23% OFF)',
-    validityText: 'Limited Clinical Allocation',
-    image: '/images/combo_restorative.png',
-    popularRank: 5
-  },
-  {
-    id: 'special-offer-6',
-    title: 'Planmeca Emerald S Intraoral Scanner Package',
-    badge: 'Exclusive',
-    category: 'Imaging',
-    brand: 'Planmeca',
-    offerType: 'Exclusive',
-    description: 'Ultra-fast 3D digital impression scanning system with laptop workstation and Romexis software.',
-    originalPrice: 1450000,
-    discountedPrice: 1290000,
-    savingsText: 'Save ₹1,60,000 (11% OFF)',
-    validityText: 'Includes 2-Year Comprehensive Warranty',
-    image: '/images/hero_chair.png',
-    popularRank: 6
-  }
-];
-
 interface OffersPageProps {
   setCartItems?: React.Dispatch<React.SetStateAction<any[]>>;
   showToast?: (msg: string) => void;
 }
 
 export default function OffersPage({ setCartItems, showToast }: OffersPageProps) {
-  const [offersList] = useState<OfferItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('faazo_admin_special_offers');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.filter((o: any) => o.isActive !== false).map((o: any, idx: number) => ({
-              ...o,
-              popularRank: idx + 1
-            }));
-          }
-        } catch (e) { console.error(e); }
+  const [offersList, setOffersList] = useState<OfferItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOffers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get('homepage/offers/');
+      const rawData = res.data?.data ?? res.data?.results ?? res.data ?? [];
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        const mapped: OfferItem[] = rawData.map((item: any, idx: number) => {
+          const orig = parseFloat(item.original_price || item.mrp || '0');
+          const disc = parseFloat(item.discounted_price || item.offer_price || item.effective_price || '0');
+          const savings = orig > disc ? `Save ₹${(orig - disc).toLocaleString('en-IN')}` : '';
+          const validity = item.end_date 
+            ? `Valid until ${new Date(item.end_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`
+            : (item.offer_text || 'Limited time offer');
+
+          return {
+            id: String(item.id || `offer-${idx}`),
+            title: item.heading || item.title || item.name || 'Special Offer',
+            badge: item.badge || item.offer_text || 'Special Deal',
+            category: item.category_name || item.category || 'Clinical Equipment',
+            brand: item.brand_name || item.brand || 'FAAZO Certified',
+            offerType: item.offer_type || item.badge || 'Limited Time',
+            description: item.description || item.subheading || 'Exclusive clinical equipment promotional pricing.',
+            originalPrice: orig,
+            discountedPrice: disc || orig,
+            savingsText: savings,
+            validityText: validity,
+            image: getAbsoluteImageUrl(item.banner_image || item.image) || '/images/combo_implants.png',
+            popularRank: idx + 1,
+          };
+        });
+        setOffersList(mapped);
+      } else {
+        setOffersList([]);
       }
+    } catch (err: any) {
+      console.error('Failed to load offers from API:', err);
+      setError('Unable to load current promotional offers from server.');
+      setOffersList([]);
+    } finally {
+      setLoading(false);
     }
-    return MOCK_OFFERS;
-  });
+  };
+
+  useEffect(() => {
+    fetchOffers();
+  }, []);
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -464,7 +407,34 @@ export default function OffersPage({ setCartItems, showToast }: OffersPageProps)
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* 4. OFFERS GRID */}
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {filteredOffers.length > 0 ? (
+        {loading ? (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="bg-white rounded-[28px] border border-slate-200/80 p-6 shadow-sm animate-pulse space-y-4">
+                <div className="w-full h-52 bg-slate-100 rounded-2xl" />
+                <div className="h-4 bg-slate-100 rounded w-1/3" />
+                <div className="h-5 bg-slate-100 rounded w-3/4" />
+                <div className="h-3 bg-slate-100 rounded w-full" />
+                <div className="h-10 bg-slate-100 rounded-2xl mt-4" />
+              </div>
+            ))}
+          </section>
+        ) : error ? (
+          <section className="bg-white rounded-3xl border border-rose-200/80 p-12 text-center my-12 shadow-sm space-y-4 max-w-lg mx-auto">
+            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Unable to Load Offers</h3>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">{error}</p>
+            <button
+              onClick={fetchOffers}
+              className="px-5 py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+          </section>
+        ) : filteredOffers.length > 0 ? (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {filteredOffers.map((offer) => (
               <div 

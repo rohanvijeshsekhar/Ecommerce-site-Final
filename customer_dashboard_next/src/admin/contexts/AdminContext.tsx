@@ -53,7 +53,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [unreadNotifCount, setUnreadNotifCount] = useState(2);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   const hasPermission = useCallback(
     (permission: AdminPermission): boolean => {

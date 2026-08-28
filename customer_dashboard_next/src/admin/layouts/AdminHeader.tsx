@@ -12,7 +12,7 @@ import { useBreadcrumb } from '../contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLE_LABELS } from '../types/admin';
 import type { AdminNotification } from '../types/admin';
-import { notificationsService } from '../services/adminService';
+import { notificationsService, dashboardService } from '../services/adminService';
 
 const AdminHeader: React.FC = () => {
   const { setMobileSidebarOpen, isSearchOpen, setSearchOpen, searchQuery,
@@ -24,6 +24,8 @@ const AdminHeader: React.FC = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [searchResults, setSearchResults] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -54,12 +56,36 @@ const AdminHeader: React.FC = () => {
     return () => document.removeEventListener('keydown', handler);
   }, [setSearchOpen, setSearchQuery]);
 
+  // Live search debouncing
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      const res = await dashboardService.search(searchQuery.trim());
+      if (res.success && res.data) {
+        setSearchResults(res.data);
+      } else {
+        setSearchResults(null);
+      }
+      setIsSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     notificationsService.getAll().then((res) => {
       if (res.success && res.data) {
         setNotifications(res.data);
-        setUnreadNotifCount(res.data.filter((n) => !n.isRead).length);
       }
+    });
+    notificationsService.getUnreadCount().then((count) => {
+      setUnreadNotifCount(count);
     });
   }, [setUnreadNotifCount]);
 
@@ -72,6 +98,12 @@ const AdminHeader: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     router.push('/admin/login');
+  };
+
+  const handleResultClick = (link: string) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    router.push(link);
   };
 
   const userName = user
@@ -124,7 +156,7 @@ const AdminHeader: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchOpen(true)}
-              placeholder="Search products, orders, customers…"
+              placeholder="Search products, orders, customers, dealers…"
               className="flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400 font-medium min-w-0"
             />
             {searchQuery ? (
@@ -140,15 +172,126 @@ const AdminHeader: React.FC = () => {
 
           {isSearchOpen && searchQuery && (
             <div className="absolute top-full mt-2.5 left-0 right-0 bg-white border border-slate-100
-              rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden z-50 p-1">
-              <div className="px-4 py-3 border-b border-slate-50">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.12)] overflow-hidden z-50 max-h-96 overflow-y-auto">
+              <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   Results for "{searchQuery}"
                 </p>
+                {searchResults && (
+                  <span className="text-[10px] font-bold text-[#005F63] bg-[#005F63]/10 px-2 py-0.5 rounded-full">
+                    {searchResults.total_results || 0} found
+                  </span>
+                )}
               </div>
-              <div className="px-4 py-6 text-center">
-                <p className="text-xs font-medium text-slate-400">Live search results</p>
-              </div>
+
+              {isSearching ? (
+                <div className="px-4 py-8 text-center">
+                  <div className="w-5 h-5 border-2 border-[#005F63] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-slate-400 font-medium">Searching live database…</p>
+                </div>
+              ) : !searchResults || searchResults.total_results === 0 ? (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-xs font-semibold text-slate-500">No records found matching "{searchQuery}"</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Try searching by product name, SKU, customer name, order number, or dealer company.</p>
+                </div>
+              ) : (
+                <div className="p-2 divide-y divide-slate-50">
+                  {/* Products */}
+                  {searchResults.products?.length > 0 && (
+                    <div className="py-1.5">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1">Products</p>
+                      {searchResults.products.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Orders */}
+                  {searchResults.orders?.length > 0 && (
+                    <div className="py-1.5">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1">Orders</p>
+                      {searchResults.orders.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-[#005F63] font-mono">{item.title}</span>
+                          <span className="text-[10px] text-slate-500 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Customers */}
+                  {searchResults.customers?.length > 0 && (
+                    <div className="py-1.5">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1">Customers</p>
+                      {searchResults.customers.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Dealers */}
+                  {searchResults.dealers?.length > 0 && (
+                    <div className="py-1.5">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1">Dealers</p>
+                      {searchResults.dealers.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Brands & Categories */}
+                  {(searchResults.brands?.length > 0 || searchResults.categories?.length > 0) && (
+                    <div className="py-1.5">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1">Catalogue</p>
+                      {searchResults.brands?.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                      {searchResults.categories?.map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleResultClick(item.link)}
+                          className="px-2.5 py-1.5 hover:bg-[#005F63]/5 rounded-xl cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

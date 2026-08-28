@@ -15,8 +15,8 @@ interface RecProduct {
   id: string;
   title: string;
   manufacturer: string;
-  rating: number;
-  reviews: number;
+  rating?: number;
+  reviews?: number;
   price: number;
   originalPrice?: number;
   image: string;
@@ -46,120 +46,6 @@ interface RecommendedProps {
   initialProducts?: RecProduct[];
 }
 
-// ─── Static fallback products matching reference design ──────────────
-const STATIC_REC_PRODUCTS: RecProduct[] = [
-  {
-    id: 'nsk-ti-max-z900l',
-    title: 'NSK Ti-Max Z900L',
-    manufacturer: 'NSK',
-    rating: 5,
-    reviews: 124,
-    price: 24999,
-    originalPrice: 29999,
-    image: '/images/nsk_handpiece_portrait.png',
-    discount: '17% OFF',
-  },
-  {
-    id: 'woodpecker-uds-e',
-    title: 'Woodpecker UDS-E LED',
-    manufacturer: 'WOODPECKER',
-    rating: 5,
-    reviews: 87,
-    price: 12499,
-    originalPrice: 15000,
-    image: '/images/bestseller_scaler.png',
-    discount: '17% OFF',
-  },
-  {
-    id: 'dentsply-x-smart',
-    title: 'Dentsply X-Smart Plus',
-    manufacturer: 'DENTSPLY SIRONA',
-    rating: 5,
-    reviews: 63,
-    price: 38500,
-    originalPrice: 45000,
-    image: '/images/bestseller_scaler.png',
-    discount: '14% OFF',
-  },
-  {
-    id: 'planmeca-compact-i',
-    title: 'Planmeca Compact i5',
-    manufacturer: 'PLANMECA',
-    rating: 5,
-    reviews: 42,
-    price: 189000,
-    originalPrice: 210000,
-    image: '/images/category_chairs.png',
-    discount: '10% OFF',
-  },
-  {
-    id: 'ivoclar-emax',
-    title: 'Ivoclar IPS e.max',
-    manufacturer: 'IVOCLAR',
-    rating: 5,
-    reviews: 56,
-    price: 8750,
-    originalPrice: 9999,
-    image: '/images/category_materials.png',
-    discount: '13% OFF',
-  },
-  {
-    id: '3m-filtek-z350-xt',
-    title: '3M Filtek Z350 XT Composite',
-    manufacturer: '3M ESPE',
-    rating: 5,
-    reviews: 142,
-    price: 3200,
-    originalPrice: 3850,
-    image: '/images/category_materials.png',
-    discount: '17% OFF',
-  },
-  {
-    id: 'woodpecker-ai-pex',
-    title: 'Woodpecker Ai-Pex Apex Locator',
-    manufacturer: 'WOODPECKER',
-    rating: 5,
-    reviews: 95,
-    price: 14800,
-    originalPrice: 17500,
-    image: '/images/category_small_equipment.png',
-    discount: '15% OFF',
-  },
-  {
-    id: 'nsk-pana-max2-m4',
-    title: 'NSK Pana-Max2 M4 High Speed',
-    manufacturer: 'NSK',
-    rating: 5,
-    reviews: 110,
-    price: 7800,
-    originalPrice: 9500,
-    image: '/images/category_handpieces.png',
-    discount: '18% OFF',
-  },
-  {
-    id: 'vatech-ezsensor-classic',
-    title: 'Vatech EzSensor Classic HD',
-    manufacturer: 'VATECH',
-    rating: 5,
-    reviews: 48,
-    price: 125000,
-    originalPrice: 142000,
-    image: '/images/category_imaging.png',
-    discount: '12% OFF',
-  },
-  {
-    id: 'waldent-o-star-curing',
-    title: 'Waldent O-Star Curing Light',
-    manufacturer: 'WALDENT',
-    rating: 5,
-    reviews: 73,
-    price: 4999,
-    originalPrice: 6500,
-    image: '/images/category_small_equipment.png',
-    discount: '23% OFF',
-  },
-];
-
 const Recommended: React.FC<RecommendedProps> = ({ 
   onProductClick,
   onOpenLoginModal,
@@ -173,18 +59,23 @@ const Recommended: React.FC<RecommendedProps> = ({
 
   useEffect(() => {
     if (initialProducts && initialProducts.length > 0) return;
-    const mapRecProduct = (item: any, index: number): RecProduct => {
-      const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price || 10499);
-      const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : item.originalPrice;
+    const mapRecProduct = (item: any): RecProduct => {
+      const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price ? parseFloat(item.price) : 0);
+      const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : (item.originalPrice || item.original_price ? parseFloat(item.originalPrice || item.original_price) : undefined);
       const discountPct = item.pricing?.discount_percentage;
-      const discountStr = discountPct && discountPct > 0 ? `${Math.round(discountPct)}% OFF` : '';
+      const discountStr = discountPct && discountPct > 0 
+        ? `${Math.round(discountPct)}% OFF` 
+        : (mrp && mrp > price ? `${Math.round(((mrp - price) / mrp) * 100)}% OFF` : '');
+
+      const rating = item.rating || item.avg_rating ? parseFloat(item.rating || item.avg_rating) : undefined;
+      const reviews = item.reviews_count || item.review_count ? parseInt(item.reviews_count || item.review_count) : undefined;
 
       return {
-        id:           item.product_slug ?? item.product ?? item.slug,
-        title:        item.product_name ?? item.name,
+        id:           item.product_slug ?? item.product ?? item.slug ?? String(item.id),
+        title:        item.product_name ?? item.name ?? 'Dental Product',
         manufacturer: (item.brand_name || 'Brand').toUpperCase(),
-        rating:       5,
-        reviews:      50 + (index * 7) % 80,
+        rating:       rating,
+        reviews:      reviews,
         price:        price,
         originalPrice: mrp && mrp > price ? mrp : undefined,
         image:        getAbsoluteImageUrl(item.primary_image || item.image) || '/images/bestseller_scaler.png',
@@ -196,13 +87,13 @@ const Recommended: React.FC<RecommendedProps> = ({
       .then(res => {
         const data = res.data?.data ?? res.data?.results ?? res.data ?? [];
         if (Array.isArray(data) && data.length > 0) {
-          setRecProducts(data.map((item, idx) => mapRecProduct(item, idx)));
+          setRecProducts(data.map((item) => mapRecProduct(item)));
         } else {
           api.get('products/?page_size=10')
             .then(pRes => {
               const pData = pRes.data?.data ?? pRes.data?.results ?? pRes.data ?? [];
               if (Array.isArray(pData) && pData.length > 0) {
-                setRecProducts(pData.map((item: any, idx: number) => mapRecProduct(item, idx)));
+                setRecProducts(pData.map((item: any) => mapRecProduct(item)));
               }
             })
             .catch(() => {});
@@ -211,11 +102,9 @@ const Recommended: React.FC<RecommendedProps> = ({
       .catch(() => {});
   }, [initialProducts]);
 
-  const displayProducts = recProducts.length > 0 ? recProducts : STATIC_REC_PRODUCTS;
-
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const p = displayProducts.find(prod => prod.id === id);
+    const p = recProducts.find(prod => prod.id === id);
     if (!p) return;
     const item: MockCartItem = { id: p.id, name: p.title, category: 'Clinical Equipment', price: p.price, qty: 1, image: p.image, originalPrice: p.originalPrice };
     if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
@@ -233,6 +122,13 @@ const Recommended: React.FC<RecommendedProps> = ({
     });
     if (showToast) showToast('Added to Cart');
   };
+
+  // If no recommended products exist in database, gracefully hide the section
+  if (recProducts.length === 0) {
+    return null;
+  }
+
+  const displayProducts = recProducts;
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-10 md:py-14 select-none">
@@ -346,20 +242,24 @@ const Recommended: React.FC<RecommendedProps> = ({
                       {prod.title}
                     </h3>
                     
-                    {/* Star Ratings */}
-                    <div className="flex items-center gap-1 mb-3">
-                      <div className="flex items-center text-amber-400 gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" 
-                          />
-                        ))}
+                    {/* Star Ratings (Render only if real reviews exist) */}
+                    {prod.rating && prod.reviews && prod.reviews > 0 ? (
+                      <div className="flex items-center gap-1 mb-3">
+                        <div className="flex items-center text-amber-400 gap-0.5">
+                          {[...Array(Math.min(5, Math.round(prod.rating)))].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-400 ml-1">
+                          ({prod.reviews})
+                        </span>
                       </div>
-                      <span className="text-[11px] font-bold text-slate-400 ml-1">
-                        ({prod.reviews})
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="mb-2" />
+                    )}
                   </div>
 
                   {/* Pricing & Cart Button */}

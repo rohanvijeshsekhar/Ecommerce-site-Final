@@ -13,11 +13,9 @@ interface PromoProduct {
   originalPrice: number;
   discount: number;
   image: string;
-  rating: number;
-  reviews: number;
+  rating?: number;
+  reviews?: number;
 }
-
-
 
 interface MockCartItem {
   id: string;
@@ -42,50 +40,6 @@ interface OfferData {
   offer_text: string;
   end_date: string | null;
 }
-
-// ─── Static fallbacks used when backend returns no data ──────────────────
-const STATIC_OFFER: OfferData = {
-  heading: 'Special Launch Pricing',
-  description: 'Unbeatable prices on our signature equipment. Equip your clinic with premium tools today.',
-  offer_text: 'LIMITED TIME OFFER',
-  end_date: null,
-};
-
-const STATIC_PROMO_PRODUCTS: PromoProduct[] = [
-  {
-    id: 'nsk-ti-max-z900l',
-    title: 'NSK Ti-Max Z900L',
-    manufacturer: 'NSK',
-    price: 24999,
-    originalPrice: 29999,
-    discount: 17,
-    image: '/images/nsk_handpiece_portrait.png',
-    rating: 4.8,
-    reviews: 124,
-  },
-  {
-    id: 'woodpecker-uds-e',
-    title: 'Woodpecker UDS-E LED',
-    manufacturer: 'Woodpecker',
-    price: 12499,
-    originalPrice: 15000,
-    discount: 17,
-    image: '/images/bestseller_scaler.png',
-    rating: 4.7,
-    reviews: 87,
-  },
-  {
-    id: 'dentsply-x-smart',
-    title: 'Dentsply X-Smart Plus',
-    manufacturer: 'Dentsply Sirona',
-    price: 38500,
-    originalPrice: 45000,
-    discount: 14,
-    image: '/images/bestseller_scaler.png',
-    rating: 4.9,
-    reviews: 63,
-  },
-];
 
 const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenLoginModal, showToast }) => {
   const { guardAction } = useGuestGuard(onOpenLoginModal, showToast);
@@ -116,19 +70,25 @@ const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenL
 
     // 2. Fetch campaign products (using Recommended endpoints)
     const mapPromoProduct = (item: any): PromoProduct => {
-      const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : 10499;
-      const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : 13199;
-      const discount = item.pricing?.discount_percentage ? Math.round(item.pricing.discount_percentage) : 15;
+      const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price ? parseFloat(item.price) : 0);
+      const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : (item.original_price ? parseFloat(item.original_price) : price);
+      const discount = item.pricing?.discount_percentage 
+        ? Math.round(item.pricing.discount_percentage) 
+        : (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0);
+
+      const rating = item.rating || item.avg_rating ? parseFloat(item.rating || item.avg_rating) : undefined;
+      const reviews = item.reviews_count || item.review_count ? parseInt(item.reviews_count || item.review_count) : undefined;
+
       return {
-        id: item.product_slug ?? item.product ?? item.slug,
-        title: item.product_name ?? item.name,
+        id: item.product_slug ?? item.product ?? item.slug ?? String(item.id),
+        title: item.product_name ?? item.name ?? 'Special Product',
         manufacturer: item.brand_name || 'Brand',
         price: price,
         originalPrice: mrp,
         discount: discount,
         image: getAbsoluteImageUrl(item.primary_image || item.image) || '/images/bestseller_scaler.png',
-        rating: 4.8,
-        reviews: 50
+        rating: rating,
+        reviews: reviews
       };
     };
 
@@ -142,7 +102,9 @@ const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenL
           api.get('products/?page_size=10')
             .then(pRes => {
               const pData = pRes.data?.data ?? pRes.data?.results ?? pRes.data ?? [];
-              setPromoProducts(pData.map(mapPromoProduct));
+              if (Array.isArray(pData) && pData.length > 0) {
+                setPromoProducts(pData.map(mapPromoProduct));
+              }
             })
             .catch(() => {});
         }
@@ -192,10 +154,12 @@ const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenL
   }, [isHovered, promoProducts]);
 
   const handlePrev = () => {
+    if (promoProducts.length === 0) return;
     setCurrentIndex(prev => (prev === 0 ? promoProducts.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
+    if (promoProducts.length === 0) return;
     setCurrentIndex(prev => (prev === promoProducts.length - 1 ? 0 : prev + 1));
   };
 
@@ -210,15 +174,16 @@ const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenL
 
   const padZero = (num: number) => String(num).padStart(2, '0');
 
-  // Use static fallbacks when backend data not loaded yet
-  const displayProducts = promoProducts.length > 0 ? promoProducts : STATIC_PROMO_PRODUCTS;
-  const displayOffer = offer ?? STATIC_OFFER;
+  // If no active offer or no promo products exist in database, gracefully hide the section
+  if (!offer || promoProducts.length === 0) {
+    return null;
+  }
 
-  const activeProduct = displayProducts[currentIndex % displayProducts.length];
+  const activeProduct = promoProducts[currentIndex % promoProducts.length];
 
-  const campaignHeading = displayOffer.heading;
-  const campaignDescription = displayOffer.description;
-  const badgeText = displayOffer.offer_text;
+  const campaignHeading = offer.heading;
+  const campaignDescription = offer.description;
+  const badgeText = offer.offer_text;
 
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-8 py-8 select-none" id="campaign">

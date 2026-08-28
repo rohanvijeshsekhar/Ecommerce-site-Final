@@ -259,12 +259,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     setIsSubmitting(true); setApiError(null); setFieldErrors({});
     if (password !== confirmPassword) { setApiError('Passwords do not match.'); setIsSubmitting(false); return; }
-    
-    // For automated testing and convenience, automatically generate a dummy document if none is uploaded
-    let docsToUpload = documents;
-    if (docsToUpload.length === 0) {
-      const dummyFile = new File(['FAAZO Dealer verification dummy document'], 'dummy_verification_document.pdf', { type: 'application/pdf' });
-      docsToUpload = [dummyFile];
+    if (documents.length === 0) {
+      setApiError('Please upload at least one dealer business verification document (GST, Drug License, or Business Registration).');
+      setIsSubmitting(false);
+      return;
     }
 
     try {
@@ -272,7 +270,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       formData.append('email', email); formData.append('password', password);
       formData.append('confirm_password', confirmPassword); formData.append('full_name', fullName);
       formData.append('company_name', companyName);
-      docsToUpload.forEach((file) => {
+      documents.forEach((file) => {
         formData.append('documents', file);
       });
       if (phoneNumber) formData.append('phone_number', phoneNumber);

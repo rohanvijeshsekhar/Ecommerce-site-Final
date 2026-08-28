@@ -36,8 +36,6 @@ export interface ServiceResponse<T> {
   };
 }
 
-const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));
-
 export const dashboardService = {
   async getOverview(period = '7 Days'): Promise<ServiceResponse<any>> {
     try {
@@ -113,168 +111,123 @@ export const dashboardService = {
   },
 
   async getStats(): Promise<ServiceResponse<DashboardStat[]>> {
-    await delay();
-    const stats: DashboardStat[] = [
-      {
-        id: 'revenue',
-        label: "Today's Revenue",
-        value: '₹0',
-        subValue: 'No orders yet today',
-        trend: 0,
-        trendLabel: 'vs yesterday',
-        variant: 'teal',
-        icon: 'IndianRupee',
-        actionLabel: 'View Orders',
-        actionPath: '/admin/orders',
-      },
-      {
-        id: 'orders',
-        label: "Today's Orders",
-        value: 0,
-        subValue: '0 pending fulfilment',
-        trend: 0,
-        trendLabel: 'vs yesterday',
-        variant: 'blue',
-        icon: 'ShoppingCart',
-        actionLabel: 'Manage Orders',
-        actionPath: '/admin/orders',
-      },
-      {
-        id: 'pending_orders',
-        label: 'Pending Orders',
-        value: 0,
-        subValue: 'Action required',
-        trend: 0,
-        variant: 'orange',
-        icon: 'Clock',
-        actionLabel: 'Review Now',
-        actionPath: '/admin/orders',
-      },
-      {
-        id: 'low_inventory',
-        label: 'Low Stock',
-        value: 0,
-        subValue: 'Items below threshold',
-        trend: 0,
-        variant: 'red',
-        icon: 'AlertTriangle',
-        actionLabel: 'View Inventory',
-        actionPath: '/admin/products',
-      },
-      {
-        id: 'dealer_approvals',
-        label: 'Dealer Approvals',
-        value: 0,
-        subValue: 'Applications pending',
-        trend: 0,
-        variant: 'purple',
-        icon: 'UserCheck',
-        actionLabel: 'Review Dealers',
-        actionPath: '/admin/dealers',
-      },
-      {
-        id: 'support_tickets',
-        label: 'Open Tickets',
-        value: 0,
-        subValue: '0 high priority',
-        trend: 0,
-        variant: 'green',
-        icon: 'HeadphonesIcon',
-        actionLabel: 'View Support',
-        actionPath: '/admin/support',
-      },
-    ];
-
     try {
-      const res = await api.get('products/inventory-stats/');
+      const res = await api.get('admin/dashboard/overview/');
       const payload = res.data?.data ?? res.data;
-      if (payload) {
-        const lowStockVal = payload.low_stock ?? 0;
-        const lowIndex = stats.findIndex(s => s.id === 'low_inventory');
-        if (lowIndex !== -1) {
-          stats[lowIndex].value = lowStockVal;
-        }
-
-        stats.push(
-          {
-            id: 'total_products',
-            label: 'Total Products',
-            value: payload.total_products ?? 0,
-            subValue: 'Active catalog items',
-            trend: 0,
-            variant: 'teal',
-            icon: 'Package',
-            actionLabel: 'View Products',
-            actionPath: '/admin/products',
-          },
-          {
-            id: 'in_stock_products',
-            label: 'In Stock',
-            value: payload.in_stock ?? 0,
-            subValue: 'Healthy inventory levels',
-            trend: 0,
-            variant: 'green',
-            icon: 'CheckCircle',
-            actionLabel: 'Manage Stock',
-            actionPath: '/admin/products',
-          },
-          {
-            id: 'out_of_stock_products',
-            label: 'Out of Stock',
-            value: payload.out_of_stock ?? 0,
-            subValue: 'Unavailable to order',
-            trend: 0,
-            variant: 'red',
-            icon: 'XCircle',
-            actionLabel: 'Reorder Now',
-            actionPath: '/admin/products',
-          }
-        );
+      if (!payload) {
+        return { success: false, data: [] };
       }
-    } catch (err) {
+
+      const kpis = payload.kpis || {};
+      const invHealth = payload.inventory_health || {};
+      const summary = payload.summary_counts || {};
+
+      const stats: DashboardStat[] = [
+        {
+          id: 'revenue',
+          label: "Revenue",
+          value: kpis.revenue?.value ?? '₹0.00',
+          subValue: kpis.revenue?.desc ?? 'All-time: ' + (kpis.revenue?.total_alltime ?? '₹0.00'),
+          trend: parseFloat(kpis.revenue?.trend?.replace('%', '') || '0') || 0,
+          trendLabel: kpis.revenue?.desc ?? 'vs previous period',
+          variant: 'teal',
+          icon: 'IndianRupee',
+          actionLabel: 'View Orders',
+          actionPath: '/admin/orders',
+        },
+        {
+          id: 'orders',
+          label: "Orders",
+          value: kpis.orders?.value ?? 0,
+          subValue: `${summary.pending_orders ?? 0} pending fulfillment`,
+          trend: parseFloat(kpis.orders?.trend?.replace('%', '') || '0') || 0,
+          trendLabel: kpis.orders?.desc ?? 'vs previous period',
+          variant: 'blue',
+          icon: 'ShoppingCart',
+          actionLabel: 'Manage Orders',
+          actionPath: '/admin/orders',
+        },
+        {
+          id: 'pending_orders',
+          label: 'Pending Orders',
+          value: summary.pending_orders ?? 0,
+          subValue: 'Action required',
+          trend: 0,
+          variant: 'orange',
+          icon: 'Clock',
+          actionLabel: 'Review Now',
+          actionPath: '/admin/orders',
+        },
+        {
+          id: 'low_inventory',
+          label: 'Low Stock',
+          value: summary.stock_alerts ?? invHealth.low_stock?.count ?? 0,
+          subValue: `${invHealth.out_of_stock?.count ?? 0} out of stock`,
+          trend: 0,
+          variant: 'red',
+          icon: 'AlertTriangle',
+          actionLabel: 'View Inventory',
+          actionPath: '/admin/inventory',
+        },
+        {
+          id: 'dealer_approvals',
+          label: 'Dealer Approvals',
+          value: summary.pending_dealers ?? 0,
+          subValue: `${summary.pending_dealers ?? 0} Applications pending`,
+          trend: 0,
+          variant: 'purple',
+          icon: 'UserCheck',
+          actionLabel: 'Review Dealers',
+          actionPath: '/admin/dealers',
+        },
+        {
+          id: 'support_tickets',
+          label: 'Open Tickets',
+          value: summary.open_tickets ?? 0,
+          subValue: 'Customer inquiries',
+          trend: 0,
+          variant: 'green',
+          icon: 'HeadphonesIcon',
+          actionLabel: 'View Support',
+          actionPath: '/admin/support',
+        },
+        {
+          id: 'total_products',
+          label: 'Total Products',
+          value: kpis.products?.value ?? 0,
+          subValue: `${kpis.products?.active ?? 0} active listings`,
+          trend: 0,
+          variant: 'teal',
+          icon: 'Package',
+          actionLabel: 'View Products',
+          actionPath: '/admin/products',
+        },
+      ];
+
+      return {
+        success: true,
+        data: stats,
+      };
+    } catch (err: any) {
       console.error('Failed to fetch dashboard stats:', err);
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch stats',
+        data: [],
+      };
     }
-
-    try {
-      const dealerRes = await api.get('dealer/admin/applications/stats/');
-      const dealerPayload = dealerRes.data?.data ?? dealerRes.data;
-      if (dealerPayload) {
-        const pendingIndex = stats.findIndex(s => s.id === 'dealer_approvals');
-        if (pendingIndex !== -1) {
-          stats[pendingIndex].value = dealerPayload.pending ?? 0;
-          stats[pendingIndex].subValue = `${dealerPayload.pending ?? 0} Applications pending`;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch dealer dashboard stats:', err);
-    }
-
-    return {
-      success: true,
-      data: stats,
-    };
   },
 
-  async getRecentActivity(): Promise<ServiceResponse<ActivityItem[]>> {
-    await delay(300);
-    return {
-      success: true,
-      data: [
-        {
-          id: 'act-1',
-          type: 'system',
-          title: 'Admin Portal Initialized',
-          description: 'FAAZO Business Operating System is ready.',
-          timestamp: new Date().toISOString(),
-          user: 'System',
-          avatarColor: '#005B63',
-        },
-      ],
-    };
+  async search(query: string): Promise<ServiceResponse<any>> {
+    try {
+      const res = await api.get('admin/dashboard/search/', { params: { q: query } });
+      return res.data;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Search request failed' };
+    }
   },
 
   async getQuickActions(): Promise<ServiceResponse<QuickAction[]>> {
-    await delay(200);
     return {
       success: true,
       data: [
@@ -283,7 +236,7 @@ export const dashboardService = {
           label: 'Add Product',
           description: 'List a new dental product',
           icon: 'PackagePlus',
-          path: '/admin/products/new',
+          path: '/admin/products',
           color: 'teal',
         },
         {
@@ -303,11 +256,11 @@ export const dashboardService = {
           color: 'purple',
         },
         {
-          id: 'add-customer',
-          label: 'Add Customer',
-          description: 'Manually register a dentist',
+          id: 'manage-customers',
+          label: 'Manage Customers',
+          description: 'View registered clinic accounts',
           icon: 'UserPlus',
-          path: '/admin/customers/new',
+          path: '/admin/customers',
           color: 'green',
         },
         {
@@ -321,7 +274,7 @@ export const dashboardService = {
         {
           id: 'reports',
           label: 'Sales Report',
-          description: 'Business analytics',
+          description: 'Business analytics & intelligence',
           icon: 'BarChart3',
           path: '/admin/reports',
           color: 'teal',
@@ -332,22 +285,58 @@ export const dashboardService = {
 };
 
 export const notificationsService = {
-  async getAll(): Promise<ServiceResponse<AdminNotification[]>> {
-    await delay(300);
-    return {
-      success: true,
-      data: [],
-    };
+  async getAll(params?: { is_read?: boolean; page?: number; page_size?: number }): Promise<ServiceResponse<AdminNotification[]>> {
+    try {
+      const res = await api.get('notifications/', { params });
+      const rawData = res.data?.results ?? res.data?.data ?? res.data ?? [];
+      const notifications: AdminNotification[] = Array.isArray(rawData) ? rawData.map((n: any) => ({
+        id: String(n.id),
+        title: n.title,
+        message: n.message,
+        type: (n.category || n.notification_type || 'system').toLowerCase() as any,
+        isRead: Boolean(n.is_read),
+        timestamp: n.created_at,
+        actionPath: n.action_url,
+        priority: (n.priority || 'medium').toLowerCase() as any,
+      })) : [];
+      return {
+        success: true,
+        data: notifications,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch notifications',
+        data: [],
+      };
+    }
+  },
+
+  async getUnreadCount(): Promise<number> {
+    try {
+      const res = await api.get('notifications/unread-count/');
+      return res.data?.unread_count ?? res.data?.data?.unread_count ?? 0;
+    } catch {
+      return 0;
+    }
   },
 
   async markAsRead(id: string): Promise<ServiceResponse<void>> {
-    await delay(100);
-    return { success: true };
+    try {
+      await api.post(`notifications/${id}/read/`);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
   },
 
   async markAllAsRead(): Promise<ServiceResponse<void>> {
-    await delay(200);
-    return { success: true };
+    try {
+      await api.post('notifications/read-all/');
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
   },
 };
 
