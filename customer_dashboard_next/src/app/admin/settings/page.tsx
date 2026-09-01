@@ -1,6 +1,14 @@
 'use client';
-import { ComingSoon } from '@/admin/pages/NotFound';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsAdminPage() {
-  return <ComingSoon module="System Settings" description="Global platform settings, payment gateways, tax calculation rules, and store configurations." />;
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/admin');
+  }, [router]);
+
+  return null;
 }

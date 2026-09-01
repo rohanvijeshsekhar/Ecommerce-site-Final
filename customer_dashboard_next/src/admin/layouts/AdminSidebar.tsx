@@ -69,9 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'System',
     items: [
-      { id: 'users',      label: 'Users & roles',  icon: 'UserCog',          path: '/admin/users'      },
       { id: 'audit',      label: 'Audit logs',      icon: 'ClipboardList',    path: '/admin/audit'      },
-      { id: 'settings',   label: 'Settings',        icon: 'Settings',         path: '/admin/settings'   },
     ],
   },
 ];

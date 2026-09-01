@@ -811,7 +811,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const selectedServiceability = selectedAddressId ? serviceabilityMap[selectedAddressId] : undefined;
 
   return (
-    <div className="w-full bg-[#f6f9f9] min-h-screen pt-[100px] lg:pt-[150px] pb-20 font-sans select-none text-left">
+    <div className="w-full bg-[#f6f9f9] min-h-screen pt-[116px] lg:pt-[176px] pb-20 font-sans select-none text-left">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider mb-5">

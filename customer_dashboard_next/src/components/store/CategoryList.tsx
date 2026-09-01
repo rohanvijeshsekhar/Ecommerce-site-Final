@@ -201,7 +201,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-${idx}`} style={{ width: 'auto' }}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,102,112,0.12)] hover:border-[#006670]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col h-[390px] cursor-pointer group relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col h-[390px] cursor-pointer relative overflow-hidden">
                   {/* Top: Image Area */}
                   <div className="w-full h-[250px] bg-slate-50 flex items-center justify-center overflow-hidden relative">
                     <Image
@@ -209,23 +209,23 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                       alt={cat.title}
                       fill
                       sizes="280px"
-                      className="object-cover transform group-hover:scale-[1.05] transition-transform duration-500"
+                      className="object-cover"
                     />
                   </div>
 
                   {/* Overlapping floating badge */}
-                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-white rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.12)] border border-slate-200 group-hover:scale-110 group-hover:bg-[#006670] group-hover:border-[#006670] transition-all duration-300">
+                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-[#006670] text-white rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.18)]">
                     {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
                   </div>
 
                   {/* Bottom: Text area */}
                   <div className="bg-white text-left px-6.5 pt-9 pb-6 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-slate-100">
-                    <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug group-hover:text-[#006670] transition-colors duration-300 font-sans">
+                    <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug font-sans">
                       {cat.title}
                     </h3>
-                    <div className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#007C82] hover:text-[#006670] transition-colors duration-300">
+                    <div className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#007C82]">
                       <span>Shop Now</span>
-                      <span className="transform group-hover:translate-x-1.5 transition-transform duration-300">→</span>
+                      <span>→</span>
                     </div>
                   </div>
                 </div>
@@ -280,18 +280,18 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-mob-${idx}`}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-full bg-gradient-to-br from-white/45 via-[#F2FAF9]/30 to-white/40 backdrop-blur-xl border border-[#006670]/20 rounded-[20px] shadow-[0_4px_16px_rgba(0, 43, 46,0.02)] flex flex-col h-[224px] cursor-pointer group relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-full bg-gradient-to-br from-white/45 via-[#F2FAF9]/30 to-white/40 backdrop-blur-xl border border-[#006670]/20 rounded-[20px] shadow-[0_4px_16px_rgba(0, 43, 46,0.02)] flex flex-col h-[224px] cursor-pointer relative overflow-hidden">
                   {/* Top: Image Area */}
                   <div className="w-full h-[140px] bg-[#F5FBFB]/20 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.11)_0%,transparent_65%)] flex items-center justify-center overflow-hidden relative">
                     <img
                       src={cat.image}
                       alt={cat.title}
-                      className="w-full h-full object-cover transform group-hover:scale-[1.05] transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
                   </div>
 
                   {/* Overlapping floating badge */}
-                  <div className="absolute top-[118px] left-3.5 z-10 w-9 h-9 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-md border border-[#006670]/20 group-hover:bg-[#006670] transition-colors">
+                  <div className="absolute top-[118px] left-3.5 z-10 w-9 h-9 bg-[#006670] text-white rounded-full flex items-center justify-center shadow-md">
                     <div className="scale-90 flex items-center justify-center">
                       {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
                     </div>
@@ -299,7 +299,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
 
                   {/* Bottom: Text area */}
                   <div className="bg-white/60 text-left px-4 pt-5 pb-3 flex flex-col justify-between flex-grow rounded-b-[20px] border-t border-[#006670]/10">
-                    <h3 className="text-[13px] font-black text-[#0F2D30] tracking-tight leading-tight group-hover:text-[#006670] transition-colors duration-300 font-display truncate">
+                    <h3 className="text-[13px] font-black text-[#0F2D30] tracking-tight leading-tight font-display truncate">
                       {cat.title}
                     </h3>
                     <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#007C82]">

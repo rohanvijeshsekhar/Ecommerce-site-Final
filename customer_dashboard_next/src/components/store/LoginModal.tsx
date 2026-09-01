@@ -408,7 +408,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   // ─── Title map for right panel ──────────────────────────────────────────
   const titles: Record<ModalMode, { heading: string; sub: string }> = {
     'login': { heading: 'Welcome Back! 👋', sub: 'Sign in to continue to FAAZO' },
-    'register': { heading: 'Join FAAZO! 🦷', sub: 'Create your dental professional account' },
+    'register': { heading: 'Create your account', sub: '' },
     'dealer-register': { heading: 'Dealer Application 🏢', sub: 'Apply for a FAAZO B2B dealer account' },
     'forgot-password': { heading: 'Reset Password 🔐', sub: 'Enter your email to receive a verification code' },
     'otp-verify': { heading: 'Verify Mobile OTP 📱', sub: 'Enter the 6-digit code sent to your phone' },
@@ -627,7 +627,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
                 <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mb-0.5">{heading}</h1>
-                <p className="text-[11px] md:text-xs text-slate-500 font-medium">{sub}</p>
+                {sub && <p className="text-[11px] md:text-xs text-slate-500 font-medium">{sub}</p>}
               </div>
             </div>
 

@@ -412,18 +412,11 @@ const AdminHeader: React.FC = () => {
 
                 <div className="py-1 space-y-0.5">
                   <Link
-                    href="/admin/settings"
+                    href="/admin"
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
                   >
                     <User className="w-4 h-4 text-slate-400" /> My Profile
-                  </Link>
-                  <Link
-                    href="/admin/settings"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
-                  >
-                    <Settings className="w-4 h-4 text-slate-400" /> Settings
                   </Link>
                 </div>
 

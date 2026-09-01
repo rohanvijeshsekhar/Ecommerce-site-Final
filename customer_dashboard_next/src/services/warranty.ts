@@ -129,46 +129,46 @@ export interface ApiResponse<T> {
 
 export const warrantyService = {
   getRegistrations: async (params?: any): Promise<ApiResponse<WarrantyRegistration[]>> => {
-    const res = await api.get('/api/v1/warranty/registrations/', { params });
+    const res = await api.get('warranty/registrations/', { params });
     return res.data;
   },
 
   getImportedProducts: async (): Promise<ApiResponse<ImportedProduct[]>> => {
-    const res = await api.get('/api/v1/warranty/imported-products/');
+    const res = await api.get('warranty/imported-products/');
     return res.data;
   },
 
   submitRegistration: async (id: string, formData: FormData): Promise<ApiResponse<WarrantyRegistration>> => {
-    const res = await api.patch(`/api/v1/warranty/registrations/${id}/register/`, formData, {
+    const res = await api.patch(`warranty/registrations/${id}/register/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data;
   },
 
   getClaims: async (): Promise<ApiResponse<WarrantyClaim[]>> => {
-    const res = await api.get('/api/v1/warranty/claims/');
+    const res = await api.get('warranty/claims/');
     return res.data;
   },
 
   createClaim: async (formData: FormData): Promise<ApiResponse<WarrantyClaim>> => {
-    const res = await api.post('/api/v1/warranty/claims/', formData, {
+    const res = await api.post('warranty/claims/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data;
   },
 
   getClaimDetail: async (id: string): Promise<ApiResponse<WarrantyClaim>> => {
-    const res = await api.get(`/api/v1/warranty/claims/${id}/`);
+    const res = await api.get(`warranty/claims/${id}/`);
     return res.data;
   },
 
   getAdminDashboard: async (): Promise<ApiResponse<AdminWarrantyStats>> => {
-    const res = await api.get('/api/v1/warranty/admin/dashboard/');
+    const res = await api.get('warranty/admin/dashboard/');
     return res.data;
   },
 
   getAdminRegistrations: async (params?: any): Promise<ApiResponse<WarrantyRegistration[]>> => {
-    const res = await api.get('/api/v1/warranty/admin/registrations/', { params });
+    const res = await api.get('warranty/admin/registrations/', { params });
     return res.data;
   },
 
@@ -177,17 +177,17 @@ export const warrantyService = {
     action: 'approve' | 'reject' | 'request_info',
     notes?: string
   ): Promise<ApiResponse<WarrantyRegistration>> => {
-    const res = await api.post(`/api/v1/warranty/admin/registrations/${id}/action/`, { action, notes });
+    const res = await api.post(`warranty/admin/registrations/${id}/action/`, { action, notes });
     return res.data;
   },
 
   getAdminClaims: async (params?: any): Promise<ApiResponse<WarrantyClaim[]>> => {
-    const res = await api.get('/api/v1/warranty/admin/claims/', { params });
+    const res = await api.get('warranty/admin/claims/', { params });
     return res.data;
   },
 
   getAdminClaimDetail: async (id: string): Promise<ApiResponse<WarrantyClaim>> => {
-    const res = await api.get(`/api/v1/warranty/admin/claims/${id}/`);
+    const res = await api.get(`warranty/admin/claims/${id}/`);
     return res.data;
   },
 
@@ -201,7 +201,7 @@ export const warrantyService = {
       status?: string;
     }
   ): Promise<ApiResponse<WarrantyClaim>> => {
-    const res = await api.post(`/api/v1/warranty/admin/claims/${id}/action/`, {
+    const res = await api.post(`warranty/admin/claims/${id}/action/`, {
       action,
       ...payload,
     });

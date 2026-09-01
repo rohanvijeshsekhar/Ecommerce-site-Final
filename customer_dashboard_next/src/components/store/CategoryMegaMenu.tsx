@@ -558,13 +558,7 @@ const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
             </>
           )}
 
-          {/* Decorative vertical label */}
-          <div
-            className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-[#004d54]/5 uppercase tracking-widest text-[40px] select-none pointer-events-none"
-            style={{ writingMode: 'vertical-rl', transform: 'translateY(-50%) rotate(180deg)' }}
-          >
-            {activeCat.label}
-          </div>
+
         </div>
       </div>
     </div>

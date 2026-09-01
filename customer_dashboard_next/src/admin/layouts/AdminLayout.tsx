@@ -22,6 +22,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const isLoginPage = pathname === '/admin/login';
 
+  // Hook must be called unconditionally (before any returns)
+  React.useEffect(() => {
+    if (!isLoading && !user && !isLoginPage) {
+      router.push('/admin/login');
+    }
+  }, [isLoading, user, isLoginPage, router]);
+
   if (isLoginPage) {
     return <ToastProvider>{children}</ToastProvider>;
   }
@@ -38,8 +45,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     );
   }
 
-  // Unauthorized or Customer Account accessing /admin -> Render 403 Access Denied
-  if (!user || user.role !== 'admin') {
+  // Not logged in -> show spinner while redirecting to login
+  if (!user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-900 text-white">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-teal-500 border-t-transparent"></div>
+          <p className="text-sm font-medium text-slate-400">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Logged in as a Customer (non-admin) -> Render 403 Access Denied
+  if (user.role !== 'admin') {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-950 px-4 text-white">
         <div className="max-w-md text-center bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
@@ -51,11 +70,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <p className="mt-2 text-sm text-slate-400">
               You do not have administrator permissions to access the FAAZO Business Operating System.
             </p>
-            {user && (
-              <p className="mt-2 text-xs text-amber-400/80 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20">
-                Logged in as <span className="font-semibold text-white">{user.email}</span> (Role: <span className="uppercase font-bold">{user.role}</span>)
-              </p>
-            )}
+            <p className="mt-2 text-xs text-amber-400/80 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20">
+              Logged in as <span className="font-semibold text-white">{user.email}</span> (Role: <span className="uppercase font-bold">{user.role}</span>)
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

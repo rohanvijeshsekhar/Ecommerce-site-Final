@@ -122,50 +122,41 @@ export default function BrandsClient() {
       );
     }
 
-    // Tab filter & sort
-    if (activeTab === 'featured') {
-      list = list.filter(b => b.is_featured);
-    } else if (activeTab === 'az') {
-      list.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (activeTab === 'products') {
-      list.sort((a, b) => (b.product_count || 0) - (a.product_count || 0));
-    } else {
-      // 'all' — order by display_order, then name
-      list.sort((a, b) => ((a.display_order ?? 0) - (b.display_order ?? 0)) || a.name.localeCompare(b.name));
-    }
+    // Default order by display_order, then name
+    list.sort((a, b) => ((a.display_order ?? 0) - (b.display_order ?? 0)) || a.name.localeCompare(b.name));
 
     return list;
-  }, [brands, searchQuery, activeTab]);
+  }, [brands, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[100px] lg:pt-[160px]">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[100px] lg:pt-[160px]">
       
       {/* ── TOP HERO BANNER (Full width edge-to-edge) ── */}
       {banner && banner.is_active && (
-        <div className="w-full relative overflow-hidden group h-[240px] sm:h-[340px] md:h-[420px] bg-slate-950 border-b border-slate-200/50 shadow-lg">
+        <div className="w-full relative overflow-hidden group h-[220px] sm:h-[300px] md:h-[360px] bg-slate-950 border-b border-slate-200/50 shadow-md">
           <img
             src={banner?.banner_image_url || '/images/brands_hero_bg.png'}
             alt={banner?.title || 'Our Trusted Brands'}
             loading="eager"
-            className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 opacity-90 brightness-[0.95]"
+            className="w-full h-full object-cover opacity-90 brightness-[0.95]"
           />
 
           {/* Glassmorphism Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20">
-            <div className="max-w-4xl w-full space-y-2.5 sm:space-y-4">
+            <div className="max-w-4xl w-full space-y-2 sm:space-y-3.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#006670] text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full w-fit shadow-md">
-                <Award className="w-3.5 h-3.5 text-amber-300" /> Authorized Partners
+                <Award className="w-3.5 h-3.5 text-amber-300" /> Authorized Partners & Manufacturers
               </span>
-              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-md">
                 {banner.title}
               </h1>
-              <p className="text-slate-200 text-xs sm:text-base md:text-lg max-w-2xl line-clamp-2 font-medium leading-relaxed">
+              <p className="text-slate-200 text-xs sm:text-base max-w-2xl line-clamp-2 font-medium leading-relaxed">
                 {banner.subtitle}
               </p>
               {banner.button_text && (
                 <a
                   href={banner.button_link || '#brands-grid'}
-                  className="inline-flex items-center gap-2 mt-3 sm:mt-5 px-5 py-2.5 sm:px-6 sm:py-3 bg-[#006670] hover:bg-[#00525a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#006670]/30 transition-all hover:scale-105 active:scale-95 w-fit"
+                  className="inline-flex items-center gap-2 mt-2 sm:mt-4 px-5 py-2.5 bg-[#006670] hover:bg-[#00525a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 w-fit cursor-pointer"
                 >
                   <span>{banner.button_text}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -176,82 +167,83 @@ export default function BrandsClient() {
         </div>
       )}
 
-      <div id="brands-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        
-        {/* ── Breadcrumb ── */}
-        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500 mb-6">
-          <Link href="/" className="hover:text-[#006670] transition-colors font-medium">
-            Home
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="font-bold text-slate-900">Brands</span>
-        </nav>
+      {/* ── Trust Pillars Bar (Amazon/Flipkart style) ── */}
+      <div className="bg-white border-b border-slate-200/80 py-3.5 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#006670]/10 flex items-center justify-center text-[#006670] shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">100% Genuine</p>
+              <p className="text-[10.5px] text-slate-500 font-medium">Direct from manufacturers</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center md:justify-start gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#006670]/10 flex items-center justify-center text-[#006670] shrink-0">
+              <Award className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Official Warranty</p>
+              <p className="text-[10.5px] text-slate-500 font-medium">Full brand warranty support</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center md:justify-start gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#006670]/10 flex items-center justify-center text-[#006670] shrink-0">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Wide Portfolio</p>
+              <p className="text-[10.5px] text-slate-500 font-medium">Clinical & surgical equipment</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center md:justify-start gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#006670]/10 flex items-center justify-center text-[#006670] shrink-0">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Special Clinical Deals</p>
+              <p className="text-[10.5px] text-slate-500 font-medium">Exclusive verified pricing</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* ── Search & Filter Controls ── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          
-          {/* Live Search Bar */}
-          <div className="relative flex-1 max-w-md">
+      <div id="brands-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        
+        {/* ── Breadcrumb & Results Count ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500">
+            <Link href="/" className="hover:text-[#006670] transition-colors font-medium">
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <span className="font-bold text-slate-900">Brand Directory</span>
+          </nav>
+          <div className="text-xs font-semibold text-slate-500">
+            Showing <span className="font-bold text-slate-900">{filteredBrands.length}</span> Verified Dental Brands
+          </div>
+        </div>
+
+        {/* ── Search Bar Only ── */}
+        <div className="mb-6">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search brands by name or description..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] shadow-xs transition-all"
+              placeholder="Search brands by name (e.g. 3M, Dentsply, Amaron)..."
+              className="w-full pl-10 pr-16 py-2.5 bg-white border border-slate-200/90 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/25 focus:border-[#006670] shadow-2xs transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-semibold"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 font-bold px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 Clear
               </button>
             )}
-          </div>
-
-          {/* Sorting / Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
-                activeTab === 'all'
-                  ? 'bg-[#006670] text-white shadow-md'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              All Brands
-            </button>
-            <button
-              onClick={() => setActiveTab('featured')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                activeTab === 'featured'
-                  ? 'bg-[#006670] text-white shadow-md'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Featured
-            </button>
-            <button
-              onClick={() => setActiveTab('az')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
-                activeTab === 'az'
-                  ? 'bg-[#006670] text-white shadow-md'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              A – Z
-            </button>
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
-                activeTab === 'products'
-                  ? 'bg-[#006670] text-white shadow-md'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              Most Products
-            </button>
           </div>
         </div>
 
@@ -259,18 +251,17 @@ export default function BrandsClient() {
 
         {/* Loading Skeletons */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {Array.from({ length: 8 }).map((_, idx) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 10 }).map((_, idx) => (
               <div
                 key={idx}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm animate-pulse flex flex-col justify-between h-[230px]"
+                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs animate-pulse flex flex-col justify-between h-[280px]"
               >
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-slate-200 rounded-xl" />
-                  <div className="h-4 bg-slate-200 rounded w-2/3" />
-                  <div className="h-3 bg-slate-100 rounded w-5/6" />
-                </div>
-                <div className="h-9 bg-slate-200 rounded-xl w-full mt-4" />
+                <div className="h-3 bg-slate-200 rounded w-1/3 mb-3" />
+                <div className="w-full h-24 bg-slate-100 rounded-xl mb-3" />
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
+                <div className="h-8 bg-slate-200 rounded-xl w-full" />
               </div>
             ))}
           </div>
@@ -284,7 +275,7 @@ export default function BrandsClient() {
             <p className="text-xs sm:text-sm text-slate-500 mb-6">{error}</p>
             <button
               onClick={fetchData}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#005159] transition-colors shadow-md"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#005159] transition-colors shadow-md cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" /> Retry Loading
             </button>
@@ -295,102 +286,107 @@ export default function BrandsClient() {
             <div className="w-16 h-16 rounded-2xl bg-[#006670]/10 text-[#006670] flex items-center justify-center mx-auto mb-4">
               <Layers className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 mb-2">No Brands Available</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-2">No Brands Found</h3>
             <p className="text-xs sm:text-sm text-slate-500 mb-6">
               {searchQuery
-                ? `No brands match your search "${searchQuery}". Try searching with a different term.`
+                ? `No brands match your search "${searchQuery}". Try searching with a different brand name.`
                 : 'Brands will appear here once added by the administrator.'}
             </p>
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#005159] transition-all shadow-md"
+                className="px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#005159] transition-all shadow-md cursor-pointer"
               >
-                Clear Search Filter
+                Clear Search
               </button>
             )}
           </div>
         ) : (
-          /* Responsive 4 / 3 / 2 Grid */
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          /* Standard Top E-Commerce Brand Cards Grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4.5">
             {filteredBrands.map(brand => {
               const logoSrc = getAbsoluteImageUrl(brand.logo_url || brand.logo);
               const pCount = brand.product_count ?? 0;
 
               return (
-                <div
+                <Link
                   key={brand.id}
-                  onClick={() => router.push(`/brands/${brand.slug}`)}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-[#006670]/40 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between group cursor-pointer h-full relative overflow-hidden"
+                  href={`/brands/${brand.slug}`}
+                  className="group bg-white rounded-2xl border border-slate-200/80 hover:border-[#006670] hover:shadow-[0_8px_25px_rgba(0,102,112,0.10)] transition-all duration-300 flex flex-col justify-between p-3.5 sm:p-4 text-left relative overflow-hidden cursor-pointer"
                 >
-                  {/* Featured Badge */}
-                  {brand.is_featured && (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-wider rounded-md border border-amber-200/60">
-                      Featured
+                  {/* Top Badge Row */}
+                  <div className="flex items-center justify-between gap-1 mb-2.5">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 group-hover:text-[#006670] transition-colors">
+                      <ShieldCheck className="w-3 h-3 text-[#006670]" />
+                      <span>Official Store</span>
                     </span>
-                  )}
 
-                  {/* Top Content: Logo, Name, Country & Description */}
-                  <div>
-                    {/* Logo Centered */}
-                    <div className="w-full h-20 bg-slate-50 rounded-xl p-3 flex items-center justify-center mb-4 border border-slate-100 group-hover:bg-[#006670]/5 transition-colors">
-                      {logoSrc ? (
-                        <img
-                          src={logoSrc}
-                          alt={brand.name}
-                          loading="lazy"
-                          className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <span className="text-xl font-black text-slate-400 group-hover:text-[#006670]">
+                    {brand.is_featured && (
+                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 text-[8.5px] font-black uppercase tracking-wider rounded border border-amber-200/70">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Clean Image Window Area */}
+                  <div className="w-full h-28 sm:h-32 bg-[#fafcfc] rounded-xl border border-slate-100 group-hover:border-[#006670]/20 overflow-hidden flex items-center justify-center mb-3 transition-colors relative">
+                    {logoSrc ? (
+                      <img
+                        src={logoSrc}
+                        alt={brand.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
+                        <span className="text-xl font-black text-slate-400 group-hover:text-[#006670] transition-colors">
                           {brand.name.substring(0, 2).toUpperCase()}
                         </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Brand Information */}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      {/* Brand Title */}
+                      <h3 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#006670] transition-colors line-clamp-1 leading-tight mb-1">
+                        {brand.name}
+                      </h3>
+
+                      {/* Origin & Category Tag */}
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        {brand.country_of_origin ? (
+                          <span>{brand.country_of_origin}</span>
+                        ) : (
+                          <span>Clinical Grade</span>
+                        )}
+                        <span>•</span>
+                        <span className="text-emerald-600 font-extrabold">100% Genuine</span>
+                      </div>
+
+                      {/* Short Description */}
+                      {brand.short_description && (
+                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-1.5 font-medium leading-snug">
+                          {brand.short_description}
+                        </p>
                       )}
                     </div>
 
-                    {/* Brand Name */}
-                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 group-hover:text-[#006670] transition-colors text-center line-clamp-1">
-                      {brand.name}
-                    </h3>
-
-                    {/* Country tag */}
-                    {brand.country_of_origin && (
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mt-0.5">
-                        {brand.country_of_origin}
-                      </p>
-                    )}
-
-                    {/* Short Description */}
-                    {brand.short_description && (
-                      <p className="text-xs text-slate-500 text-center line-clamp-2 mt-2 font-medium">
-                        {brand.short_description}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Bottom Footer: Product Count & CTA */}
-                  <div className="mt-5 pt-3 border-t border-slate-100 space-y-3">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-                      <span className="flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-[#006670]" /> Products
+                    {/* Bottom CTA & Product Count */}
+                    <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                        <Package className="w-3 h-3 text-[#006670]" />
+                        <span>{pCount} {pCount === 1 ? 'Product' : 'Products'}</span>
                       </span>
-                      <span className="px-2 py-0.5 bg-[#006670]/10 text-[#006670] font-bold text-[11px] rounded-full">
-                        {pCount} {pCount === 1 ? 'Item' : 'Items'}
-                      </span>
+
+                      <div className="inline-flex items-center gap-1 text-[10.5px] font-black text-[#006670] group-hover:translate-x-0.5 transition-transform">
+                        <span>Explore</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </div>
                     </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/brands/${brand.slug}`);
-                      }}
-                      className="w-full py-2.5 bg-slate-900 group-hover:bg-[#006670] text-white text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm"
-                    >
-                      <span>View Products</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </button>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
