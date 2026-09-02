@@ -151,7 +151,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block w-full bg-[#F2FBFB] border-y border-[#E2E8F0] py-16 select-none" id="solutions">
+      <section className="hidden md:block w-full bg-[#F2FBFB] py-16 select-none" id="solutions">
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
           <div className="flex justify-between items-end mb-10 text-left">
@@ -229,7 +229,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full bg-[#F2FBFB] border-y border-[#E2E8F0] px-5 py-8 select-none" id="solutions-mobile">
+      <section className="block md:hidden w-full bg-[#F2FBFB] px-5 py-8 select-none" id="solutions-mobile">
         <div className="flex flex-col mb-6 text-left">
           <span className="text-[10px] font-extrabold text-[#005F63] tracking-widest uppercase mb-1">
             Procedure Workflows

@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic';
 import Hero from '@/components/store/Hero';
 import CategoryList from '@/components/store/CategoryList';
 import { getCategoryIconBadge } from '@/utils/categoryIcons';
-import ExploreSolutions from '@/components/store/ExploreSolutions';
 import BrandLogos from '@/components/store/BrandLogos';
 const BestSellers = dynamic(() => import('@/components/store/BestSellers'), { ssr: true });
 import WhyChooseBanner from '@/components/store/WhyChooseBanner';
@@ -123,7 +122,6 @@ export default function HomeClient({
     <>
       <Hero initialSlides={initialSlides} />
       <CategoryList onCategoryClick={handleCategoryClick} initialCategories={mappedCategories} />
-      <ExploreSolutions onViewPortfolio={() => handleViewChange('portfolio')} />
       <BestSellers
         onProductClick={handleProductClick}
         onOpenLoginModal={store.openLoginModal}

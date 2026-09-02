@@ -133,15 +133,15 @@ const BestSellers: React.FC<BestSellersProps> = ({
     <>
       {/* Desktop view */}
       <section 
-        className="hidden md:block w-full py-20 select-none overflow-hidden relative border-y border-slate-200/40" 
+        className="hidden md:block w-full py-20 select-none overflow-hidden relative" 
         id="products" 
         style={{ 
           perspective: '1400px',
           backgroundColor: '#f7fafb',
           backgroundImage: `
-            linear-gradient(to bottom, rgba(248, 250, 252, 0.8), rgba(237, 248, 249, 0.6), rgba(248, 250, 252, 0.8)),
-            linear-gradient(rgba(0, 77, 84, 0.30) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 77, 84, 0.30) 1px, transparent 1px)
+            linear-gradient(to bottom, #F8FAFC 0%, rgba(248, 250, 252, 0.2) 18%, rgba(247, 250, 251, 0.2) 82%, #f7fafb 100%),
+            linear-gradient(rgba(0, 77, 84, 0.22) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 77, 84, 0.22) 1px, transparent 1px)
           `,
           backgroundSize: '100% 100%, 32px 32px, 32px 32px',
         }}
@@ -308,14 +308,14 @@ const BestSellers: React.FC<BestSellersProps> = ({
 
       {/* Mobile view */}
       <section 
-        className="block md:hidden w-full py-12 select-none overflow-hidden relative border-y border-slate-200/40" 
+        className="block md:hidden w-full py-12 select-none overflow-hidden relative" 
         id="products-mobile"
         style={{
           backgroundColor: '#f7fafb',
           backgroundImage: `
-            linear-gradient(to bottom, rgba(248, 250, 252, 0.8), rgba(237, 248, 249, 0.6), rgba(248, 250, 252, 0.8)),
-            linear-gradient(rgba(0, 77, 84, 0.30) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 77, 84, 0.30) 1px, transparent 1px)
+            linear-gradient(to bottom, #F8FAFC 0%, rgba(248, 250, 252, 0.2) 18%, rgba(247, 250, 251, 0.2) 82%, #f7fafb 100%),
+            linear-gradient(rgba(0, 77, 84, 0.22) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 77, 84, 0.22) 1px, transparent 1px)
           `,
           backgroundSize: '100% 100%, 24px 24px, 24px 24px',
         }}
