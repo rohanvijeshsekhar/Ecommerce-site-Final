@@ -129,7 +129,7 @@ export default function NotificationCenterPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 pt-[112px] lg:pt-[180px] pb-16">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-md">
           <Bell className="w-12 h-12 text-[#006670] mx-auto mb-4" />
           <h2 className="text-lg font-bold text-slate-800 mb-2">Sign in Required</h2>
@@ -143,7 +143,7 @@ export default function NotificationCenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[180px] pb-16 px-4 md:px-8">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Top Header Card */}
         <div className="bg-gradient-to-r from-[#006670] to-[#004e56] rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -250,7 +250,7 @@ const DealerPortalPage: React.FC<DealerPortalPageProps> = ({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[100px] lg:pt-[160px] pb-20 flex flex-col gap-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[100px] lg:pt-[180px] pb-20 flex flex-col gap-6">
 
       {/* ── Page Header ───────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 flex-wrap">

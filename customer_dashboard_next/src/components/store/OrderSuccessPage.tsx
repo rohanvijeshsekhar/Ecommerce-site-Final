@@ -101,7 +101,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans select-none text-left animate-in fade-in duration-500">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans select-none text-left animate-in fade-in duration-500">
       <div className="max-w-4xl mx-auto px-4 md:px-6">
 
         {/* Success Card */}

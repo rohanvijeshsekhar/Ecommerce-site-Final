@@ -461,7 +461,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[62px] lg:pt-[172px] text-left select-none">
+    <div className="w-full bg-[#FAFBFB] pt-[62px] lg:pt-[180px] text-left select-none">
 
       {/* 1. Back Button and Breadcrumbs Row (Desktop/Tablet) */}
       <div className="max-w-5xl mx-auto px-4 md:px-12 py-4 flex items-center gap-4">
@@ -524,7 +524,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="hidden md:grid grid-cols-[88px_minmax(0,1fr)] gap-[8px] items-start">
 
               {/* Left Side: Vertical Thumbnails Strip (Sticky while scrolling) */}
-              <div className="flex flex-col gap-[10px] shrink-0 sticky top-28 self-start w-[88px] z-10">
+              <div className="flex flex-col gap-[10px] shrink-0 sticky top-[140px] self-start w-[88px] z-10">
                 {productImages.map((img: any, idx: number) => (
                   <button
                     key={idx}

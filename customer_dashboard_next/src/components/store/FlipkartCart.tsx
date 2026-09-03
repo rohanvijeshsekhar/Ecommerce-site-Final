@@ -121,7 +121,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans select-none">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans select-none">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
 
         {/* Back navigation */}
@@ -416,7 +416,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
           </div>
 
           {/* Right Column: Price breakdown card */}
-          <div className="lg:col-span-4 sticky top-[92px]">
+          <div className="lg:col-span-4 lg:sticky lg:top-[140px]">
             <div className="bg-white rounded-md border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-4 text-left">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4">
                 Price Details

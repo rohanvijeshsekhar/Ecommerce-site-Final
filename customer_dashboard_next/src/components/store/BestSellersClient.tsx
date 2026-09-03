@@ -212,7 +212,7 @@ export default function BestSellersClient() {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[100px] lg:pt-[160px]">
+    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[100px] lg:pt-[180px]">
       
       {/* ── TOP SECTION: Full Width Hero Banner (Extends Edge to Edge Left & Right) ── */}
       {!loading && banner && banner.is_active && (

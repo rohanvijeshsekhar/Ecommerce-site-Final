@@ -73,7 +73,7 @@ export default function CustomerReturnDetailPage() {
 
   if (loading) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 flex flex-col items-center justify-center">
+      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-bold text-slate-400 mt-4">Loading return details...</p>
       </div>
@@ -82,7 +82,7 @@ export default function CustomerReturnDetailPage() {
 
   if (error || !returnReq) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans">
+      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
             <XCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
@@ -102,7 +102,7 @@ export default function CustomerReturnDetailPage() {
   const isCancellable = ['requested', 'under_review'].includes(returnReq.status);
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans">
       <div className="max-w-4xl mx-auto px-4 md:px-6">
 
         {/* Back navigation */}

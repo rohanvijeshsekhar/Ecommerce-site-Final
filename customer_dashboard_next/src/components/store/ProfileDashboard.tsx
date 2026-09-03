@@ -2385,7 +2385,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // ─── Main layout ─────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-[#f7fafa] min-h-screen pt-[62px] lg:pt-[162px] pb-24 font-sans select-none text-left">
+    <div className="w-full bg-[#f7fafa] min-h-screen pt-[62px] lg:pt-[180px] pb-24 font-sans select-none text-left">
       <Toast message={localToast} />
 
       {/* Mobile header bar */}
@@ -2415,7 +2415,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       <div className="max-w-6xl mx-auto px-4 md:px-6 mt-14 lg:mt-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 sticky top-[168px]">
+          <div className="hidden lg:block lg:col-span-3 sticky top-[140px]">
             {renderSidebar()}
           </div>
 

@@ -811,7 +811,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const selectedServiceability = selectedAddressId ? serviceabilityMap[selectedAddressId] : undefined;
 
   return (
-    <div className="w-full bg-[#f6f9f9] min-h-screen pt-[116px] lg:pt-[176px] pb-20 font-sans select-none text-left">
+    <div className="w-full bg-[#f6f9f9] min-h-screen pt-[116px] lg:pt-[180px] pb-20 font-sans select-none text-left">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider mb-5">
@@ -1541,7 +1541,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           {/* ============================================================ */}
           {/* RIGHT COLUMN (4 cols): Sticky Procurement Cost Summary        */}
           {/* ============================================================ */}
-          <div className="lg:col-span-4 lg:sticky lg:top-[90px] space-y-4">
+          <div className="lg:col-span-4 lg:sticky lg:top-[140px] space-y-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 text-left">
                 Procurement Cost Summary

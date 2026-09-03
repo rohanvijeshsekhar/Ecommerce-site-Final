@@ -115,7 +115,7 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({
   const warrantyCount = orders.filter(o => o.status === 'delivered' && o.items.some(i => i.category === 'Clinical Equipment')).length;
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[104px] lg:pt-[172px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[104px] lg:pt-[180px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

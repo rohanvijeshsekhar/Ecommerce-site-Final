@@ -225,7 +225,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
 
   // ── RENDER ────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[112px] lg:pt-[160px] text-left select-none">
+    <div className="w-full bg-[#FAFBFB] pt-[112px] lg:pt-[180px] text-left select-none">
 
       {/* 1. Breadcrumb row */}
       <div className="max-w-5xl mx-auto px-4 md:px-12 py-4 flex items-center gap-4">
@@ -262,7 +262,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
             {/* Desktop gallery — vertical strip + main stage */}
             <div className="hidden md:grid grid-cols-[88px_minmax(0,1fr)] gap-[8px] items-start">
               {/* Left Side: Vertical Thumbnails Strip */}
-              <div className="flex flex-col gap-[10px] shrink-0 sticky top-28 self-start w-[88px] z-10">
+              <div className="flex flex-col gap-[10px] shrink-0 sticky top-[140px] self-start w-[88px] z-10">
                 {comboImages.map((img: any, idx: number) => (
                   <button
                     key={idx}

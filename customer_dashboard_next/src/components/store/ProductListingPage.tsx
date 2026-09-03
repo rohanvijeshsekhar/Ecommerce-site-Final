@@ -868,7 +868,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAFBFB] text-slate-800 select-none pb-20 font-sans pt-[62px] lg:pt-[162px]">
+    <div className="w-full bg-[#FAFBFB] text-slate-800 select-none pb-20 font-sans pt-[62px] lg:pt-[180px]">
 
       {/* Category Header Banner */}
       <div className="max-w-7xl mx-auto px-4 md:px-12 pt-1 pb-3 border-b border-slate-200/60">
