@@ -58,7 +58,7 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
                 onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
               >
                 <img
-                  src="/images/Artboard 1@4x (1).png"
+                  src="/images/faazo-logo.png"
                   alt="FAAZO Logo"
                   className="h-7 w-auto object-contain brightness-0 invert"
                 />
@@ -225,7 +225,7 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
               onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
             >
               <img
-                src="/images/Artboard 1@4x (1).png"
+                src="/images/faazo-logo.png"
                 alt="FAAZO Logo"
                 className="h-6 w-auto object-contain brightness-0 invert"
               />

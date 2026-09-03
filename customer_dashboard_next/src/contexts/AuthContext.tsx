@@ -43,7 +43,7 @@ export interface AuthContextType {
   /** OTP-first registration Step 2: verify OTP + create account + log in. */
   verifyAndRegister: (phone: string, otp_code: string) => Promise<void>;
   /** Google OAuth Sign-In & Sign-Up using Google ID token. */
-  googleLogin: (idToken: string) => Promise<any>;
+  googleLogin: (idToken: string, mode?: 'login' | 'signup') => Promise<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -222,9 +222,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const googleLogin = async (idToken: string): Promise<any> => {
+  const googleLogin = async (
+    idToken: string,
+    mode: 'login' | 'signup' = 'login'
+  ): Promise<any> => {
     try {
-      const res = await authService.googleAuth(idToken);
+      const res = await authService.googleAuth(idToken, mode);
       if (res.success && res.data) {
         await handleAuthSuccess(res.data);
         return res.data;

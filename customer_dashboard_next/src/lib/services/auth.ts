@@ -90,8 +90,11 @@ export const authService = {
     return response.data;
   },
 
-  async googleAuth(id_token: string): Promise<ApiResponse<AuthResponseData>> {
-    const response = await api.post('auth/v2/google/', { id_token });
+  async googleAuth(
+    id_token: string,
+    mode: 'login' | 'signup' = 'login'
+  ): Promise<ApiResponse<AuthResponseData>> {
+    const response = await api.post('auth/v2/google/', { id_token, mode });
     return response.data;
   },
 

@@ -523,7 +523,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                 {/* Logo and billing header */}
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <img src="/images/Artboard 1@4x (1).png" alt="FAAZO Logo" className="h-10 w-auto object-contain" />
+                    <img src="/images/faazo-logo.png" alt="FAAZO Logo" className="h-10 w-auto object-contain" />
                     <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-1">ENGINEERING CLINICAL EXCELLENCE</p>
                   </div>
                   <div className="text-right">

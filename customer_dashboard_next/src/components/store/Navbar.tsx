@@ -43,7 +43,7 @@ export const FaazoLogo: React.FC<{
         style={style}
       >
         <img
-          src="/images/Artboard 1@4x (1).png"
+          src="/images/faazo-logo.png"
           alt="FAAZO Logo"
           className="h-[92%] max-w-none object-contain absolute left-0"
           style={{ width: 'auto' }}
@@ -58,7 +58,7 @@ export const FaazoLogo: React.FC<{
       style={style}
     >
       <img
-        src="/images/Artboard 1@4x (1).png"
+        src="/images/faazo-logo.png"
         alt="FAAZO Logo"
         className="h-[92%] w-auto object-contain flex-shrink-0"
       />

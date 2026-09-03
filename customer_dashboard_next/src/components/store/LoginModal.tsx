@@ -30,7 +30,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setApiError(null);
     setSuccessMessage(null);
     try {
-      const resData = await googleLogin(credentialResponse.credential);
+      const resData = await googleLogin(
+        credentialResponse.credential,
+        mode === 'register' ? 'signup' : 'login'
+      );
       const action = resData?.auth_action;
       if (action === 'GOOGLE_SIGNUP') {
         setSuccessMessage('Welcome to FAAZO! Your account has been created.');
@@ -458,7 +461,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           {/* Top: Logo + Tagline */}
           <div className="relative z-10 p-6 pb-0">
             <img
-              src="/images/Artboard 1@4x (1).png"
+              src="/images/faazo-logo.png"
               alt="FAAZO Logo"
               className="h-[34px] w-auto object-contain"
             />

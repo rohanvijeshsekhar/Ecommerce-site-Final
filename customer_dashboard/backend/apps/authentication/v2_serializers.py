@@ -169,11 +169,16 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 # ──────────────────────────────────────────────────────────────
 
 class GoogleAuthSerializer(serializers.Serializer):
-    """Payload containing Google ID Token for Google Sign-In / Sign-Up."""
     id_token = serializers.CharField(
-        error_messages={"required": "id_token is required.", "blank": "id_token cannot be blank."}
+        error_messages={
+            "required": "id_token is required.",
+            "blank": "id_token cannot be blank.",
+        }
+    )
+    mode = serializers.ChoiceField(
+        choices=("login", "signup"),
+        default="login",
     )
 
     def validate_id_token(self, value: str) -> str:
         return value.strip()
-

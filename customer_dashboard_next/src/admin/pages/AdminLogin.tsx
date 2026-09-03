@@ -161,7 +161,7 @@ const AdminLogin: React.FC = () => {
           {/* Top: Logo + Tagline */}
           <div className="relative z-10 p-6 pb-0">
             <img
-              src="/images/Artboard 1@4x (1).png"
+              src="/images/faazo-logo.png"
               alt="FAAZO Logo"
               className="h-[34px] w-auto object-contain"
             />

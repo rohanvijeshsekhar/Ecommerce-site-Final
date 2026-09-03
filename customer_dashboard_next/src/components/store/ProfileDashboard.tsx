@@ -398,7 +398,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       expiryDate: '2027-05-12',
       status: 'active',
       orderId: 'FA-90231',
-      image: '/images/Artboard 1@4x (1).png'
+      image: '/images/faazo-logo.png'
     }
   ]);
   const [warrantyOrderId, setWarrantyOrderId] = useState<string>('');

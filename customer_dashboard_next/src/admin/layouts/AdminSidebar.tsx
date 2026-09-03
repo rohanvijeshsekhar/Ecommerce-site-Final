@@ -168,7 +168,7 @@ const AdminSidebar: React.FC = () => {
         {!isSidebarCollapsed && (
           <div className="flex items-center">
             <img
-              src="/images/Artboard 1@4x (1).png"
+              src="/images/faazo-logo.png"
               alt="FAAZO Logo"
               className="h-7 w-auto object-contain"
             />
@@ -177,7 +177,7 @@ const AdminSidebar: React.FC = () => {
         {isSidebarCollapsed && (
           <div className="w-[30px] h-[28px] overflow-hidden relative flex items-center justify-start shrink-0">
             <img
-              src="/images/Artboard 1@4x (1).png"
+              src="/images/faazo-logo.png"
               alt="FAAZO Logo"
               className="h-[92%] max-w-none object-contain absolute left-0"
               style={{ width: 'auto' }}

@@ -1,3 +1,4 @@
+import secrets
 """
 FAAZO Enterprise Authentication API — Phase 5 Views
 ====================================================
@@ -763,6 +764,7 @@ class GoogleAuthV2View(APIView):
             return _error("Google authentication failed.", errors=serializer.errors, status_code=400)
 
         id_token_str = serializer.validated_data["id_token"]
+        google_mode = serializer.validated_data["mode"]
         ip = _get_client_ip(request)
         user_agent = _get_user_agent(request)
         device_name = request.data.get("device_name") or user_agent[:100]
@@ -810,19 +812,53 @@ class GoogleAuthV2View(APIView):
                 user.save(update_fields=["google_sub", "auth_provider", "profile_picture", "is_email_verified"])
                 logger.info("[GOOGLE_ACCOUNT_LINKED] Linked Google sub %s to user %s", sub, email)
             else:
-                # 3. Unregistered Google account — Reject login
-                AuditService.log_event(
-                    action="GOOGLE_AUTH_FAILED",
-                    status="FAILURE",
-                    ip_address=ip,
-                    user_agent=user_agent,
-                    details={"reason": "Unregistered Google account", "email": email},
-                )
-                logger.warning("[GOOGLE_AUTH_REJECTED] Unregistered email '%s' attempted Google login.", email)
-                return _error(
-                    "No account found with this Google email. Please register before signing in.",
-                    status_code=status.HTTP_404_NOT_FOUND,
-                )
+                if google_mode == "signup":
+                    # 3. New Google account — create customer during Sign Up
+                    user = User.objects.create_user(
+                        email=email,
+                        full_name=name or email.split("@")[0],
+                        password=secrets.token_urlsafe(32),
+                        phone_number=None,
+                        role=UserRole.CUSTOMER,
+                        google_sub=sub,
+                        auth_provider="google",
+                        profile_picture=picture or "",
+                        is_email_verified=True,
+                        is_active=True,
+                    )
+
+                    auth_action = "GOOGLE_SIGNUP"
+
+                    AuditService.log_event(
+                        action="GOOGLE_SIGNUP",
+                        user=user,
+                        status="SUCCESS",
+                        ip_address=ip,
+                        user_agent=user_agent,
+                        details={"email": email},
+                    )
+
+                    logger.info(
+                        "[GOOGLE_SIGNUP] Created Google account for '%s'.",
+                        email,
+                    )
+                else:
+                    # 3. Unregistered Google account — reject Sign In
+                    AuditService.log_event(
+                        action="GOOGLE_AUTH_FAILED",
+                        status="FAILURE",
+                        ip_address=ip,
+                        user_agent=user_agent,
+                        details={"reason": "Unregistered Google account", "email": email},
+                    )
+                    logger.warning(
+                        "[GOOGLE_AUTH_REJECTED] Unregistered email '%s' attempted Google login.",
+                        email,
+                    )
+                    return _error(
+                        "No account found with this Google email. Please register before signing in.",
+                        status_code=status.HTTP_404_NOT_FOUND,
+                    )
 
         # Profile sanity checks
         profile = getattr(user, "profile", None)

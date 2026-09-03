@@ -380,7 +380,7 @@ const AdminHeader: React.FC = () => {
             >
               <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden relative">
                 <img
-                  src="/images/Artboard 1@4x (1).png"
+                  src="/images/faazo-logo.png"
                   alt="FAAZO Logo"
                   className="h-[74%] max-w-none object-contain absolute left-[-1.5px] top-1/2 -translate-y-1/2"
                   style={{ width: 'auto' }}
@@ -400,7 +400,7 @@ const AdminHeader: React.FC = () => {
                 <div className="px-3.5 py-3 border-b border-slate-50">
                   <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center mb-2 border border-slate-100 overflow-hidden relative">
                     <img
-                      src="/images/Artboard 1@4x (1).png"
+                      src="/images/faazo-logo.png"
                       alt="FAAZO Logo"
                       className="h-[74%] max-w-none object-contain absolute left-[-1.5px] top-1/2 -translate-y-1/2"
                       style={{ width: 'auto' }}
