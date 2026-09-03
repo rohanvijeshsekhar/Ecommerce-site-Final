@@ -108,7 +108,7 @@ export type AdminSection =
   | 'orders' | 'fulfillment'
   | 'customers' | 'dealers'
   | 'warranty' | 'support'
-  | 'reports' | 'notifications'
+  | 'reports' | 'notifications' | 'analytics'
   | 'users' | 'audit' | 'settings';
 
 export interface NavItem {

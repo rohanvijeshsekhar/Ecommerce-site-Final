@@ -48,3 +48,7 @@ reportlab>=4.0,<6.0
 
 # Phone Number Normalization & Validation (E.164)
 phonenumbers>=8.13.0,<10.0
+
+# Google Analytics Data API
+google-analytics-data>=0.23.0,<1.0
+

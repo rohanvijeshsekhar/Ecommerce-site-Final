@@ -348,6 +348,35 @@ export const adminProductsService = {
 };
 
 export const adminService = {
+  async getAnalyticsDashboard(period: string = '7d', compare: boolean = true): Promise<ServiceResponse<any>> {
+    try {
+      const res = await api.get(`analytics/dashboard/?period=${period}&compare=${compare}`);
+      return { success: true, data: res.data };
+    } catch (err: any) {
+      return { success: false, message: err?.response?.data?.message || 'Failed to load Analytics data' };
+    }
+  },
+
+  async getAnalyticsRealtime(): Promise<ServiceResponse<any>> {
+    try {
+      const res = await api.get('analytics/realtime/');
+      return { success: true, data: res.data };
+    } catch (err: any) {
+      return { success: false, message: err?.response?.data?.message || 'Failed to load Realtime analytics' };
+    }
+  },
+
+  async downloadAnalyticsCSV(period: string = '7d', tab: string = 'overview'): Promise<void> {
+    const res = await api.get(`analytics/export/?period=${period}&tab=${tab}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `faazo_analytics_${tab}_${period}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
   // ── Brands CRUD ──
   async getBrands(params?: Record<string, unknown>): Promise<ServiceResponse<Brand[]>> {
     const res = await api.get('brands/', { params });
@@ -857,6 +886,35 @@ export const adminOrdersService = {
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `faazo_orders_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  async getAnalyticsDashboard(period: string = '7d', compare: boolean = true): Promise<ServiceResponse<any>> {
+    try {
+      const res = await api.get(`analytics/dashboard/?period=${period}&compare=${compare}`);
+      return { success: true, data: res.data };
+    } catch (err: any) {
+      return { success: false, message: err?.response?.data?.message || 'Failed to load Analytics data' };
+    }
+  },
+
+  async getAnalyticsRealtime(): Promise<ServiceResponse<any>> {
+    try {
+      const res = await api.get('analytics/realtime/');
+      return { success: true, data: res.data };
+    } catch (err: any) {
+      return { success: false, message: err?.response?.data?.message || 'Failed to load Realtime analytics' };
+    }
+  },
+
+  async downloadAnalyticsCSV(period: string = '7d', tab: string = 'overview'): Promise<void> {
+    const res = await api.get(`analytics/export/?period=${period}&tab=${tab}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `faazo_analytics_${tab}_${period}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -106,6 +106,8 @@ LOCAL_APPS = [
     "apps.returns",
     # ── Blog & Content Management CMS ────────────────────────
     "apps.blog",
+    # ── Google Analytics Integration ────────────────────────
+    "apps.analytics",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -425,7 +427,7 @@ LOGGING = {
         "app_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": str(LOGS_DIR / "app.log"),
-            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "maxBytes": 100 * 1024 * 1024,  # 100 MB
             "backupCount": 5,
             "formatter": "verbose",
             "encoding": "utf-8",
@@ -434,7 +436,7 @@ LOGGING = {
         "error_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": str(LOGS_DIR / "error.log"),
-            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "maxBytes": 100 * 1024 * 1024,  # 100 MB
             "backupCount": 10,
             "formatter": "verbose",
             "level": "WARNING",
@@ -444,7 +446,7 @@ LOGGING = {
         "security_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": str(LOGS_DIR / "security.log"),
-            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "maxBytes": 100 * 1024 * 1024,  # 100 MB
             "backupCount": 10,
             "formatter": "verbose",
             "encoding": "utf-8",
@@ -617,7 +619,12 @@ CELERY_BEAT_SCHEDULE = {
 IMAGE_OPTIMIZER_ENABLED = env.bool("IMAGE_OPTIMIZER_ENABLED", default=True)
 IMAGE_OPTIMIZER_WEBP_QUALITY = env.int("IMAGE_OPTIMIZER_WEBP_QUALITY", default=82)
 IMAGE_OPTIMIZER_MAX_DIMENSION = env.int("IMAGE_OPTIMIZER_MAX_DIMENSION", default=2000)
-IMAGE_OPTIMIZER_MAX_SIZE_MB = env.int("IMAGE_OPTIMIZER_MAX_SIZE_MB", default=15)
+# ============================================================
+# Google Analytics 4 Configuration
+# ============================================================
+GA4_PROPERTY_ID = env("GA4_PROPERTY_ID", default="546256915")
+GA4_SERVICE_ACCOUNT_JSON = env("GA4_SERVICE_ACCOUNT_JSON", default=None)
+GOOGLE_APPLICATION_CREDENTIALS = env("GOOGLE_APPLICATION_CREDENTIALS", default=None)
 
 
 

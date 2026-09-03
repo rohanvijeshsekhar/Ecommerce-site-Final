@@ -100,6 +100,8 @@ urlpatterns = [
                 path("", include("apps.returns.urls")),
                 # Blog & Content Management CMS
                 path("blog/", include("apps.blog.urls")),
+                # Google Analytics Integration
+                path("analytics/", include("apps.analytics.urls")),
             ]
         ),
     ),

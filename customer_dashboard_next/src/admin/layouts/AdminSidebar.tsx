@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
   BarChart3, Bell, UserCog, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen
+  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen, Activity
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,6 +62,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Intelligence',
     items: [
+      { id: 'analytics',       label: 'Analytics',      icon: 'Activity',      path: '/admin/analytics'     },
       { id: 'reports',         label: 'Reports',        icon: 'BarChart3',     path: '/admin/reports'       },
       { id: 'notifications',   label: 'Notifications',  icon: 'Bell',          path: '/admin/notifications' },
     ],
@@ -77,7 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
-  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen
+  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen, Activity
 };
 
 const AdminSidebar: React.FC = () => {

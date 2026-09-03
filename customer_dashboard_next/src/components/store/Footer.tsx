@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { Phone, Mail, MapPin } from 'lucide-react';
 
 const GooglePlayBadge: React.FC = () => (
-  <a 
-    href="#" 
+  <a
+    href="#"
     aria-label="Get it on Google Play"
     className="inline-block transform hover:scale-[1.03] active:scale-95 transition-transform duration-250 opacity-90 hover:opacity-100"
   >
@@ -23,8 +23,8 @@ const GooglePlayBadge: React.FC = () => (
 );
 
 const AppStoreBadge: React.FC = () => (
-  <a 
-    href="#" 
+  <a
+    href="#"
     aria-label="Download on App Store"
     className="inline-block transform hover:scale-[1.03] active:scale-95 transition-transform duration-250 opacity-90 hover:opacity-100"
   >
@@ -52,14 +52,14 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
           {/* Column 1: FAAZO branding */}
           <div className="col-span-3 flex flex-col items-start pr-4">
             <div className="flex items-center mb-6">
-              <a 
-                href="#" 
-                className="inline-block cursor-pointer transition-opacity duration-250 hover:opacity-80 active:scale-95" 
+              <a
+                href="#"
+                className="inline-block cursor-pointer transition-opacity duration-250 hover:opacity-80 active:scale-95"
                 onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
               >
-                <img 
-                  src="/images/Artboard 1@4x (1).png" 
-                  alt="FAAZO Logo" 
+                <img
+                  src="/images/Artboard 1@4x (1).png"
+                  alt="FAAZO Logo"
                   className="h-7 w-auto object-contain brightness-0 invert"
                 />
               </a>
@@ -71,8 +71,8 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
 
             {/* Outlined Minimal Social Icons */}
             <div className="flex items-center gap-3">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 aria-label="Facebook"
                 className="w-9 h-9 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250 transform hover:scale-105 cursor-pointer"
               >
@@ -80,8 +80,8 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
                   <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" />
                 </svg>
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 aria-label="Instagram"
                 className="w-9 h-9 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250 transform hover:scale-105 cursor-pointer"
               >
@@ -91,8 +91,8 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 aria-label="LinkedIn"
                 className="w-9 h-9 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250 transform hover:scale-105 cursor-pointer"
               >
@@ -100,8 +100,8 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                 </svg>
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 aria-label="YouTube"
                 className="w-9 h-9 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250 transform hover:scale-105 cursor-pointer"
               >
@@ -219,34 +219,34 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
         <div className="flex flex-col gap-10">
           {/* FAAZO branding */}
           <div className="flex flex-col items-start">
-            <a 
-              href="#" 
-              className="inline-block cursor-pointer transition-opacity mb-4" 
+            <a
+              href="#"
+              className="inline-block cursor-pointer transition-opacity mb-4"
               onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
             >
-              <img 
-                src="/images/Artboard 1@4x (1).png" 
-                alt="FAAZO Logo" 
+              <img
+                src="/images/Artboard 1@4x (1).png"
+                alt="FAAZO Logo"
                 className="h-6 w-auto object-contain brightness-0 invert"
               />
             </a>
             <p className="text-xs text-[#888888] leading-relaxed">
               Empowering dental professionals with innovative solutions, premium quality products, and trusted support.
             </p>
-            
+
             {/* Outlined Social Buttons */}
             <div className="flex items-center gap-3 mt-5">
               <a href="#" aria-label="Facebook" className="w-8 h-8 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" /></svg>
               </a>
               <a href="#" aria-label="Instagram" className="w-8 h-8 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
               </a>
               <a href="#" aria-label="LinkedIn" className="w-8 h-8 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>
               </a>
               <a href="#" aria-label="YouTube" className="w-8 h-8 rounded-full border border-[#2A2A2A] bg-transparent hover:bg-white text-[#B8B8B8] hover:text-black flex items-center justify-center transition-all duration-250">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.108C19.52 3.5 12 3.5 12 3.5s-7.52 0-9.388.555a3.002 3.002 0 0 0-2.11 2.108C0 8.03 0 12 0 12s0 3.97.502 5.837a3.003 3.003 0 0 0 2.11 2.108C4.48 20.5 12 20.5 12 20.5s7.52 0 9.388-.555a3.003 3.003 0 0 0 2.11-2.108C24 15.97 24 12 24 12s0-3.97-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.108C19.52 3.5 12 3.5 12 3.5s-7.52 0-9.388.555a3.002 3.002 0 0 0-2.11 2.108C0 8.03 0 12 0 12s0 3.97.502 5.837a3.003 3.003 0 0 0 2.11 2.108C4.48 20.5 12 20.5 12 20.5s7.52 0 9.388-.555a3.003 3.003 0 0 0 2.11-2.108C24 15.97 24 12 24 12s0-3.97-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
               </a>
             </div>
           </div>

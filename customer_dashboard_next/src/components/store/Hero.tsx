@@ -110,39 +110,43 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                 </div>
 
                 {/* Desktop Content Overlay */}
-                <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-8 items-center h-full">
-                  <div className="max-w-md md:max-w-lg text-left select-none pb-0">
-                    <h1 className="text-[28px] lg:text-[42px] xl:text-[54px] 2xl:text-[64px] font-black text-slate-800 tracking-tight leading-[1.08] mb-6 flex flex-col font-display">
-                      {isSecondSlide ? (
-                        <>
-                          <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
-                          {slide.heading.includes(' engineered ') && (
-                            <>
-                              <span className="text-[#005F63]">engineered for</span>
-                              <span>{slide.heading.split(' engineered ')[1] || ''}</span>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <span>{slide.heading.split(' ')[0] || ''}</span>
-                          {slide.heading.split(' ')[1] && (
-                            <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
-                          )}
-                          {slide.heading.split(' ').length > 2 && (
-                            <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
-                          )}
-                        </>
-                      )}
-                    </h1>
+                <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-12 md:px-20 justify-end items-end pb-8 md:pb-10 lg:pb-12 h-full pointer-events-none">
+                  <div className="text-right select-none pointer-events-auto">
+                    {slide.heading && slide.heading.trim().length > 0 && (
+                      <h1 className="text-[28px] lg:text-[42px] xl:text-[54px] 2xl:text-[64px] font-black text-slate-800 tracking-tight leading-[1.08] mb-4 flex flex-col font-display text-left">
+                        {isSecondSlide ? (
+                          <>
+                            <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
+                            {slide.heading.includes(' engineered ') && (
+                              <>
+                                <span className="text-[#005F63]">engineered for</span>
+                                <span>{slide.heading.split(' engineered ')[1] || ''}</span>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span>{slide.heading.split(' ')[0] || ''}</span>
+                            {slide.heading.split(' ')[1] && (
+                              <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
+                            )}
+                            {slide.heading.split(' ').length > 2 && (
+                              <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
+                            )}
+                          </>
+                        )}
+                      </h1>
+                    )}
 
-                    <a
-                      href={slide.cta_link}
-                      className="group inline-flex items-center gap-2 text-base font-bold text-[#005F63] border-b-2 border-[#005F63] pb-1 hover:text-[#0B7C80] hover:border-[#0B7C80] transition-all cursor-pointer mt-4"
-                    >
-                      {slide.cta_text}
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </a>
+                    {slide.cta_text && (
+                      <a
+                        href={slide.cta_link || '#products'}
+                        className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                      >
+                        <span>{slide.cta_text}</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </a>
+                    )}
                   </div>
                 </div>
 

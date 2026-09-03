@@ -4,6 +4,9 @@
 .env
 .env.local
 .env.production
+ga4-key.json
+scratch/*.json
+*.json.secret
 
 # Python cache
 __pycache__/
