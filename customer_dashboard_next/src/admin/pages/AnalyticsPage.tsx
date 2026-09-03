@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
   const Badge = ({ current, prev, pct }: { current: number; prev: number; pct: number | null }) => {
     if (prev === 0 && current > 0) {
       return (
-        <span className="text-[10px] font-bold text-teal-800 bg-teal-500/10 backdrop-blur-sm px-2 py-0.5 rounded-full border border-teal-200/60 mt-1.5 inline-block shadow-sm">
+        <span className="text-[10px] font-bold text-[#005F63] bg-white/90 px-2 py-0.5 rounded-full border border-teal-200/80 mt-1.5 inline-block shadow-xs">
           New activity
         </span>
       );
@@ -114,8 +114,8 @@ export default function AnalyticsPage() {
     if (prev === 0 && current === 0) return null;
     if (pct === null || pct === undefined) return null;
     return (
-      <span className={`text-[10px] font-bold mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm ${
-        pct >= 0 ? 'text-emerald-700 bg-emerald-500/10 border border-emerald-200/60' : 'text-rose-700 bg-rose-500/10 border border-rose-200/60'
+      <span className={`text-[10px] font-bold mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white/90 shadow-xs ${
+        pct >= 0 ? 'text-emerald-700 border border-emerald-200/80' : 'text-rose-700 border border-rose-200/80'
       }`}>
         {pct >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {pct >= 0 ? '+' : ''}{pct}%
@@ -128,11 +128,11 @@ export default function AnalyticsPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] -m-6 p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto space-y-6">
-          <div className="h-32 bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 animate-pulse shadow-sm" />
+          <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 animate-pulse shadow-sm" />)}
+            {[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />)}
           </div>
-          <div className="h-64 bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 animate-pulse shadow-sm" />
+          <div className="h-64 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />
         </div>
       </div>
     );
@@ -145,12 +145,12 @@ export default function AnalyticsPage() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* HEADER BAR */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm shadow-slate-100 text-left">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-left">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Analytics Dashboard</h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50/80 backdrop-blur-sm text-[#005F63] border border-teal-200/70 shadow-sm">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#EAF6F3] text-[#005F63] border border-[#BCE4DB] shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-[#005F63] animate-pulse" />
                   GA4 Live
                 </span>
@@ -173,7 +173,7 @@ export default function AnalyticsPage() {
               <button
                 onClick={() => fetchDashboard(period)}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shadow-sm hover:shadow"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -181,13 +181,13 @@ export default function AnalyticsPage() {
 
               <button
                 onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#005F63] to-[#0A7B7F] hover:from-[#004D50] hover:to-[#08676B] text-white text-xs font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#005F63] hover:bg-[#004D50] text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export
               </button>
 
-              <div className="inline-flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold shadow-inner">
+              <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
                 {[
                   { id: 'today', label: 'Today' },
                   { id: 'yesterday', label: 'Yesterday' },
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
                     key={item.id}
                     onClick={() => setPeriod(item.id)}
                     className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${period === item.id
-                        ? 'bg-white text-[#005F63] shadow-sm font-bold'
+                        ? 'bg-white text-[#005F63] shadow-xs font-bold'
                         : 'text-slate-500 hover:text-slate-800'
                       }`}
                   >
@@ -212,13 +212,13 @@ export default function AnalyticsPage() {
 
         {/* Unconfigured banner */}
         {!isConfigured && (
-          <div className="rounded-2xl bg-amber-50/80 backdrop-blur-md border border-amber-200 p-5 flex items-start gap-3 shadow-sm">
+          <div className="rounded-2xl bg-[#FEF3E2] border border-[#F6D49F] p-5 flex items-start gap-3 shadow-xs">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-amber-900">Google Analytics credentials needed</h4>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Storefront tracking is active (<code className="bg-amber-100/80 px-1 rounded font-mono text-amber-900">G-PVTHJXFXQ5</code>).
-                Configure service account credentials in <code className="bg-amber-100/80 px-1 rounded font-mono text-amber-900">backend/.env</code> to view analytics data.
+              <p className="text-xs text-amber-800 mt-0.5">
+                Storefront tracking is active (<code className="bg-white/80 px-1 rounded font-mono text-amber-900">G-PVTHJXFXQ5</code>).
+                Configure service account credentials in <code className="bg-white/80 px-1 rounded font-mono text-amber-900">backend/.env</code> to view analytics data.
               </p>
             </div>
           </div>
@@ -226,116 +226,116 @@ export default function AnalyticsPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="rounded-2xl bg-rose-50/80 backdrop-blur-md border border-rose-200 p-4 flex items-center gap-3 shadow-sm">
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center gap-3 shadow-xs">
             <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <p className="text-xs text-rose-700 font-medium">{error}</p>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* KPI CARDS (MILD PASTEL GLASS FINISH) */}
+        {/* KPI CARDS (PASTEL COLORS PALETTE) */}
         {/* ═══════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-          {/* 1. Visitors (Mild Teal Tint) */}
-          <div className="bg-gradient-to-br from-teal-50/30 via-white/95 to-slate-50/20 backdrop-blur-xl rounded-2xl border border-teal-100/70 p-5 text-left hover:border-teal-200 hover:shadow-md hover:shadow-teal-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 1. Visitors (Pastel Mint / Aqua) */}
+          <div className="bg-[#EAF6F3] rounded-2xl border border-[#BCE4DB] p-5 text-left hover:border-[#96D6C8] hover:shadow-md hover:shadow-teal-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-teal-50/90 text-[#005F63] border border-teal-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#006D77] border border-[#BCE4DB] flex items-center justify-center shadow-xs">
                 <Users className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#006D77] bg-white/90 px-2 py-0.5 rounded-md border border-[#BCE4DB]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Visitors</p>
+            <p className="text-[10px] font-semibold text-[#4A7C75] uppercase tracking-wider">Visitors</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.total_users ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Unique people who visited</p>
+            <p className="text-[10px] text-[#5E918B] mt-0.5">Unique people who visited</p>
             <Badge current={overview.total_users ?? 0} prev={overview.prev_total_users ?? 0} pct={overview.pct_total_users} />
           </div>
 
-          {/* 2. Visits (Mild Sky Blue Tint) */}
-          <div className="bg-gradient-to-br from-sky-50/30 via-white/95 to-slate-50/20 backdrop-blur-xl rounded-2xl border border-sky-100/70 p-5 text-left hover:border-sky-200 hover:shadow-md hover:shadow-sky-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 2. Visits (Pastel Powder Blue) */}
+          <div className="bg-[#EAF2FD] rounded-2xl border border-[#C3DCFA] p-5 text-left hover:border-[#9FC6F7] hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-sky-50/90 text-sky-600 border border-sky-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#1D6FE9] border border-[#C3DCFA] flex items-center justify-center shadow-xs">
                 <Activity className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-sky-700 bg-sky-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-sky-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#1D6FE9] bg-white/90 px-2 py-0.5 rounded-md border border-[#C3DCFA]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Visits</p>
+            <p className="text-[10px] font-semibold text-[#3D6396] uppercase tracking-wider">Visits</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.sessions ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Browsing sessions</p>
+            <p className="text-[10px] text-[#5177AA] mt-0.5">Browsing sessions</p>
             <Badge current={overview.sessions ?? 0} prev={overview.prev_sessions ?? 0} pct={overview.pct_sessions} />
           </div>
 
-          {/* 3. Pages Viewed (Mild Indigo Tint) */}
-          <div className="bg-gradient-to-br from-indigo-50/25 via-white/95 to-slate-50/20 backdrop-blur-xl rounded-2xl border border-indigo-100/70 p-5 text-left hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 3. Pages Viewed (Pastel Lavender / Lilac) */}
+          <div className="bg-[#F1EDFD] rounded-2xl border border-[#D6C5F8] p-5 text-left hover:border-[#BFA4F5] hover:shadow-md hover:shadow-indigo-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50/90 text-indigo-600 border border-indigo-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#6D28D9] border border-[#D6C5F8] flex items-center justify-center shadow-xs">
                 <Eye className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-indigo-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6D28D9] bg-white/90 px-2 py-0.5 rounded-md border border-[#D6C5F8]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pages Viewed</p>
+            <p className="text-[10px] font-semibold text-[#5C4288] uppercase tracking-wider">Pages Viewed</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.page_views ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Storefront pages viewed</p>
+            <p className="text-[10px] text-[#6F569B] mt-0.5">Storefront pages viewed</p>
             <Badge current={overview.page_views ?? 0} prev={overview.prev_page_views ?? 0} pct={overview.pct_page_views} />
           </div>
 
-          {/* 4. Engagement (Mild Warm Amber Tint) */}
-          <div className="bg-gradient-to-br from-amber-50/25 via-white/95 to-slate-50/20 backdrop-blur-xl rounded-2xl border border-amber-100/70 p-5 text-left hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 4. Engagement (Pastel Warm Peach / Buttercup) */}
+          <div className="bg-[#FEF3E2] rounded-2xl border border-[#F6D49F] p-5 text-left hover:border-[#F2BE70] hover:shadow-md hover:shadow-amber-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-50/90 text-amber-600 border border-amber-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#D97706] border border-[#F6D49F] flex items-center justify-center shadow-xs">
                 <Clock className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-amber-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#D97706] bg-white/90 px-2 py-0.5 rounded-md border border-[#F6D49F]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Engagement</p>
+            <p className="text-[10px] font-semibold text-[#82571E] uppercase tracking-wider">Engagement</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : `${overview.engagement_rate ?? 0}%`}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Avg time: {overview.avg_engagement_time ?? '0s'}</p>
+            <p className="text-[10px] text-[#966C32] mt-0.5">Avg time: {overview.avg_engagement_time ?? '0s'}</p>
             <Badge current={overview.engagement_rate ?? 0} prev={overview.prev_engagement_rate ?? 0} pct={overview.pct_engagement_rate} />
           </div>
 
-          {/* 5. Visitors Right Now (Mild Mint / Emerald Glass) */}
-          <div className="bg-gradient-to-br from-emerald-50/45 via-white/95 to-teal-50/30 backdrop-blur-xl rounded-2xl border border-emerald-200/70 p-5 text-left hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 5. Visitors Right Now (Pastel Fresh Mint / Emerald Live) */}
+          <div className="bg-[#E2F7EB] rounded-2xl border border-[#9EE2BA] p-5 text-left hover:border-[#74D49A] hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-[9px] font-bold uppercase tracking-wider text-emerald-800 border border-emerald-200 shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#005F63] text-[9px] font-bold uppercase tracking-wider text-white shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse shadow-sm shadow-emerald-400" />
                 Live
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50/80 px-2 py-0.5 rounded-md border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-white/90 px-2 py-0.5 rounded-md border border-[#9EE2BA]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Visitors Right Now</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{realtime.active_users ?? 0}</p>
-            <p className="text-[10px] text-emerald-600 mt-0.5">
+            <p className="text-[10px] font-semibold text-[#065F46] uppercase tracking-wider">Visitors Right Now</p>
+            <p className="text-2xl font-extrabold text-[#064E3B] mt-0.5">{realtime.active_users ?? 0}</p>
+            <p className="text-[10px] text-[#059669] mt-0.5">
               {(realtime.active_users ?? 0) === 0 ? 'No visitors active right now' : 'People on FAAZO now'}
             </p>
-            <p className="text-[9px] text-slate-400 mt-1">Updated {realtimeAge}s ago</p>
+            <p className="text-[9px] text-[#4D8C7A] mt-1">Updated {realtimeAge}s ago</p>
           </div>
 
-          {/* 6. Orders (Mild Emerald Tint) */}
-          <div className="bg-gradient-to-br from-emerald-50/30 via-white/95 to-slate-50/20 backdrop-blur-xl rounded-2xl border border-emerald-100/70 p-5 text-left hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 6. Orders (Pastel Pistachio Mint) */}
+          <div className="bg-[#E8F6ED] rounded-2xl border border-[#B7E5C4] p-5 text-left hover:border-[#90D7A3] hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50/90 text-emerald-700 border border-emerald-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#16A34A] border border-[#B7E5C4] flex items-center justify-center shadow-xs">
                 <ShoppingCart className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-emerald-200/60">FAAZO Data</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#15803D] bg-white/90 px-2 py-0.5 rounded-md border border-[#B7E5C4]">FAAZO Data</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Orders</p>
+            <p className="text-[10px] font-semibold text-[#2E6B3F] uppercase tracking-wider">Orders</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (faazo.total_orders ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-emerald-600 mt-0.5">{faazo.paid_orders ?? 0} paid / completed</p>
+            <p className="text-[10px] text-[#16A34A] mt-0.5">{faazo.paid_orders ?? 0} paid / completed</p>
           </div>
 
-          {/* 7. Actual Revenue (Mild Emerald / Teal Wide Glass) */}
-          <div className="bg-gradient-to-br from-emerald-50/40 via-white/95 to-teal-50/25 backdrop-blur-xl rounded-2xl border border-emerald-100/80 p-5 text-left hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group col-span-2 lg:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          {/* 7. Actual Revenue (Pastel Seafoam Teal Wide) */}
+          <div className="bg-[#DDF4EA] rounded-2xl border border-[#A2E4C4] p-5 text-left hover:border-[#79D6AA] hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group col-span-2 lg:col-span-2 shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50/90 text-emerald-700 border border-emerald-100/80 flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#059669] border border-[#A2E4C4] flex items-center justify-center shadow-xs">
                 <Database className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-emerald-200/60">FAAZO Data</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#047857] bg-white/90 px-2 py-0.5 rounded-md border border-[#A2E4C4]">FAAZO Data</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Actual Revenue</p>
-            <p className="text-2xl font-extrabold text-emerald-700 mt-0.5">
+            <p className="text-[10px] font-semibold text-[#236851] uppercase tracking-wider">Actual Revenue</p>
+            <p className="text-2xl font-extrabold text-[#065F46] mt-0.5">
               {loading ? '–' : `₹${(faazo.total_revenue ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Revenue from FAAZO order records</p>
+            <p className="text-[10px] text-[#3B8068] mt-0.5">Revenue from FAAZO order records</p>
           </div>
         </div>
 
