@@ -1,42 +1,30 @@
-"""
-FAAZO – Google Analytics 4 Backend Unit Tests
-
-Tests:
-1. Unconfigured state when GA4 credentials are missing.
-2. Analytics service methods with mocked Google Analytics Data API.
-3. REST API endpoints authentication & response structure.
-4. Previous period comparison calculation.
-5. Real CSV export view.
-"""
-
+import time
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
+from zoneinfo import ZoneInfo
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.analytics.services.ga4_service import GA4AnalyticsService
+from apps.analytics.services.presence_service import PresenceService
+from apps.analytics.services.sales_service import SalesAnalyticsService
+from apps.orders.models import Address, Order, OrderStatus
 from apps.users.models import UserRole
 
 User = get_user_model()
-
-
-class MockMetricValue:
-    def __init__(self, value):
-        self.value = value
-
-
-class MockDimensionValue:
-    def __init__(self, value):
-        self.value = value
+IST = ZoneInfo("Asia/Kolkata")
 
 
 class MockRow:
-    def __init__(self, dimension_values, metric_values):
-        self.dimension_values = [MockDimensionValue(v) for v in dimension_values]
-        self.metric_values = [MockMetricValue(v) for v in metric_values]
+    def __init__(self, dimension_values=None, metric_values=None):
+        self.dimension_values = [MagicMock(value=v) for v in (dimension_values or [])]
+        self.metric_values = [MagicMock(value=v) for v in (metric_values or [])]
 
 
 class MockReportResponse:
@@ -44,59 +32,110 @@ class MockReportResponse:
         self.rows = rows or []
 
 
-class GA4AnalyticsServiceTests(TestCase):
-
+class PresenceServiceTests(TestCase):
     def setUp(self):
         cache.clear()
-        self.service = GA4AnalyticsService(property_id="546256915")
 
-    def test_unconfigured_credentials_returns_graceful_fallback(self):
-        with patch.object(self.service, "is_configured", return_value=False):
-            res = self.service.get_overview(period="7d")
-            self.assertFalse(res["configured"])
-            self.assertIn("message", res)
-            self.assertEqual(res["metrics"]["total_users"], 0)
+    def test_record_heartbeat_public_storefront(self):
+        res = PresenceService.record_heartbeat("visitor_1", path="/products", user_agent="Mozilla/5.0")
+        self.assertTrue(res)
+        self.assertEqual(PresenceService.get_live_visitor_count(), 1)
 
-            realtime = self.service.get_realtime()
-            self.assertFalse(realtime["configured"])
-            self.assertEqual(realtime["active_users"], 0)
+    def test_record_heartbeat_admin_excluded(self):
+        res_exact = PresenceService.record_heartbeat("admin_1", path="/admin", user_agent="Mozilla/5.0")
+        self.assertFalse(res_exact)
+        res_sub = PresenceService.record_heartbeat("admin_2", path="/admin/analytics", user_agent="Mozilla/5.0")
+        self.assertFalse(res_sub)
+        self.assertEqual(PresenceService.get_live_visitor_count(), 0)
 
-    @patch.object(GA4AnalyticsService, "is_configured", return_value=True)
-    @patch.object(GA4AnalyticsService, "_get_client")
-    def test_get_overview_success_with_comparison(self, mock_get_client, mock_is_configured):
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
+    def test_record_heartbeat_bot_excluded(self):
+        res = PresenceService.record_heartbeat("bot_1", path="/products", user_agent="Googlebot/2.1")
+        self.assertFalse(res)
+        self.assertEqual(PresenceService.get_live_visitor_count(), 0)
 
-        # Mock current (6 values) and previous (6 values) = 12 metric values
-        # [totalUsers, sessions, engagementRate, screenPageViews, userEngagementDuration, activeUsers]
-        mock_client.run_report.return_value = MockReportResponse(
-            rows=[MockRow(dimension_values=[], metric_values=[
-                "1500", "1800", "0.6", "4500", "9000.0", "1400",
-                "1000", "1200", "0.5", "3000", "6000.0", "900"
-            ])]
+    def test_duplicate_heartbeats_same_visitor(self):
+        PresenceService.record_heartbeat("user_abc", path="/")
+        PresenceService.record_heartbeat("user_abc", path="/products")
+        PresenceService.record_heartbeat("user_abc", path="/cart")
+        # 3 heartbeats from same visitor_id must count as 1 live visitor
+        self.assertEqual(PresenceService.get_live_visitor_count(), 1)
+
+
+class SalesAnalyticsServiceTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            email="shopper@faazo.com",
+            full_name="Shopper",
+            password="Password123!",
+            role=UserRole.CUSTOMER,
+        )
+        self.address = Address.objects.create(
+            user=self.user,
+            full_name="Shopper",
+            mobile="9876543210",
+            line1="123 Dental St",
+            city="Kochi",
+            state="Kerala",
+            pincode="682001",
         )
 
-        data = self.service.get_overview(period="7d", compare=True)
-        self.assertTrue(data["configured"])
-        self.assertEqual(data["metrics"]["total_users"], 1500)
-        self.assertEqual(data["metrics"]["prev_total_users"], 1000)
-        self.assertEqual(data["metrics"]["pct_total_users"], 50.0)
+    def test_sales_aggregation_excludes_cancelled_orders(self):
+        now = timezone.now()
 
-    @patch.object(GA4AnalyticsService, "is_configured", return_value=True)
-    @patch.object(GA4AnalyticsService, "_get_client")
-    def test_get_realtime_success(self, mock_get_client, mock_is_configured):
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        mock_client.run_realtime_report.return_value = MockReportResponse(
-            rows=[
-                MockRow(dimension_values=[], metric_values=["8"]),
-            ]
+        # Valid COD order
+        Order.objects.create(
+            user=self.user,
+            shipping_address=self.address,
+            status=OrderStatus.PROCESSING,
+            payment_method="cod",
+            mrp_subtotal=1000,
+            selling_subtotal=900,
+            gst_amount=100,
+            total_amount=1000,
+            created_at=now,
         )
 
-        data = self.service.get_realtime()
-        self.assertTrue(data["configured"])
-        self.assertEqual(data["active_users"], 8)
+        # Valid Online Paid order
+        Order.objects.create(
+            user=self.user,
+            shipping_address=self.address,
+            status=OrderStatus.DELIVERED,
+            payment_method="razorpay",
+            mrp_subtotal=2000,
+            selling_subtotal=1800,
+            gst_amount=200,
+            total_amount=2000,
+            created_at=now,
+        )
+
+        # Cancelled order (must NOT be counted)
+        Order.objects.create(
+            user=self.user,
+            shipping_address=self.address,
+            status=OrderStatus.CANCELLED,
+            payment_method="upi",
+            mrp_subtotal=5000,
+            selling_subtotal=4500,
+            gst_amount=500,
+            total_amount=5000,
+            created_at=now,
+        )
+
+        res = SalesAnalyticsService.get_sales_over_time("today")
+        self.assertEqual(res["total_sales"], 3000.0)
+        self.assertEqual(res["total_orders"], 2)
+        self.assertEqual(res["cod_orders"], 1)
+        self.assertEqual(res["paid_orders"], 1)
+        self.assertEqual(len(res["series"]), 24)  # 24 hourly buckets for today
+
+    def test_zero_sales_and_division_safety(self):
+        res = SalesAnalyticsService.get_sales_over_time("7d")
+        self.assertEqual(res["total_sales"], 0.0)
+        self.assertEqual(res["total_orders"], 0)
+        self.assertIsNone(res["pct_sales_change"])
+        self.assertFalse(res["is_new_activity"])
+        self.assertEqual(len(res["series"]), 7)
 
 
 class GA4AnalyticsAPIViewTests(TestCase):
@@ -130,6 +169,12 @@ class GA4AnalyticsAPIViewTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_public_heartbeat_endpoint(self):
+        url = reverse("analytics-heartbeat")
+        response = self.client.post(url, {"visitor_id": "test_vis_99", "path": "/products"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.json()["success"])
+
     @patch.object(GA4AnalyticsService, "is_configured", return_value=False)
     def test_admin_access_analytics_dashboard(self, mock_configured):
         self.client.force_authenticate(user=self.admin)
@@ -141,15 +186,36 @@ class GA4AnalyticsAPIViewTests(TestCase):
         self.assertIn("configured", data)
         self.assertIn("overview", data)
         self.assertIn("realtime", data)
+        self.assertIn("live_storefront_visitors", data)
+        self.assertIn("sales_over_time", data)
         self.assertIn("faazo_db_metrics", data)
-        self.assertIn("source_labels", data)
 
-    @patch.object(GA4AnalyticsService, "is_configured", return_value=False)
-    def test_analytics_export_csv_view(self, mock_configured):
+    def test_admin_access_live_visitors_endpoint(self):
         self.client.force_authenticate(user=self.admin)
-        url = reverse("analytics-export-csv") + "?period=7d&tab=overview"
+        url = reverse("analytics-live-visitors")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIn("live_visitors", data["data"])
+
+    def test_admin_access_sales_over_time_endpoint(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("analytics-sales-over-time") + "?period=7d"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIn("series", data["data"])
+        self.assertIn("total_sales", data["data"])
+
+    def test_analytics_export_csv_view(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("analytics-export-csv") + "?period=7d"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response["Content-Type"], "text/csv")
-        self.assertIn("Visitors", response.content.decode("utf-8"))
+        self.assertIn("FAAZO Sales Analytics Report", response.content.decode("utf-8"))
