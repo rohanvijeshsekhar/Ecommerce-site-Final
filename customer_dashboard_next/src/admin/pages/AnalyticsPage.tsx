@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
         {/* ═══════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-7 text-left shadow-sm">
           {/* Card Header & Key Stats */}
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-5 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-sm md:text-base font-bold text-slate-900">Total sales over time</h2>
@@ -398,78 +398,159 @@ export default function AnalyticsPage() {
 
             <div className="flex items-center gap-4 text-xs text-slate-500">
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-[#005F63] to-[#0B8C90]" />
-                <span>Sales (₹)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#005F63]" />
+                <span className="font-semibold text-slate-700">Sales (₹)</span>
               </div>
               <span className="text-slate-300">|</span>
               <span className="text-[11px] font-medium text-slate-400">
-                {salesOverTime.interval === 'hourly' ? 'Hourly aggregation (IST)' : 'Daily aggregation (IST)'}
+                {salesOverTime.interval === 'hourly' ? 'Hourly breakdown (IST)' : 'Daily breakdown (IST)'}
               </span>
             </div>
           </div>
 
-          {/* Interactive Chart Body */}
-          <div className="pt-6">
+          {/* Interactive Chart */}
+          <div className="pt-6 relative">
             {salesOverTime.series && salesOverTime.series.length > 0 ? (
-              <div className="relative">
-                {/* Hover active tooltip banner */}
-                {hoveredSalesIndex !== null && salesOverTime.series[hoveredSalesIndex] && (
-                  <div className="mb-3 px-3.5 py-2 rounded-xl bg-slate-900 text-white flex items-center justify-between text-xs animate-fade-in shadow-md">
-                    <span className="font-semibold text-teal-200">
-                      {salesOverTime.series[hoveredSalesIndex].label}
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold text-white">
-                        ₹{salesOverTime.series[hoveredSalesIndex].sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-slate-400 font-medium">
-                        {salesOverTime.series[hoveredSalesIndex].orders} order{salesOverTime.series[hoveredSalesIndex].orders !== 1 ? 's' : ''}
-                      </span>
+              <div className="w-full">
+                {/* SVG Line / Area Graph */}
+                <div className="relative h-64 w-full">
+                  {/* Floating tooltip */}
+                  {hoveredSalesIndex !== null && salesOverTime.series[hoveredSalesIndex] && (
+                    <div
+                      className="absolute z-20 pointer-events-none transition-all duration-150 -translate-x-1/2 -top-2"
+                      style={{
+                        left: `${((hoveredSalesIndex + 0.5) / salesOverTime.series.length) * 100}%`,
+                      }}
+                    >
+                      <div className="bg-slate-900/95 text-white backdrop-blur-sm px-3 py-2 rounded-xl shadow-xl border border-slate-700 text-left min-w-[120px]">
+                        <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider">
+                          {salesOverTime.series[hoveredSalesIndex].label}
+                        </p>
+                        <p className="text-sm font-black text-white mt-0.5">
+                          ₹{salesOverTime.series[hoveredSalesIndex].sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          {salesOverTime.series[hoveredSalesIndex].orders} order{salesOverTime.series[hoveredSalesIndex].orders !== 1 ? 's' : ''}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* SVG & Bar Visualization */}
-                <div className="h-56 flex items-end gap-1 sm:gap-2 pt-4 pb-3 overflow-x-auto border-b border-slate-100">
-                  {salesOverTime.series.map((item: SalesSeriesItem, idx: number) => {
-                    const heightPercent = maxSalesVal > 0 && item.sales > 0
-                      ? Math.min(100, Math.max(8, (item.sales / maxSalesVal) * 90))
-                      : 4;
+                  {/* SVG Canvas */}
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 240" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="salesGradientFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#005F63" stopOpacity="0.28" />
+                        <stop offset="85%" stopColor="#005F63" stopOpacity="0.02" />
+                        <stop offset="100%" stopColor="#005F63" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Gridlines */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+                      const y = 200 - pct * 170;
+                      const val = maxSalesVal * pct;
+                      const formattedVal = val >= 1000 ? `₹${(val / 1000).toFixed(1)}k` : `₹${Math.round(val)}`;
+                      return (
+                        <g key={i}>
+                          <line x1="0" y1={y} x2="1000" y2={y} stroke="#F1F5F9" strokeWidth="1" strokeDasharray="3 3" />
+                          <text x="0" y={y - 4} fill="#94A3B8" fontSize="10" fontWeight="500">
+                            {pct === 0 ? '₹0' : formattedVal}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Area & Line Calculation */}
+                    {(() => {
+                      const n = salesOverTime.series.length;
+                      const step = 1000 / n;
+                      const points = salesOverTime.series.map((s, idx) => {
+                        const x = idx * step + step / 2;
+                        const y = maxSalesVal > 0
+                          ? 200 - (s.sales / maxSalesVal) * 170
+                          : 200;
+                        return { x, y, ...s };
+                      });
+
+                      const linePath = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+                      const areaPath = `${linePath} L ${points[points.length - 1].x} 200 L ${points[0].x} 200 Z`;
+
+                      return (
+                        <>
+                          {/* Shaded Area */}
+                          <path d={areaPath} fill="url(#salesGradientFill)" />
+
+                          {/* Smooth Stroke Line */}
+                          <path d={linePath} fill="none" stroke="#005F63" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                          {/* Data points & Interactive columns */}
+                          {points.map((p, idx) => {
+                            const isHovered = hoveredSalesIndex === idx;
+                            return (
+                              <g key={idx} className="cursor-pointer">
+                                {/* Vertical hover crosshair */}
+                                {isHovered && (
+                                  <line x1={p.x} y1="20" x2={p.x} y2="200" stroke="#005F63" strokeWidth="1.5" strokeDasharray="3 3" />
+                                )}
+
+                                {/* Outer circle glow on hover */}
+                                {isHovered && (
+                                  <circle cx={p.x} cy={p.y} r="8" fill="#005F63" fillOpacity="0.2" />
+                                )}
+
+                                {/* Main point dot */}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isHovered ? '5' : p.sales > 0 ? '3.5' : '2'}
+                                  fill={p.sales > 0 ? '#005F63' : '#CBD5E1'}
+                                  stroke="#ffffff"
+                                  strokeWidth={isHovered ? '2.5' : '1.5'}
+                                  className="transition-all duration-150"
+                                />
+
+                                {/* Transparent wide hit area for easy mouse tracking */}
+                                <rect
+                                  x={idx * step}
+                                  y="0"
+                                  width={step}
+                                  height="240"
+                                  fill="transparent"
+                                  onMouseEnter={() => setHoveredSalesIndex(idx)}
+                                  onMouseLeave={() => setHoveredSalesIndex(null)}
+                                />
+                              </g>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </svg>
+                </div>
+
+                {/* X-Axis Date / Time Labels */}
+                <div className="flex justify-between items-center pt-2 px-1 border-t border-slate-100">
+                  {salesOverTime.series.map((item, idx) => {
                     const isHovered = hoveredSalesIndex === idx;
+                    // For 30d or 24h, skip every other label on mobile if dense
+                    const isHourly = salesOverTime.interval === 'hourly';
+                    const is30d = salesOverTime.series.length > 15;
+                    const showLabel = !is30d && !isHourly || (idx % (is30d ? 4 : isHourly ? 3 : 1) === 0) || idx === salesOverTime.series.length - 1;
 
                     return (
                       <div
                         key={idx}
+                        className="flex-1 text-center cursor-pointer"
                         onMouseEnter={() => setHoveredSalesIndex(idx)}
                         onMouseLeave={() => setHoveredSalesIndex(null)}
-                        className="flex-1 min-w-[20px] sm:min-w-[28px] flex flex-col items-center group relative h-full justify-end cursor-pointer"
                       >
-                        {/* Interactive floating tooltip */}
-                        <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col bg-slate-800 text-white text-[10px] font-semibold px-2.5 py-1.5 rounded-lg whitespace-nowrap z-30 shadow-xl pointer-events-none">
-                          <span className="text-teal-300 font-bold">{item.label}</span>
-                          <span className="text-white mt-0.5 font-bold">
-                            ₹{item.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                          <span className="text-slate-300 text-[9px]">
-                            {item.orders} order{item.orders !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-
-                        {/* Bar */}
-                        <div
-                          style={{ height: `${heightPercent}%` }}
-                          className={`w-full max-w-[28px] rounded-t-md transition-all duration-200 ${
-                            item.sales > 0
-                              ? isHovered
-                                ? 'bg-[#004D50] ring-2 ring-[#005F63]/30 scale-105'
-                                : 'bg-gradient-to-t from-[#005F63] to-[#0B8C90]'
-                              : 'bg-slate-100 hover:bg-slate-200'
-                          }`}
-                        />
-
-                        {/* X-axis label */}
-                        <span className={`text-[8px] sm:text-[9px] font-medium mt-1.5 truncate w-full text-center transition-colors ${
-                          isHovered ? 'text-[#005F63] font-bold' : 'text-slate-400'
+                        <span className={`text-[10px] sm:text-[11px] font-semibold transition-colors truncate block ${
+                          isHovered
+                            ? 'text-[#005F63] font-bold scale-105'
+                            : showLabel
+                              ? 'text-slate-400 hover:text-slate-700'
+                              : 'text-transparent'
                         }`}>
                           {item.label}
                         </span>
