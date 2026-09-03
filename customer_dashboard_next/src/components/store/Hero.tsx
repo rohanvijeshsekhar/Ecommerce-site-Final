@@ -110,16 +110,16 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                 </div>
 
                 {/* Desktop Content Overlay */}
-                <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-8 md:px-16 lg:px-20 justify-start items-center h-full pointer-events-none">
-                  <div className="max-w-xl text-left select-none pointer-events-auto bg-slate-900/30 backdrop-blur-[3px] p-6 md:p-8 rounded-2xl border border-white/20 shadow-xl">
+                <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-8 md:px-14 lg:px-20 justify-start items-center h-full pointer-events-none">
+                  <div className="text-left select-none pointer-events-auto max-w-md lg:max-w-lg bg-white/40 md:bg-white/60 backdrop-blur-xs p-6 md:p-8 rounded-2xl border border-white/60 shadow-xs">
                     {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-[26px] lg:text-[38px] xl:text-[46px] font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] tracking-tight leading-[1.12] mb-3 font-display">
+                      <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[36px] font-black text-slate-900 tracking-tight leading-[1.15] mb-2.5 font-display">
                         {slide.heading}
                       </h1>
                     )}
 
                     {slide.subheading && slide.subheading.trim().length > 0 && (
-                      <p className="text-xs md:text-sm lg:text-base font-semibold text-slate-100 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] leading-relaxed mb-5">
+                      <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed mb-4 line-clamp-2">
                         {slide.subheading}
                       </p>
                     )}
@@ -127,7 +127,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                     {slide.cta_text && (
                       <a
                         href={slide.cta_link || '#products'}
-                        className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white hover:bg-[#005F63] text-[#005F63] hover:text-white text-xs md:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.25)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.4)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                        className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#005F63] hover:bg-[#004D50] text-white text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
                       >
                         <span>{slide.cta_text}</span>
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -136,36 +136,24 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                   </div>
                 </div>
 
-                {/* Mobile Content Overlay */}
-                <div className="flex md:hidden relative z-10 w-full h-full flex-col items-center justify-end pb-16 px-4 select-none">
-                  <div className="w-full max-w-xs text-center bg-slate-900/40 backdrop-blur-sm p-4 rounded-xl border border-white/20 shadow-lg">
-                    {slide.heading && slide.heading.trim().length > 0 ? (
-                      <>
-                        <h2 className="text-[16px] font-black text-white drop-shadow uppercase tracking-tight font-display mb-1">
-                          {slide.heading}
-                        </h2>
-                        {slide.subheading && (
-                          <p className="text-[11px] font-medium text-slate-200 drop-shadow mb-3 line-clamp-2">
-                            {slide.subheading}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <h2 className="text-[16px] font-black text-white drop-shadow uppercase tracking-tight font-display mb-2">
-                        FAAZO DENTAL SOLUTIONS
-                      </h2>
-                    )}
-
-                    {slide.cta_text && (
-                      <a
-                        href={slide.cta_link || '#products'}
-                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-[#005F63] text-xs font-bold shadow active:scale-95"
-                      >
-                        <span>{slide.cta_text}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
+                {/* Mobile Content Overlay (Ajio Reference Style) */}
+                <div className="flex md:hidden relative z-10 w-full h-full flex-col items-center justify-end pb-24 select-none">
+                  <h2 className="text-[17px] font-black text-slate-800 uppercase tracking-tight font-display">
+                    {isSecondSlide ? 'DENTAL SOLUTIONS' : 'CLINICAL EQUIPMENT'}
+                  </h2>
+                  <span className="text-[34px] font-display font-black text-[#005F63] tracking-tight -mt-1.5 mb-1">
+                    {isSecondSlide ? 'Summit' : 'Carnival'}
+                  </span>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-1.5 font-display">
+                    {slide.heading.toUpperCase()}
+                  </p>
+                  <div className="w-8 h-[1.5px] bg-[#005F63]/40 mb-2" />
+                  <span className="text-[12px] font-black text-[#005F63] uppercase tracking-wider mb-2 font-display">
+                    {isSecondSlide ? 'UP TO 40% OFF' : 'UP TO 50% OFF'}
+                  </span>
+                  <p className="text-[8px] font-extrabold text-slate-600 tracking-wide uppercase mt-1 font-display">
+                    {isSecondSlide ? '3SHAPE | MEDIT | CARESTREAM' : 'NSK | WOODPECKER | DENTSPLY SIRONA'}
+                  </p>
                 </div>
               </div>
             </SwiperSlide>
