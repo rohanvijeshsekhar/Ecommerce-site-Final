@@ -130,7 +130,6 @@ class GA4AnalyticsService:
 
         empty_metrics = {
             "total_users": 0, "prev_total_users": 0, "pct_total_users": None,
-            "new_users": 0, "prev_new_users": 0, "pct_new_users": None,
             "sessions": 0, "prev_sessions": 0, "pct_sessions": None,
             "engagement_rate": 0.0, "prev_engagement_rate": 0.0, "pct_engagement_rate": None,
             "page_views": 0, "prev_page_views": 0, "pct_page_views": None,
@@ -161,7 +160,6 @@ class GA4AnalyticsService:
                 date_ranges=date_ranges,
                 metrics=[
                     Metric(name="totalUsers"),
-                    Metric(name="newUsers"),
                     Metric(name="sessions"),
                     Metric(name="engagementRate"),
                     Metric(name="screenPageViews"),
@@ -171,35 +169,32 @@ class GA4AnalyticsService:
             )
             response = client.run_report(request)
 
-            cur_vals = [0.0] * 7
-            prev_vals = [0.0] * 7
+            cur_vals = [0.0] * 6
+            prev_vals = [0.0] * 6
 
             if response.rows:
                 for row in response.rows:
                     m_vals = [float(m.value) for m in row.metric_values]
-                    if len(date_ranges) > 1 and len(m_vals) >= 14:
-                        cur_vals = m_vals[0:7]
-                        prev_vals = m_vals[7:14]
+                    if len(date_ranges) > 1 and len(m_vals) >= 12:
+                        cur_vals = m_vals[0:6]
+                        prev_vals = m_vals[6:12]
                     else:
-                        cur_vals = m_vals[0:7]
+                        cur_vals = m_vals[0:6]
 
             total_users = int(cur_vals[0])
             prev_total_users = int(prev_vals[0])
 
-            new_users = int(cur_vals[1])
-            prev_new_users = int(prev_vals[1])
+            sessions = int(cur_vals[1])
+            prev_sessions = int(prev_vals[1])
 
-            sessions = int(cur_vals[2])
-            prev_sessions = int(prev_vals[2])
+            engagement_rate = round(cur_vals[2] * 100, 1) if cur_vals[2] <= 1.0 else round(cur_vals[2], 1)
+            prev_engagement_rate = round(prev_vals[2] * 100, 1) if prev_vals[2] <= 1.0 else round(prev_vals[2], 1)
 
-            engagement_rate = round(cur_vals[3] * 100, 1) if cur_vals[3] <= 1.0 else round(cur_vals[3], 1)
-            prev_engagement_rate = round(prev_vals[3] * 100, 1) if prev_vals[3] <= 1.0 else round(prev_vals[3], 1)
+            page_views = int(cur_vals[3])
+            prev_page_views = int(prev_vals[3])
 
-            page_views = int(cur_vals[4])
-            prev_page_views = int(prev_vals[4])
-
-            total_engagement_sec = cur_vals[5]
-            active_users = int(cur_vals[6]) or max(total_users, 1)
+            total_engagement_sec = cur_vals[4]
+            active_users = int(cur_vals[5]) or max(total_users, 1)
             avg_engagement_sec = round(total_engagement_sec / max(active_users, 1), 1)
             if avg_engagement_sec >= 60:
                 engagement_str = f"{int(avg_engagement_sec // 60)}m {int(avg_engagement_sec % 60)}s"
@@ -215,10 +210,6 @@ class GA4AnalyticsService:
                     "total_users": total_users,
                     "prev_total_users": prev_total_users,
                     "pct_total_users": self._calculate_pct_change(total_users, prev_total_users),
-
-                    "new_users": new_users,
-                    "prev_new_users": prev_new_users,
-                    "pct_new_users": self._calculate_pct_change(new_users, prev_new_users),
 
                     "sessions": sessions,
                     "prev_sessions": prev_sessions,
