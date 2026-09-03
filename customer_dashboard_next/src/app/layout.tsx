@@ -4,7 +4,6 @@ import './globals.css';
 import Providers from '../providers/Providers';
 import { ToastContainer } from '../components/store/Toast';
 import GoogleAnalytics from '../components/analytics/GoogleAnalytics';
-import StorefrontHeartbeat from '../components/analytics/StorefrontHeartbeat';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -38,14 +37,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html 
-      lang="en" 
+    <html
+      lang="en"
       className={`scroll-smooth ${inter.variable} ${interDisplay.variable}`}
     >
       <body className="bg-white text-[#0B1D26] font-sans antialiased selection:bg-[#005F63]/20 selection:text-[#005F63] min-h-screen relative overflow-x-clip">
         <Providers>
           <GoogleAnalytics />
-          <StorefrontHeartbeat />
           {children}
           <ToastContainer />
         </Providers>
