@@ -130,6 +130,24 @@ class GA4AnalyticsAPIViewTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+
+    def test_unauthenticated_user_denied(self):
+        url = reverse("analytics-dashboard")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_non_admin_user_denied(self):
+        self.client.force_authenticate(user=self.customer)
+        url = reverse("analytics-dashboard")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_public_heartbeat_endpoint(self):
+        url = reverse("analytics-heartbeat")
+        response = self.client.post(url, {"visitor_id": "test_vis_99", "path": "/products"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.json()["success"])
+
     @patch.object(GA4AnalyticsService, "is_configured", return_value=False)
     def test_admin_access_analytics_dashboard(self, mock_configured):
         self.client.force_authenticate(user=self.admin)
@@ -141,15 +159,36 @@ class GA4AnalyticsAPIViewTests(TestCase):
         self.assertIn("configured", data)
         self.assertIn("overview", data)
         self.assertIn("realtime", data)
+        self.assertIn("live_storefront_visitors", data)
+        self.assertIn("sales_over_time", data)
         self.assertIn("faazo_db_metrics", data)
-        self.assertIn("source_labels", data)
 
-    @patch.object(GA4AnalyticsService, "is_configured", return_value=False)
-    def test_analytics_export_csv_view(self, mock_configured):
+    def test_admin_access_live_visitors_endpoint(self):
         self.client.force_authenticate(user=self.admin)
-        url = reverse("analytics-export-csv") + "?period=7d&tab=overview"
+        url = reverse("analytics-live-visitors")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIn("live_visitors", data["data"])
+
+    def test_admin_access_sales_over_time_endpoint(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("analytics-sales-over-time") + "?period=7d"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIn("series", data["data"])
+        self.assertIn("total_sales", data["data"])
+
+    def test_analytics_export_csv_view(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("analytics-export-csv") + "?period=7d"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response["Content-Type"], "text/csv")
-        self.assertIn("Visitors", response.content.decode("utf-8"))
+        self.assertIn("FAAZO Sales Analytics Report", response.content.decode("utf-8"))

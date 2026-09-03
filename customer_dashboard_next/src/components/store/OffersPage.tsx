@@ -152,7 +152,7 @@ export default function OffersPage({ setCartItems, showToast }: OffersPageProps)
   };
 
   return (
-    <div className="w-full bg-[#F8FAFC] min-h-screen text-slate-800 font-sans text-left pt-[116px] lg:pt-[176px] pb-24 select-none">
+    <div className="w-full bg-[#F8FAFC] min-h-screen text-slate-800 font-sans text-left pt-[116px] lg:pt-[180px] pb-24 select-none">
       
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 1. HERO SECTION (Light Olive Green Background Only) */}

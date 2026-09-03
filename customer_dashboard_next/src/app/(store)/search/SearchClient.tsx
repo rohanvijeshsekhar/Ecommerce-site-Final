@@ -236,7 +236,7 @@ export default function SearchClient({
   const hasActiveFilters = Boolean(selectedBrand || selectedCategory || minPrice || maxPrice || inStockOnly);
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-24 lg:pt-36 pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
+    <div className="bg-[#F8FAFC] min-h-screen pt-24 lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Breadcrumb & Search Title Banner */}
@@ -424,7 +424,7 @@ export default function SearchClient({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Sidebar Filters — Desktop */}
-          <aside className="hidden lg:block space-y-6 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit sticky top-36">
+          <aside className="hidden lg:block space-y-6 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit sticky lg:top-[140px]">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
                 <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue

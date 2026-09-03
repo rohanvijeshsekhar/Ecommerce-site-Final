@@ -184,7 +184,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
   const displayList = getFilteredAndSorted();
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[60px] lg:pt-[160px]">
+    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[60px] lg:pt-[180px]">
       {/* Hero Banner Section */}
       <div 
         className="relative bg-[#0f172a] text-white py-16 px-6 md:px-12 overflow-hidden shadow-md"

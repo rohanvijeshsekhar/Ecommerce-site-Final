@@ -122,7 +122,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 flex flex-col items-center justify-center space-y-4">
+      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 flex flex-col items-center justify-center space-y-4">
         <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-bold text-slate-400">Loading order records...</p>
       </div>
@@ -164,7 +164,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
       <div className="max-w-4xl mx-auto px-4 md:px-6">
 
         {/* Back and Page Actions */}

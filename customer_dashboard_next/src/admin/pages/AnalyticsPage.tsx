@@ -105,12 +105,18 @@ export default function AnalyticsPage() {
   // ── Comparison badge ──
   const Badge = ({ current, prev, pct }: { current: number; prev: number; pct: number | null }) => {
     if (prev === 0 && current > 0) {
-      return <span className="text-[10px] font-bold text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200 mt-1 inline-block">New activity</span>;
+      return (
+        <span className="text-[10px] font-bold text-[#005F63] bg-white/90 px-2 py-0.5 rounded-full border border-teal-200/80 mt-1.5 inline-block shadow-xs">
+          New activity
+        </span>
+      );
     }
     if (prev === 0 && current === 0) return null;
     if (pct === null || pct === undefined) return null;
     return (
-      <span className={`text-[10px] font-bold mt-1 inline-flex items-center gap-0.5 ${pct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+      <span className={`text-[10px] font-bold mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white/90 shadow-xs ${
+        pct >= 0 ? 'text-emerald-700 border border-emerald-200/80' : 'text-rose-700 border border-rose-200/80'
+      }`}>
         {pct >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {pct >= 0 ? '+' : ''}{pct}%
       </span>
@@ -122,51 +128,40 @@ export default function AnalyticsPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] -m-6 p-6 md:p-8">
         <div className="max-w-[1400px] mx-auto space-y-6">
-          <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />)}
+            {[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />)}
           </div>
-          <div className="h-64 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          <div className="h-64 bg-white rounded-2xl border border-slate-200 animate-pulse shadow-sm" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] -m-6 p-6 md:p-8 font-sans select-none">
+    <div className="min-h-screen bg-[#F8FAFC] -m-6 p-6 md:p-8">
       <div className="max-w-[1400px] mx-auto space-y-6">
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* HEADER */}
+        {/* HEADER BAR */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-7">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-left">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <BarChart3 className="w-4 h-4 text-[#005F63]" />
-                <span className="text-[11px] font-bold text-[#005F63] uppercase tracking-wider">FAAZO Analytics</span>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Analytics Dashboard</h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#EAF6F3] text-[#005F63] border border-[#BCE4DB] shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-[#005F63] animate-pulse" />
+                  GA4 Live
+                </span>
               </div>
-              <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">
-                Website & Business Performance
-              </h1>
-              <p className="text-xs text-slate-500 mt-1 max-w-lg">
-                See how many people are visiting FAAZO, what they are viewing, where they come from, and how website activity relates to actual orders.
+              <p className="text-xs text-slate-500 mt-1">
+                Storefront visitor activity &amp; business performance
               </p>
-
-              {/* Analytics status toggle */}
-              <button
-                onClick={() => setShowConfig(!showConfig)}
-                className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${isConfigured ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                <span>{isConfigured ? 'Analytics active' : 'Configuration needed'}</span>
-                <Info className="w-3 h-3" />
-              </button>
-
-              {showConfig && (
-                <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[10px] text-slate-500 space-y-0.5 max-w-sm font-mono">
-                  <p>Property: <strong className="text-slate-700">546256915</strong></p>
-                  <p>Tag: <strong className="text-slate-700">G-PVTHJXFXQ5</strong></p>
+              {isConfigured && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 mt-2">
+                  <p>Property: <strong className="text-slate-700 font-mono">{data?.property_id || '546256915'}</strong></p>
+                  <p>Tag: <strong className="text-slate-700 font-mono">G-PVTHJXFXQ5</strong></p>
                   <p>Admin routes: <strong className="text-slate-700">Excluded</strong></p>
                   <p>Timezone: <strong className="text-slate-700">Asia/Kolkata (IST)</strong></p>
                 </div>
@@ -178,7 +173,7 @@ export default function AnalyticsPage() {
               <button
                 onClick={() => fetchDashboard(period)}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -186,13 +181,13 @@ export default function AnalyticsPage() {
 
               <button
                 onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#005F63] hover:bg-[#004D50] text-white text-xs font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#005F63] hover:bg-[#004D50] text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export
               </button>
 
-              <div className="inline-flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-[11px] font-semibold">
+              <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
                 {[
                   { id: 'today', label: 'Today' },
                   { id: 'yesterday', label: 'Yesterday' },
@@ -202,11 +197,10 @@ export default function AnalyticsPage() {
                   <button
                     key={item.id}
                     onClick={() => setPeriod(item.id)}
-                    className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-                      period === item.id
-                        ? 'bg-white text-[#005F63] shadow-sm font-bold'
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${period === item.id
+                        ? 'bg-white text-[#005F63] shadow-xs font-bold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -218,13 +212,13 @@ export default function AnalyticsPage() {
 
         {/* Unconfigured banner */}
         {!isConfigured && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-start gap-3">
+          <div className="rounded-2xl bg-[#FEF3E2] border border-[#F6D49F] p-5 flex items-start gap-3 shadow-xs">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-amber-900">Google Analytics credentials needed</h4>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Storefront tracking is active (<code className="bg-amber-100 px-1 rounded font-mono text-amber-900">G-PVTHJXFXQ5</code>).
-                Configure service account credentials in <code className="bg-amber-100 px-1 rounded font-mono text-amber-900">backend/.env</code> to view analytics data.
+              <p className="text-xs text-amber-800 mt-0.5">
+                Storefront tracking is active (<code className="bg-white/80 px-1 rounded font-mono text-amber-900">G-PVTHJXFXQ5</code>).
+                Configure service account credentials in <code className="bg-white/80 px-1 rounded font-mono text-amber-900">backend/.env</code> to view analytics data.
               </p>
             </div>
           </div>
@@ -232,116 +226,116 @@ export default function AnalyticsPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center gap-3">
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center gap-3 shadow-xs">
             <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <p className="text-xs text-rose-700 font-medium">{error}</p>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* KPI CARDS */}
+        {/* KPI CARDS (PASTEL COLORS PALETTE) */}
         {/* ═══════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-          {/* Visitors */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 text-left hover:border-[#005F63]/30 transition-colors">
+          {/* 1. Visitors (Pastel Blush Rose Pink) */}
+          <div className="bg-[#FDF2F4] rounded-2xl border border-[#FBCFE8] p-5 text-left hover:border-[#F472B6] hover:shadow-md hover:shadow-pink-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-teal-50 text-[#005F63] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#DB2777] border border-[#FBCFE8] flex items-center justify-center shadow-xs">
                 <Users className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#BE185D] bg-white/90 px-2 py-0.5 rounded-md border border-[#FBCFE8]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Visitors</p>
+            <p className="text-[10px] font-semibold text-[#9D174D] uppercase tracking-wider">Visitors</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.total_users ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Unique people who visited</p>
+            <p className="text-[10px] text-[#BE185D] mt-0.5">Unique people who visited</p>
             <Badge current={overview.total_users ?? 0} prev={overview.prev_total_users ?? 0} pct={overview.pct_total_users} />
           </div>
 
-          {/* Visits */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 text-left hover:border-sky-300/50 transition-colors">
+          {/* 2. Visits (Pastel Ice Sky Blue) */}
+          <div className="bg-[#EFF6FF] rounded-2xl border border-[#BAE6FD] p-5 text-left hover:border-[#38BDF8] hover:shadow-md hover:shadow-sky-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#0284C7] border border-[#BAE6FD] flex items-center justify-center shadow-xs">
                 <Activity className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#0369A1] bg-white/90 px-2 py-0.5 rounded-md border border-[#BAE6FD]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Visits</p>
+            <p className="text-[10px] font-semibold text-[#0369A1] uppercase tracking-wider">Visits</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.sessions ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Browsing sessions</p>
+            <p className="text-[10px] text-[#0284C7] mt-0.5">Browsing sessions</p>
             <Badge current={overview.sessions ?? 0} prev={overview.prev_sessions ?? 0} pct={overview.pct_sessions} />
           </div>
 
-          {/* Pages Viewed */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 text-left hover:border-indigo-300/50 transition-colors">
+          {/* 3. Pages Viewed (Pastel Soft Lavender) */}
+          <div className="bg-[#F5F3FF] rounded-2xl border border-[#DDD6FE] p-5 text-left hover:border-[#A78BFA] hover:shadow-md hover:shadow-purple-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#7C3AED] border border-[#DDD6FE] flex items-center justify-center shadow-xs">
                 <Eye className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6D28D9] bg-white/90 px-2 py-0.5 rounded-md border border-[#DDD6FE]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pages Viewed</p>
+            <p className="text-[10px] font-semibold text-[#5B21B6] uppercase tracking-wider">Pages Viewed</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (overview.page_views ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Storefront pages viewed</p>
+            <p className="text-[10px] text-[#6D28D9] mt-0.5">Storefront pages viewed</p>
             <Badge current={overview.page_views ?? 0} prev={overview.prev_page_views ?? 0} pct={overview.pct_page_views} />
           </div>
 
-          {/* Engagement */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 text-left hover:border-amber-300/50 transition-colors">
+          {/* 4. Engagement (Pastel Warm Peach Apricot) */}
+          <div className="bg-[#FFF7ED] rounded-2xl border border-[#FED7AA] p-5 text-left hover:border-[#FB923C] hover:shadow-md hover:shadow-orange-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#EA580C] border border-[#FED7AA] flex items-center justify-center shadow-xs">
                 <Clock className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#C2410C] bg-white/90 px-2 py-0.5 rounded-md border border-[#FED7AA]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Engagement</p>
+            <p className="text-[10px] font-semibold text-[#9A3412] uppercase tracking-wider">Engagement</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : `${overview.engagement_rate ?? 0}%`}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Avg time: {overview.avg_engagement_time ?? '0s'}</p>
+            <p className="text-[10px] text-[#C2410C] mt-0.5">Avg time: {overview.avg_engagement_time ?? '0s'}</p>
             <Badge current={overview.engagement_rate ?? 0} prev={overview.prev_engagement_rate ?? 0} pct={overview.pct_engagement_rate} />
           </div>
 
-          {/* Visitors Right Now */}
-          <div className="bg-gradient-to-br from-[#005F63] to-[#0B7C80] rounded-2xl p-5 text-left text-white relative overflow-hidden">
+          {/* 5. Visitors Right Now (Pastel Mint Sage Live) */}
+          <div className="bg-[#ECFDF5] rounded-2xl border border-[#A7F3D0] p-5 text-left hover:border-[#34D399] hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/15 text-[9px] font-bold uppercase tracking-wider text-emerald-200 border border-white/10">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#047857] text-[9px] font-bold uppercase tracking-wider text-white shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse shadow-sm shadow-emerald-400" />
                 Live
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-white/60">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#047857] bg-white/90 px-2 py-0.5 rounded-md border border-[#A7F3D0]">GA4</span>
             </div>
-            <p className="text-[10px] font-semibold text-teal-100 uppercase tracking-wider">Visitors Right Now</p>
-            <p className="text-3xl font-extrabold text-white mt-0.5">{realtime.active_users ?? 0}</p>
-            <p className="text-[10px] text-teal-200 mt-0.5">
+            <p className="text-[10px] font-semibold text-[#065F46] uppercase tracking-wider">Visitors Right Now</p>
+            <p className="text-2xl font-extrabold text-[#064E3B] mt-0.5">{realtime.active_users ?? 0}</p>
+            <p className="text-[10px] text-[#059669] mt-0.5">
               {(realtime.active_users ?? 0) === 0 ? 'No visitors active right now' : 'People on FAAZO now'}
             </p>
-            <p className="text-[9px] text-teal-300/60 mt-1">Updated {realtimeAge}s ago</p>
+            <p className="text-[9px] text-[#047857]/80 mt-1">Updated {realtimeAge}s ago</p>
           </div>
 
-          {/* Orders */}
-          <div className="bg-white rounded-2xl border border-emerald-200 p-5 text-left hover:border-emerald-400 transition-colors">
+          {/* 6. Orders (Pastel Sunny Buttercup Lemon) */}
+          <div className="bg-[#FEFCE8] rounded-2xl border border-[#FEF08A] p-5 text-left hover:border-[#FACC15] hover:shadow-md hover:shadow-yellow-500/5 transition-all duration-300 relative overflow-hidden group shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#CA8A04] border border-[#FEF08A] flex items-center justify-center shadow-xs">
                 <ShoppingCart className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">FAAZO Data</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#A16207] bg-white/90 px-2 py-0.5 rounded-md border border-[#FEF08A]">FAAZO Data</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Orders</p>
+            <p className="text-[10px] font-semibold text-[#854D0E] uppercase tracking-wider">Orders</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{loading ? '–' : (faazo.total_orders ?? 0).toLocaleString()}</p>
-            <p className="text-[10px] text-emerald-600 mt-0.5">{faazo.paid_orders ?? 0} paid / completed</p>
+            <p className="text-[10px] text-[#A16207] mt-0.5">{faazo.paid_orders ?? 0} paid / completed</p>
           </div>
 
-          {/* Revenue */}
-          <div className="bg-white rounded-2xl border border-emerald-200 p-5 text-left hover:border-emerald-400 transition-colors col-span-2 lg:col-span-2">
+          {/* 7. Actual Revenue (Pastel Aquamarine Seafoam Wide) */}
+          <div className="bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-5 text-left hover:border-[#2DD4BF] hover:shadow-md hover:shadow-teal-500/5 transition-all duration-300 relative overflow-hidden group col-span-2 lg:col-span-2 shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/90 text-[#0D9488] border border-[#99F6E4] flex items-center justify-center shadow-xs">
                 <Database className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">FAAZO Data</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#0F766E] bg-white/90 px-2 py-0.5 rounded-md border border-[#99F6E4]">FAAZO Data</span>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Actual Revenue</p>
-            <p className="text-2xl font-extrabold text-emerald-700 mt-0.5">
+            <p className="text-[10px] font-semibold text-[#134E4A] uppercase tracking-wider">Actual Revenue</p>
+            <p className="text-2xl font-extrabold text-[#115E59] mt-0.5">
               {loading ? '–' : `₹${(faazo.total_revenue ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Revenue from FAAZO order records</p>
+            <p className="text-[10px] text-[#0F766E] mt-0.5">Revenue from FAAZO order records</p>
           </div>
         </div>
 
@@ -358,13 +352,13 @@ export default function AnalyticsPage() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* WEBSITE ACTIVITY CHART */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
+        <div className="bg-gradient-to-br from-white/90 via-slate-50/60 to-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 text-left shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Website Activity</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">Visitors and page views — {periodLabel}</p>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/70">GA4</span>
           </div>
 
           {trend.length > 1 ? (
@@ -380,7 +374,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div
                       style={{ height: `${h}%` }}
-                      className="w-full max-w-[24px] bg-gradient-to-t from-[#005F63] to-[#0B8C90] rounded-t-lg group-hover:from-[#004D50] transition-colors"
+                      className="w-full max-w-[24px] bg-gradient-to-t from-[#005F63] to-[#0B8C90] rounded-t-lg group-hover:from-[#004D50] transition-colors shadow-sm"
                     />
                     <span className="text-[9px] font-medium text-slate-400 mt-1.5 truncate w-full text-center">{item.date}</span>
                   </div>
@@ -388,12 +382,12 @@ export default function AnalyticsPage() {
               })}
             </div>
           ) : trend.length === 1 ? (
-            <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-5 rounded-xl bg-white/70 backdrop-blur-sm border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
               <div>
                 <p className="text-xs font-bold text-slate-700">Single data point recorded for {trend[0].date}</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">More daily data points will appear as visitors browse the storefront.</p>
               </div>
-              <div className="flex items-center gap-5 bg-white p-3 rounded-lg border border-slate-200 shrink-0 text-center">
+              <div className="flex items-center gap-5 bg-white/90 backdrop-blur-sm p-3 rounded-xl border border-slate-200 shrink-0 text-center shadow-sm">
                 <div>
                   <p className="text-[9px] text-slate-400 uppercase font-semibold">Visitors</p>
                   <p className="text-sm font-extrabold text-[#005F63]">{trend[0].users}</p>
@@ -420,15 +414,15 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Popular Pages */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
+          <div className="bg-gradient-to-br from-white/90 via-slate-50/60 to-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 text-left shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-slate-900">Popular Pages</h2>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/70">GA4</span>
             </div>
             {topPages.length > 0 ? (
               <div className="space-y-2">
                 {topPages.slice(0, 8).map((page: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/70 border border-slate-100 text-xs">
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200/60 text-xs shadow-sm">
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-800 truncate">{formatPageName(page.path, page.title)}</p>
                       <p className="text-[10px] text-slate-400 font-mono truncate">{page.path}</p>
@@ -448,15 +442,15 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Traffic Sources */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
+          <div className="bg-gradient-to-br from-white/90 via-slate-50/60 to-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 text-left shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-slate-900">Where Visitors Came From</h2>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/70">GA4</span>
             </div>
             {trafficSources.length > 0 ? (
               <div className="space-y-2">
                 {trafficSources.map((src: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/70 border border-slate-100 text-xs">
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200/60 text-xs shadow-sm">
                     <div>
                       <p className="font-semibold text-slate-800">{formatSource(src.source, src.medium)}</p>
                       <p className="text-[10px] text-slate-400">{src.sessions} visits</p>
@@ -479,10 +473,10 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Devices */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
+          <div className="bg-gradient-to-br from-white/90 via-slate-50/60 to-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 text-left shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-slate-900">How People Use FAAZO</h2>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/70">GA4</span>
             </div>
             {devices.length > 0 ? (
               <div className="space-y-3">
@@ -501,7 +495,7 @@ export default function AnalyticsPage() {
                         </span>
                         <span className="text-slate-500 font-medium">{dev.users} ({pct}%)</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100/80 h-1.5 rounded-full overflow-hidden shadow-inner">
                         <div
                           style={{ width: `${pct}%` }}
                           className={`h-full rounded-full ${isMobile ? 'bg-teal-500' : isTablet ? 'bg-indigo-500' : 'bg-sky-500'}`}
@@ -517,15 +511,15 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Geography */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-left">
+          <div className="bg-gradient-to-br from-white/90 via-slate-50/60 to-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 text-left shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-slate-900">Where Visitors Are</h2>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">GA4</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#005F63] bg-teal-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/70">GA4</span>
             </div>
             {geography.length > 0 ? (
               <div className="space-y-2">
                 {geography.map((geo: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/70 border border-slate-100 text-xs">
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200/60 text-xs shadow-sm">
                     <span className="font-semibold text-slate-700 flex items-center gap-1.5">
                       <MapPin className="w-3 h-3 text-slate-400" />
                       {geo.country}{geo.city && geo.city !== '(not set)' ? ` — ${geo.city}` : ''}
@@ -543,25 +537,25 @@ export default function AnalyticsPage() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* FAAZO BUSINESS PERFORMANCE */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-emerald-200 p-6 text-left">
+        <div className="bg-gradient-to-br from-emerald-50/70 via-white/85 to-teal-50/40 backdrop-blur-md rounded-2xl border border-emerald-200/80 p-6 text-left shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">FAAZO Business Performance</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">Source: FAAZO database — {periodLabel}</p>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">FAAZO Data</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/70 backdrop-blur-sm px-2 py-0.5 rounded-md border border-emerald-200/70">FAAZO Data</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-emerald-100/80 shadow-sm">
               <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Orders</p>
               <p className="text-2xl font-extrabold text-slate-900 mt-1">{(faazo.total_orders ?? 0).toLocaleString()}</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-emerald-100/80 shadow-sm">
               <p className="text-[10px] font-semibold text-slate-400 uppercase">Paid / Completed</p>
               <p className="text-2xl font-extrabold text-emerald-600 mt-1">{(faazo.paid_orders ?? 0).toLocaleString()}</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-emerald-100/80 shadow-sm">
               <p className="text-[10px] font-semibold text-slate-400 uppercase">Actual Revenue</p>
               <p className="text-2xl font-extrabold text-emerald-700 mt-1">
                 ₹{(faazo.total_revenue ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -570,7 +564,7 @@ export default function AnalyticsPage() {
           </div>
 
           <p className="text-[11px] text-slate-400 border-t border-slate-100 pt-3">
-            Actual order records and revenue are sourced 100% from the FAAZO database. Detailed GA4 shopping behaviour is not currently tracked. 
+            Actual order records and revenue are sourced 100% from the FAAZO database. Detailed GA4 shopping behaviour is not currently tracked.
           </p>
         </div>
 

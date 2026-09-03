@@ -102,7 +102,7 @@ function CreateReturnContent() {
 
   if (loading) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 flex flex-col items-center justify-center">
+      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-bold text-slate-400 mt-4">Evaluating return policy eligibility...</p>
       </div>
@@ -110,7 +110,7 @@ function CreateReturnContent() {
   }
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[160px] pb-16 font-sans">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans">
       <div className="max-w-3xl mx-auto px-4 md:px-6">
 
         {/* Back Link */}

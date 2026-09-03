@@ -65,8 +65,20 @@ class EmailOTPProvider(BaseOTPProvider):
 
             msg.send(fail_silently=False)
             logger.info(f"[EmailOTPProvider] Dispatched OTP code to {target} (purpose={purpose})")
+            if getattr(settings, "DEBUG", False):
+                print("\n==================================================")
+                print(f"[FAAZO OTP] Verification Code for {target}: {otp_code}")
+                print(f"  Purpose: {purpose}")
+                print("==================================================\n")
             return True
         except Exception as exc:
             logger.error(f"[EmailOTPProvider Error] Failed to send OTP to {target}: {exc}", exc_info=True)
+            if getattr(settings, "DEBUG", False):
+                print("\n==================================================")
+                print(f"[DEV OTP FALLBACK] Dispatch notice (DEBUG mode):")
+                print(f"[FAAZO OTP] Verification Code for {target}: {otp_code}")
+                print(f"  Purpose: {purpose}")
+                print("==================================================\n")
+                return True
             return False
 

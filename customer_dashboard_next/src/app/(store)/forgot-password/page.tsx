@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 pt-32 pb-12">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 pt-32 lg:pt-[180px] pb-12">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
         {/* Top Header Banner */}
         <div className="bg-[#006670] p-6 text-white text-center relative overflow-hidden">

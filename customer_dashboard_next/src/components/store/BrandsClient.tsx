@@ -129,7 +129,7 @@ export default function BrandsClient() {
   }, [brands, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[100px] lg:pt-[160px]">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[100px] lg:pt-[180px]">
       
       {/* ── TOP HERO BANNER (Full width edge-to-edge) ── */}
       {banner && banner.is_active && (
