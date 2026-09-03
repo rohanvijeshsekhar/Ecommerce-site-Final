@@ -948,12 +948,14 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </div>
 
               {/* Buy Now button */}
-              <button
-                onClick={handleBuyNow}
-                className="w-full h-10 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-xs tracking-wider font-extrabold uppercase transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Buy Now
-              </button>
+              {productData?.inventory?.available_stock > 0 && (
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full h-10 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-xs tracking-wider font-extrabold uppercase transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Buy Now
+                </button>
+              )}
             </div>
 
             {/* Wishlist & Share link */}
@@ -1542,12 +1544,14 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             >
               Add to Cart
             </button>
-            <button
-              onClick={handleBuyNow}
-              className="flex-1 md:flex-initial px-4 py-2 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap text-center"
-            >
-              Buy Now
-            </button>
+            {productData?.inventory?.available_stock > 0 && (
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 md:flex-initial px-4 py-2 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap text-center"
+              >
+                Buy Now
+              </button>
+            )}
           </div>
         </div>
       </div>
