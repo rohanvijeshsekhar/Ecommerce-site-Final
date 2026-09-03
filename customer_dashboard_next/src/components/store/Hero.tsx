@@ -111,47 +111,69 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
 
                 {/* Desktop Content Overlay */}
                 <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-8 md:px-14 lg:px-20 justify-start items-center h-full pointer-events-none">
-                  <div className="text-left select-none pointer-events-auto max-w-md lg:max-w-lg bg-white/40 md:bg-white/60 backdrop-blur-xs p-6 md:p-8 rounded-2xl border border-white/60 shadow-xs">
+                  <div className="text-left select-none pointer-events-auto max-w-[540px] lg:max-w-[640px]">
                     {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[36px] font-black text-slate-900 tracking-tight leading-[1.15] mb-2.5 font-display">
-                        {slide.heading}
+                      <h1 className="text-[28px] lg:text-[40px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.08] mb-3 flex flex-col font-display text-left">
+                        {isSecondSlide ? (
+                          <>
+                            <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
+                            {slide.heading.includes(' engineered ') && (
+                              <>
+                                <span className="text-[#005F63]">engineered for</span>
+                                <span>{slide.heading.split(' engineered ')[1] || ''}</span>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span>{slide.heading.split(' ')[0] || ''}</span>
+                            {slide.heading.split(' ')[1] && (
+                              <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
+                            )}
+                            {slide.heading.split(' ').length > 2 && (
+                              <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
+                            )}
+                          </>
+                        )}
                       </h1>
                     )}
 
-                    {slide.subheading && slide.subheading.trim().length > 0 && (
-                      <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed mb-4 line-clamp-2">
+                    {slide.subheading && (
+                      <p className="text-xs lg:text-sm text-slate-600 font-medium mb-4 line-clamp-2 max-w-md">
                         {slide.subheading}
                       </p>
                     )}
 
                     {slide.cta_text && (
-                      <a
-                        href={slide.cta_link || '#products'}
-                        className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#005F63] hover:bg-[#004D50] text-white text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
-                      >
-                        <span>{slide.cta_text}</span>
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </a>
+                      <div className="flex justify-start pt-1">
+                        <a
+                          href={slide.cta_link || '#products'}
+                          className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                        >
+                          <span>{slide.cta_text}</span>
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Mobile Content Overlay (Ajio Reference Style) */}
-                <div className="flex md:hidden relative z-10 w-full h-full flex-col items-center justify-end pb-24 select-none">
-                  <h2 className="text-[17px] font-black text-slate-800 uppercase tracking-tight font-display">
+                {/* Mobile Content Overlay (Left-aligned & clean) */}
+                <div className="flex md:hidden relative z-10 w-full h-full flex-col items-start justify-end p-6 pb-16 select-none text-left">
+                  <h2 className="text-[14px] font-black text-slate-800 uppercase tracking-tight font-display">
                     {isSecondSlide ? 'DENTAL SOLUTIONS' : 'CLINICAL EQUIPMENT'}
                   </h2>
-                  <span className="text-[34px] font-display font-black text-[#005F63] tracking-tight -mt-1.5 mb-1">
+                  <span className="text-[28px] font-display font-black text-[#005F63] tracking-tight -mt-1 mb-0.5">
                     {isSecondSlide ? 'Summit' : 'Carnival'}
                   </span>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-1.5 font-display">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-1 font-display">
                     {slide.heading.toUpperCase()}
                   </p>
-                  <div className="w-8 h-[1.5px] bg-[#005F63]/40 mb-2" />
-                  <span className="text-[12px] font-black text-[#005F63] uppercase tracking-wider mb-2 font-display">
+                  <div className="w-8 h-[1.5px] bg-[#005F63]/40 mb-1.5" />
+                  <span className="text-[11px] font-black text-[#005F63] uppercase tracking-wider mb-1 font-display">
                     {isSecondSlide ? 'UP TO 40% OFF' : 'UP TO 50% OFF'}
                   </span>
-                  <p className="text-[8px] font-extrabold text-slate-600 tracking-wide uppercase mt-1 font-display">
+                  <p className="text-[8px] font-extrabold text-slate-600 tracking-wide uppercase font-display">
                     {isSecondSlide ? '3SHAPE | MEDIT | CARESTREAM' : 'NSK | WOODPECKER | DENTSPLY SIRONA'}
                   </p>
                 </div>
