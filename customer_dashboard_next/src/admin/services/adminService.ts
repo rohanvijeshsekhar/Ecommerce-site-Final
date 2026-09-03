@@ -366,24 +366,6 @@ export const adminService = {
     }
   },
 
-  async getLiveVisitors(): Promise<ServiceResponse<{ live_visitors: number; updated_at: string }>> {
-    try {
-      const res = await api.get('analytics/live-visitors/');
-      return { success: true, data: res.data?.data };
-    } catch (err: any) {
-      return { success: false, message: err?.response?.data?.message || 'Failed to fetch live visitors' };
-    }
-  },
-
-  async getSalesOverTime(period: string = '7d'): Promise<ServiceResponse<any>> {
-    try {
-      const res = await api.get(`analytics/sales-over-time/?period=${period}`);
-      return { success: true, data: res.data?.data };
-    } catch (err: any) {
-      return { success: false, message: err?.response?.data?.message || 'Failed to load sales over time' };
-    }
-  },
-
   async downloadAnalyticsCSV(period: string = '7d', tab: string = 'overview'): Promise<void> {
     const res = await api.get(`analytics/export/?period=${period}&tab=${tab}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -924,24 +906,6 @@ export const adminOrdersService = {
       return { success: true, data: res.data };
     } catch (err: any) {
       return { success: false, message: err?.response?.data?.message || 'Failed to load Realtime analytics' };
-    }
-  },
-
-  async getLiveVisitors(): Promise<ServiceResponse<{ live_visitors: number; updated_at: string }>> {
-    try {
-      const res = await api.get('analytics/live-visitors/');
-      return { success: true, data: res.data?.data };
-    } catch (err: any) {
-      return { success: false, message: err?.response?.data?.message || 'Failed to fetch live visitors' };
-    }
-  },
-
-  async getSalesOverTime(period: string = '7d'): Promise<ServiceResponse<any>> {
-    try {
-      const res = await api.get(`analytics/sales-over-time/?period=${period}`);
-      return { success: true, data: res.data?.data };
-    } catch (err: any) {
-      return { success: false, message: err?.response?.data?.message || 'Failed to load sales over time' };
     }
   },
 
