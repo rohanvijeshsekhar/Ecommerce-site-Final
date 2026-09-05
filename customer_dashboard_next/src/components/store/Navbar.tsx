@@ -832,8 +832,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  closeAllMenus();
-                  router.push('/products');
+                  setActiveMenu((prev) => (prev === 'categories' ? null : 'categories'));
                 }}
                 className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${
                   activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'

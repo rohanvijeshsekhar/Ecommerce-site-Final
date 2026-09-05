@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Star, Quote, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Star, Quote, Sparkles } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 
 interface ReviewItem {
@@ -159,31 +159,13 @@ const Testimonials: React.FC = () => {
                 </div>
 
                 {/* Practitioner Info Footer */}
-                <div className="flex items-center gap-3.5 pt-4 border-t border-white/40">
-                  <div className="relative flex-shrink-0">
-                    <img 
-                      src={rev.image || DEFAULT_AVATAR} 
-                      alt={rev.name} 
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow-sm"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.onerror = null;
-                        target.src = DEFAULT_AVATAR;
-                      }}
-                    />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#005F63] text-white flex items-center justify-center shadow-xs">
-                      <CheckCircle2 className="w-3 h-3 stroke-[2.5]" />
-                    </div>
-                  </div>
-
-                  <div className="text-left">
-                    <h4 className="text-sm font-black text-slate-900 font-display flex items-center gap-1.5">
-                      <span>{rev.name}</span>
-                    </h4>
-                    <p className="text-[11px] font-extrabold text-[#005F63] mt-0.5 tracking-tight line-clamp-1">
-                      {rev.clinic}
-                    </p>
-                  </div>
+                <div className="pt-4 border-t border-white/40 text-left">
+                  <h4 className="text-sm font-black text-slate-900 font-display">
+                    {rev.name}
+                  </h4>
+                  <p className="text-[11.5px] font-extrabold text-[#005F63] mt-0.5 tracking-tight line-clamp-1">
+                    {rev.clinic}
+                  </p>
                 </div>
               </div>
             ))}
@@ -227,30 +209,13 @@ const Testimonials: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 pt-3.5 border-t border-white/40">
-                    <div className="relative flex-shrink-0">
-                      <img 
-                        src={rev.image || DEFAULT_AVATAR} 
-                        alt={rev.name} 
-                        className="w-9 h-9 rounded-full object-cover border-2 border-white/80 shadow-xs"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          target.onerror = null;
-                          target.src = DEFAULT_AVATAR;
-                        }}
-                      />
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#005F63] text-white flex items-center justify-center">
-                        <CheckCircle2 className="w-2.5 h-2.5 stroke-[2.5]" />
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 font-display">
-                        {rev.name}
-                      </h4>
-                      <p className="text-[10px] font-extrabold text-[#005F63] mt-0.5 line-clamp-1">
-                        {rev.clinic}
-                      </p>
-                    </div>
+                  <div className="pt-3.5 border-t border-white/40 text-left">
+                    <h4 className="text-xs font-black text-slate-900 font-display">
+                      {rev.name}
+                    </h4>
+                    <p className="text-[10.5px] font-extrabold text-[#005F63] mt-0.5 line-clamp-1">
+                      {rev.clinic}
+                    </p>
                   </div>
                 </div>
               ))}

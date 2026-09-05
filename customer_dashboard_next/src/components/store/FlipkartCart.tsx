@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Trash2, Plus, Minus, MapPin, Shield, ArrowLeft, Heart, ShoppingBag, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, Plus, Minus, MapPin, Shield, ArrowLeft, Heart, ShoppingBag, Lock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getAbsoluteImageUrl } from '../../lib/api';
 
@@ -225,12 +225,31 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
+                  {/* Stock Warnings Banner */}
+                  {backendCart?.stock_warnings && backendCart.stock_warnings.length > 0 && (
+                    <div className="p-4 bg-rose-50/80 border-b border-rose-100 flex items-start gap-2.5 text-xs text-rose-700">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-extrabold text-rose-800">Inventory Alert</p>
+                        {backendCart.stock_warnings.map((msg: string, idx: number) => (
+                          <p key={idx} className="font-medium">{msg}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {cartItems.map((item) => {
                     const originalPrice = item.originalPrice || Math.round(item.price * 1.2);
                     const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
 
+                    // Cross-reference with live backend cart item
+                    const backendItem = backendCart?.items?.find((bi: any) => 
+                      bi.product?.slug === item.id || String(bi.product?.id) === item.id
+                    );
+                    const hasStockIssue = backendItem && !backendItem.has_sufficient_stock;
+
                     return (
-                      <div key={item.id} className="p-5 md:p-6 flex flex-col md:flex-row gap-6 text-left items-start hover:bg-slate-50/30 transition-colors">
+                      <div key={item.id} className={`p-5 md:p-6 flex flex-col md:flex-row gap-6 text-left items-start transition-colors ${hasStockIssue ? 'bg-rose-50/20' : 'hover:bg-slate-50/30'}`}>
                         {/* Image & Qty controls column */}
                         <div className="flex flex-col items-center gap-3.5 shrink-0">
                           <div 
@@ -279,6 +298,18 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                               <span className="text-slate-300">•</span>
                               <span className="text-slate-400 uppercase tracking-wider">Seller: FAAZO Authorized</span>
                             </div>
+
+                            {/* Stock Warning Badge */}
+                            {hasStockIssue && (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-[10.5px] font-bold text-rose-600">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                <span>
+                                  {backendItem.stock_available <= 0
+                                    ? 'Out of Stock — Please remove item to proceed'
+                                    : `Only ${backendItem.stock_available} unit(s) available in stock (Quantity requested: ${item.qty})`}
+                                </span>
+                              </div>
+                            )}
                             
                             {/* Pricing Block */}
                             <div className="flex items-baseline gap-2.5 pt-1">
@@ -327,13 +358,33 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                   })}
 
                   {/* Checkout CTA footer block inside list card */}
-                  <div className="p-4 flex justify-end bg-white border-t border-slate-100">
-                    <button
-                      onClick={() => { setCurrentView('checkout'); window.scrollTo(0, 0); }}
-                      className="px-8 py-3.5 rounded-md bg-[#006670] hover:bg-[#004e56] text-white text-xs tracking-wider font-extrabold uppercase transition-all shadow-md hover:shadow-premium cursor-pointer"
-                    >
-                      Place Order
-                    </button>
+                  <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-3 bg-white border-t border-slate-100">
+                    {backendCart && !backendCart.is_checkout_allowed && (
+                      <p className="text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        Please remove or update out-of-stock items before checkout.
+                      </p>
+                    )}
+                    <div className="ml-auto">
+                      <button
+                        onClick={() => {
+                          if (backendCart && !backendCart.is_checkout_allowed) {
+                            if (showToast) showToast('Please resolve out-of-stock items before placing order.');
+                            return;
+                          }
+                          setCurrentView('checkout');
+                          window.scrollTo(0, 0);
+                        }}
+                        disabled={backendCart ? !backendCart.is_checkout_allowed : false}
+                        className={`px-8 py-3.5 rounded-md text-xs tracking-wider font-extrabold uppercase transition-all ${
+                          backendCart && !backendCart.is_checkout_allowed
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                            : 'bg-[#006670] hover:bg-[#004e56] text-white shadow-md hover:shadow-premium cursor-pointer'
+                        }`}
+                      >
+                        Place Order
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -59,7 +59,7 @@ export default function CheckoutRoute() {
 
   const handleViewChange = (view: string) => {
     if (view === 'home') router.push('/');
-    else if (view === 'portfolio') router.push('/products');
+    else if (view === 'portfolio') router.push('/search');
     else if (view === 'cart') router.push('/cart');
     else if (view === 'wishlist') router.push('/wishlist');
     else if (view === 'order-success') router.push('/order-success');

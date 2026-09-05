@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Sparkles, Heart, ShoppingBag, Eye, Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -184,7 +185,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
   const displayList = getFilteredAndSorted();
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[60px] lg:pt-[180px]">
+    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[108px] lg:pt-[180px]">
       {/* Hero Banner Section */}
       <div 
         className="relative bg-[#0f172a] text-white py-16 px-6 md:px-12 overflow-hidden shadow-md"
@@ -292,14 +293,14 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
               const hasOffer = combo.is_offer_active;
 
               return (
-                <div
+                <Link
                   key={combo.id}
-                  onClick={() => handleCardClick(combo.slug)}
-                  className="group relative bg-white hover:bg-slate-50 border border-slate-200/60 rounded-[24px] p-4 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_36px_rgba(0,43,46,0.08)] transition-all duration-300 flex flex-col justify-between cursor-pointer h-[440px] overflow-hidden"
+                  href={`/combo-deals/${combo.slug}`}
+                  className="group relative bg-white hover:bg-slate-50 border border-slate-200/60 rounded-[24px] p-4 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_36px_rgba(0,43,46,0.08)] transition-all duration-300 flex flex-col justify-between cursor-pointer h-[440px] overflow-hidden no-underline block"
                 >
                   <div>
                     {/* Badge & Heart */}
-                    <div className="absolute top-6 left-6 z-10 flex flex-col gap-1.5 items-start">
+                    <div className="absolute top-6 left-6 z-10 flex flex-col gap-1.5 items-start pointer-events-none">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-50 text-rose-600 border border-rose-100 uppercase tracking-wider">
                         COMBO DEAL
                       </span>
@@ -310,7 +311,8 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                       )}
                     </div>
                     <button
-                      onClick={(e) => toggleWishlist(combo, e)}
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(combo, e); }}
                       className={`absolute top-6 right-6 z-20 w-8 h-8 rounded-full border bg-white flex items-center justify-center transition-all duration-200 cursor-pointer ${isWishlisted(combo.id) ? 'text-rose-500 border-rose-100 bg-rose-50/50' : 'text-slate-400 hover:text-slate-600 border-slate-100 shadow-sm'}`}
                     >
                       <Heart className={`w-4 h-4 ${isWishlisted(combo.id) ? 'fill-rose-500' : ''}`} />
@@ -331,19 +333,19 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                     </div>
 
                     {/* Metadata */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-left">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FAAZO EXCLUSIVE</p>
                       <h3 className="text-sm font-bold text-slate-800 line-clamp-1 leading-snug tracking-tight">
                         {combo.title}
                       </h3>
                       <p className="text-[11px] font-semibold text-teal-600">
-                        {combo.combo_products.length} products included
+                        {combo.combo_products?.length || 0} products included
                       </p>
                     </div>
                   </div>
 
                   {/* Pricing and Footer */}
-                  <div className="space-y-3.5 mt-4">
+                  <div className="space-y-3.5 mt-4 text-left">
                     <div className="space-y-0.5">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-black text-slate-800">
@@ -371,16 +373,16 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                       <span className={`text-[10px] font-bold ${combo.inventory > 5 ? 'text-emerald-600' : combo.inventory > 0 ? 'text-amber-500' : 'text-rose-500'}`}>
                         {combo.inventory > 5 ? 'In Stock' : combo.inventory > 0 ? 'Low Stock' : 'Out of Stock'}
                       </span>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCardClick(combo.slug); }}
-                          className="p-2 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                      <div className="flex gap-1.5 z-20">
+                        <span
+                          className="p-2 text-slate-400 group-hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all inline-flex items-center justify-center"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </span>
                         <button
-                          onClick={(e) => handleAddToCart(combo, e)}
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(combo, e); }}
                           disabled={combo.inventory <= 0}
                           className="flex items-center justify-center p-2 text-white bg-[#006670] hover:bg-[#004e56] disabled:bg-slate-100 disabled:text-slate-400 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
                           title="Add to Cart"
@@ -390,7 +392,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

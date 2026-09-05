@@ -38,15 +38,18 @@ class GoogleAuthV2Tests(APITestCase):
         }
 
     @patch("apps.authentication.v2_views.GoogleAuthService.verify_google_token")
-    def test_unregistered_google_user_login_rejected(self, mock_verify):
-        """Verify rejection for unregistered Google user logins."""
+    def test_unregistered_google_user_sign_up_creates_account(self, mock_verify):
+        """Verify automatic account creation for new Google users."""
         mock_verify.return_value = self.valid_google_payload
 
         response = self.client.post(self.url, {"id_token": "valid-dummy-id-token"}, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertFalse(response.data["success"])
-        self.assertIn("Please register before signing in", response.data["message"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(response.data["data"]["auth_action"], "GOOGLE_SIGNUP")
+        self.assertEqual(response.data["data"]["user"]["email"], "doctor@clinic.com")
+        self.assertTrue(User.objects.filter(email="doctor@clinic.com", google_sub="google-sub-123456789").exists())
+        self.assertTrue(AuditLog.objects.filter(action="GOOGLE_SIGNUP", status="SUCCESS").exists())
 
     @patch("apps.authentication.v2_views.GoogleAuthService.verify_google_token")
     def test_existing_google_user_login(self, mock_verify):

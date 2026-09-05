@@ -231,7 +231,7 @@ const DealerPortalPage: React.FC<DealerPortalPageProps> = ({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-10 flex flex-col gap-6 animate-pulse">
+      <div className="max-w-4xl mx-auto px-4 pt-[108px] lg:pt-[180px] pb-10 flex flex-col gap-6 animate-pulse">
         <div className="h-8 bg-slate-100 rounded-xl w-56" />
         <div className="h-28 bg-slate-100 rounded-2xl" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -250,7 +250,7 @@ const DealerPortalPage: React.FC<DealerPortalPageProps> = ({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[100px] lg:pt-[180px] pb-20 flex flex-col gap-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[108px] lg:pt-[180px] pb-20 flex flex-col gap-6">
 
       {/* ── Page Header ───────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 flex-wrap">

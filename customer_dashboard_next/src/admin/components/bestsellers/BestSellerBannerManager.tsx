@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Image, Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle } from 'lucide-react';
+import { Image, Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAdmin } from '../../contexts/AdminContext';
 import ImageUploader from '../ImageUploader';
@@ -33,6 +33,7 @@ const BestSellerBannerManager: React.FC = () => {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [isDirty, setIsDirty] = useState(false);
@@ -64,6 +65,7 @@ const BestSellerBannerManager: React.FC = () => {
           banner_image: data.banner_image_url || null,
         });
       }
+      setIsDirty(false);
     } catch {
       // Silently finish loading if no banner is set
     } finally {
@@ -155,25 +157,46 @@ const BestSellerBannerManager: React.FC = () => {
             {banner ? `Last updated: ${new Date(banner.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No banner configured yet'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {banner && (
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50 transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               {deleting ? 'Deleting…' : 'Delete Banner'}
             </button>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving || (!isDirty && !!banner)}
-            className="flex items-center gap-2 px-5 py-2 bg-[#006670] text-white text-sm font-semibold rounded-lg hover:bg-[#004e56] disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving…' : banner ? 'Save Changes' : 'Create Banner'}
-          </button>
+
+          {isDirty || !banner ? (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer shadow-xs bg-[#006670] text-white hover:bg-[#004e56] active:scale-98"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{banner ? 'Save Changes' : 'Create Banner'}</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg bg-slate-100 border border-slate-200 text-slate-600 cursor-default shadow-2xs"
+            >
+              <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+              <span>Saved</span>
+            </button>
+          )}
         </div>
       </div>
 

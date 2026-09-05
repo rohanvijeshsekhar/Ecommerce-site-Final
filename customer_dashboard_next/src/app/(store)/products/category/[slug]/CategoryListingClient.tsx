@@ -21,7 +21,7 @@ export default function CategoryListingClient({ slug, categoryName }: CategoryLi
   };
 
   const handleBackToPortfolio = () => {
-    router.push('/products');
+    router.push('/search');
   };
 
   return (

@@ -81,7 +81,7 @@ from apps.authentication.v2_serializers import (
     ProfileUpdateSerializer,
     TokenRefreshV2Serializer,
 )
-from apps.users.models import UserRole
+from apps.users.models import AuthProvider, UserRole
 
 logger = logging.getLogger("faazo.auth")
 User = get_user_model()

@@ -86,8 +86,8 @@ def post_order_success_notify(self=None, *, order_id: str) -> dict:
             or "Doctor"
         )
 
-        addr_line1 = order.shipping_line1 or (order.shipping_address.address_line1 if order.shipping_address else "")
-        addr_line2 = order.shipping_line2 or (order.shipping_address.address_line2 if order.shipping_address else "")
+        addr_line1 = order.shipping_line1 or (order.shipping_address.line1 if order.shipping_address else "")
+        addr_line2 = order.shipping_line2 or (order.shipping_address.line2 if order.shipping_address else "")
         city = order.shipping_city or (order.shipping_address.city if order.shipping_address else "")
         state = order.shipping_state or (order.shipping_address.state if order.shipping_address else "")
         pincode = order.shipping_pincode or (order.shipping_address.pincode if order.shipping_address else "")

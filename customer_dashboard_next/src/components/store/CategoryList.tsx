@@ -154,7 +154,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block w-full py-20 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="categories">
+      <section className="hidden md:block w-full py-20 select-none bg-[#F8FAFC]" id="categories">
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-12">
@@ -236,7 +236,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       </section>
 
       {/* Mobile view */}
-      <section className="block md:hidden w-full py-12 select-none bg-[#F8FAFC] border-y border-slate-200/60" id="categories-mobile">
+      <section className="block md:hidden w-full py-12 select-none bg-[#F8FAFC]" id="categories-mobile">
         <div className="w-full px-5">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">

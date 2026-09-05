@@ -162,7 +162,7 @@ const FlipkartWishlist: React.FC<FlipkartWishlistProps> = ({
 
   // ── Standalone mode — full page with sidebar ──
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[104px] lg:pt-[180px] pb-16 font-sans select-none text-left">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[108px] lg:pt-[180px] pb-16 font-sans select-none text-left">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {!isAuthenticated ? (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-14 text-center flex flex-col items-center">

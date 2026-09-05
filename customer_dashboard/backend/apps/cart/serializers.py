@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.products.models import Product
 from apps.pricing.models import ProductPricing
 from apps.inventory.models import ProductInventory
+from apps.inventory.services import get_product_stock_info
 from .models import Cart, CartItem
 
 class ProductCartSerializer(serializers.ModelSerializer):
@@ -11,7 +12,7 @@ class ProductCartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ["id", "name", "slug", "image_url", "category_name", "sku"]
+        fields = ["id", "name", "slug", "image_url", "category_name", "sku", "status", "is_deleted"]
 
     def get_image_url(self, obj):
         primary = obj.images.filter(is_primary=True).first()
@@ -32,13 +33,20 @@ class CartItemSerializer(serializers.ModelSerializer):
     discount_percentage = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     stock_available = serializers.SerializerMethodField()
+    is_in_stock = serializers.SerializerMethodField()
+    has_sufficient_stock = serializers.SerializerMethodField()
+    validation_error = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
         fields = [
             "id", "product", "product_id", "quantity", "is_saved_for_later", "price",
-            "original_price", "discount_percentage", "total_price", "stock_available"
+            "original_price", "discount_percentage", "total_price", "stock_available",
+            "is_in_stock", "has_sufficient_stock", "validation_error"
         ]
+
+    def _get_stock_info(self, obj):
+        return get_product_stock_info(obj.product)
 
     def get_price(self, obj):
         user = self.context['request'].user
@@ -68,10 +76,33 @@ class CartItemSerializer(serializers.ModelSerializer):
         return round(self.get_price(obj) * obj.quantity, 2)
 
     def get_stock_available(self, obj):
-        inventory = getattr(obj.product, 'inventory', None)
-        if not inventory:
-            return 0
-        return inventory.available_stock
+        info = self._get_stock_info(obj)
+        return info["available_stock"]
+
+    def get_is_in_stock(self, obj):
+        info = self._get_stock_info(obj)
+        return info["is_available"]
+
+    def get_has_sufficient_stock(self, obj):
+        info = self._get_stock_info(obj)
+        if not info["is_available"]:
+            return False
+        if info["allow_backorders"]:
+            return True
+        return obj.quantity <= info["available_stock"]
+
+    def get_validation_error(self, obj):
+        prod = obj.product
+        if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+            return f"'{prod.name}' is no longer available."
+
+        info = self._get_stock_info(obj)
+        if not info["allow_backorders"]:
+            if info["available_stock"] <= 0:
+                return f"'{prod.name}' is currently out of stock."
+            if obj.quantity > info["available_stock"]:
+                return f"Only {info['available_stock']} unit(s) of '{prod.name}' available. Please reduce quantity."
+        return None
 
     def validate(self, data):
         product = data.get("product")
@@ -88,14 +119,19 @@ class CartItemSerializer(serializers.ModelSerializer):
         if not product:
             raise serializers.ValidationError({"product_id": "Product details not found."})
 
-        inventory = getattr(product, 'inventory', None)
-        if not inventory:
-            raise serializers.ValidationError({"quantity": "Inventory details not found for this product."})
+        if getattr(product, "is_deleted", False) or getattr(product, "status", "") != "published":
+            raise serializers.ValidationError({"product_id": f"'{product.name}' is no longer available."})
 
-        if not inventory.allow_backorders and quantity > inventory.available_stock:
-            raise serializers.ValidationError(
-                {"quantity": f"Insufficient stock available. Only {inventory.available_stock} units left."}
-            )
+        stock_info = get_product_stock_info(product)
+        if not stock_info["allow_backorders"]:
+            if stock_info["available_stock"] <= 0:
+                raise serializers.ValidationError(
+                    {"quantity": f"'{product.name}' is currently out of stock."}
+                )
+            if quantity > stock_info["available_stock"]:
+                raise serializers.ValidationError(
+                    {"quantity": f"Insufficient stock available. Only {stock_info['available_stock']} unit(s) left for '{product.name}'."}
+                )
 
         return data
 
@@ -105,6 +141,8 @@ class CartSerializer(serializers.ModelSerializer):
     saved_items = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
     saved_count = serializers.SerializerMethodField()
+    is_checkout_allowed = serializers.SerializerMethodField()
+    stock_warnings = serializers.SerializerMethodField()
 
     mrp_subtotal = serializers.SerializerMethodField()
     selling_subtotal = serializers.SerializerMethodField()
@@ -118,6 +156,7 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = [
             "id", "items", "saved_items", "item_count", "saved_count",
+            "is_checkout_allowed", "stock_warnings",
             "mrp_subtotal", "selling_subtotal", "taxable_subtotal",
             "savings", "shipping", "gst_amount", "total_amount"
         ]
@@ -138,6 +177,53 @@ class CartSerializer(serializers.ModelSerializer):
 
     def get_item_count(self, obj):
         return sum(item.quantity for item in self._get_active_items(obj))
+
+    def get_is_checkout_allowed(self, obj):
+        active_items = self._get_active_items(obj)
+        if not active_items.exists():
+            return False
+        for item in active_items:
+            prod = item.product
+            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+                return False
+            stock_info = get_product_stock_info(prod)
+            if not stock_info["allow_backorders"] and (stock_info["available_stock"] <= 0 or item.quantity > stock_info["available_stock"]):
+                return False
+        return True
+
+    def get_stock_warnings(self, obj):
+        warnings = []
+        for item in self._get_active_items(obj):
+            prod = item.product
+            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+                warnings.append({
+                    "product_id": str(prod.id),
+                    "product_name": prod.name,
+                    "message": f"'{prod.name}' is no longer available.",
+                    "stock_available": 0,
+                    "requested_quantity": item.quantity,
+                })
+                continue
+
+            stock_info = get_product_stock_info(prod)
+            if not stock_info["allow_backorders"]:
+                if stock_info["available_stock"] <= 0:
+                    warnings.append({
+                        "product_id": str(prod.id),
+                        "product_name": prod.name,
+                        "message": f"'{prod.name}' is currently out of stock.",
+                        "stock_available": 0,
+                        "requested_quantity": item.quantity,
+                    })
+                elif item.quantity > stock_info["available_stock"]:
+                    warnings.append({
+                        "product_id": str(prod.id),
+                        "product_name": prod.name,
+                        "message": f"Only {stock_info['available_stock']} unit(s) of '{prod.name}' available (requested: {item.quantity}).",
+                        "stock_available": stock_info["available_stock"],
+                        "requested_quantity": item.quantity,
+                    })
+        return warnings
 
     def get_saved_count(self, obj):
         return self._get_saved_items(obj).count()

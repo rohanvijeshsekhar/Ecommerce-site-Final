@@ -31,7 +31,9 @@ export async function serverFetch<T>(
     params?: Record<string, string | number | boolean | undefined>;
   }
 ): Promise<ServerApiResponse<T>> {
-  const url = new URL(endpoint, API_BASE_URL);
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  const url = new URL(cleanEndpoint, baseUrl);
 
   // Add query params
   if (options?.params) {
@@ -60,14 +62,18 @@ export async function serverFetch<T>(
     const res = await fetch(url.toString(), fetchOptions);
 
     if (!res.ok) {
-      console.error(`[serverFetch] ${endpoint} returned ${res.status}`);
+      if (res.status === 404) {
+        // 404 is an expected Not Found state (e.g. invalid or legacy slug)
+        return { success: false, message: `Resource not found (404)` };
+      }
+      console.warn(`[serverFetch] ${endpoint} returned ${res.status}`);
       return { success: false, message: `API returned ${res.status}` };
     }
 
     const json = await res.json();
     return json;
   } catch (error) {
-    console.error(`[serverFetch] Failed to fetch ${endpoint}:`, error);
+    console.warn(`[serverFetch] Failed to fetch ${endpoint}:`, error);
     return { success: false, message: 'Server fetch failed' };
   }
 }

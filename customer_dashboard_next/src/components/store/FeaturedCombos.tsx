@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import { ArrowRight, ShoppingCart, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
@@ -13,8 +14,8 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 interface FeaturedCombosProps {
-  onComboClick: (slug: string) => void;
-  setCurrentView: (view: any) => void;
+  onComboClick?: (slug: string) => void;
+  setCurrentView?: (view: any) => void;
   setCartItems: React.SetStateAction<any>;
   wishlistItems: CartItem[];
   setWishlistItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
@@ -59,6 +60,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
   const isWishlisted = (id: string) => wishlistItems.some(item => item.id === id);
 
   const toggleWishlist = (combo: any, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
       onOpenLoginModal();
@@ -87,6 +89,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
   };
 
   const handleAddToCart = (combo: any, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
       onOpenLoginModal();
@@ -111,22 +114,37 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
       slug: combo.slug
     };
 
-    setCartItems((prev: any) => {
-      const existing = prev.find((i: any) => i.id === combo.id);
+    setCartItems((prev: CartItem[]) => {
+      const existing = prev.find(i => i.id === combo.id);
       if (existing) {
-        return prev.map((i: any) => i.id === combo.id ? { ...i, qty: i.qty + 1 } : i);
+        return prev.map(i => i.id === combo.id ? { ...i, qty: i.qty + 1 } : i);
       }
       return [...prev, item];
     });
-    showToast('Added to Cart');
+    showToast(`Added ${combo.title} to cart`);
   };
 
-  if (loading || combos.length === 0) return null;
+  if (loading) {
+    return (
+      <section className="w-full py-16 bg-[#FAFBFB]">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="h-8 w-64 bg-slate-200 animate-pulse rounded-lg mb-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(n => (
+              <div key={n} className="h-96 bg-slate-100 animate-pulse rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (combos.length === 0) return null;
 
   return (
     <>
       {/* Desktop view */}
-      <section className="hidden md:block w-full bg-[#F8FAFC] border-y border-slate-200/60 py-16 select-none" id="featured-combos">
+      <section className="hidden md:block w-full py-16 bg-[#FAFBFB] relative overflow-hidden select-none" id="featured-combos">
         <div className="max-w-7xl mx-auto px-8">
         <style>{`
           .combo-swiper-pagination .swiper-pagination-bullet {
@@ -157,13 +175,13 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
               Unlock massive savings with our pre-packaged dental tool setups and clinician bundles.
             </p>
           </div>
-          <button
-            onClick={() => { setCurrentView('combo-deals'); window.scrollTo(0, 0); }}
+          <Link
+            href="/combo-deals"
             className="group inline-flex items-center gap-1.5 text-sm font-bold text-[#006670] hover:text-[#004e56] transition-colors cursor-pointer"
           >
             View All Combo Deals
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
+          </Link>
         </div>
 
         {/* Swiper Slider */}
@@ -192,9 +210,9 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
 
               return (
                 <SwiperSlide key={combo.id}>
-                  <div
-                    className="group relative bg-white hover:bg-slate-50 rounded-[24px] p-5 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-500 ease-out cursor-pointer h-[445px] overflow-hidden flex flex-col justify-between"
-                    onClick={() => onComboClick(combo.slug)}
+                  <Link
+                    href={`/combo-deals/${combo.slug}`}
+                    className="group relative bg-white hover:bg-slate-50 rounded-[24px] p-5 border border-slate-100 shadow-sm hover:shadow-premium transition-all duration-500 ease-out cursor-pointer h-[445px] overflow-hidden flex flex-col justify-between block text-left"
                   >
                     <div>
                       {/* Badge / Wishlist */}
@@ -202,6 +220,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                         COMBO DEAL
                       </span>
                       <button
+                        type="button"
                         onClick={(e) => toggleWishlist(combo, e)}
                         className={`absolute top-8 right-8 z-20 w-8 h-8 rounded-full border bg-white flex items-center justify-center transition-all duration-200 cursor-pointer ${isWishlisted(combo.id) ? 'text-rose-500 border-rose-100 bg-rose-50' : 'text-slate-400 hover:text-slate-600 border-slate-100 shadow-xs'}`}
                       >
@@ -224,7 +243,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                       {/* Info */}
                       <div className="space-y-1 text-left">
                         <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase">FAAZO EXCLUSIVE</span>
-                        <h3 className="text-sm font-bold text-slate-800 line-clamp-1 leading-snug tracking-tight">
+                        <h3 className="text-sm font-bold text-slate-800 line-clamp-1 leading-snug tracking-tight group-hover:text-[#006670] transition-colors">
                           {combo.title}
                         </h3>
                         <p className="text-xs font-semibold text-teal-600">
@@ -263,6 +282,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                           {combo.inventory > 5 ? 'In Stock' : combo.inventory > 0 ? 'Low Stock' : 'Out of Stock'}
                         </span>
                         <button
+                          type="button"
                           onClick={(e) => handleAddToCart(combo, e)}
                           disabled={combo.inventory <= 0}
                           className="flex items-center justify-center p-2 text-white bg-[#006670] hover:bg-[#004e56] disabled:bg-slate-100 disabled:text-slate-400 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
@@ -271,7 +291,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </SwiperSlide>
               );
             })}
@@ -300,12 +320,12 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
             </h2>
             <p className="text-xs text-slate-400 font-medium">Pre-packaged dental setups.</p>
           </div>
-          <button
-            onClick={() => { setCurrentView('combo-deals'); window.scrollTo(0, 0); }}
+          <Link
+            href="/combo-deals"
             className="text-xs font-bold text-[#006670] hover:text-[#004e56] shrink-0"
           >
             View All
-          </button>
+          </Link>
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x snap-mandatory">
@@ -316,10 +336,10 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
             const discountPct = originalPriceVal > 0 ? Math.round((youSaveVal / originalPriceVal) * 100) : 0;
 
             return (
-              <div
+              <Link
                 key={combo.id}
-                onClick={() => onComboClick(combo.slug)}
-                className="w-64 bg-white border border-slate-200/50 rounded-2xl p-4 shrink-0 snap-start shadow-xs flex flex-col justify-between h-[360px]"
+                href={`/combo-deals/${combo.slug}`}
+                className="w-64 bg-white border border-slate-200/50 rounded-2xl p-4 shrink-0 snap-start shadow-xs flex flex-col justify-between h-[360px] block text-left"
               >
                 <div>
                   <div className="relative aspect-square rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-1 mb-3 overflow-hidden">
@@ -353,6 +373,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                       {combo.inventory > 0 ? 'In Stock' : 'Out of Stock'}
                     </span>
                     <button
+                      type="button"
                       onClick={(e) => handleAddToCart(combo, e)}
                       disabled={combo.inventory <= 0}
                       className="p-1.5 text-white bg-[#006670] rounded-lg cursor-pointer"
@@ -361,7 +382,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

@@ -15,7 +15,7 @@ export default function CartPage() {
 
   const handleViewChange = (view: string) => {
     if (view === 'home') router.push('/');
-    else if (view === 'portfolio') router.push('/products');
+    else if (view === 'portfolio') router.push('/search');
     else if (view === 'checkout') router.push('/checkout');
     else if (view === 'wishlist') router.push('/wishlist');
     else if (view === 'my-orders') {

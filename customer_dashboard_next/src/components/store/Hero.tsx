@@ -62,7 +62,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
   ];
 
   return (
-    <div className="relative w-full bg-transparent pt-[60px] md:pt-[76px] lg:pt-[180px] px-0 md:px-8">
+    <div className="relative w-full bg-transparent pt-[108px] lg:pt-[180px] px-0 md:px-8">
       <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
         <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
@@ -99,21 +99,44 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
               <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] flex items-center">
                 {/* Background image */}
                 <div className="absolute inset-0 w-full h-full z-0 select-none">
-                  <Image
-                    src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
-                    alt={slide.heading}
-                    fill
-                    priority={idx === 0}
-                    sizes="100vw"
-                    className="object-cover object-[center_right] md:object-center z-0 select-none"
-                  />
+                  {slide.mobile_image_url ? (
+                    <>
+                      {/* Mobile view image (exact 3:3.7 ratio from admin panel) */}
+                      <Image
+                        src={slide.mobile_image_url}
+                        alt={slide.heading}
+                        fill
+                        priority={idx === 0}
+                        sizes="100vw"
+                        className="object-cover object-center z-0 select-none md:hidden"
+                      />
+                      {/* Desktop view image */}
+                      <Image
+                        src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
+                        alt={slide.heading}
+                        fill
+                        priority={idx === 0}
+                        sizes="100vw"
+                        className="object-cover md:object-center z-0 select-none hidden md:block"
+                      />
+                    </>
+                  ) : (
+                    <Image
+                      src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
+                      alt={slide.heading}
+                      fill
+                      priority={idx === 0}
+                      sizes="100vw"
+                      className="object-cover object-[center_right] md:object-center z-0 select-none"
+                    />
+                  )}
                 </div>
 
-                {/* Desktop Content Overlay */}
-                <div className="hidden md:flex relative z-10 max-w-7xl mx-auto w-full px-8 md:px-14 lg:px-20 justify-start items-center h-full pointer-events-none">
-                  <div className="text-left select-none pointer-events-auto max-w-[540px] lg:max-w-[640px]">
+                {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
+                <div className="relative z-10 max-w-7xl mx-auto w-full px-6 sm:px-8 md:px-14 lg:px-20 flex justify-start items-center h-full pointer-events-none">
+                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px] py-4">
                     {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-[28px] lg:text-[40px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.08] mb-3 flex flex-col font-display text-left">
+                      <h1 className="text-[26px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2.5 md:mb-3 flex flex-col font-display text-left">
                         {isSecondSlide ? (
                           <>
                             <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
@@ -139,7 +162,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                     )}
 
                     {slide.subheading && (
-                      <p className="text-xs lg:text-sm text-slate-600 font-medium mb-4 line-clamp-2 max-w-md">
+                      <p className="text-[13px] sm:text-[14px] md:text-sm text-slate-600 font-medium mb-3 md:mb-4 line-clamp-2 max-w-xs md:max-w-md">
                         {slide.subheading}
                       </p>
                     )}
@@ -148,7 +171,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                       <div className="flex justify-start pt-1">
                         <a
                           href={slide.cta_link || '#products'}
-                          className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                          className="group inline-flex items-center gap-2 sm:gap-2.5 px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[13px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
                         >
                           <span>{slide.cta_text}</span>
                           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -156,26 +179,6 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Mobile Content Overlay (Left-aligned & clean) */}
-                <div className="flex md:hidden relative z-10 w-full h-full flex-col items-start justify-end p-6 pb-16 select-none text-left">
-                  <h2 className="text-[14px] font-black text-slate-800 uppercase tracking-tight font-display">
-                    {isSecondSlide ? 'DENTAL SOLUTIONS' : 'CLINICAL EQUIPMENT'}
-                  </h2>
-                  <span className="text-[28px] font-display font-black text-[#005F63] tracking-tight -mt-1 mb-0.5">
-                    {isSecondSlide ? 'Summit' : 'Carnival'}
-                  </span>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-1 font-display">
-                    {slide.heading.toUpperCase()}
-                  </p>
-                  <div className="w-8 h-[1.5px] bg-[#005F63]/40 mb-1.5" />
-                  <span className="text-[11px] font-black text-[#005F63] uppercase tracking-wider mb-1 font-display">
-                    {isSecondSlide ? 'UP TO 40% OFF' : 'UP TO 50% OFF'}
-                  </span>
-                  <p className="text-[8px] font-extrabold text-slate-600 tracking-wide uppercase font-display">
-                    {isSecondSlide ? '3SHAPE | MEDIT | CARESTREAM' : 'NSK | WOODPECKER | DENTSPLY SIRONA'}
-                  </p>
                 </div>
               </div>
             </SwiperSlide>

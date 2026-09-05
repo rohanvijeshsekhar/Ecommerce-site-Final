@@ -86,7 +86,13 @@ class CartAddView(APIView):
     def post(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
         prod_id = request.data.get("product_id")
-        qty = int(request.data.get("quantity", 1))
+        try:
+            qty = int(request.data.get("quantity", 1))
+        except (ValueError, TypeError):
+            qty = 1
+
+        if qty <= 0:
+            return error_response("Quantity must be at least 1.", status_code=status.HTTP_400_BAD_REQUEST)
 
         if not prod_id:
             return error_response("product_id is required.", status_code=status.HTTP_400_BAD_REQUEST)
@@ -95,25 +101,35 @@ class CartAddView(APIView):
             product = Product.objects.filter(id=prod_id).first()
         else:
             product = Product.objects.filter(slug=prod_id).first()
-        if not product:
-            return error_response("Product not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        if not created:
-            cart_item.quantity += qty
-        else:
-            cart_item.quantity = qty
+        if not product or product.is_deleted or product.status != "published":
+            return error_response("Product is unavailable or does not exist.", status_code=status.HTTP_404_NOT_FOUND)
 
+        existing_item = CartItem.objects.filter(cart=cart, product=product, is_saved_for_later=False).first()
+        target_qty = (existing_item.quantity + qty) if existing_item else qty
+
+        # Validate with serializer
         serializer = CartItemSerializer(
-            cart_item,
-            data={"product_id": product.id, "quantity": cart_item.quantity},
+            existing_item or CartItem(cart=cart, product=product),
+            data={"product_id": product.id, "quantity": target_qty},
             partial=True,
             context={"request": request}
         )
         if not serializer.is_valid():
-            return error_response(serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+            err_msg = serializer.errors.get("quantity", [serializer.errors])[0] if isinstance(serializer.errors.get("quantity"), list) else str(serializer.errors)
+            return error_response(
+                err_msg,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code="INSUFFICIENT_STOCK",
+                details=serializer.errors
+            )
 
-        serializer.save()
+        if existing_item:
+            existing_item.quantity = target_qty
+            existing_item.save(update_fields=["quantity"])
+        else:
+            CartItem.objects.create(cart=cart, product=product, quantity=target_qty)
+
         cart_serializer = CartSerializer(cart, context={"request": request})
         return success_response(data=cart_serializer.data, message="Product added to cart.")
 
@@ -122,22 +138,36 @@ class CartItemDetailView(APIView):
 
     def patch(self, request, pk):
         try:
-            cart_item = CartItem.objects.select_related('cart').get(pk=pk, cart__user=request.user)
+            cart_item = CartItem.objects.select_related('cart', 'product').get(pk=pk, cart__user=request.user)
         except CartItem.DoesNotExist:
             return error_response("Cart item not found.", status_code=status.HTTP_404_NOT_FOUND)
 
-        qty = request.data.get("quantity")
-        if qty is None:
+        qty_raw = request.data.get("quantity")
+        if qty_raw is None:
             return error_response("quantity is required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            qty = int(qty_raw)
+        except (ValueError, TypeError):
+            return error_response("Invalid quantity.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        if qty <= 0:
+            return error_response("Quantity must be at least 1.", status_code=status.HTTP_400_BAD_REQUEST)
 
         serializer = CartItemSerializer(
             cart_item,
-            data={"quantity": int(qty)},
+            data={"quantity": qty},
             partial=True,
             context={"request": request}
         )
         if not serializer.is_valid():
-            return error_response(serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+            err_msg = serializer.errors.get("quantity", [serializer.errors])[0] if isinstance(serializer.errors.get("quantity"), list) else str(serializer.errors)
+            return error_response(
+                err_msg,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code="INSUFFICIENT_STOCK",
+                details=serializer.errors
+            )
 
         serializer.save()
         cart_serializer = CartSerializer(cart_item.cart, context={"request": request})

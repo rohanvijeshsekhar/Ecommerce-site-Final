@@ -142,11 +142,8 @@ class OrderCancelView(APIView):
 
                 # Release inventory reservations
                 if old_status in [OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.PENDING_PAYMENT]:
-                    for item in order.items.all():
-                        inventory = getattr(item.product, "inventory", None)
-                        if inventory:
-                            inventory.reserved_stock = max(0, inventory.reserved_stock - item.quantity)
-                            inventory.save()
+                    from apps.inventory.services import release_items_stock
+                    release_items_stock(order.items.all())
 
                 serializer = OrderSerializer(order)
                 return success_response(

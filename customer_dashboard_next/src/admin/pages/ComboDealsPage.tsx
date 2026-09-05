@@ -43,6 +43,24 @@ const STATUS_VARIANT: Record<ComboDeal['status'], 'success' | 'warning' | 'neutr
   archived: 'neutral',
 };
 
+const formatErrorMessage = (e: any, fallback = 'Operation failed'): string => {
+  if (e?.response?.data) {
+    const data = e.response.data;
+    if (data.details && Array.isArray(data.details) && data.details.length > 0) {
+      return data.details.map((d: any) => `${d.field ? `${d.field}: ` : ''}${d.issue || d.message}`).join(', ');
+    }
+    if (data.errors && typeof data.errors === 'object') {
+      const firstKey = Object.keys(data.errors)[0];
+      const firstVal = data.errors[firstKey];
+      const valStr = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
+      return `${firstKey}: ${valStr}`;
+    }
+    if (data.message) return data.message;
+    if (data.error?.message) return data.error.message;
+  }
+  return e?.message || fallback;
+};
+
 const ComboDealsPage: React.FC = () => {
   useBreadcrumbSync([
     { label: 'Catalogue', path: '/admin/combos' },
@@ -159,7 +177,7 @@ const ComboDealsPage: React.FC = () => {
         }
       }
     } catch (e: any) {
-      toast.error('Update Failed', e.message || 'Failed to update banner settings');
+      toast.error('Update Failed', formatErrorMessage(e, 'Failed to update banner settings'));
     } finally {
       setSavingBanner(false);
     }
@@ -181,7 +199,7 @@ const ComboDealsPage: React.FC = () => {
         toast.success('Status Updated', `Combo status set to ${nextStatus}.`);
       }
     } catch (e: any) {
-      toast.error('Failed', e.message || 'Failed to update status');
+      toast.error('Failed', formatErrorMessage(e, 'Failed to update status'));
     }
   };
 
@@ -194,7 +212,7 @@ const ComboDealsPage: React.FC = () => {
         toast.success('Featured Updated', `Combo featured status set to ${nextFeatured ? 'Yes' : 'No'}.`);
       }
     } catch (e: any) {
-      toast.error('Failed', e.message || 'Failed to update featured flag');
+      toast.error('Failed', formatErrorMessage(e, 'Failed to update featured flag'));
     }
   };
 
@@ -207,7 +225,7 @@ const ComboDealsPage: React.FC = () => {
         toast.success('Duplicated', 'Combo deal duplicated successfully as draft.');
       }
     } catch (e: any) {
-      toast.error('Duplicate Failed', e.message || 'Failed to duplicate combo');
+      toast.error('Duplicate Failed', formatErrorMessage(e, 'Failed to duplicate combo'));
     }
   };
 
@@ -222,7 +240,7 @@ const ComboDealsPage: React.FC = () => {
         setDeleteTarget(null);
       }
     } catch (e: any) {
-      toast.error('Delete Failed', e.message || 'Failed to delete combo');
+      toast.error('Delete Failed', formatErrorMessage(e, 'Failed to delete combo'));
     } finally {
       setDeleting(false);
     }
@@ -313,9 +331,15 @@ const ComboDealsPage: React.FC = () => {
 
   // Steps handling
   const handleNextStep = () => {
-    if (activeStep === 1 && !form.title.trim()) {
-      toast.error('Validation Error', 'Please enter a combo title.');
-      return;
+    if (activeStep === 1) {
+      if (!form.title.trim()) {
+        toast.error('Validation Error', 'Please enter a combo title.');
+        return;
+      }
+      if (form.short_description && form.short_description.length > 500) {
+        toast.error('Validation Error', 'Short description cannot exceed 500 characters. Use Step 6 for detailed/full descriptions.');
+        return;
+      }
     }
     if (activeStep === 2 && selectedProducts.length === 0) {
       toast.error('Validation Error', 'Please select at least one product.');
@@ -327,6 +351,16 @@ const ComboDealsPage: React.FC = () => {
         return;
       }
     }
+    if (activeStep === 7) {
+      if (form.meta_title && form.meta_title.length > 150) {
+        toast.error('Validation Error', 'Meta title cannot exceed 150 characters.');
+        return;
+      }
+      if (form.meta_keywords && form.meta_keywords.length > 255) {
+        toast.error('Validation Error', 'Meta keywords cannot exceed 255 characters.');
+        return;
+      }
+    }
     setActiveStep(prev => Math.min(prev + 1, 7));
   };
 
@@ -335,6 +369,27 @@ const ComboDealsPage: React.FC = () => {
   };
 
   const handleSaveCombo = async () => {
+    if (!form.title.trim()) {
+      toast.error('Validation Error', 'Please enter a combo title in Step 1.');
+      setActiveStep(1);
+      return;
+    }
+    if (form.short_description && form.short_description.length > 500) {
+      toast.error('Validation Error', 'Short description cannot exceed 500 characters.');
+      setActiveStep(1);
+      return;
+    }
+    if (selectedProducts.length === 0) {
+      toast.error('Validation Error', 'Please select at least one product in Step 2.');
+      setActiveStep(2);
+      return;
+    }
+    if (parseFloat(form.combo_price) <= 0) {
+      toast.error('Validation Error', 'Please enter a valid combo price greater than 0 in Step 3.');
+      setActiveStep(3);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload: any = {
@@ -398,7 +453,7 @@ const ComboDealsPage: React.FC = () => {
       fetchCombos();
       setIsEditing(false);
     } catch (e: any) {
-      toast.error('Failed to save', e.message || 'Save operations failed.');
+      toast.error('Failed to save', formatErrorMessage(e, 'Save operations failed.'));
     } finally {
       setSaving(false);
     }
@@ -424,7 +479,7 @@ const ComboDealsPage: React.FC = () => {
         toast.success('Image Uploaded', 'Gallery slide added.');
       }
     } catch (e: any) {
-      toast.error('Upload failed', e.message || 'Gallery image upload failed');
+      toast.error('Upload failed', formatErrorMessage(e, 'Gallery image upload failed'));
     }
   };
 
@@ -437,7 +492,7 @@ const ComboDealsPage: React.FC = () => {
         toast.success('Image Deleted', 'Gallery slide removed.');
       }
     } catch (e: any) {
-      toast.error('Delete failed', e.message || 'Failed to delete gallery image.');
+      toast.error('Delete failed', formatErrorMessage(e, 'Failed to delete gallery image.'));
     }
   };
 
@@ -612,14 +667,21 @@ const ComboDealsPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Short Description</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Short Description</label>
+                    <span className={`text-[11px] font-mono ${form.short_description.length > 500 ? 'text-rose-500 font-bold' : form.short_description.length > 450 ? 'text-amber-500 font-semibold' : 'text-slate-400'}`}>
+                      {form.short_description.length}/500 chars
+                    </span>
+                  </div>
                   <textarea
                     value={form.short_description}
+                    maxLength={500}
                     onChange={e => setForm(prev => ({ ...prev, short_description: e.target.value }))}
-                    placeholder="A brief overview shown on listing cards..."
+                    placeholder="A brief overview shown on listing cards (max 500 characters)..."
                     rows={3}
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#005B63]/20 bg-white resize-none"
+                    className={`w-full px-4 py-3 rounded-2xl border ${form.short_description.length > 500 ? 'border-rose-400 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-[#005B63]/20'} focus:outline-none focus:ring-2 bg-white resize-none`}
                   />
+                  <p className="text-[11px] text-slate-400">Card summary. For long paragraphs and clinical specs, use Step 6 (Detailed Description).</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -927,9 +989,13 @@ const ComboDealsPage: React.FC = () => {
             {activeStep === 7 && (
               <div className="space-y-5 max-w-2xl">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Meta Title</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Meta Title</label>
+                    <span className="text-[11px] font-mono text-slate-400">{form.meta_title.length}/150 chars</span>
+                  </div>
                   <input
                     type="text"
+                    maxLength={150}
                     value={form.meta_title}
                     onChange={e => setForm(prev => ({ ...prev, meta_title: e.target.value }))}
                     placeholder="FAAZO Premium Dental Combo - Super Saver Deal"
@@ -947,9 +1013,13 @@ const ComboDealsPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Meta Keywords</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Meta Keywords</label>
+                    <span className="text-[11px] font-mono text-slate-400">{form.meta_keywords.length}/255 chars</span>
+                  </div>
                   <input
                     type="text"
+                    maxLength={255}
                     value={form.meta_keywords}
                     onChange={e => setForm(prev => ({ ...prev, meta_keywords: e.target.value }))}
                     placeholder="dental combo, dentist startup bundle, discount dental equipment"

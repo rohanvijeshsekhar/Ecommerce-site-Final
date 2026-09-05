@@ -166,7 +166,7 @@ export default function SolutionDetailPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] lg:pt-[180px] pb-24 text-left select-none">
+    <div className="min-h-screen bg-[#F8FAFC] pt-[108px] lg:pt-[180px] pb-24 text-left select-none">
       {/* Banner & Header */}
       <div className="relative w-full h-[320px] md:h-[400px] bg-slate-950 overflow-hidden">
         <img

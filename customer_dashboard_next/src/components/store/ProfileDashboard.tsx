@@ -2385,11 +2385,11 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // ─── Main layout ─────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-[#f7fafa] min-h-screen pt-[62px] lg:pt-[180px] pb-24 font-sans select-none text-left">
+    <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[180px] pb-24 font-sans select-none text-left">
       <Toast message={localToast} />
 
       {/* Mobile header bar */}
-      <div className="lg:hidden fixed top-[62px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between shadow-sm">
+      <div className="lg:hidden fixed top-[100px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between shadow-sm">
         <span className="text-xs font-black uppercase tracking-widest text-[#005B63]">
           {navItems.find(n => n.id === activeSection)?.label || 'Dashboard'}
         </span>

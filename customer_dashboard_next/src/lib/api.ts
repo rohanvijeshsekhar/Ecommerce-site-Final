@@ -79,7 +79,13 @@ api.interceptors.request.use(
     }
 
     // Wait for initial auth refresh if pending to prevent unauthenticated race requests on page load
-    if (_initialAuthPromise && !config.url?.includes('auth/v2/refresh')) {
+    if (!_accessToken && typeof window !== 'undefined' && !!localStorage.getItem('faazo_user') && !config.url?.includes('auth/v2/refresh')) {
+      try {
+        await performInitialAuth();
+      } catch {
+        // ignore
+      }
+    } else if (_initialAuthPromise && !config.url?.includes('auth/v2/refresh')) {
       try {
         await _initialAuthPromise;
       } catch {
@@ -177,6 +183,7 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
+            originalRequest._retry = true;
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })

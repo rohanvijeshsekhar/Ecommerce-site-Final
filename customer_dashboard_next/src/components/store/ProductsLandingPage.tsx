@@ -471,7 +471,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
         }, 0);
 
     return (
-      <div className="fixed top-[60px] bottom-[52px] left-0 right-0 bg-white flex flex-col font-sans select-none overflow-hidden">
+      <div className="fixed top-[100px] bottom-[52px] left-0 right-0 bg-white flex flex-col font-sans select-none overflow-hidden">
         {/* Header Search Bar */}
         <div className="p-3 border-b border-slate-100 bg-[#f0f0f0]">
           <div className="flex items-center gap-2 bg-white border border-[#006670]/15 rounded-full px-3.5 py-1.5 focus-within:border-[#006670]/40 transition-all shadow-sm">
@@ -642,7 +642,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
   }
 
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[112px] lg:pt-[180px] text-slate-800 select-none overflow-x-hidden font-sans">
+    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[180px] text-slate-800 select-none overflow-x-hidden font-sans">
 
       {/* 1. Premium Hero Section with Full-Bleed Background Image */}
       <section className="relative w-full overflow-hidden select-none bg-white">

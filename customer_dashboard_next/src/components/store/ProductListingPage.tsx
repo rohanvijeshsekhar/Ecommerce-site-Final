@@ -691,6 +691,9 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
     const result = [...dbProducts];
 
     // Special selectors
+    if (category === 'All Products' || category === 'All' || category.toLowerCase() === 'all products' || category.toLowerCase() === 'all' || !category) {
+      return result;
+    }
     if (category === 'Best Sellers') return result.filter(p => p.isBestSeller);
     if (category === 'New Launches') return result.filter(p => p.isNewLaunch);
 
@@ -868,7 +871,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAFBFB] text-slate-800 select-none pb-20 font-sans pt-[62px] lg:pt-[180px]">
+    <div className="w-full bg-[#FAFBFB] text-slate-800 select-none pb-20 font-sans pt-[108px] lg:pt-[180px]">
 
       {/* Category Header Banner */}
       <div className="max-w-7xl mx-auto px-4 md:px-12 pt-1 pb-3 border-b border-slate-200/60">

@@ -12,7 +12,7 @@ export const WishlistPage: React.FC = () => {
   const [shareProduct, setShareProduct] = useState<any>(null);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-left pt-[104px] lg:pt-[180px] pb-16 font-sans select-none">
+    <div className="min-h-screen bg-slate-50 text-left pt-[108px] lg:pt-[180px] pb-16 font-sans select-none">
       <div className="max-w-6xl mx-auto px-4 md:px-12 space-y-8">
         
         {/* Header */}

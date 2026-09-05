@@ -57,7 +57,10 @@ class ProductInventoryView(APIView):
         inventory = self._get_or_create_inventory(product)
         serializer = ProductInventorySerializer(inventory, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save(updated_by=request.user)
+        try:
+            serializer.save(updated_by=request.user)
+        except Exception as exc:
+            return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
         return success_response(data=serializer.data, message="Inventory updated.")
 
 

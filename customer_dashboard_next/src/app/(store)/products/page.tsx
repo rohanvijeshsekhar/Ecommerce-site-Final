@@ -2,30 +2,30 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import ProductsLandingPage from '../../../components/store/ProductsLandingPage';
+import { useStore } from '@/contexts/StoreContext';
+import ProductListingPage from '@/components/store/ProductListingPage';
 
 export default function ProductsPage() {
   const router = useRouter();
-
-  const handleCategoryClick = (categoryName: string) => {
-    // Convert Category Name to slug
-    const slug = categoryName.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
-    router.push(`/products/category/${slug}`);
-  };
+  const store = useStore();
 
   const handleProductClick = (slug: string) => {
     router.push(`/products/${slug}`);
   };
 
-  const handleViewChange = (view: string) => {
-    if (view === 'home') router.push('/');
+  const handleBackToPortfolio = () => {
+    router.push('/');
   };
 
   return (
-    <ProductsLandingPage
-      onCategoryClick={handleCategoryClick}
+    <ProductListingPage
+      category="All Products"
+      onBackToPortfolio={handleBackToPortfolio}
       onProductClick={handleProductClick}
-      setCurrentView={handleViewChange}
+      setCartItems={store.setCartItems}
+      onBuyNowDirect={store.handleBuyNowDirect}
+      showToast={store.showToast}
+      onOpenLoginModal={store.openLoginModal}
     />
   );
 }

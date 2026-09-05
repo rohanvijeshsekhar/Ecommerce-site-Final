@@ -169,8 +169,12 @@ class CheckoutPreviewView(APIView):
                     product = Product.objects.filter(id=prod_id).first()
                 else:
                     product = Product.objects.filter(slug=prod_id).first()
-                if not product:
-                    return error_response(f"Product '{prod_id}' not found.", status_code=status.HTTP_404_NOT_FOUND)
+                if not product or product.is_deleted or product.status in ["archived", "discontinued"]:
+                    return error_response(
+                        f"Product '{prod_id}' is unavailable.",
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        code="PRODUCT_UNAVAILABLE"
+                    )
                 
                 class DummyItem:
                     def __init__(self, product, quantity):
@@ -180,21 +184,23 @@ class CheckoutPreviewView(APIView):
         else:
             try:
                 cart = Cart.objects.get(user=request.user)
-                cart_items = list(cart.items.all())
+                cart_items = list(cart.items.filter(is_saved_for_later=False).select_related('product', 'product__pricing', 'product__inventory').all())
             except Cart.DoesNotExist:
                 cart_items = []
 
         if not cart_items:
             return error_response("Your checkout queue is empty.", status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Inventory check
-        for item in cart_items:
-            inventory = getattr(item.product, 'inventory', None)
-            if inventory and not inventory.allow_backorders and item.quantity > inventory.available_stock:
-                return error_response(
-                    f"Product '{item.product.name}' exceeds available stock. Limit is {inventory.available_stock}.",
-                    status_code=status.HTTP_400_BAD_REQUEST
-                )
+        # Authoritative live inventory check
+        from apps.inventory.services import validate_items_inventory
+        is_valid, inv_err, _ = validate_items_inventory(cart_items, lock=False)
+        if not is_valid and inv_err:
+            return error_response(
+                inv_err["message"],
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code=inv_err.get("code", "INSUFFICIENT_STOCK"),
+                details=inv_err.get("details")
+            )
 
         pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
         return success_response(data=pricing, message="Checkout pricing preview calculated.")
@@ -239,8 +245,12 @@ class CheckoutPlaceView(APIView):
                     product = Product.objects.filter(id=prod_id).first()
                 else:
                     product = Product.objects.filter(slug=prod_id).first()
-                if not product:
-                    return error_response(f"Product '{prod_id}' not found.", status_code=status.HTTP_404_NOT_FOUND)
+                if not product or product.is_deleted or product.status in ["archived", "discontinued"]:
+                    return error_response(
+                        f"Product '{prod_id}' is unavailable.",
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        code="PRODUCT_UNAVAILABLE"
+                    )
                 
                 class DummyItem:
                     def __init__(self, product, quantity):
@@ -250,135 +260,155 @@ class CheckoutPlaceView(APIView):
         else:
             try:
                 cart = Cart.objects.get(user=request.user)
-                cart_items = list(cart.items.all())
+                cart_items = list(cart.items.filter(is_saved_for_later=False).select_related('product', 'product__pricing', 'product__inventory').all())
             except Cart.DoesNotExist:
                 cart_items = []
 
         if not cart_items:
             return error_response("Your checkout queue is empty.", status_code=status.HTTP_400_BAD_REQUEST)
 
-        # Verify inventory and resolve final pricing block
-        for item in cart_items:
-            inventory = getattr(item.product, 'inventory', None)
-            if inventory and not inventory.allow_backorders and item.quantity > inventory.available_stock:
-                return error_response(
-                    f"Insufficient stock for '{item.product.name}'. Max {inventory.available_stock}.",
-                    status_code=status.HTTP_400_BAD_REQUEST
-                )
-
         pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
 
-        # Atomically place order, adjust stock, snapshot tax fields, and clear cart
-        try:
-            with transaction.atomic():
-                order = Order.objects.create(
-                    user=request.user,
-                    shipping_address=address,
-                    shipping_full_name=address.full_name,
-                    shipping_mobile=address.mobile,
-                    shipping_line1=address.line1,
-                    shipping_line2=address.line2 or "",
-                    shipping_city=address.city,
-                    shipping_state=address.state,
-                    shipping_pincode=address.pincode,
-                    shipping_country="India",
-                    shipping_address_snapshot={
-                        "full_name": address.full_name,
-                        "mobile": address.mobile,
-                        "line1": address.line1,
-                        "line2": address.line2 or "",
-                        "city": address.city,
-                        "state": address.state,
-                        "pincode": address.pincode,
-                        "country": "India",
-                        "label": address.label,
-                    },
-                    status=OrderStatus.PROCESSING,
-                    payment_method=payment_method,
-                    mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
-                    selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
-                    taxable_subtotal=Decimal(str(pricing["taxable_subtotal"])),
-                    gst_amount=Decimal(str(pricing["gst_amount"])),
-                    shipping_fee=Decimal(str(pricing["shipping_fee"])),
-                    total_amount=Decimal(str(pricing["total_amount"]))
-                )
+        # Atomically lock inventory rows, validate stock, place order, and reserve stock
+        from apps.inventory.services import validate_items_inventory, reserve_items_stock
+        from django.db import OperationalError
+        import time
 
-                line_breakdowns = pricing["line_breakdowns"]
-                for idx, item in enumerate(cart_items):
-                    pricing_obj = getattr(item.product, 'pricing', None)
-                    breakdown = line_breakdowns[idx]
-                    hsn = getattr(pricing_obj, 'hsn_code', '') or ''
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                with transaction.atomic():
+                    # Step 1: Lock inventory rows in deterministic order and re-verify live stock
+                    is_valid, inv_err, inventory_map = validate_items_inventory(cart_items, lock=True)
+                    if not is_valid and inv_err:
+                        return error_response(
+                            inv_err["message"],
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            code=inv_err.get("code", "INSUFFICIENT_STOCK"),
+                            details=inv_err.get("details")
+                        )
 
-                    OrderItem.objects.create(
-                        order=order,
-                        product=item.product,
-                        quantity=item.quantity,
-                        price=breakdown["unit_price_inclusive"],
-                        gst_rate=breakdown["gst_rate"],
-                        hsn_code=hsn,
-                        taxable_value_per_unit=breakdown["taxable_value_per_unit"],
-                        taxable_subtotal=breakdown["taxable_subtotal"],
-                        cgst_amount=breakdown["cgst_amount"],
-                        sgst_amount=breakdown["sgst_amount"],
-                        igst_amount=breakdown["igst_amount"],
-                        total_gst_amount=breakdown["total_gst_amount"],
-                        is_intra_state=breakdown["is_intra_state"],
+                    # Step 2: Create Order
+                    order = Order.objects.create(
+                        user=request.user,
+                        shipping_address=address,
+                        shipping_full_name=address.full_name,
+                        shipping_mobile=address.mobile,
+                        shipping_line1=address.line1,
+                        shipping_line2=address.line2 or "",
+                        shipping_city=address.city,
+                        shipping_state=address.state,
+                        shipping_pincode=address.pincode,
+                        shipping_country="India",
+                        shipping_address_snapshot={
+                            "full_name": address.full_name,
+                            "mobile": address.mobile,
+                            "line1": address.line1,
+                            "line2": address.line2 or "",
+                            "city": address.city,
+                            "state": address.state,
+                            "pincode": address.pincode,
+                            "country": "India",
+                            "label": address.label,
+                        },
+                        status=OrderStatus.PROCESSING,
+                        payment_method=payment_method,
+                        mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
+                        selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
+                        taxable_subtotal=Decimal(str(pricing["taxable_subtotal"])),
+                        gst_amount=Decimal(str(pricing["gst_amount"])),
+                        shipping_fee=Decimal(str(pricing["shipping_fee"])),
+                        total_amount=Decimal(str(pricing["total_amount"]))
                     )
 
-                    # Reserve inventory stock
-                    inventory = getattr(item.product, 'inventory', None)
-                    if inventory:
-                        inventory.reserved_stock += item.quantity
-                        inventory.save()
+                    # Step 3: Record Status History
+                    from apps.orders.models import OrderStatusHistory
+                    OrderStatusHistory.objects.create(
+                        order=order,
+                        status=OrderStatus.PROCESSING,
+                        changed_by=request.user,
+                        notes=f"Order placed via {payment_method}."
+                    )
 
-                # Clear cart if not buy_now
-                if not is_buy_now:
-                    Cart.objects.get(user=request.user).items.all().delete()
+                    # Step 4: Create Order Items
+                    line_breakdowns = pricing["line_breakdowns"]
+                    for idx, item in enumerate(cart_items):
+                        pricing_obj = getattr(item.product, 'pricing', None)
+                        breakdown = line_breakdowns[idx]
+                        hsn = getattr(pricing_obj, 'hsn_code', '') or ''
 
-                # Dispatch post-order-success notification (IN_APP + EMAIL + PDF Invoice) after DB commit
-                from apps.orders.tasks import dispatch_order_success_notification
-                order_id_str = str(order.id)
-                transaction.on_commit(
-                    lambda: dispatch_order_success_notification(order_id_str)
-                )
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item.product,
+                            quantity=item.quantity,
+                            price=breakdown["unit_price_inclusive"],
+                            gst_rate=breakdown["gst_rate"],
+                            hsn_code=hsn,
+                            taxable_value_per_unit=breakdown["taxable_value_per_unit"],
+                            taxable_subtotal=breakdown["taxable_subtotal"],
+                            cgst_amount=breakdown["cgst_amount"],
+                            sgst_amount=breakdown["sgst_amount"],
+                            igst_amount=breakdown["igst_amount"],
+                            total_gst_amount=breakdown["total_gst_amount"],
+                            is_intra_state=breakdown["is_intra_state"],
+                        )
 
-                # Build response matching the frontend orderData expectations
-                items_serialized = []
-                for order_item in order.items.all():
-                    primary_img = order_item.product.images.filter(is_primary=True).first() or order_item.product.images.first()
-                    items_serialized.append({
-                        "id": order_item.product.slug,
-                        "name": order_item.product.name,
-                        "category": order_item.product.category.name,
-                        "price": float(order_item.price),
-                        "qty": order_item.quantity,
-                        "image": primary_img.image.url if primary_img else ""
-                    })
+                    # Step 5: Atomically Reserve Inventory Stock
+                    reserve_items_stock(cart_items, inventory_map)
 
-                response_data = {
-                    "id": str(order.id),
-                    "items": items_serialized,
-                    "address": {
-                        "id": str(address.id),
-                        "type": address.label,
-                        "dentist": address.full_name,
-                        "clinic": address.line1,
-                        "street": address.line2,
-                        "city": f"{address.city}, {address.state}",
-                        "pincode": address.pincode,
-                        "phone": address.mobile
-                    },
-                    "paymentMethod": order.payment_method,
-                    "pricing": {
-                        "subtotal": pricing["selling_subtotal"],
-                        "shipping": pricing["shipping_fee"],
-                        "gst": pricing["gst_amount"],
-                        "discount": pricing["savings"],
-                        "total": pricing["total_amount"],
-                        "savings": pricing["savings"]
+                    # Step 6: Clear cart if not buy_now
+                    if not is_buy_now:
+                        Cart.objects.get(user=request.user).items.filter(is_saved_for_later=False).delete()
+
+                    # Step 7: Dispatch post-order-success notification after DB commit
+                    from apps.orders.tasks import dispatch_order_success_notification
+                    order_id_str = str(order.id)
+                    transaction.on_commit(
+                        lambda: dispatch_order_success_notification(order_id_str)
+                    )
+
+                    # Build response matching frontend orderData expectations
+                    items_serialized = []
+                    for order_item in order.items.all():
+                        primary_img = order_item.product.images.filter(is_primary=True).first() or order_item.product.images.first()
+                        items_serialized.append({
+                            "id": order_item.product.slug,
+                            "name": order_item.product.name,
+                            "category": order_item.product.category.name if order_item.product.category else "",
+                            "price": float(order_item.price),
+                            "qty": order_item.quantity,
+                            "image": primary_img.image.url if primary_img else ""
+                        })
+
+                    response_data = {
+                        "id": str(order.id),
+                        "items": items_serialized,
+                        "address": {
+                            "id": str(address.id),
+                            "type": address.label,
+                            "dentist": address.full_name,
+                            "clinic": address.line1,
+                            "street": address.line2,
+                            "city": f"{address.city}, {address.state}",
+                            "pincode": address.pincode,
+                            "phone": address.mobile
+                        },
+                        "paymentMethod": order.payment_method,
+                        "pricing": {
+                            "subtotal": pricing["selling_subtotal"],
+                            "shipping": pricing["shipping_fee"],
+                            "gst": pricing["gst_amount"],
+                            "discount": pricing["savings"],
+                            "total": pricing["total_amount"],
+                            "savings": pricing["savings"]
+                        }
                     }
-                }
 
-                return success_response(data=response_data, message="Order placed successfully.")
-        except Exception as e:
-            return error_response(f"Order placement failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return success_response(data=response_data, message="Order placed successfully.")
+            except OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (attempt + 1))
+                    continue
+                return error_response(f"Order placement failed due to lock contention: {str(oe)}", status_code=status.HTTP_409_CONFLICT)
+            except Exception as e:
+                return error_response(f"Order placement failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

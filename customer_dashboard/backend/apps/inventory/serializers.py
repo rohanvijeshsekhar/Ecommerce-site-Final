@@ -53,6 +53,21 @@ class ProductInventorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Threshold cannot be negative.")
         return value
 
+    def validate(self, attrs):
+        # Determine effective values during partial updates
+        current_stock = attrs.get("current_stock", getattr(self.instance, "current_stock", 0))
+        reserved_stock = getattr(self.instance, "reserved_stock", 0)
+        allow_backorders = attrs.get("allow_backorders", getattr(self.instance, "allow_backorders", False))
+
+        if not allow_backorders and current_stock < reserved_stock:
+            raise serializers.ValidationError({
+                "current_stock": (
+                    f"Current stock ({current_stock}) cannot be less than reserved stock ({reserved_stock}) "
+                    f"allocated to pending orders. Please enable 'Allow Backorders' or fulfill pending orders first."
+                )
+            })
+        return attrs
+
 
 class ProductInventoryPublicSerializer(serializers.ModelSerializer):
     """

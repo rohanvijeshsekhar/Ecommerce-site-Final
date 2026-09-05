@@ -141,11 +141,19 @@ const InventoryPage: React.FC = () => {
         setQuickEditProduct(null);
         fetchProducts(); // Refresh list to get updated stock and status
       } else {
-        toast.error('Failed to update inventory.');
+        toast.error(res.message || 'Failed to update inventory.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('An error occurred while saving.');
+      const resData = err?.response?.data;
+      const errMsg =
+        resData?.error?.current_stock?.[0] ||
+        resData?.error?.message ||
+        resData?.message ||
+        resData?.detail ||
+        err?.message ||
+        'An error occurred while saving inventory.';
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -384,6 +392,26 @@ const InventoryPage: React.FC = () => {
         size="md"
       >
         <div className="space-y-4">
+          {/* Reserved Stock Info Banner if items are reserved for orders */}
+          {(quickEditProduct?.inventory?.reserved_stock ?? 0) > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
+              <span className="text-base">📦</span>
+              <div>
+                <p className="font-bold">
+                  {quickEditProduct?.inventory?.reserved_stock} unit(s) reserved for pending orders.
+                </p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  Available for new customers: <strong className="font-extrabold">{Math.max(0, currentStock - (quickEditProduct?.inventory?.reserved_stock ?? 0))}</strong> units.
+                  {!allowBackorders && currentStock < (quickEditProduct?.inventory?.reserved_stock ?? 0) && (
+                    <span className="text-rose-600 block font-semibold mt-1">
+                      ⚠️ Current stock cannot be less than reserved units without enabling &ldquo;Allow Backorders&rdquo;.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-500 block mb-1">Current Stock Level</label>

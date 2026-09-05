@@ -92,16 +92,7 @@ def _resolve_cart_items(user, items_data):
         return cart_items, False, None
 
 
-def _validate_inventory(cart_items):
-    """Check stock availability for all items. Returns error response or None."""
-    for item in cart_items:
-        inventory = getattr(item.product, "inventory", None)
-        if inventory and not inventory.allow_backorders and item.quantity > inventory.available_stock:
-            return error_response(
-                f"Insufficient stock for '{item.product.name}'. Max {inventory.available_stock}.",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-    return None
+from apps.inventory.services import validate_items_inventory, reserve_items_stock
 
 
 class CreatePaymentOrderView(APIView):
@@ -159,9 +150,14 @@ class CreatePaymentOrderView(APIView):
             return error_response("Your checkout queue is empty.", status_code=status.HTTP_400_BAD_REQUEST)
 
         # Validate inventory
-        inv_err = _validate_inventory(cart_items)
-        if inv_err:
-            return inv_err
+        is_valid, inv_err, _ = validate_items_inventory(cart_items, lock=False)
+        if not is_valid and inv_err:
+            return error_response(
+                inv_err["message"],
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code=inv_err.get("code", "INSUFFICIENT_STOCK"),
+                details=inv_err.get("details"),
+            )
 
         # Calculate pricing using existing checkout logic
         pricing = calculate_checkout_pricing(user, cart_items, delivery_method, address)
@@ -405,9 +401,13 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
     """
     Creates an Order from the frozen checkout snapshot in a Payment transaction.
     Fix 1: Concurrency-safe with transaction.atomic() & select_for_update() row locks.
-    Fix 2: Atomic inventory protection with F() expressions.
-    Fix 3: Preserves original address snapshot without inventing fake fallback addresses.
+    Fix 2: Atomic inventory validation & reservation with F() expressions.
+    Fix 3: Preserves original address snapshot without backfilling fake addresses.
+    Fix 4: Safely handles out-of-stock post-payment via INSUFFICIENT_STOCK_REFUND_REQUIRED.
     """
+    inv_err_to_raise = None
+    order = None
+
     with transaction.atomic():
         # Lock the Payment row to prevent concurrent race conditions between client verify and webhook
         locked_payment = Payment.objects.select_for_update().filter(id=payment.id).first()
@@ -420,174 +420,201 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
         checkout = locked_payment.checkout_data
         user = locked_payment.user
 
-        # Fix 3: Address Snapshot Resolution (No Fake Fallback Address Generation)
-        address_id = checkout.get("address_id")
-        address = None
-        if address_id:
+        # Resolve products and build item objects for inventory validation
+        items_to_validate = []
+        for item_data in checkout.get("items", []):
             try:
-                address = Address.objects.get(pk=address_id, user=user)
-            except (Address.DoesNotExist, ValueError):
-                address = None
-
-        if not address:
-            # Fall back to user's primary active address
-            address = Address.objects.filter(user=user).first()
-
-        order_notes = ""
-        if not address:
-            # Recreate exact address object from frozen snapshot if available
-            snap = checkout.get("address_snapshot", {})
-            if snap and snap.get("line1") and snap.get("city"):
-                address = Address.objects.create(
-                    user=user,
-                    label=snap.get("label", "Checkout Address"),
-                    full_name=snap.get("full_name") or user.full_name or "Dentist Partner",
-                    mobile=snap.get("mobile") or getattr(user, "phone_number", "") or "0000000000",
-                    line1=snap["line1"],
-                    line2=snap.get("line2", ""),
-                    city=snap["city"],
-                    state=snap.get("state", ""),
-                    pincode=snap.get("pincode", "000000"),
-                )
-            else:
-                # If even snapshot details are missing, flag for manual review instead of generating fake street names
-                order_notes = "MANUAL_REVIEW_REQUIRED: Delivery address missing post-checkout."
-
-        pricing = checkout["pricing"]
-        snap = checkout.get("address_snapshot", {})
-
-        shipping_full_name = snap.get("full_name") or getattr(address, "full_name", "")
-        shipping_mobile = snap.get("mobile") or getattr(address, "mobile", "")
-        shipping_line1 = snap.get("line1") or getattr(address, "line1", "")
-        shipping_line2 = snap.get("line2") or getattr(address, "line2", "")
-        shipping_city = snap.get("city") or getattr(address, "city", "")
-        shipping_state = snap.get("state") or getattr(address, "state", "")
-        shipping_pincode = snap.get("pincode") or getattr(address, "pincode", "")
-        shipping_country = snap.get("country", "India")
-
-        order = Order.objects.create(
-            user=user,
-            shipping_address=address,
-            shipping_full_name=shipping_full_name,
-            shipping_mobile=shipping_mobile,
-            shipping_line1=shipping_line1,
-            shipping_line2=shipping_line2,
-            shipping_city=shipping_city,
-            shipping_state=shipping_state,
-            shipping_pincode=shipping_pincode,
-            shipping_country=shipping_country,
-            shipping_address_snapshot=snap or {
-                "full_name": shipping_full_name,
-                "mobile": shipping_mobile,
-                "line1": shipping_line1,
-                "line2": shipping_line2,
-                "city": shipping_city,
-                "state": shipping_state,
-                "pincode": shipping_pincode,
-                "country": shipping_country,
-            },
-            status=OrderStatus.PROCESSING,
-            payment_method=checkout.get("payment_method", "razorpay"),
-            mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
-            selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
-            taxable_subtotal=Decimal(str(pricing.get("taxable_subtotal", pricing["selling_subtotal"]))),
-            gst_amount=Decimal(str(pricing["gst_amount"])),
-            shipping_fee=Decimal(str(pricing["shipping_fee"])),
-            total_amount=Decimal(str(pricing["total_amount"])),
-            notes=order_notes,
-        )
-
-        from apps.orders.models import OrderStatusHistory
-        OrderStatusHistory.objects.create(
-            order=order,
-            status=OrderStatus.PROCESSING,
-            changed_by=user,
-            notes="Order placed successfully after payment verification."
-        )
-
-        from django.db.models import F
-        from apps.common.tax_engine import extract_gst_from_inclusive, determine_is_intra_state, get_warehouse_state
-
-        warehouse_state = get_warehouse_state()
-        delivery_state = address.state if address else warehouse_state
-        is_intra = determine_is_intra_state(warehouse_state, delivery_state)
-
-        # Create order items and reserve inventory atomically
-        for item_data in checkout["items"]:
-            try:
-                product = Product.objects.get(id=item_data["product_id"])
+                prod = Product.objects.get(id=item_data["product_id"])
+                items_to_validate.append({"product": prod, "quantity": item_data["quantity"]})
             except Product.DoesNotExist:
                 logger.error("Product %s not found during order recovery.", item_data["product_id"])
                 continue
 
-            pricing_obj = getattr(product, "pricing", None)
-            if pricing_obj:
-                price = (
-                    pricing_obj.dealer_price
-                    if (
-                        user.role == "dealer"
-                        and user.dealer_status == "approved"
-                        and pricing_obj.dealer_price is not None
+        # Atomically lock inventory rows in deterministic sorted order and validate live stock
+        is_valid, inv_err, inventory_map = validate_items_inventory(items_to_validate, lock=True)
+        if not is_valid and inv_err:
+            inv_err_to_raise = inv_err
+        else:
+            # Address Snapshot Resolution (No Fake Fallback Address Generation)
+            address_id = checkout.get("address_id")
+            address = None
+            if address_id:
+                try:
+                    address = Address.objects.get(pk=address_id, user=user)
+                except (Address.DoesNotExist, ValueError):
+                    address = None
+
+            if not address:
+                # Fall back to user's primary active address
+                address = Address.objects.filter(user=user).first()
+
+            order_notes = ""
+            if not address:
+                # Recreate exact address object from frozen snapshot if available
+                snap = checkout.get("address_snapshot", {})
+                if snap and snap.get("line1") and snap.get("city"):
+                    address = Address.objects.create(
+                        user=user,
+                        label=snap.get("label", "Checkout Address"),
+                        full_name=snap.get("full_name") or user.full_name or "Dentist Partner",
+                        mobile=snap.get("mobile") or getattr(user, "phone_number", "") or "0000000000",
+                        line1=snap["line1"],
+                        line2=snap.get("line2", ""),
+                        city=snap["city"],
+                        state=snap.get("state", ""),
+                        pincode=snap.get("pincode", "000000"),
                     )
-                    else pricing_obj.effective_price
-                )
-                gst_rate = pricing_obj.gst_percentage
-                hsn_code = getattr(pricing_obj, "hsn_code", "") or ""
-            else:
-                price = Decimal("0.00")
-                gst_rate = Decimal("18.00")
-                hsn_code = ""
+                else:
+                    # If even snapshot details are missing, flag for manual review instead of generating fake street names
+                    order_notes = "MANUAL_REVIEW_REQUIRED: Delivery address missing post-checkout."
 
-            qty = item_data["quantity"]
-            breakdown = extract_gst_from_inclusive(price, gst_rate, qty, is_intra)
+            pricing = checkout["pricing"]
+            snap = checkout.get("address_snapshot", {})
 
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=qty,
-                price=breakdown["unit_price_inclusive"],
-                gst_rate=breakdown["gst_rate"],
-                hsn_code=hsn_code,
-                taxable_value_per_unit=breakdown["taxable_value_per_unit"],
-                taxable_subtotal=breakdown["taxable_subtotal"],
-                cgst_amount=breakdown["cgst_amount"],
-                sgst_amount=breakdown["sgst_amount"],
-                igst_amount=breakdown["igst_amount"],
-                total_gst_amount=breakdown["total_gst_amount"],
-                is_intra_state=breakdown["is_intra_state"],
+            shipping_full_name = snap.get("full_name") or getattr(address, "full_name", "")
+            shipping_mobile = snap.get("mobile") or getattr(address, "mobile", "")
+            shipping_line1 = snap.get("line1") or getattr(address, "line1", "")
+            shipping_line2 = snap.get("line2") or getattr(address, "line2", "")
+            shipping_city = snap.get("city") or getattr(address, "city", "")
+            shipping_state = snap.get("state") or getattr(address, "state", "")
+            shipping_pincode = snap.get("pincode") or getattr(address, "pincode", "")
+            shipping_country = snap.get("country", "India")
+
+            order = Order.objects.create(
+                user=user,
+                shipping_address=address,
+                shipping_full_name=shipping_full_name,
+                shipping_mobile=shipping_mobile,
+                shipping_line1=shipping_line1,
+                shipping_line2=shipping_line2,
+                shipping_city=shipping_city,
+                shipping_state=shipping_state,
+                shipping_pincode=shipping_pincode,
+                shipping_country=shipping_country,
+                shipping_address_snapshot=snap or {
+                    "full_name": shipping_full_name,
+                    "mobile": shipping_mobile,
+                    "line1": shipping_line1,
+                    "line2": shipping_line2,
+                    "city": shipping_city,
+                    "state": shipping_state,
+                    "pincode": shipping_pincode,
+                    "country": shipping_country,
+                },
+                status=OrderStatus.PROCESSING,
+                payment_method=checkout.get("payment_method", "razorpay"),
+                mrp_subtotal=Decimal(str(pricing["mrp_subtotal"])),
+                selling_subtotal=Decimal(str(pricing["selling_subtotal"])),
+                taxable_subtotal=Decimal(str(pricing.get("taxable_subtotal", pricing["selling_subtotal"]))),
+                gst_amount=Decimal(str(pricing["gst_amount"])),
+                shipping_fee=Decimal(str(pricing["shipping_fee"])),
+                total_amount=Decimal(str(pricing["total_amount"])),
+                notes=order_notes,
             )
 
-            # Fix 2: Atomic Inventory Reservation (F expression + select_for_update)
-            inventory = ProductInventory.objects.select_for_update().filter(product=product).first()
-            if inventory:
-                ProductInventory.objects.filter(id=inventory.id).update(
-                    reserved_stock=F("reserved_stock") + item_data["quantity"]
+            from apps.orders.models import OrderStatusHistory
+            OrderStatusHistory.objects.create(
+                order=order,
+                status=OrderStatus.PROCESSING,
+                changed_by=user,
+                notes="Order placed successfully after payment verification."
+            )
+
+            from apps.common.tax_engine import extract_gst_from_inclusive, determine_is_intra_state, get_warehouse_state
+
+            warehouse_state = get_warehouse_state()
+            delivery_state = address.state if address else warehouse_state
+            is_intra = determine_is_intra_state(warehouse_state, delivery_state)
+
+            # Create order items
+            for item in items_to_validate:
+                product = item["product"]
+                qty = item["quantity"]
+
+                pricing_obj = getattr(product, "pricing", None)
+                if pricing_obj:
+                    price = (
+                        pricing_obj.dealer_price
+                        if (
+                            user.role == "dealer"
+                            and user.dealer_status == "approved"
+                            and pricing_obj.dealer_price is not None
+                        )
+                        else pricing_obj.effective_price
+                    )
+                    gst_rate = pricing_obj.gst_percentage
+                    hsn_code = getattr(pricing_obj, "hsn_code", "") or ""
+                else:
+                    price = Decimal("0.00")
+                    gst_rate = Decimal("18.00")
+                    hsn_code = ""
+
+                breakdown = extract_gst_from_inclusive(price, gst_rate, qty, is_intra)
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=qty,
+                    price=breakdown["unit_price_inclusive"],
+                    gst_rate=breakdown["gst_rate"],
+                    hsn_code=hsn_code,
+                    taxable_value_per_unit=breakdown["taxable_value_per_unit"],
+                    taxable_subtotal=breakdown["taxable_subtotal"],
+                    cgst_amount=breakdown["cgst_amount"],
+                    sgst_amount=breakdown["sgst_amount"],
+                    igst_amount=breakdown["igst_amount"],
+                    total_gst_amount=breakdown["total_gst_amount"],
+                    is_intra_state=breakdown["is_intra_state"],
                 )
 
-        if not checkout.get("is_buy_now", False):
-            try:
-                Cart.objects.get(user=user).items.all().delete()
-            except Cart.DoesNotExist:
-                pass
+            # Atomically reserve inventory stock
+            reserve_items_stock(items_to_validate, inventory_map)
 
-        locked_payment.status = PaymentStatus.CAPTURED
-        locked_payment.razorpay_payment_id = razorpay_payment_id
-        locked_payment.razorpay_signature = razorpay_signature
-        locked_payment.order = order
-        locked_payment.verified_at = timezone.now()
-        if gateway_response:
-            locked_payment.gateway_response = gateway_response
-        locked_payment.save()
+            if not checkout.get("is_buy_now", False):
+                try:
+                    Cart.objects.get(user=user).items.all().delete()
+                except Cart.DoesNotExist:
+                    pass
 
-        # Dispatch post-order-success notification (IN_APP + EMAIL + PDF Invoice) after DB commit
-        from apps.orders.tasks import dispatch_order_success_notification
-        order_id_str = str(order.id)
-        transaction.on_commit(
-            lambda: dispatch_order_success_notification(order_id_str)
+            locked_payment.status = PaymentStatus.CAPTURED
+            locked_payment.razorpay_payment_id = razorpay_payment_id
+            locked_payment.razorpay_signature = razorpay_signature
+            locked_payment.order = order
+            locked_payment.verified_at = timezone.now()
+            if gateway_response:
+                locked_payment.gateway_response = gateway_response
+            locked_payment.save()
+
+            # Dispatch post-order-success notification (IN_APP + EMAIL + PDF Invoice) after DB commit
+            from apps.orders.tasks import dispatch_order_success_notification
+            order_id_str = str(order.id)
+            transaction.on_commit(
+                lambda: dispatch_order_success_notification(order_id_str)
+            )
+
+            logger.info("Payment captured and Order created: payment=%s order=%s", locked_payment.id, order.id)
+
+    if inv_err_to_raise:
+        logger.error(
+            "Inventory validation failed during payment verification for payment %s: %s",
+            payment.id, inv_err_to_raise
         )
+        with transaction.atomic():
+            Payment.objects.filter(id=payment.id).update(
+                status=PaymentStatus.FAILED,
+                razorpay_payment_id=razorpay_payment_id,
+                razorpay_signature=razorpay_signature,
+                error_code="INSUFFICIENT_STOCK_REFUND_REQUIRED",
+                error_description=(
+                    f"Stock became unavailable after payment authorization: "
+                    f"{inv_err_to_raise.get('message', 'Insufficient stock')}. "
+                    f"Automatic refund required."
+                ),
+                gateway_response=gateway_response or getattr(payment, "gateway_response", {}),
+            )
+        raise ValueError(inv_err_to_raise.get("message", "Insufficient stock for this order."))
 
-        logger.info("Payment captured and Order created: payment=%s order=%s", locked_payment.id, order.id)
-        return order
+    return order
 
 
 class VerifyPaymentView(APIView):
@@ -612,6 +639,12 @@ class VerifyPaymentView(APIView):
             return error_response(
                 "Missing required payment verification fields.",
                 status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not is_valid_uuid(payment_id):
+            return error_response(
+                "Payment record not found.",
+                status_code=status.HTTP_404_NOT_FOUND,
             )
 
         try:
@@ -727,6 +760,13 @@ class VerifyPaymentView(APIView):
                     message="Payment verified. Order placed successfully.",
                 )
 
+        except ValueError as ve:
+            logger.error("Payment verification rejected due to validation: %s", ve)
+            return error_response(
+                str(ve),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code="INSUFFICIENT_STOCK_REFUND_REQUIRED",
+            )
         except Address.DoesNotExist:
             return error_response(
                 "Shipping address no longer exists.",

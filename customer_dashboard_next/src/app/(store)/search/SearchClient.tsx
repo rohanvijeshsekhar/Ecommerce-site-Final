@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Filter,
@@ -39,7 +39,7 @@ interface SearchClientProps {
   initialMaxPrice?: string;
   initialInStock?: string;
   initialOrdering?: string;
-  initialPage?: string;
+  initialPage?: string | number;
 }
 
 export default function SearchClient({
@@ -50,7 +50,7 @@ export default function SearchClient({
   initialMaxPrice = '',
   initialInStock = '',
   initialOrdering = 'relevance',
-  initialPage = '1',
+  initialPage = 1,
 }: SearchClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,7 +66,7 @@ export default function SearchClient({
   const maxPrice = searchParams.get('max_price') ?? initialMaxPrice;
   const inStockOnly = searchParams.get('in_stock') === 'true' || initialInStock === 'true';
   const ordering = searchParams.get('ordering') ?? initialOrdering;
-  const page = parseInt(searchParams.get('page') ?? initialPage, 10) || 1;
+  const page = parseInt(searchParams.get('page') ?? String(initialPage), 10) || 1;
 
   // Layout View Mode state (grid vs list)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -79,6 +79,31 @@ export default function SearchClient({
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isBrandOpen, setIsBrandOpen] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
+
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setIsCategoryOpen(false);
+      }
+      if (brandDropdownRef.current && !brandDropdownRef.current.contains(e.target as Node)) {
+        setIsBrandOpen(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Local price input state (debounced sync to URL)
   const [inputMinPrice, setInputMinPrice] = useState(minPrice);
@@ -236,7 +261,7 @@ export default function SearchClient({
   const hasActiveFilters = Boolean(selectedBrand || selectedCategory || minPrice || maxPrice || inStockOnly);
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-24 lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
+    <div className="bg-[#F8FAFC] min-h-screen pt-[108px] lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Breadcrumb & Search Title Banner */}
@@ -314,8 +339,9 @@ export default function SearchClient({
               </button>
 
               {/* Sort Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={sortDropdownRef}>
                 <button
+                  type="button"
                   onClick={() => setIsSortOpen(!isSortOpen)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-700 shadow-xs hover:border-[#006670] transition-all cursor-pointer"
                 >
@@ -328,8 +354,7 @@ export default function SearchClient({
 
                 {isSortOpen && (
                   <div
-                    className="absolute right-0 mt-2 w-52 bg-white rounded-2xl border border-slate-200/80 shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150"
-                    onMouseLeave={() => setIsSortOpen(false)}
+                    className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl border border-slate-200/80 shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <div className="px-3 py-1.5 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
                       Sort Products By
@@ -337,6 +362,7 @@ export default function SearchClient({
                     {sortOptions.map((opt) => (
                       <button
                         key={opt.value}
+                        type="button"
                         onClick={() => {
                           updateUrl({ ordering: opt.value });
                           setIsSortOpen(false);
@@ -441,48 +467,174 @@ export default function SearchClient({
 
             {/* Category Filter */}
             {categories.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={categoryDropdownRef}>
                 <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                   Category
                 </label>
                 <div className="relative">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => updateUrl({ category: e.target.value || null })}
-                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCategoryOpen(!isCategoryOpen);
+                      setIsBrandOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                      isCategoryOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                    }`}
                   >
-                    <option value="">All Categories ({categories.length})</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.slug}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                    <span className="truncate pr-2">
+                      {selectedCategory
+                        ? (activeCategoryObj?.name || selectedCategory)
+                        : `All Categories (${categories.length})`}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180 text-[#006670]' : ''}`} />
+                  </button>
+
+                  {isCategoryOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                      {categories.length > 8 && (
+                        <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                          <input
+                            type="text"
+                            placeholder="Search categories..."
+                            value={categorySearchQuery}
+                            onChange={(e) => setCategorySearchQuery(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                          />
+                        </div>
+                      )}
+                      <div className="max-h-56 overflow-y-auto scrollbar-thin">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateUrl({ category: null });
+                            setIsCategoryOpen(false);
+                            setCategorySearchQuery('');
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                            !selectedCategory
+                              ? 'bg-[#006670]/10 text-[#006670]'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>All Categories ({categories.length})</span>
+                          {!selectedCategory && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
+                        </button>
+                        {categories
+                          .filter((c) => !categorySearchQuery || c.name.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                          .map((c) => {
+                            const isSelected = selectedCategory === c.slug;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ category: c.slug });
+                                  setIsCategoryOpen(false);
+                                  setCategorySearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                  isSelected
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="truncate pr-2">{c.name}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Brand Filter */}
             {brands.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={brandDropdownRef}>
                 <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                   Brand
                 </label>
                 <div className="relative">
-                  <select
-                    value={selectedBrand}
-                    onChange={(e) => updateUrl({ brand: e.target.value || null })}
-                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsBrandOpen(!isBrandOpen);
+                      setIsCategoryOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                      isBrandOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                    }`}
                   >
-                    <option value="">All Brands ({brands.length})</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.slug}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                    <span className="truncate pr-2">
+                      {selectedBrand
+                        ? (activeBrandObj?.name || selectedBrand)
+                        : `All Brands (${brands.length})`}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isBrandOpen ? 'rotate-180 text-[#006670]' : ''}`} />
+                  </button>
+
+                  {isBrandOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                      {brands.length > 8 && (
+                        <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                          <input
+                            type="text"
+                            placeholder="Search brands..."
+                            value={brandSearchQuery}
+                            onChange={(e) => setBrandSearchQuery(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                          />
+                        </div>
+                      )}
+                      <div className="max-h-56 overflow-y-auto scrollbar-thin">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateUrl({ brand: null });
+                            setIsBrandOpen(false);
+                            setBrandSearchQuery('');
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                            !selectedBrand
+                              ? 'bg-[#006670]/10 text-[#006670]'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>All Brands ({brands.length})</span>
+                          {!selectedBrand && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
+                        </button>
+                        {brands
+                          .filter((b) => !brandSearchQuery || b.name.toLowerCase().includes(brandSearchQuery.toLowerCase()))
+                          .map((b) => {
+                            const isSelected = selectedBrand === b.slug;
+                            return (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ brand: b.slug });
+                                  setIsBrandOpen(false);
+                                  setBrandSearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                  isSelected
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="truncate pr-2">{b.name}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -582,36 +734,42 @@ export default function SearchClient({
                   {categories.length > 0 && (
                     <div className="space-y-2">
                       <label className="text-xs font-extrabold text-slate-700 uppercase">Category</label>
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => updateUrl({ category: e.target.value || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold"
-                      >
-                        <option value="">All Categories</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.slug}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedCategory}
+                          onChange={(e) => updateUrl({ category: e.target.value || null })}
+                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        >
+                          <option value="">All Categories ({categories.length})</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.slug}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                      </div>
                     </div>
                   )}
 
                   {brands.length > 0 && (
                     <div className="space-y-2">
                       <label className="text-xs font-extrabold text-slate-700 uppercase">Brand</label>
-                      <select
-                        value={selectedBrand}
-                        onChange={(e) => updateUrl({ brand: e.target.value || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold"
-                      >
-                        <option value="">All Brands</option>
-                        {brands.map((b) => (
-                          <option key={b.id} value={b.slug}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedBrand}
+                          onChange={(e) => updateUrl({ brand: e.target.value || null })}
+                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        >
+                          <option value="">All Brands ({brands.length})</option>
+                          {brands.map((b) => (
+                            <option key={b.id} value={b.slug}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                      </div>
                     </div>
                   )}
 

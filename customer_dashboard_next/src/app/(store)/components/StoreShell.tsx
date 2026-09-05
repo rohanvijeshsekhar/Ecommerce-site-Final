@@ -42,7 +42,7 @@ export default function StoreShell({ children }: StoreShellProps) {
   // Sync state view mappings to real Next.js URLs
   const handleViewChange = (view: string) => {
     if (view === 'home') router.push('/');
-    else if (view === 'portfolio') router.push('/products');
+    else if (view === 'portfolio') router.push('/search');
     else if (view === 'cart') router.push('/cart');
     else if (view === 'wishlist') router.push('/wishlist');
     else if (view === 'checkout') router.push('/checkout');
@@ -124,19 +124,19 @@ export default function StoreShell({ children }: StoreShellProps) {
 
           {/* CATEGORIES */}
           <button
-            onClick={() => { router.push('/products'); window.scrollTo(0, 0); }}
-            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname.startsWith('/categories') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
+            onClick={() => { router.push('/categories'); window.scrollTo(0, 0); }}
+            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname === '/categories' || pathname.startsWith('/categories/') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
           >
-            <LayoutGrid className={`w-[20px] h-[20px] transition-all duration-150 ${pathname.startsWith('/categories') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
+            <LayoutGrid className={`w-[20px] h-[20px] transition-all duration-150 ${pathname === '/categories' || pathname.startsWith('/categories/') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
             <span className="text-[9px] font-bold tracking-wider mt-1 select-none">CATEGORIES</span>
           </button>
 
           {/* EXPLORE */}
           <button
-            onClick={() => { router.push('/products/category/advanced-dental-equipment-accessories'); window.scrollTo(0, 0); }}
-            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname.includes('/category/') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
+            onClick={() => { router.push('/products'); window.scrollTo(0, 0); }}
+            className={`flex flex-col items-center justify-center flex-grow py-1 cursor-pointer transition-colors duration-150 ${pathname === '/products' || pathname.startsWith('/products/') ? 'text-[#006670]' : 'text-slate-400 hover:text-[#006670]'}`}
           >
-            <Compass className={`w-[20px] h-[20px] transition-all duration-150 ${pathname.includes('/category/') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
+            <Compass className={`w-[20px] h-[20px] transition-all duration-150 ${pathname === '/products' || pathname.startsWith('/products/') ? 'text-[#1B365D] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
             <span className="text-[9px] font-bold tracking-wider mt-1 select-none">EXPLORE</span>
           </button>
 

@@ -159,139 +159,132 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const existingReviewObject = reviews.find(r => r.id === eligibility?.existing_review_id);
 
   return (
-    <div className="space-y-8 text-left select-none">
+    <div className="space-y-5 text-left select-none">
       
-      {/* ── Summary & Breakdown Header ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-slate-50/70 border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm">
-        
-        {/* Rating Score */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-slate-100 shadow-xs text-center">
-          <span className="text-5xl font-black text-slate-900 tracking-tight font-display">
-            {summary.average_rating ? summary.average_rating.toFixed(1) : '0.0'}
-          </span>
-          <div className="flex items-center text-amber-400 gap-1 my-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`w-5 h-5 ${
-                  Math.round(summary.average_rating) >= star
-                    ? 'fill-amber-400 text-amber-400'
-                    : 'text-slate-200 fill-slate-100'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs font-bold text-slate-500">
-            Based on {summary.total_reviews} verified customer review{summary.total_reviews === 1 ? '' : 's'}
-          </span>
+      {/* ── Summary & Breakdown Header (Flipkart Style) ── */}
+      <div className="border border-slate-200/80 rounded-xl p-4 sm:p-5 bg-white shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+          
+          {/* Left: Overall Rating & Count */}
+          <div className="sm:col-span-4 flex flex-col items-center sm:items-start justify-center sm:border-r sm:border-slate-100 sm:pr-4 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-black text-slate-900 font-display">
+                {summary.average_rating ? summary.average_rating.toFixed(1) : '0.0'}
+              </span>
+              <Star className="w-6 h-6 fill-emerald-600 text-emerald-600 mb-0.5" />
+            </div>
 
-          {/* Verified Purchaser Notice */}
-          <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 font-semibold flex items-center justify-center gap-2 leading-tight">
-            <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
-            <span>Reviews are exclusively submitted by verified buyers from their <strong>My Orders</strong> page after delivery.</span>
-          </div>
-        </div>
+            <span className="text-xs font-semibold text-slate-500 mt-1">
+              {summary.total_reviews} Ratings & {summary.total_reviews} Reviews
+            </span>
 
-        {/* Rating Distribution Progress Bars */}
-        <div className="lg:col-span-8 flex flex-col justify-center space-y-2.5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Rating Distribution
-          </h4>
-          {[5, 4, 3, 2, 1].map((star) => {
-            const count = summary.rating_distribution[String(star)] || 0;
-            const pct = summary.total_reviews > 0 ? Math.round((count / summary.total_reviews) * 100) : 0;
-            return (
-              <div key={star} className="flex items-center gap-3 text-xs font-semibold">
-                <button
-                  onClick={() => setSelectedRating(selectedRating === star ? undefined : star)}
-                  className={`flex items-center gap-1 w-12 hover:text-teal-600 transition-colors ${
-                    selectedRating === star ? 'text-teal-600 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  <span>{star}</span>
-                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                </button>
-                
-                {/* Progress Bar Container */}
-                <div className="flex-1 h-3 rounded-full bg-slate-200/70 overflow-hidden relative">
-                  <div
-                    className="h-full bg-amber-400 transition-all duration-500 rounded-full"
-                    style={{ width: `${pct}%` }}
-                  />
+            <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+              <span>Verified buyers only</span>
+            </div>
+          </div>
+
+          {/* Right: Compact Rating Distribution Bars */}
+          <div className="sm:col-span-8 flex flex-col justify-center space-y-1.5">
+            {[5, 4, 3, 2, 1].map((star) => {
+              const count = summary.rating_distribution[String(star)] || 0;
+              const pct = summary.total_reviews > 0 ? Math.round((count / summary.total_reviews) * 100) : 0;
+              const barColor = star >= 4 ? 'bg-emerald-500' : star === 3 ? 'bg-emerald-500' : star === 2 ? 'bg-amber-400' : 'bg-rose-500';
+
+              return (
+                <div key={star} className="flex items-center gap-2.5 text-[11px] font-semibold">
+                  <button
+                    onClick={() => setSelectedRating(selectedRating === star ? undefined : star)}
+                    className={`flex items-center gap-0.5 w-7 shrink-0 transition-colors ${
+                      selectedRating === star ? 'text-teal-700 font-bold' : 'text-slate-600 hover:text-teal-600'
+                    }`}
+                  >
+                    <span>{star}</span>
+                    <Star className="w-2.5 h-2.5 fill-slate-400 text-slate-400" />
+                  </button>
+                  
+                  {/* Progress Bar */}
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className={`h-full ${barColor} transition-all duration-300 rounded-full`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+
+                  <span className="w-8 text-right text-slate-400 text-[10.5px] font-mono shrink-0">{count}</span>
                 </div>
+              );
+            })}
+          </div>
 
-                <span className="w-12 text-right text-slate-400 text-[11px] font-mono">{count} ({pct}%)</span>
-              </div>
-            );
-          })}
         </div>
       </div>
 
-      {/* ── Filter & Sort Bar ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 border-b border-slate-200/80">
+      {/* ── Filter & Sort Bar (Compact) ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-2 border-b border-slate-100">
         
         {/* Rating & Media Quick Filter Chips */}
-        <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="font-bold text-slate-500 flex items-center gap-1.5 mr-1">
-            <Filter className="w-3.5 h-3.5" /> Filter:
+        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+          <span className="font-bold text-slate-400 text-[11px] flex items-center gap-1 mr-1">
+            <Filter className="w-3 h-3" /> Filters:
           </span>
 
           <button
             onClick={() => setSelectedRating(undefined)}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
               selectedRating === undefined
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-slate-900 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            All Ratings
+            All
           </button>
 
           {[5, 4, 3, 2, 1].map((star) => (
             <button
               key={star}
               onClick={() => setSelectedRating(selectedRating === star ? undefined : star)}
-              className={`px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-all ${
+              className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-0.5 transition-all ${
                 selectedRating === star
-                  ? 'bg-teal-600 text-white shadow-xs'
+                  ? 'bg-teal-700 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               <span>{star}</span>
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400 stroke-none" />
+              <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 stroke-none" />
             </button>
           ))}
 
           <button
             onClick={() => setHasPhotos(!hasPhotos)}
-            className={`px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all ${
               hasPhotos
-                ? 'bg-teal-600 text-white shadow-xs'
+                ? 'bg-teal-700 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <ImageIcon className="w-3.5 h-3.5" /> Photos
+            <ImageIcon className="w-3 h-3" /> Photos
           </button>
 
           <button
             onClick={() => setHasVideos(!hasVideos)}
-            className={`px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all ${
               hasVideos
-                ? 'bg-teal-600 text-white shadow-xs'
+                ? 'bg-teal-700 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <VideoIcon className="w-3.5 h-3.5" /> Videos
+            <VideoIcon className="w-3 h-3" /> Videos
           </button>
         </div>
 
         {/* Sort Dropdown */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-400">Sort by:</span>
+        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          <span className="text-[11px] font-semibold text-slate-400">Sort:</span>
           <select
             value={sortBy}
             onChange={(e: any) => setSortBy(e.target.value)}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-teal-500 cursor-pointer"
+            className="px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-teal-500 cursor-pointer"
           >
             <option value="recent">Most Recent</option>
             <option value="rating_high">Highest Rating</option>
@@ -301,112 +294,67 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         </div>
       </div>
 
-      {/* ── Reviews Cards List ── */}
+      {/* ── Reviews Cards List (Compact) ── */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
-          <p className="text-xs font-semibold">Loading clinical customer feedback...</p>
+        <div className="flex flex-col items-center justify-center py-10 text-slate-400 space-y-2">
+          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+          <p className="text-xs font-semibold">Loading reviews...</p>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-center p-6 space-y-3">
-          <MessageSquarePlus className="w-10 h-10 text-slate-300" />
-          <h4 className="text-sm font-bold text-slate-700">No Reviews Matching Criteria</h4>
-          <p className="text-xs text-slate-400 max-w-sm">
-            Be the first verified customer to share clinical feedback for this dental product!
+        <div className="flex flex-col items-center justify-center py-10 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 text-center p-5 space-y-2">
+          <MessageSquarePlus className="w-8 h-8 text-slate-300" />
+          <h4 className="text-xs font-bold text-slate-700">No Reviews Yet</h4>
+          <p className="text-[11px] text-slate-400 max-w-sm">
+            Be the first verified customer to share feedback for this product!
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {reviews.map((rev) => (
             <div
               key={rev.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.015)] transition-all hover:border-slate-300"
+              className="bg-white rounded-xl p-4 border border-slate-200/70 shadow-2xs transition-all hover:border-slate-300"
             >
-              {/* Card Header: Author & Verified Badge */}
-              <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
-                    {rev.user_avatar ? (
-                      <img src={rev.user_avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      rev.user_name.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-bold text-slate-900">{rev.user_name}</h5>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {rev.is_verified_purchase && (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200/60">
-                          <CheckCircle2 className="w-3 h-3 text-teal-600" /> Verified Purchase
-                        </span>
-                      )}
-                      <span className="text-[11px] text-slate-400 font-medium font-sans">
-                        {new Date(rev.created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rating Stars */}
-                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-xl">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-3.5 h-3.5 ${
-                        i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 fill-slate-100'
-                      }`}
-                    />
-                  ))}
-                </div>
+              {/* Card Header: Rating Badge + Title */}
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-700 text-white text-[11px] font-bold">
+                  <span>{rev.rating}</span>
+                  <Star className="w-2.5 h-2.5 fill-white text-white" />
+                </span>
+                {rev.title && <h5 className="text-xs font-bold text-slate-900 line-clamp-1">{rev.title}</h5>}
               </div>
 
-              {/* Review Title & Content */}
-              <h4 className="text-sm font-bold text-slate-900 mb-1.5">{rev.title}</h4>
-              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line font-medium mb-4">
+              {/* Review Comment */}
+              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line font-normal mb-2.5">
                 {rev.comment}
               </p>
 
               {/* Pros & Cons Chips */}
               {(rev.pros || rev.cons) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 pt-3 border-t border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2.5 pt-2 border-t border-slate-100">
                   {rev.pros && (
-                    <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200/50 text-xs">
-                      <span className="font-bold text-emerald-800 uppercase text-[10px] block mb-0.5">
-                        Pros
-                      </span>
+                    <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200/50 text-[11px]">
+                      <span className="font-bold text-emerald-800 uppercase text-[9.5px] block mb-0.5">Pros</span>
                       <span className="text-emerald-950 font-medium">{rev.pros}</span>
                     </div>
                   )}
                   {rev.cons && (
-                    <div className="p-2.5 rounded-xl bg-rose-50/60 border border-rose-200/50 text-xs">
-                      <span className="font-bold text-rose-800 uppercase text-[10px] block mb-0.5">
-                        Cons
-                      </span>
+                    <div className="p-2 rounded-lg bg-rose-50/60 border border-rose-200/50 text-[11px]">
+                      <span className="font-bold text-rose-800 uppercase text-[9.5px] block mb-0.5">Cons</span>
                       <span className="text-rose-950 font-medium">{rev.cons}</span>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Would Recommend Indicator */}
-              {rev.would_recommend && (
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60 mb-4">
-                  <ThumbsUp className="w-3.5 h-3.5" /> Recommends this product
-                </div>
-              )}
-
               {/* Media Thumbnails */}
               {rev.media && rev.media.length > 0 && (
-                <div className="flex items-center gap-2.5 overflow-x-auto py-2 mb-4">
+                <div className="flex items-center gap-2 overflow-x-auto py-1.5 mb-2.5">
                   {rev.media.map((item, idx) => (
                     <button
                       key={item.id || idx}
                       onClick={() => handleOpenLightbox(rev.media, idx)}
-                      className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 group flex-shrink-0 cursor-pointer shadow-xs"
+                      className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 group flex-shrink-0 cursor-pointer"
                     >
                       {item.media_type === 'image' ? (
                         <img
@@ -416,7 +364,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                          <Play className="w-5 h-5 text-teal-400 fill-teal-400" />
+                          <Play className="w-4 h-4 text-teal-400 fill-teal-400" />
                         </div>
                       )}
                     </button>
@@ -424,37 +372,51 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                 </div>
               )}
 
-              {/* Helpful Votes Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-                <span className="text-[11px] font-semibold text-slate-400">
-                  Was this review helpful?
-                </span>
+              {/* Card Footer: User Name, Verified badge, Date, Helpful counter */}
+              <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-100 text-[11px]">
+                <div className="flex items-center gap-2 text-slate-500 font-medium">
+                  <span className="font-semibold text-slate-700">{rev.user_name}</span>
+                  {rev.is_verified_purchase && (
+                    <span className="inline-flex items-center gap-0.5 text-teal-700 font-semibold">
+                      <CheckCircle2 className="w-3 h-3 text-teal-600" /> Verified Buyer
+                    </span>
+                  )}
+                  <span className="text-slate-400">
+                    {new Date(rev.created_at).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleVote(rev.id, true)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all text-xs font-semibold ${
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded border transition-all text-[11px] font-semibold ${
                       rev.user_has_voted && rev.user_vote_type === 'helpful'
                         ? 'bg-teal-50 border-teal-300 text-teal-700 font-bold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                     }`}
                   >
-                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <ThumbsUp className="w-3 h-3" />
                     <span>{rev.helpful_count}</span>
                   </button>
 
                   <button
                     onClick={() => handleVote(rev.id, false)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all text-xs font-semibold ${
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded border transition-all text-[11px] font-semibold ${
                       rev.user_has_voted && rev.user_vote_type === 'unhelpful'
                         ? 'bg-rose-50 border-rose-300 text-rose-700 font-bold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                     }`}
                   >
-                    <ThumbsDown className="w-3.5 h-3.5" />
+                    <ThumbsDown className="w-3 h-3" />
                     <span>{rev.unhelpful_count}</span>
                   </button>
                 </div>
               </div>
+
             </div>
           ))}
         </div>

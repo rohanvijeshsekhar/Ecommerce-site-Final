@@ -35,6 +35,9 @@ class ComboDealViewSet(BaseModelViewSet):
             "images",
             "combo_products",
             "combo_products__product",
+            "combo_products__product__brand",
+            "combo_products__product__category",
+            "combo_products__product__images",
             "combo_products__product__pricing",
             "combo_products__product__inventory"
         )

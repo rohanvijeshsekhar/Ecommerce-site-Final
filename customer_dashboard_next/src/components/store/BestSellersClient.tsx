@@ -212,7 +212,7 @@ export default function BestSellersClient() {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[100px] lg:pt-[180px]">
+    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[108px] lg:pt-[180px]">
       
       {/* ── TOP SECTION: Full Width Hero Banner (Extends Edge to Edge Left & Right) ── */}
       {!loading && banner && banner.is_active && (
@@ -279,18 +279,18 @@ export default function BestSellersClient() {
         {/* ── SKELETON LOADING STATE ── */}
         {loading && (
           <div>
-            {/* Banner skeleton */}
-            <div className="w-full h-[220px] sm:h-[320px] md:h-[420px] bg-slate-200 animate-pulse rounded-2xl sm:rounded-3xl mb-10" />
-            
-            {/* Grid skeleton: 4 cols desktop, 4 cols laptop, 3 cols tablet, 2 cols mobile */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* Grid skeleton */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 sm:gap-6">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4 animate-pulse flex flex-col justify-between h-[360px]">
-                  <div className="w-full h-44 bg-slate-200 rounded-xl mb-4" />
-                  <div className="h-3 bg-slate-200 rounded w-1/3 mb-2" />
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-slate-200 rounded w-1/2 mb-4" />
-                  <div className="h-9 bg-slate-200 rounded-xl w-full" />
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-2 sm:p-3.5 animate-pulse flex flex-col justify-between">
+                  <div className="w-full aspect-square bg-slate-200 rounded-xl mb-2" />
+                  <div className="flex justify-between items-center mb-1.5">
+                    <div className="h-2.5 bg-slate-200 rounded w-1/3" />
+                    <div className="h-2.5 bg-slate-200 rounded w-1/4" />
+                  </div>
+                  <div className="h-3.5 bg-slate-200 rounded w-3/4 mb-1.5" />
+                  <div className="h-3 bg-slate-200 rounded w-1/2 mb-2" />
+                  <div className="h-7.5 bg-slate-200 rounded-lg w-full" />
                 </div>
               ))}
             </div>
@@ -305,7 +305,7 @@ export default function BestSellersClient() {
             <p className="text-xs sm:text-sm text-slate-600 mt-1 mb-6">{error}</p>
             <button
               onClick={fetchBestSellersData}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Try Again</span>
@@ -336,29 +336,29 @@ export default function BestSellersClient() {
         {/* ── PRODUCTS GRID ── */}
         {!loading && !error && products.length > 0 && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
-              {products.map((prod, idx) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 sm:gap-6">
+              {products.map((prod) => {
                 const wishlisted = isWishlisted(prod.id);
                 return (
                   <div
                     key={prod.id}
                     onClick={() => handleProductCardClick(prod.slug)}
-                    className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between overflow-hidden relative group cursor-pointer"
+                    className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between overflow-hidden relative group cursor-pointer"
                   >
                     {/* Top Badges & Wishlist */}
-                    <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between pointer-events-none">
-                      <span className="bg-amber-400 text-slate-950 font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 pointer-events-auto">
-                        <Star className="w-3 h-3 fill-slate-950 stroke-none" /> Best Seller
+                    <div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
+                      <span className="bg-amber-400 text-slate-950 font-black text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 pointer-events-auto">
+                        <Star className="w-2.5 h-2.5 fill-slate-950 stroke-none" /> Best Seller
                       </span>
 
                       <button
                         type="button"
                         onClick={(e) => handleToggleWishlist(e, prod)}
-                        className="pointer-events-auto p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white text-slate-400 hover:text-rose-500 transition-all hover:scale-110 active:scale-95"
+                        className="pointer-events-auto p-1.5 sm:p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-xs hover:bg-white text-slate-400 hover:text-rose-500 transition-all hover:scale-110 active:scale-95"
                         aria-label="Toggle Wishlist"
                       >
                         <Heart
-                          className={`w-4 h-4 transition-all ${
+                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all ${
                             wishlisted
                               ? 'fill-rose-500 stroke-rose-500'
                               : 'stroke-slate-400 fill-none'
@@ -367,89 +367,79 @@ export default function BestSellersClient() {
                       </button>
                     </div>
 
-                    {/* Image Area */}
-                    <div className="w-full aspect-square bg-slate-50 p-4 flex items-center justify-center overflow-hidden relative border-b border-slate-100">
+                    {/* Dominant Image Area (Occupies ~60% of card) */}
+                    <div className="w-full aspect-square bg-slate-50/60 p-2 sm:p-4 flex items-center justify-center overflow-hidden relative border-b border-slate-100">
                       <img
                         src={prod.image}
                         alt={prod.name}
                         loading="lazy"
-                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
 
-                    {/* Content Body */}
-                    <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+                    {/* Sleek Compact Content Body */}
+                    <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-1 gap-1.5">
                       <div>
-                        {/* Brand */}
-                        <span className="text-[10px] sm:text-xs font-black text-[#006670] uppercase tracking-wider block">
-                          {prod.brand}
-                        </span>
+                        {/* Brand & Rating Header */}
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-[9px] sm:text-[11px] font-black text-[#006670] uppercase tracking-wider truncate max-w-[65%]">
+                            {prod.brand}
+                          </span>
+                          <div className="flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 shrink-0">
+                            <Star className="w-2.5 h-2.5 fill-amber-400 stroke-amber-400" />
+                            <span className="text-[9px] sm:text-[10px] font-bold text-amber-800">
+                              {prod.rating}
+                            </span>
+                            <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium hidden xs:inline">
+                              ({prod.reviews})
+                            </span>
+                          </div>
+                        </div>
 
                         {/* Title */}
-                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 mt-1 group-hover:text-[#006670] transition-colors leading-snug">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 sm:line-clamp-2 group-hover:text-[#006670] transition-colors leading-snug">
                           {prod.name}
                         </h3>
-
-                        {/* Rating */}
-                        <div className="flex items-center gap-1 mt-2">
-                          <div className="flex items-center text-amber-400">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < Math.floor(prod.rating)
-                                    ? 'fill-amber-400 stroke-amber-400'
-                                    : 'stroke-slate-200 fill-none'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-700 ml-1">
-                            {prod.rating}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            ({prod.reviews})
-                          </span>
-                        </div>
                       </div>
 
-                      {/* Pricing & CTA */}
-                      <div className="mt-3 pt-3 border-t border-slate-100">
-                        <div className="flex items-baseline justify-between gap-1 mb-3">
-                          <div className="flex items-baseline gap-1.5 flex-wrap">
-                            <span className="text-base sm:text-lg font-black text-slate-900">
+                      {/* Pricing & CTA Row */}
+                      <div className="pt-1.5 border-t border-slate-100 mt-auto">
+                        <div className="flex items-baseline justify-between gap-1 mb-2">
+                          <div className="flex items-baseline gap-1 flex-wrap">
+                            <span className="text-sm sm:text-base font-black text-slate-900">
                               ₹{prod.price.toLocaleString('en-IN')}
                             </span>
                             {prod.originalPrice && prod.originalPrice > prod.price && (
-                              <span className="line-through text-xs text-slate-400 font-medium">
+                              <span className="line-through text-[10px] sm:text-xs text-slate-400 font-medium">
                                 ₹{prod.originalPrice.toLocaleString('en-IN')}
                               </span>
                             )}
                           </div>
                           {prod.discountPct > 0 && (
-                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs shrink-0">
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded shadow-2xs shrink-0">
                               {prod.discountPct}% OFF
                             </span>
                           )}
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={(e) => handleAddToCart(e, prod)}
-                            className="w-full py-2 px-2 bg-[#006670] hover:bg-[#00525a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
+                            title="Add to Cart"
+                            className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3 bg-[#006670] hover:bg-[#00525a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95 shrink-0 cursor-pointer"
                           >
                             <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">Add</span>
+                            <span className="hidden sm:inline">Add</span>
                           </button>
                           <button
                             type="button"
                             onClick={(e) => handleBuyNow(e, prod)}
-                            className="w-full py-2 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
+                            className="flex-1 h-8 sm:h-9 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-xs active:scale-95 cursor-pointer"
                           >
-                            <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400" />
-                            <span className="truncate">Buy Now</span>
+                            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 stroke-none shrink-0" />
+                            <span className="whitespace-nowrap font-bold text-[11px] sm:text-xs">Buy Now</span>
                           </button>
                         </div>
                       </div>

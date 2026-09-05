@@ -28,7 +28,13 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronLeft,
-  X
+  X,
+  Bell,
+  BellRing,
+  AlertCircle,
+  Sparkles,
+  Layers,
+  Info
 } from 'lucide-react';
 import { useGuestGuard } from '../../hooks/useGuestGuard';
 import { useAuth } from '../../hooks/useAuth';
@@ -71,7 +77,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onOpenLoginModal
 }) => {
   const { guardAction } = useGuestGuard(onOpenLoginModal, showToast);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [productData, setProductData] = useState<any>(null);
   const [fetching, setFetching] = useState(false);
@@ -304,12 +310,13 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Gallery images list moved to top of component body
 
-  // Related products
-  const relatedProducts = [
+  // Default fallback related products
+  const defaultRelatedProducts = [
     {
       id: 'nsk-pana-max-2-m4-high-speed-turbine',
       title: 'NSK Pana-Max 2 M4',
       subtitle: 'High Speed Turbine Handpiece',
+      brand: 'NSK',
       price: 7800,
       originalPrice: 9500,
       rating: 4.9,
@@ -321,6 +328,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       id: 'woodpecker-ledh-orthodontic-curing-light',
       title: 'Woodpecker LED.H Curing Light',
       subtitle: 'Orthodontic Curing Light',
+      brand: 'WOODPECKER',
       price: 6500,
       originalPrice: 8500,
       rating: 4.8,
@@ -332,6 +340,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       id: 'wh-synea-vision-wk-93-lt-contra-angle',
       title: 'W&H Synea Vision WK-93 LT',
       subtitle: 'Contra-Angle Handpiece',
+      brand: 'W&H',
       price: 18000,
       originalPrice: 22000,
       rating: 4.8,
@@ -343,6 +352,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       id: 'iphone-a2',
       title: 'Iphone A2',
       subtitle: 'Smart Devices',
+      brand: 'WOODPECKER',
       price: 22999,
       originalPrice: 45000,
       rating: 4.7,
@@ -354,6 +364,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       id: 'iphone-a1',
       title: 'Iphone A1',
       subtitle: 'Smart Devices',
+      brand: 'NSK',
       price: 149999,
       originalPrice: 200000,
       rating: 4.7,
@@ -363,19 +374,107 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   ];
 
+  const [relatedProductsList, setRelatedProductsList] = useState<any[]>(defaultRelatedProducts);
+
+  // Dynamically fetch related products from backend based on category / catalog
+  useEffect(() => {
+    if (!productData) return;
+
+    const catParam =
+      productData.category_detail?.slug ||
+      productData.category_detail?.id ||
+      (typeof productData.category === 'string' ? productData.category : productData.category?.slug);
+
+    const fetchParams: any = { ordering: 'popular' };
+    if (catParam) {
+      fetchParams.category = catParam;
+    }
+
+    api.get('products/', { params: fetchParams })
+      .then((res) => {
+        const rawList = res.data?.data?.results ?? res.data?.results ?? res.data?.data ?? res.data ?? [];
+        if (Array.isArray(rawList)) {
+          const filtered = rawList.filter((p: any) => p.id !== productData.id && p.slug !== productData.slug);
+          if (filtered.length > 0) {
+            const mapped = filtered.map((p: any) => {
+              const sellPrice = parseFloat(p.pricing?.effective_price || p.pricing?.selling_price || '0');
+              const mrpPrice = parseFloat(p.pricing?.mrp || p.pricing?.selling_price || '0');
+              return {
+                id: p.slug || p.id,
+                title: p.name,
+                subtitle: p.short_description || p.category_detail?.name || 'Dental Equipment',
+                brand: p.brand_detail?.name || (p.brand ? (typeof p.brand === 'string' ? p.brand : p.brand.name) : 'FAAZO'),
+                price: sellPrice > 0 ? sellPrice : 7999,
+                originalPrice: mrpPrice > 0 ? mrpPrice : Math.round(sellPrice * 1.25),
+                rating: parseFloat(p.average_rating || '4.8'),
+                reviews: p.total_reviews || 42,
+                image: p.images && p.images.length > 0 ? getAbsoluteImageUrl(p.images[0].image) : '/images/category_handpieces.png',
+                style: {}
+              };
+            });
+            setRelatedProductsList(mapped);
+            return;
+          }
+        }
+        
+        // If category is small, fetch popular products across catalog
+        api.get('products/', { params: { ordering: 'popular' } })
+          .then((resPop) => {
+            const rawPop = resPop.data?.data?.results ?? resPop.data?.results ?? resPop.data?.data ?? resPop.data ?? [];
+            if (Array.isArray(rawPop)) {
+              const filteredPop = rawPop.filter((p: any) => p.id !== productData.id && p.slug !== productData.slug);
+              if (filteredPop.length > 0) {
+                const mappedPop = filteredPop.map((p: any) => {
+                  const sellPrice = parseFloat(p.pricing?.effective_price || p.pricing?.selling_price || '0');
+                  const mrpPrice = parseFloat(p.pricing?.mrp || p.pricing?.selling_price || '0');
+                  return {
+                    id: p.slug || p.id,
+                    title: p.name,
+                    subtitle: p.short_description || p.category_detail?.name || 'Dental Equipment',
+                    brand: p.brand_detail?.name || (p.brand ? (typeof p.brand === 'string' ? p.brand : p.brand.name) : 'FAAZO'),
+                    price: sellPrice > 0 ? sellPrice : 7999,
+                    originalPrice: mrpPrice > 0 ? mrpPrice : Math.round(sellPrice * 1.25),
+                    rating: parseFloat(p.average_rating || '4.8'),
+                    reviews: p.total_reviews || 42,
+                    image: p.images && p.images.length > 0 ? getAbsoluteImageUrl(p.images[0].image) : '/images/category_handpieces.png',
+                    style: {}
+                  };
+                });
+                setRelatedProductsList(mappedPop);
+              }
+            }
+          })
+          .catch(() => {
+            setRelatedProductsList(defaultRelatedProducts);
+          });
+      })
+      .catch(() => {
+        setRelatedProductsList(defaultRelatedProducts);
+      });
+  }, [productData]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
     const handleScroll = () => {
       const mainAddToCartBtn = document.getElementById('main-add-to-cart-btn');
+      const footer = document.querySelector('footer');
       if (mainAddToCartBtn) {
         const rect = mainAddToCartBtn.getBoundingClientRect();
-        // Show sticky bar once the main Add to Cart button is scrolled out of view
-        setIsStickyVisible(rect.bottom < 0);
+        let shouldShow = rect.bottom < 0;
+
+        if (footer) {
+          const footerRect = footer.getBoundingClientRect();
+          // Hide sticky bar when footer is in view so footer and copyright strip are unobstructed
+          if (footerRect.top <= window.innerHeight) {
+            shouldShow = false;
+          }
+        }
+        setIsStickyVisible(shouldShow);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -390,7 +489,21 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     );
   }
 
+  const isOutOfStock = Boolean(
+    productData?.inventory && (
+      productData.inventory.stock_status === 'out_of_stock' ||
+      (!productData.inventory.allow_backorders && productData.inventory.available_stock <= 0)
+    )
+  );
+  const availableStock = productData?.inventory ? productData.inventory.available_stock : 999;
+  const allowBackorders = productData?.inventory?.allow_backorders ?? false;
+
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      if (showToast) showToast(`${productData?.name || 'This product'} is currently out of stock.`);
+      return;
+    }
+
     const itemId = productData ? productData.slug : 'nsk-handpiece';
     const itemName = productData ? productData.name : 'NSK Pana-Max High Speed Handpiece';
     const itemCat = productData ? (productData.category_detail?.name || 'Clinical Equipment') : 'Clinical Equipment';
@@ -430,6 +543,11 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   const handleBuyNow = () => {
+    if (isOutOfStock) {
+      if (showToast) showToast(`${productData?.name || 'This product'} is currently out of stock.`);
+      return;
+    }
+
     const itemId = productData ? productData.slug : 'nsk-handpiece';
     const itemName = productData ? productData.name : 'NSK Pana-Max High Speed Handpiece';
     const itemCat = productData ? (productData.category_detail?.name || 'Clinical Equipment') : 'Clinical Equipment';
@@ -461,7 +579,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[62px] lg:pt-[180px] text-left select-none">
+    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[180px] text-left select-none">
 
       {/* 1. Back Button and Breadcrumbs Row (Desktop/Tablet) */}
       <div className="max-w-5xl mx-auto px-4 md:px-12 py-4 flex items-center gap-4">
@@ -661,6 +779,17 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 >
                   <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
+
+                {/* Out of Stock Overlay Badge (Myntra / Ajio style) */}
+                {isOutOfStock && (
+                  <div className="absolute top-4 left-4 z-30 px-3 py-1.5 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-lg border border-white/10 flex items-center gap-2 pointer-events-none">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                    <span>Out of Stock</span>
+                  </div>
+                )}
 
                 {/* Flipkart Inspired Action Buttons (Wishlist & Share) - Mobile Positioning */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2.5 z-30 pointer-events-auto">
@@ -862,24 +991,46 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span className="px-2 py-0.5 text-[9.5px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full font-sans">15% OFF</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 mt-1">
-                {productData?.inventory ? (
-                  <>
-                    <span className={`w-2 h-2 rounded-full ${productData.inventory.stock_status === 'in_stock' ? 'bg-emerald-500 animate-pulse' : productData.inventory.stock_status === 'low_stock' ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
-                    <span className={`text-[10.5px] font-bold ${productData.inventory.stock_status === 'in_stock' ? 'text-slate-600' : productData.inventory.stock_status === 'low_stock' ? 'text-amber-600' : 'text-rose-600'}`}>
-                      {productData.inventory.stock_status === 'in_stock' ? 'In Stock' : productData.inventory.stock_status === 'low_stock' ? 'Low Stock' : 'Out of Stock'}
-                    </span>
-                    {productData.inventory.stock_status === 'in_stock' && <span className="text-[10.5px] text-slate-400 font-medium font-sans">• Ready to Ship</span>}
-                    {productData.inventory.stock_status === 'low_stock' && <span className="text-[10.5px] text-amber-500 font-medium font-sans">• Only {productData.inventory.available_stock} left!</span>}
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[10.5px] font-bold text-slate-600">In Stock</span>
-                    <span className="text-[10.5px] text-slate-400 font-medium font-sans">• Ready to Ship</span>
-                  </>
-                )}
-              </div>
+              {/* Stock Status / Out-of-Stock Card (Myntra / Ajio / Amazon style) */}
+              {isOutOfStock ? (
+                <div className="mt-2.5 p-3.5 bg-gradient-to-r from-rose-50/90 via-rose-50/50 to-orange-50/40 border border-rose-200/80 rounded-2xl flex items-start gap-3 shadow-xs">
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-rose-700 tracking-wide uppercase font-display">
+                        Currently Unavailable
+                      </span>
+                      <span className="px-2 py-0.5 text-[9px] font-extrabold bg-rose-100 text-rose-700 rounded-full border border-rose-200">
+                        Out of Stock
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                      This product is currently out of stock. Save it to your Wishlist to easily check back later, or explore similar available equipment below.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1">
+                  {productData?.inventory ? (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${productData.inventory.stock_status === 'in_stock' ? 'bg-emerald-500 animate-pulse' : productData.inventory.stock_status === 'low_stock' ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
+                      <span className={`text-[10.5px] font-bold ${productData.inventory.stock_status === 'in_stock' ? 'text-slate-600' : productData.inventory.stock_status === 'low_stock' ? 'text-amber-600' : 'text-rose-600'}`}>
+                        {productData.inventory.stock_status === 'in_stock' ? 'In Stock' : productData.inventory.stock_status === 'low_stock' ? 'Low Stock' : 'Out of Stock'}
+                      </span>
+                      {productData.inventory.stock_status === 'in_stock' && <span className="text-[10.5px] text-slate-400 font-medium font-sans">• Ready to Ship</span>}
+                      {productData.inventory.stock_status === 'low_stock' && <span className="text-[10.5px] text-amber-500 font-medium font-sans">• Only {productData.inventory.available_stock} left!</span>}
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="text-[10.5px] font-bold text-slate-600">In Stock</span>
+                      <span className="text-[10.5px] text-slate-400 font-medium font-sans">• Ready to Ship</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Product short description */}
@@ -887,79 +1038,88 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {productData ? productData.short_description : 'Advanced high speed handpiece engineered for precision, durability and superior performance. Built with NSK\'s leading technology for smooth operation and long life.'}
             </p>
 
-            {/* USP Mini badges */}
-            <div className="grid grid-cols-2 gap-1.5 mb-3.5 border-t border-b border-slate-100/50 py-2.5">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                <div className="w-6 h-6 rounded-md bg-[#e6f3f5]/80 flex items-center justify-center text-[#006670] shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                </div>
-                <span>FDA Approved</span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                <div className="w-6 h-6 rounded-md bg-[#e6f3f5]/80 flex items-center justify-center text-[#006670] shrink-0">
-                  <Shield className="w-3.5 h-3.5" />
-                </div>
-                <span>{productData && productData.effective_warranty ? `${productData.effective_warranty} Months Warranty` : '2 Years Warranty'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                <div className="w-6 h-6 rounded-md bg-[#e6f3f5]/80 flex items-center justify-center text-[#006670] shrink-0">
-                  <Truck className="w-3.5 h-3.5" />
-                </div>
-                <span>Pan India Delivery</span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                <div className="w-6 h-6 rounded-md bg-[#e6f3f5]/80 flex items-center justify-center text-[#006670] shrink-0">
-                  <Wrench className="w-3.5 h-3.5" />
-                </div>
-                <span>Installation Included</span>
-              </div>
-            </div>
-
-            {/* Purchase CTA buttons */}
-            <div className="space-y-1.5 mb-3.5">
-              <div className="flex gap-2">
-
-                {/* Quantity selector */}
-                <div className="flex items-center border border-slate-200 rounded-lg px-1 bg-white shrink-0 h-10">
+            {/* Purchase / Out-of-Stock Action Block (Myntra / Ajio style) */}
+            <div className="space-y-2 mb-3.5 pt-2 border-t border-slate-100/60">
+              {isOutOfStock ? (
+                <div className="space-y-2.5">
+                  {/* Primary CTA: Save to Wishlist (Myntra / Ajio style) */}
                   <button
-                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                    className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold"
+                    onClick={() => handleWishlistToggle()}
+                    className={`w-full h-11 rounded-2xl text-xs tracking-wider font-extrabold uppercase transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] ${
+                      isWishlisted
+                        ? 'bg-rose-50 border-2 border-rose-200 text-rose-600 hover:bg-rose-100 shadow-xs'
+                        : 'bg-[#006670] hover:bg-[#004e56] text-white hover:shadow-md'
+                    }`}
                   >
-                    <Minus className="w-3 h-3" />
+                    <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : 'fill-white/20 text-white'}`} />
+                    <span>{isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}</span>
                   </button>
-                  <span className="w-5 text-center text-xs font-bold text-slate-800 font-sans">{quantity}</span>
+
+                  {/* Secondary CTA: Explore Similar Products */}
                   <button
-                    onClick={() => setQuantity(prev => prev + 1)}
-                    className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold"
+                    onClick={() => {
+                      const el = document.getElementById('related-products-container');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      } else {
+                        window.scrollTo({ top: 1200, behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-full h-10 rounded-2xl text-xs font-extrabold bg-slate-100 hover:bg-slate-200/90 border border-slate-200/80 text-slate-700 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Plus className="w-3 h-3" />
+                    <Sparkles className="w-3.5 h-3.5 text-[#006670]" />
+                    <span>Explore Similar Equipment</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   </button>
                 </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    {/* Quantity selector */}
+                    <div className="flex items-center border border-slate-200 rounded-lg px-1 bg-white shrink-0 h-10">
+                      <button
+                        onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                        disabled={isOutOfStock}
+                        className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="w-5 text-center text-xs font-bold text-slate-800 font-sans">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(prev => prev + 1)}
+                        disabled={isOutOfStock || (!allowBackorders && quantity >= availableStock)}
+                        className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
 
-                {/* Add to Cart button */}
-                <button
-                  id="main-add-to-cart-btn"
-                  onClick={handleAddToCart}
-                  className="flex-grow h-10 rounded-lg bg-white hover:bg-slate-50 text-[#006670] border border-[#006670]/20 hover:border-[#006670] text-xs tracking-wider font-extrabold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  Add to Cart
-                </button>
-              </div>
+                    {/* Add to Cart button */}
+                    <button
+                      id="main-add-to-cart-btn"
+                      onClick={handleAddToCart}
+                      disabled={isOutOfStock}
+                      className="flex-grow h-10 rounded-lg text-xs tracking-wider font-extrabold uppercase transition-all flex items-center justify-center gap-2 shadow-sm bg-white hover:bg-slate-50 text-[#006670] border border-[#006670]/20 hover:border-[#006670] cursor-pointer"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      Add to Cart
+                    </button>
+                  </div>
 
-              {/* Buy Now button */}
-              {productData?.inventory?.available_stock > 0 && (
-                <button
-                  onClick={handleBuyNow}
-                  className="w-full h-10 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-xs tracking-wider font-extrabold uppercase transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  Buy Now
-                </button>
+                  {/* Buy Now button */}
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isOutOfStock}
+                    className="w-full h-10 rounded-lg text-xs tracking-wider font-extrabold uppercase transition-all shadow-sm flex items-center justify-center gap-2 bg-[#006670] hover:bg-[#004e56] text-white hover:shadow-md cursor-pointer"
+                  >
+                    Buy Now
+                  </button>
+                </>
               )}
             </div>
 
             {/* Wishlist & Share link */}
-            <div className="flex gap-4 text-[10px] font-bold text-slate-400 mb-3.5 border-b border-slate-100/60 pb-3.5">
+            <div className="flex gap-4 text-[10px] font-bold text-slate-400 mb-1 border-b border-slate-100/60 pb-3">
               <button
                 onClick={() => handleWishlistToggle()}
                 className="flex items-center gap-1.5 hover:text-[#006670] transition-colors cursor-pointer"
@@ -981,51 +1141,12 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
       </section>
 
-      {/* 3. Core Trust Strip details */}
-      <section className="bg-white border-t border-b border-slate-100/70 py-4.5 mb-8 shadow-[0_1px_8px_rgba(0,0,0,0.01)]">
-        <div className="max-w-5xl mx-auto px-4 md:px-12 grid grid-cols-2 md:grid-cols-5 gap-5 text-center">
-
-          <div className="flex flex-col items-center">
-            <ShieldCheck className="w-5 h-5 text-[#006670] mb-1" />
-            <h4 className="text-[11px] font-bold text-slate-800">
-              {productData && productData.effective_warranty ? `${productData.effective_warranty} Months Warranty` : '2 Years Warranty'}
-            </h4>
-            <p className="text-[9.5px] text-slate-400 mt-0.5 font-sans">On All Products</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Wrench className="w-5 h-5 text-[#006670] mb-1" />
-            <h4 className="text-[11px] font-bold text-slate-800">Free Installation</h4>
-            <p className="text-[9.5px] text-slate-400 mt-0.5 font-sans">By Certified Experts</p>
-          </div>
-
-          <div className="flex flex-col items-center col-span-2 md:col-span-1">
-            <Truck className="w-5 h-5 text-[#006670] mb-1" />
-            <h4 className="text-[11px] font-bold text-slate-800">Pan India Delivery</h4>
-            <p className="text-[9.5px] text-slate-400 mt-0.5 font-sans">2-5 Business Days</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Phone className="w-5 h-5 text-[#006670] mb-1" />
-            <h4 className="text-[11px] font-bold text-slate-800">Dedicated Support</h4>
-            <p className="text-[9.5px] text-slate-400 mt-0.5 font-sans">+91 98765 43210</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <RotateCcw className="w-5 h-5 text-[#006670] mb-1" />
-            <h4 className="text-[11px] font-bold text-slate-800">7 Days Returns</h4>
-            <p className="text-[9.5px] text-slate-400 mt-0.5 font-sans">No Questions Asked</p>
-          </div>
-
-        </div>
-      </section>
-
       {/* 4. Tab Panels / Interactive Sheets Container */}
-      <section className="max-w-5xl mx-auto px-4 md:px-12 pb-10">
+      <section className="max-w-5xl mx-auto px-4 md:px-12 pb-6 md:pb-8">
         <div>
 
           {/* Tab Header Row */}
-          <div className="flex border-b border-slate-200/80 overflow-x-auto bg-transparent scrollbar-none mb-6">
+          <div className="flex border-b border-slate-200/80 overflow-x-auto bg-transparent scrollbar-none mb-5">
             {(['description', 'features', 'specifications', 'downloads', 'reviews'] as const).map((tab) => (
               <button
                 key={tab}
@@ -1042,10 +1163,10 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           </div>
 
           {/* Tab Contents Frame */}
-          <div className="py-2 text-left min-h-[240px]">
+          <div className="py-1 text-left">
             {activeTab === 'description' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-6 space-y-4">
+                <div className={productData && productData.attributes && productData.attributes.length > 0 ? "lg:col-span-6 space-y-4" : "lg:col-span-12 space-y-4"}>
                   <h3 className="text-lg font-bold text-slate-800">Product Overview</h3>
                   {productData ? (
                     <div
@@ -1053,14 +1174,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       dangerouslySetInnerHTML={{ __html: parsedDesc.description || 'No overview available.' }}
                     />
                   ) : (
-                    <>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        The NSK Pana-Max High Speed Handpiece delivers exceptional cutting performance with minimal vibration and noise. Its ergonomic design ensures superior comfort and precise control for dental professionals.
-                      </p>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        Built with clean head system technology to prevent back-siphonage of contaminants, and high durability ceramic bearings that reduce friction and heat, this handpiece provides maximum lifespan under severe sterilization parameters.
-                      </p>
-                    </>
+                    <p className="text-sm text-slate-500 leading-relaxed">No overview available.</p>
                   )}
                   {productData && parsedDesc.additional_content && (
                     <div className="pt-4 border-t border-slate-100 mt-4">
@@ -1070,55 +1184,28 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   )}
                 </div>
 
-                {/* Specifications summary table */}
-                <div className="lg:col-span-6 bg-white border border-slate-200/60 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)] animate-fadeIn">
-                  <h4 className="text-[10px] font-black tracking-widest text-[#006670] uppercase mb-4">
-                    Key Performance Metrics
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    {productData && productData.attributes && productData.attributes.length > 0 ? (
-                      productData.attributes.slice(0, 6).map((attr: any) => (
-                        <div key={attr.id}>
+                {/* Specifications summary table (Only shown if real backend attributes exist) */}
+                {productData && productData.attributes && productData.attributes.length > 0 && (
+                  <div className="lg:col-span-6 bg-white border border-slate-200/60 rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)] animate-fadeIn">
+                    <h4 className="text-[10px] font-black tracking-widest text-[#006670] uppercase mb-4">
+                      Key Performance Metrics
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      {productData.attributes.slice(0, 6).map((attr: any) => (
+                        <div key={attr.id || attr.name}>
                           <span className="text-slate-400 block mb-0.5">{attr.name}</span>
                           <span className="font-bold text-slate-700">{attr.value} {attr.unit || ''}</span>
                         </div>
-                      ))
-                    ) : (
-                      <>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Power Source</span>
-                          <span className="font-bold text-slate-700">Air Pressure</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Noise Level</span>
-                          <span className="font-bold text-slate-700">≤ 60 dB</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Speed</span>
-                          <span className="font-bold text-slate-700">Up to 450,000 RPM</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Head Size</span>
-                          <span className="font-bold text-slate-700">Standard Head</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Bur Type</span>
-                          <span className="font-bold text-slate-700">FG (1.59 - 1.60 mm)</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block mb-0.5">Connection</span>
-                          <span className="font-bold text-slate-700">Standard 4 Hole</span>
-                        </div>
-                      </>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
             {activeTab === 'features' && (
               <div className="max-w-3xl space-y-6">
-                {productData ? (
+                {productData && (
                   <>
                     {parsedDesc.features && parsedDesc.features.length > 0 && (
                       <div>
@@ -1171,129 +1258,59 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                        <p className="text-xs text-slate-400 italic">No features or bullet highlights defined.</p>
                     )}
                   </>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">Key Clinical Highlights</h3>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3 text-sm text-slate-600 font-semibold leading-normal">
-                        <div className="w-5 h-5 rounded-full bg-[#e6f3f5] flex items-center justify-center text-[#006670] shrink-0 mt-0.5">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                        <span>Quadruple Spray for efficient water cooling and dental cavity cleansing.</span>
-                      </li>
-                      <li className="flex items-start gap-3 text-sm text-slate-600 font-semibold leading-normal">
-                        <div className="w-5 h-5 rounded-full bg-[#e6f3f5] flex items-center justify-center text-[#006670] shrink-0 mt-0.5">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                        <span>High-durability Ceramic Bearings for friction-free, quiet, and smooth operation.</span>
-                      </li>
-                      <li className="flex items-start gap-3 text-sm text-slate-600 font-semibold leading-normal">
-                        <div className="w-5 h-5 rounded-full bg-[#e6f3f5] flex items-center justify-center text-[#006670] shrink-0 mt-0.5">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                        <span>Push Button Chuck for easy, safe, and lightning-fast clinical bur changes.</span>
-                      </li>
-                      <li className="flex items-start gap-3 text-sm text-slate-600 font-semibold leading-normal">
-                        <div className="w-5 h-5 rounded-full bg-[#e6f3f5] flex items-center justify-center text-[#006670] shrink-0 mt-0.5">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                        <span>Stainless Steel Body providing lightweight ergonomics and long corrosion durability.</span>
-                      </li>
-                      <li className="flex items-start gap-3 text-sm text-slate-600 font-semibold leading-normal">
-                        <div className="w-5 h-5 rounded-full bg-[#e6f3f5] flex items-center justify-center text-[#006670] shrink-0 mt-0.5">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                        <span>Fully Autoclavable up to 135°C, ensuring compliance with clinic hygiene parameters.</span>
-                      </li>
-                    </ul>
-                  </>
                 )}
               </div>
             )}
 
             {activeTab === 'specifications' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3.5">
+              <div className="py-2">
                 {productData && productData.attributes && productData.attributes.length > 0 ? (
-                  productData.attributes.map((attr: any, aIdx: number) => (
-                    <div key={aIdx} className="flex justify-between py-2.5 border-b border-slate-200/60 text-xs font-semibold">
-                      <span className="text-slate-400 uppercase tracking-wider">{attr.name}</span>
-                      <span className="text-slate-800">{attr.value} {attr.unit || ''}</span>
-                    </div>
-                  ))
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3.5">
+                    {productData.attributes.map((attr: any, aIdx: number) => (
+                      <div key={aIdx} className="flex justify-between py-2.5 border-b border-slate-200/60 text-xs font-semibold">
+                        <span className="text-slate-400 uppercase tracking-wider">{attr.name}</span>
+                        <span className="text-slate-800">{attr.value} {attr.unit || ''}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  [
-                    { label: 'Power Source', val: 'Air Pressure' },
-                    { label: 'Noise Level', val: '≤ 60 dB' },
-                    { label: 'Speed', val: 'Up to 450,000 RPM' },
-                    { label: 'Head Size', val: 'Standard Head' },
-                    { label: 'Bur Type', val: 'FG (1.59 – 1.60 mm)' },
-                    { label: 'Connection', val: 'Standard 4 Hole' },
-                    { label: 'Spray', val: 'Quadruple Water Spray' },
-                    { label: 'Autoclavable', val: 'Up to 135°C' }
-                  ].map((spec, sIdx) => (
-                    <div key={sIdx} className="flex justify-between py-2.5 border-b border-slate-200/60 text-xs font-semibold">
-                      <span className="text-slate-400 uppercase tracking-wider">{spec.label}</span>
-                      <span className="text-slate-800">{spec.val}</span>
-                    </div>
-                  ))
+                  <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-xs text-slate-400 font-medium">No technical specifications added for this product.</p>
+                  </div>
                 )}
               </div>
             )}
 
             {activeTab === 'downloads' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="py-2">
                 {productData && productData.documents && productData.documents.length > 0 ? (
-                  productData.documents.map((doc: any, dIdx: number) => (
-                    <div key={dIdx} className="flex items-center gap-4 bg-white border border-slate-200/60 rounded-2xl p-4.5 hover:border-[#006670]/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] transition-all">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[#006670] shrink-0">
-                        <FileText className="w-6 h-6" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {productData.documents.map((doc: any, dIdx: number) => (
+                      <div key={dIdx} className="flex items-center gap-4 bg-white border border-slate-200/60 rounded-2xl p-4.5 hover:border-[#006670]/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] transition-all">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[#006670] shrink-0">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="flex-grow text-left">
+                          <h4 className="text-xs font-bold text-slate-800">{doc.title}</h4>
+                          <p className="text-[10px] text-slate-400 font-sans mt-0.5">
+                            {doc.document_type ? doc.document_type.toUpperCase() : 'DOCUMENT'} • PDF FORMAT
+                          </p>
+                        </div>
+                        <a
+                          href={doc.file || doc.external_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2.5 hover:bg-slate-200/50 rounded-full text-[#006670] transition-colors cursor-pointer"
+                        >
+                          <Download className="w-4.5 h-4.5" />
+                        </a>
                       </div>
-                      <div className="flex-grow text-left">
-                        <h4 className="text-xs font-bold text-slate-800">{doc.title}</h4>
-                        <p className="text-[10px] text-slate-400 font-sans mt-0.5">
-                          {doc.document_type ? doc.document_type.toUpperCase() : 'DOCUMENT'} • PDF FORMAT
-                        </p>
-                      </div>
-                      <a
-                        href={doc.file || doc.external_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2.5 hover:bg-slate-200/50 rounded-full text-[#006670] transition-colors cursor-pointer"
-                      >
-                        <Download className="w-4.5 h-4.5" />
-                      </a>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 ) : (
-                  <>
-                    {/* Manual Box */}
-                    <div className="flex items-center gap-4 bg-white border border-slate-200/60 rounded-2xl p-4.5 hover:border-[#006670]/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] transition-all">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[#006670] shrink-0">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div className="flex-grow text-left">
-                        <h4 className="text-xs font-bold text-slate-800">User Technical Manual</h4>
-                        <p className="text-[10px] text-slate-400 font-sans mt-0.5">PDF Format • 2.4 MB</p>
-                      </div>
-                      <button className="p-2.5 hover:bg-slate-200/50 rounded-full text-[#006670] transition-colors cursor-pointer">
-                        <Download className="w-4.5 h-4.5" />
-                      </button>
-                    </div>
-
-                    {/* Brochure Box */}
-                    <div className="flex items-center gap-4 bg-white border border-slate-200/60 rounded-2xl p-4.5 hover:border-[#006670]/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] transition-all">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[#006670] shrink-0">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div className="flex-grow text-left">
-                        <h4 className="text-xs font-bold text-slate-800">NSK Product Brochure</h4>
-                        <p className="text-[10px] text-slate-400 font-sans mt-0.5">PDF Format • 1.8 MB</p>
-                      </div>
-                      <button className="p-2.5 hover:bg-slate-200/50 rounded-full text-[#006670] transition-colors cursor-pointer">
-                        <Download className="w-4.5 h-4.5" />
-                      </button>
-                    </div>
-                  </>
+                  <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-xs text-slate-400 font-medium">No downloadable brochures or manuals available for this product.</p>
+                  </div>
                 )}
               </div>
             )}
@@ -1306,30 +1323,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 showToast={showToast}
               />
             )}
-
-            {/* Application Areas Section inside panel */}
-            <div className="mt-8 border-t border-slate-100/80 pt-6">
-              <span className="text-[10px] font-black tracking-widest text-[#006670] uppercase block mb-5 text-center">
-                Recommended Application Areas
-              </span>
-              <div className="flex flex-wrap justify-center gap-6 md:gap-10">
-                {[
-                  { label: 'General Dentistry', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2Z" /><path d="M12 6v12M6 12h12" /></svg> },
-                  { label: 'Endodontics', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M4.5 22v-5M19.5 22v-5M12 2v20M8 8l8 8" /></svg> },
-                  { label: 'Implantology', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 2v20M6 8l12 8M6 16l12-8" /></svg> },
-                  { label: 'Prosthodontics', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 2L2 22h20L12 2Z" /></svg> },
-                  { label: 'Orthodontics', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M3 3h18v18H3zM9 9h6v6H9z" /></svg> }
-                ].map((area, aIdx) => (
-                  <div key={aIdx} className="flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 rounded-full bg-[#006670]/5 border border-[#006670]/10 flex items-center justify-center text-[#006670]">
-                      {area.icon}
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-600">{area.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
           </div>
         </div>
       </section>
@@ -1363,7 +1356,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             id="related-products-container"
             className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory flex-nowrap pb-4"
           >
-            {relatedProducts.map((prod) => {
+            {relatedProductsList.map((prod) => {
               const originalPrice = prod.originalPrice || Math.round(prod.price * 1.2);
               const discountPercent = Math.round(((originalPrice - prod.price) / originalPrice) * 100);
               const isProdWishlisted = wishlistItems?.some(w => w.id === prod.id);
@@ -1425,7 +1418,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                     <div className="text-left px-1">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        {prod.id.includes('nsk') ? 'NSK' : 'Woodpecker'}
+                        {prod.brand || (prod.id.includes('nsk') ? 'NSK' : 'Woodpecker')}
                       </span>
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 leading-snug">
                         {prod.title}
@@ -1514,43 +1507,95 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
           {/* Right actions */}
           <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
+            {isOutOfStock ? (
+              <>
+                {/* Out-of-stock price indicator */}
+                <div className="flex flex-col text-right justify-center">
+                  <span className="text-sm font-extrabold text-slate-400 line-through font-display leading-tight">
+                    ₹{getResolvedPrice().toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wide">
+                    Out of Stock
+                  </span>
+                </div>
 
-            {/* Price */}
-            <div className="flex flex-col text-right justify-center hidden sm:flex">
-              <span className="text-base font-extrabold text-[#0F2D30] font-display leading-tight">
-                ₹{getResolvedPrice().toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </span>
-              {getResolvedOriginalPrice() > getResolvedPrice() && (
-                <span className="text-[10px] text-slate-400 line-through font-semibold leading-none">
-                  ₹{getResolvedOriginalPrice().toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                </span>
-              )}
-            </div>
+                {/* Primary Wishlist Button */}
+                <button
+                  onClick={() => handleWishlistToggle()}
+                  className={`flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap transition-all ${
+                    isWishlisted
+                      ? 'bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100'
+                      : 'bg-[#006670] hover:bg-[#004e56] text-white'
+                  }`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : 'fill-white/20 text-white'}`} />
+                  <span>{isWishlisted ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
+                </button>
 
-            {/* Quantity select */}
-            <div className="flex items-center border border-slate-200 rounded-xl px-1.5 py-0.5 bg-white shrink-0">
-              <button
-                onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold text-xs"
-              >
-                -
-              </button>
-              <span className="w-5 text-center text-xs font-bold text-slate-800 font-sans">{quantity}</span>
-              <button onClick={() => setQuantity(prev => prev + 1)} className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold text-xs">+</button>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 md:flex-initial px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-[#006670] border border-[#006670]/20 hover:border-[#006670] text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap text-center"
-            >
-              Add to Cart
-            </button>
-            {productData?.inventory?.available_stock > 0 && (
-              <button
-                onClick={handleBuyNow}
-                className="flex-1 md:flex-initial px-4 py-2 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap text-center"
-              >
-                Buy Now
-              </button>
+                {/* Explore Similar button */}
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('related-products-container');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                      window.scrollTo({ top: 1200, behavior: 'smooth' });
+                    }
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                  title="Explore Similar Equipment"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#006670]" />
+                  <span>Similar</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Price */}
+                <div className="flex flex-col text-right justify-center hidden sm:flex">
+                  <span className="text-base font-extrabold text-[#0F2D30] font-display leading-tight">
+                    ₹{getResolvedPrice().toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </span>
+                  {getResolvedOriginalPrice() > getResolvedPrice() && (
+                    <span className="text-[10px] text-slate-400 line-through font-semibold leading-none">
+                      ₹{getResolvedOriginalPrice().toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </span>
+                  )}
+                </div>
+
+                {/* Quantity select */}
+                <div className="flex items-center border border-slate-200 rounded-xl px-1.5 py-0.5 bg-white shrink-0">
+                  <button
+                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                    disabled={isOutOfStock}
+                    className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    -
+                  </button>
+                  <span className="w-5 text-center text-xs font-bold text-slate-800 font-sans">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(prev => prev + 1)}
+                    disabled={isOutOfStock || (!allowBackorders && quantity >= availableStock)}
+                    className="w-6 h-6 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className="flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm whitespace-nowrap text-center bg-white hover:bg-slate-50 text-[#006670] border border-[#006670]/20 hover:border-[#006670] cursor-pointer"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  disabled={isOutOfStock}
+                  className="flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm whitespace-nowrap text-center bg-[#006670] hover:bg-[#004e56] text-white hover:shadow-md cursor-pointer"
+                >
+                  Buy Now
+                </button>
+              </>
             )}
           </div>
         </div>

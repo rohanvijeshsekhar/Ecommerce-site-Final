@@ -74,8 +74,10 @@ const BrandsPage: React.FC = () => {
         setBrands(res.data);
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to load brands.');
+      if (err?.response?.status !== 401) {
+        console.error(err);
+        toast.error('Failed to load brands.');
+      }
     } finally {
       setLoading(false);
     }

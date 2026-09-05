@@ -45,7 +45,7 @@ export default function HomeClient({
   };
 
   const handleViewChange = (view: string) => {
-    if (view === 'portfolio') router.push('/products');
+    if (view === 'portfolio') router.push('/search');
     else if (view === 'combo-deals') router.push('/combo-deals');
   };
 

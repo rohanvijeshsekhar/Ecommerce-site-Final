@@ -75,10 +75,10 @@ class EmailOTPProvider(BaseOTPProvider):
             logger.error(f"[EmailOTPProvider Error] Failed to send OTP to {target}: {exc}", exc_info=True)
             if getattr(settings, "DEBUG", False):
                 print("\n==================================================")
-                print(f"[DEV OTP FALLBACK] Dispatch notice (DEBUG mode):")
-                print(f"[FAAZO OTP] Verification Code for {target}: {otp_code}")
+                print(f"[FAAZO EMAIL ERROR] Failed to deliver OTP to {target}:")
+                print(f"  Error: {exc}")
                 print(f"  Purpose: {purpose}")
+                print(f"  Code: {otp_code}")
                 print("==================================================\n")
-                return True
             return False
 

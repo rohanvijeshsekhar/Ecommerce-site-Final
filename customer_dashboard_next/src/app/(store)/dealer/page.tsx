@@ -11,7 +11,7 @@ export default function DealerPortalRoute() {
 
   const handleViewChange = (view: string) => {
     if (view === 'home') router.push('/');
-    else if (view === 'portfolio') router.push('/products');
+    else if (view === 'portfolio') router.push('/search');
     else if (view === 'my-orders') {
       store.setDashboardSection('orders');
       router.push('/profile');
