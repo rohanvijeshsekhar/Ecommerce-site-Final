@@ -236,6 +236,7 @@ api.interceptors.response.use(
 export const getAbsoluteImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/images/') || url.startsWith('/brand/') || url.startsWith('/category/') || url.startsWith('/assets/') || url.startsWith('/placeholders/')) return url;
   if (url.startsWith('/')) return `${MEDIA_BASE_URL}${url}`;
   return `${MEDIA_BASE_URL}/${url}`;
 };

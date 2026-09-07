@@ -184,9 +184,11 @@ class ShiprocketUnitTests(TestCase):
     # 6. Successful shipment creation
     @override_settings(SHIPPING_PROVIDER="shiprocket")
     @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_order_details", return_value=({}, 200, 0.0))
+    @patch.object(ShiprocketAPIClient, "get_shipment_details", return_value=({}, 200, 0.0))
     @patch.object(ShiprocketAPIClient, "create_order")
     @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="jwt_tok")
-    def test_06_successful_shipment_creation(self, mock_auth, mock_create, mock_assign):
+    def test_06_successful_shipment_creation(self, mock_auth, mock_create, mock_ship_details, mock_order_details, mock_assign):
         mock_create.return_value = ({"order_id": 555, "shipment_id": 666}, 200, 100.0)
         mock_assign.return_value = ({"response": {"data": {"awb_code": "143256789012", "courier_name": "Delhivery Surface"}}}, 200, 90.0)
 
@@ -304,9 +306,11 @@ class ShiprocketUnitTests(TestCase):
     # 15. COD payment method mapping
     @override_settings(SHIPPING_PROVIDER="shiprocket")
     @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_order_details", return_value=({}, 200, 0.0))
+    @patch.object(ShiprocketAPIClient, "get_shipment_details", return_value=({}, 200, 0.0))
     @patch.object(ShiprocketAPIClient, "create_order")
     @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="jwt_tok")
-    def test_15_cod_payment_method_mapping(self, mock_auth, mock_create, mock_assign):
+    def test_15_cod_payment_method_mapping(self, mock_auth, mock_create, mock_ship_details, mock_order_details, mock_assign):
         mock_create.return_value = ({"order_id": 11, "shipment_id": 22}, 200, 100.0)
         mock_assign.return_value = ({"response": {"data": {"awb_code": "COD_AWB_123", "courier_name": "Delhivery"}}}, 200, 90.0)
 
@@ -320,9 +324,11 @@ class ShiprocketUnitTests(TestCase):
     # 16. Prepaid payment method mapping
     @override_settings(SHIPPING_PROVIDER="shiprocket")
     @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_order_details", return_value=({}, 200, 0.0))
+    @patch.object(ShiprocketAPIClient, "get_shipment_details", return_value=({}, 200, 0.0))
     @patch.object(ShiprocketAPIClient, "create_order")
     @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="jwt_tok")
-    def test_16_prepaid_payment_method_mapping(self, mock_auth, mock_create, mock_assign):
+    def test_16_prepaid_payment_method_mapping(self, mock_auth, mock_create, mock_ship_details, mock_order_details, mock_assign):
         mock_create.return_value = ({"order_id": 33, "shipment_id": 44}, 200, 100.0)
         mock_assign.return_value = ({"response": {"data": {"awb_code": "PRE_AWB_123", "courier_name": "Delhivery"}}}, 200, 90.0)
 
@@ -336,9 +342,11 @@ class ShiprocketUnitTests(TestCase):
     # 17. Safe retry after failure
     @override_settings(SHIPPING_PROVIDER="shiprocket")
     @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_order_details", return_value=({}, 200, 0.0))
+    @patch.object(ShiprocketAPIClient, "get_shipment_details", return_value=({}, 200, 0.0))
     @patch.object(ShiprocketAPIClient, "create_order")
     @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="jwt_tok")
-    def test_17_safe_retry_after_failure(self, mock_auth, mock_create, mock_assign):
+    def test_17_safe_retry_after_failure(self, mock_auth, mock_create, mock_ship_details, mock_order_details, mock_assign):
         mock_create.return_value = ({"order_id": 77, "shipment_id": 88}, 200, 100.0)
         # First attempt fails AWB assignment
         mock_assign.side_effect = [
@@ -384,6 +392,8 @@ class ShiprocketUnitTests(TestCase):
         self.assertEqual(resp1.status_code, 200)
         shipment.refresh_from_db()
         self.assertEqual(shipment.shipment_status, ShipmentStatus.DELIVERED)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, OrderStatus.DELIVERED)
 
         # Second duplicate webhook delivery
         resp2 = api_client.post(
@@ -394,3 +404,377 @@ class ShiprocketUnitTests(TestCase):
         )
         self.assertEqual(resp2.status_code, 200)
         self.assertIn("Idempotent", resp2.data.get("message", ""))
+
+    # 19. AWB Recovery: Local AWB empty + Shiprocket shipment details have AWB -> Reuse AWB, no assign_courier call
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_shipment_details")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_19_awb_recovery_from_shiprocket_shipment_details(self, mock_create, mock_ship_details, mock_assign):
+        mock_create.return_value = ({"order_id": 1564117650, "shipment_id": 1560336097}, 200, 50.0)
+        mock_ship_details.return_value = ({
+            "data": {
+                "id": 1560336097,
+                "order_id": 1564117650,
+                "status": "PICKUP GENERATED",
+                "awb": "90654796212",
+                "courier": "Blue Dart Air",
+            }
+        }, 200, 50.0)
+
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10, "breadth": 10, "height": 10}
+        shipment = provider.create_shipment(order=self.order, package_info=pkg)
+
+        # AWB should be recovered from shipment details
+        self.assertEqual(shipment.awb_number, "90654796212")
+        self.assertEqual(shipment.courier_name, "Blue Dart Air")
+        self.assertEqual(shipment.delhivery_shipment_id, "1560336097")
+        self.assertEqual(shipment.external_shipment_id, "1564117650")
+        # assign_courier must NOT have been called!
+        mock_assign.assert_not_called()
+
+        # Order status should automatically advance to SHIPPED
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, OrderStatus.SHIPPED)
+
+    # 20. AWB Recovery: Local AWB empty + Shiprocket order details have AWB -> Reuse AWB, no assign_courier call
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "get_order_details")
+    @patch.object(ShiprocketAPIClient, "get_shipment_details")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_20_awb_recovery_from_shiprocket_order_details(self, mock_create, mock_ship_details, mock_order_details, mock_assign):
+        mock_create.return_value = ({"order_id": 1564117650, "shipment_id": 1560336097}, 200, 50.0)
+        mock_ship_details.return_value = ({"data": {}}, 200, 50.0)
+        mock_order_details.return_value = ({
+            "data": {
+                "id": 1564117650,
+                "status": "PICKUP GENERATED",
+                "awb_data": {"awb": "90654796212"},
+                "shipments": {"id": 1560336097, "courier": "Blue Dart Air"},
+            }
+        }, 200, 50.0)
+
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10, "breadth": 10, "height": 10}
+        shipment = provider.create_shipment(order=self.order, package_info=pkg)
+
+        self.assertEqual(shipment.awb_number, "90654796212")
+        self.assertEqual(shipment.courier_name, "Blue Dart Air")
+        mock_assign.assert_not_called()
+
+    # 21. Status Regression Protection: Delayed In Transit webhook does not revert Delivered status
+    def test_21_status_regression_protection(self):
+        shipment = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            awb_number="REG_AWB_100",
+            shipment_status=ShipmentStatus.DELIVERED,
+            delivered_at=timezone.now(),
+        )
+        self.order.status = OrderStatus.DELIVERED
+        self.order.save()
+
+        api_client = APIClient()
+        # Delayed webhook arriving with IN_TRANSIT
+        delayed_payload = {
+            "awb": "REG_AWB_100",
+            "current_status": "IN TRANSIT",
+            "location": "Transit Hub Mumbai",
+            "current_timestamp": "2026-08-19 12:00:00",
+        }
+
+        resp = api_client.post(
+            "/api/v1/shipping/webhooks/shiprocket/",
+            data=delayed_payload,
+            format="json",
+            HTTP_X_SHIPROCKET_WEBHOOK_ID="WH_REG_001",
+        )
+        self.assertEqual(resp.status_code, 200)
+        shipment.refresh_from_db()
+        # Status MUST remain DELIVERED
+        self.assertEqual(shipment.shipment_status, ShipmentStatus.DELIVERED)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, OrderStatus.DELIVERED)
+
+    # 22. Status Synchronization via tracking sync
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "track_awb")
+    def test_22_tracking_sync_with_scans_and_order_update(self, mock_track):
+        mock_track.return_value = ({
+            "tracking_data": {
+                "track_status": 1,
+                "shipment_track": [{
+                    "current_status": "OUT FOR DELIVERY",
+                    "destination": "Bangalore Urban",
+                    "courier_name": "Blue Dart Express",
+                    "scans": [
+                        {"date": "2026-09-07T08:00:00Z", "location": "Bangalore Hub", "activity": "Arrived at Hub", "status": "REACHED AT DESTINATION HUB"},
+                        {"date": "2026-09-07T10:30:00Z", "location": "Bangalore Delivery Center", "activity": "Out for delivery", "status": "OUT FOR DELIVERY"},
+                    ]
+                }]
+            }
+        }, 200, 50.0)
+
+        shipment = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            awb_number="SYNC_AWB_100",
+            shipment_status=ShipmentStatus.IN_TRANSIT,
+        )
+
+        provider = ShiprocketProvider()
+        updated = provider.sync_tracking(shipment)
+
+        self.assertEqual(updated.shipment_status, ShipmentStatus.OUT_FOR_DELIVERY)
+        self.assertEqual(updated.current_location, "Bangalore Urban")
+        self.assertEqual(updated.courier_name, "Blue Dart Express")
+        self.assertEqual(updated.tracking_events.count(), 2)
+
+        # Calling sync_tracking a second time with same scans must NOT create duplicate tracking events
+        provider.sync_tracking(updated)
+        self.assertEqual(updated.tracking_events.count(), 2)
+
+    # ───────────────────────────────────────────────────────────────────────
+    # AWB Synchronization Fix Tests (tests 23-32)
+    # ───────────────────────────────────────────────────────────────────────
+
+    # 23. Successful create_shipment persists AWB and courier to local DB
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_23_create_shipment_persists_awb_to_db(self, mock_create, mock_assign, mock_auth):
+        mock_create.return_value = ({"order_id": 9001, "shipment_id": 8001, "awb_code": "AWB_NEW_TEST", "courier_name": "Blue Dart"}, 200, 100.0)
+        mock_assign.return_value = ({}, 200, 50.0)
+
+        existing = Shipment.objects.create(order=self.order, provider="shiprocket", shipment_status=ShipmentStatus.NOT_CREATED)
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0, "payment_mode": "Prepaid"}
+        result = provider.create_shipment(self.order, pkg, existing_shipment=existing)
+
+        result.refresh_from_db()
+        self.assertEqual(result.awb_number, "AWB_NEW_TEST")
+        self.assertEqual(result.courier_name, "Blue Dart")
+        self.assertEqual(result.provider, "shiprocket")
+        self.assertNotEqual(result.shipment_status, ShipmentStatus.NOT_CREATED)
+        self.assertEqual(result.delhivery_shipment_id, "8001")
+        self.assertEqual(result.external_shipment_id, "9001")
+
+    # 24. create_shipment with duplicate order_id recovers existing AWB via shipment details
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "get_shipment_details")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_24_duplicate_order_recovery_via_shipment_details(self, mock_create, mock_ship_details, mock_auth):
+        """When Shiprocket rejects create_order (duplicate), AWB is recovered from get_shipment_details."""
+        # create_order raises validation error with SR IDs in details
+        dup_err = ShiprocketValidationError(
+            ["Order already exists."],
+            error_code="VALIDATION_FAILED"
+        )
+        dup_err.details = {"order_id": 9002, "shipment_id": 8002}
+        mock_create.side_effect = dup_err
+
+        mock_ship_details.return_value = (
+            {"data": {"awb": "AWB_RECOVERED_23", "awb_code": None, "courier": "DTDC Courier", "courier_name": None}},
+            200, 60.0
+        )
+
+        existing = Shipment.objects.create(order=self.order, provider="shiprocket", shipment_status=ShipmentStatus.NOT_CREATED)
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0, "payment_mode": "Prepaid"}
+        result = provider.create_shipment(self.order, pkg, existing_shipment=existing)
+
+        result.refresh_from_db()
+        self.assertEqual(result.awb_number, "AWB_RECOVERED_23")
+        self.assertEqual(result.courier_name, "DTDC Courier")
+        self.assertEqual(result.provider, "shiprocket")
+
+    # 25. Existing local AWB is never overwritten (strict idempotency)
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_25_existing_awb_never_overwritten(self, mock_create, mock_auth):
+        """If existing_shipment already has AWB and provider=shiprocket, return it untouched."""
+        existing = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            awb_number="EXISTING_AWB_SAFE",
+            shipment_status=ShipmentStatus.CREATED,
+        )
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0, "payment_mode": "Prepaid"}
+        result = provider.create_shipment(self.order, pkg, existing_shipment=existing)
+
+        mock_create.assert_not_called()
+        self.assertEqual(result.awb_number, "EXISTING_AWB_SAFE")
+
+    # 26. sync_tracking recovers AWB when awb_number is empty but SR shipment ID is known
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "track_awb")
+    @patch.object(ShiprocketAPIClient, "get_shipment_details")
+    def test_26_sync_tracking_recovers_awb_via_shipment_details(self, mock_ship_details, mock_track, mock_auth):
+        mock_ship_details.return_value = (
+            {"data": {"awb": "AWB_SYNC_RECOVERED", "courier": "Ekart Logistics"}},
+            200, 45.0
+        )
+        # After AWB is recovered, sync_tracking proceeds to track_awb — mock that call
+        mock_track.return_value = (
+            {"tracking_data": {"track_status": 1, "shipment_track": [{
+                "current_status": "AWB ASSIGNED", "destination": "Origin Hub"
+            }]}},
+            200, 30.0
+        )
+        shipment = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            awb_number="",
+            delhivery_shipment_id="99001",
+            shipment_status=ShipmentStatus.NOT_CREATED,
+        )
+
+        provider = ShiprocketProvider()
+        updated = provider.sync_tracking(shipment)
+
+        updated.refresh_from_db()
+        self.assertEqual(updated.awb_number, "AWB_SYNC_RECOVERED")
+        self.assertEqual(updated.courier_name, "Ekart Logistics")
+        self.assertNotEqual(updated.shipment_status, ShipmentStatus.NOT_CREATED)
+        self.assertEqual(updated.provider, "shiprocket")
+
+    # 27. sync_tracking with no AWB and no SR IDs → search by channel_order_id
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "get_shipment_details")
+    @patch.object(ShiprocketAPIClient, "_execute_request")
+    def test_27_sync_tracking_recovers_awb_via_channel_order_id_search(self, mock_exec, mock_ship_details, mock_auth):
+        # _execute_request for the search returns matching order
+        def side_exec(method, path, json_data=None, params=None, **kwargs):
+            if method == "GET" and "/orders" in path:
+                return (
+                    {"data": {"data": [{"id": "5001", "shipments": {"id": "4001"}}]}},
+                    200, 30.0
+                )
+            return ({}, 200, 10.0)
+        mock_exec.side_effect = side_exec
+        mock_ship_details.return_value = (
+            {"data": {"awb": "AWB_CHAN_RECOVERED", "courier": "Delhivery"}},
+            200, 50.0
+        )
+
+        shipment = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            awb_number="",
+            delhivery_shipment_id="",
+            external_shipment_id="",
+            shipment_status=ShipmentStatus.NOT_CREATED,
+        )
+
+        provider = ShiprocketProvider()
+        updated = provider.sync_tracking(shipment)
+        updated.refresh_from_db()
+        self.assertEqual(updated.awb_number, "AWB_CHAN_RECOVERED")
+
+    # 28. provider='sandbox' is treated as a Shiprocket provider in SHIPROCKET_PROVIDERS
+    def test_28_shiprocket_providers_includes_legacy_values(self):
+        from apps.shipping.providers import SHIPROCKET_PROVIDERS
+        self.assertIn("shiprocket", SHIPROCKET_PROVIDERS)
+        self.assertIn("sandbox", SHIPROCKET_PROVIDERS)
+        self.assertIn("live", SHIPROCKET_PROVIDERS)
+
+    # 29. Idempotency check accepts legacy provider='sandbox' — does not create duplicate AWB
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_29_idempotency_accepts_legacy_sandbox_provider(self, mock_create, mock_auth):
+        """If active shipment has provider='sandbox' and awb_number set, return it without calling create_order."""
+        existing = Shipment.objects.create(
+            order=self.order,
+            provider="sandbox",
+            awb_number="SANDBOX_AWB_IDEMPOTENT",
+            shipment_status=ShipmentStatus.CREATED,
+        )
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0, "payment_mode": "Prepaid"}
+        result = provider.create_shipment(self.order, pkg, existing_shipment=existing)
+
+        mock_create.assert_not_called()
+        self.assertEqual(result.awb_number, "SANDBOX_AWB_IDEMPOTENT")
+
+    # 30. After create_shipment succeeds, provider is always 'shiprocket' (never 'sandbox')
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "assign_courier")
+    @patch.object(ShiprocketAPIClient, "create_order")
+    def test_30_provider_normalized_to_shiprocket_on_save(self, mock_create, mock_assign, mock_auth):
+        mock_create.return_value = ({"order_id": 9050, "shipment_id": 8050, "awb_code": "AWB_NORM_TEST"}, 200, 100.0)
+        mock_assign.return_value = ({}, 200, 50.0)
+
+        # Start with legacy sandbox provider
+        existing = Shipment.objects.create(order=self.order, provider="sandbox", shipment_status=ShipmentStatus.NOT_CREATED)
+        provider = ShiprocketProvider()
+        pkg = {"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0, "payment_mode": "Prepaid"}
+        result = provider.create_shipment(self.order, pkg, existing_shipment=existing)
+
+        result.refresh_from_db()
+        self.assertEqual(result.provider, "shiprocket")
+
+    # 31. _find_existing_sr_order parses nested 'data.data' response structure
+    @override_settings(SHIPPING_PROVIDER="shiprocket")
+    @patch.object(ShiprocketAPIClient, "get_auth_token", return_value="mock-token")
+    @patch.object(ShiprocketAPIClient, "_execute_request")
+    def test_31_find_existing_sr_order_parses_response(self, mock_exec, mock_auth):
+        mock_exec.return_value = (
+            {"data": {"data": [{"id": "7777", "shipments": {"id": "6666"}}]}},
+            200, 20.0
+        )
+        provider = ShiprocketProvider()
+        sr_order_id, sr_shipment_id = provider._find_existing_sr_order("FAAZO-999")
+        self.assertEqual(sr_order_id, "7777")
+        self.assertEqual(sr_shipment_id, "6666")
+
+    # 32. Admin create-courier API returns awb_number in response on success
+    @override_settings(SHIPPING_PROVIDER="shiprocket", SHIPROCKET_PICKUP_LOCATION="Primary")
+    @patch("apps.shipping.views.ShiprocketService")
+    def test_32_create_courier_api_returns_awb_in_response(self, MockSvc):
+        """Admin POST /create-courier/ must return awb_number in response data."""
+        api_client = APIClient()
+        api_client.force_authenticate(user=self.admin)
+
+        # Seed a shipment record at ready_for_pickup
+        shipment = Shipment.objects.create(
+            order=self.order,
+            provider="shiprocket",
+            packing_status=PackingStatus.READY_FOR_PICKUP,
+            shipment_status=ShipmentStatus.NOT_CREATED,
+        )
+
+        # The mock must persist AWB to DB because the view calls shipment.refresh_from_db()
+        def mock_create(order, package_info, created_by=None, existing_shipment=None):
+            s = existing_shipment or shipment
+            s.awb_number = "AWB_API_RESPONSE"
+            s.courier_name = "Blue Dart"
+            s.shipment_status = ShipmentStatus.CREATED
+            s.provider = "shiprocket"
+            s.save()
+            return s
+
+        mock_instance = MagicMock()
+        mock_instance.create_shipment.side_effect = mock_create
+        MockSvc.return_value = mock_instance
+
+        resp = api_client.post(
+            f"/api/v1/shipping/admin/shipments/{shipment.id}/create-courier/",
+            data={"weight": 1.0, "length": 10.0, "breadth": 10.0, "height": 10.0},
+            format="json",
+        )
+
+        self.assertIn(resp.status_code, [200, 201])
+        data = resp.json()
+        self.assertTrue(data.get("success"))
+        # Response data must include awb_number so the frontend can display it immediately
+        self.assertEqual(data["data"]["awb_number"], "AWB_API_RESPONSE")

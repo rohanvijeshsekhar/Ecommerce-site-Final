@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import RetrieveAPIView, DestroyAPIView, UpdateAPIView
 from apps.common.responses import success_response, error_response
-from apps.products.models import Product
+from apps.products.models import Product, ProductStatus
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemSerializer
 
@@ -49,8 +49,8 @@ class CartView(APIView):
                     product = Product.objects.filter(id=prod_id).first()
                 else:
                     product = Product.objects.filter(slug=prod_id).first()
-                if not product:
-                    errors.append(f"Product '{prod_id}' not found.")
+                if not product or product.is_deleted or product.status not in [ProductStatus.ACTIVE, "published"]:
+                    errors.append(f"Product '{prod_id}' not found or unavailable.")
                     continue
 
                 cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
@@ -102,7 +102,7 @@ class CartAddView(APIView):
         else:
             product = Product.objects.filter(slug=prod_id).first()
 
-        if not product or product.is_deleted or product.status != "published":
+        if not product or product.is_deleted or product.status not in [ProductStatus.ACTIVE, "published"]:
             return error_response("Product is unavailable or does not exist.", status_code=status.HTTP_404_NOT_FOUND)
 
         existing_item = CartItem.objects.filter(cart=cart, product=product, is_saved_for_later=False).first()

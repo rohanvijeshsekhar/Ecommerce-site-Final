@@ -201,8 +201,12 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
         pickup_date: pickupDate || undefined,
       });
 
-      if (res.success && res.data && res.data.awb_number) {
-        toast.success(`Shipment created with Shiprocket! AWB: ${res.data.awb_number}`);
+      if (res.success && res.data) {
+        if (res.data.awb_number) {
+          toast.success(`Shipment created with Shiprocket! AWB: ${res.data.awb_number}`);
+        } else {
+          toast.success('Courier shipment created successfully.');
+        }
         onShipmentCreated(res.data);
         setView('done');
       } else {

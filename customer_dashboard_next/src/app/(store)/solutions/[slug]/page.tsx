@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Package, Star, ShoppingCart, Filter, Search, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Sparkles, Package, Star, ShoppingCart, Filter, Search, ShieldCheck, Check } from 'lucide-react';
 import { api } from '../../../../lib/api';
+import { useStore } from '@/contexts/StoreContext';
+import { useGuestGuard } from '@/hooks/useGuestGuard';
 
 interface ProductItem {
   id: string | number;
   product_id?: string | number;
   name?: string;
   product_name?: string;
+  slug?: string;
+  product_slug?: string;
   sku?: string;
   product_sku?: string;
   price?: number;
@@ -18,9 +22,12 @@ interface ProductItem {
   product_image?: string;
   brand?: string;
   product_brand?: string;
+  category?: string;
+  product_category?: string;
   rating?: number;
   product_rating?: number;
   is_featured?: boolean;
+  in_stock?: boolean;
 }
 
 interface SolutionDetailData {
@@ -40,6 +47,9 @@ export default function SolutionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
+
+  const { addItemToCart, openLoginModal, showToast, cartItems } = useStore();
+  const { guardAction } = useGuestGuard(openLoginModal, showToast);
 
   const [solution, setSolution] = useState<SolutionDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,10 +175,39 @@ export default function SolutionDetailPage() {
     return 0;
   });
 
+  const isInCart = (prodId: string | number) => {
+    return cartItems.some(item => String(item.id) === String(prodId));
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, p: ProductItem) => {
+    e.stopPropagation();
+    const price = p.product_price || p.price || 0;
+    const cartItem = {
+      id: String(p.product_id || p.id),
+      name: p.product_name || p.name || 'Clinical Dental Product',
+      category: p.product_category || p.category || 'Clinical Solutions',
+      price: price,
+      qty: 1,
+      image: p.product_image || p.image || '/images/bestseller_handpiece.png',
+      originalPrice: price,
+      slug: p.product_slug || p.slug,
+    };
+    if (!guardAction({ type: 'add-to-cart', payload: { item: cartItem } })) return;
+    addItemToCart(cartItem);
+    showToast(`Added ${cartItem.name} to cart`);
+  };
+
+  const handleProductCardClick = (p: ProductItem) => {
+    const target = p.product_slug || p.slug || p.product_id || p.id;
+    if (target) {
+      router.push(`/products/${target}`);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-[108px] lg:pt-[180px] pb-24 text-left select-none">
+    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] lg:pt-[150px] pb-24 text-left select-none">
       {/* Banner & Header */}
-      <div className="relative w-full h-[320px] md:h-[400px] bg-slate-950 overflow-hidden">
+      <div className="relative w-full h-[320px] md:h-[380px] bg-slate-950 overflow-hidden">
         <img
           src={solution.banner || solution.thumbnail}
           alt={solution.title}
@@ -176,8 +215,8 @@ export default function SolutionDetailPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
 
-        <div className="absolute inset-0 max-w-7xl mx-auto px-6 md:px-8 flex flex-col justify-between py-8">
-          <div>
+        <div className="absolute inset-0 max-w-7xl mx-auto px-6 md:px-8 flex flex-col justify-between pt-5 pb-10 md:pb-14">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/')}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-bold transition-all border border-white/20 cursor-pointer"
@@ -185,20 +224,27 @@ export default function SolutionDetailPage() {
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Homepage</span>
             </button>
+            <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-300/80">
+              <span className="hover:text-white cursor-pointer" onClick={() => router.push('/')}>Home</span>
+              <span>/</span>
+              <span className="hover:text-white cursor-pointer" onClick={() => router.push('/#solutions')}>Solutions</span>
+              <span>/</span>
+              <span className="text-teal-300 font-semibold">{solution.title}</span>
+            </div>
           </div>
 
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#005F63] text-white text-xs font-bold tracking-wider uppercase mb-3">
+          <div className="max-w-3xl -translate-y-2 md:-translate-y-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#005F63] text-white text-xs font-bold tracking-wider uppercase mb-2.5">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Clinical Treatment Solution</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight font-display mb-3">
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight font-display mb-2.5">
               {solution.title}
             </h1>
-            <p className="text-sm md:text-base font-medium text-slate-200 leading-relaxed mb-4">
+            <p className="text-sm md:text-base font-medium text-slate-200 leading-relaxed mb-3.5">
               {solution.short_description}
             </p>
-            <div className="flex items-center gap-4 text-xs font-semibold text-slate-300">
+            <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs font-semibold text-slate-300">
               <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                 <Package className="w-4 h-4 text-teal-300" />
                 {solution.product_count || displayProducts.length} Clinical Products
@@ -213,9 +259,9 @@ export default function SolutionDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 md:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 py-8">
         {solution.description && (
-          <div className="bg-white rounded-2xl p-6 md:p-8 border border-[#E2E8F0] shadow-xs mb-10">
+          <div className="bg-white rounded-2xl p-6 md:p-8 border border-[#E2E8F0] shadow-xs mb-8">
             <h3 className="text-lg font-extrabold text-slate-800 tracking-tight mb-2 font-display">
               Clinical Workflow Overview
             </h3>
@@ -273,11 +319,14 @@ export default function SolutionDetailPage() {
               const image = p.product_image || p.image || '/images/bestseller_handpiece.png';
               const brand = p.product_brand || p.brand || 'FAAZO Care';
               const rating = p.product_rating || p.rating || 4.8;
+              const inStock = p.in_stock !== false;
+              const alreadyInCart = isInCart(p.product_id || p.id);
 
               return (
                 <div
                   key={p.id}
-                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs hover:shadow-[0_12px_28px_rgba(0,95,99,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative"
+                  onClick={() => handleProductCardClick(p)}
+                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs hover:shadow-[0_12px_28px_rgba(0,95,99,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group"
                 >
                   {p.is_featured && (
                     <div className="absolute top-3 left-3 z-10 bg-[#005F63] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1">
@@ -290,7 +339,7 @@ export default function SolutionDetailPage() {
                     <img
                       src={image}
                       alt={name}
-                      className="max-h-full max-w-full object-contain hover:scale-105 transition-transform duration-500"
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
 
@@ -299,7 +348,7 @@ export default function SolutionDetailPage() {
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                         {brand}
                       </span>
-                      <h4 className="text-sm font-extrabold text-slate-800 line-clamp-2 leading-tight font-display mb-2">
+                      <h4 className="text-sm font-extrabold text-slate-800 line-clamp-2 leading-tight font-display mb-2 group-hover:text-[#005F63] transition-colors">
                         {name}
                       </h4>
                     </div>
@@ -315,17 +364,36 @@ export default function SolutionDetailPage() {
                         <div>
                           <span className="text-[10px] font-semibold text-slate-400 block">B2B Price</span>
                           <span className="text-base font-black text-[#005F63] font-display">
-                            ₹{price.toLocaleString('en-IN')}
+                            {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Price on Request'}
                           </span>
                         </div>
 
-                        <button
-                          onClick={() => alert('Added to cart')}
-                          className="px-3.5 py-2 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>Add</span>
-                        </button>
+                        {inStock ? (
+                          <button
+                            onClick={(e) => handleAddToCart(e, p)}
+                            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 ${
+                              alreadyInCart
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-[#005F63] hover:bg-[#0B7C80]'
+                            }`}
+                          >
+                            {alreadyInCart ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>In Cart</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                                <span>Add</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

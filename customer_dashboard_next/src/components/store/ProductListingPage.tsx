@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useGuestGuard } from '../../hooks/useGuestGuard';
 import { useCategories } from '../../hooks/useCategories';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 
 interface ListingProduct {
@@ -574,7 +575,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
   onOpenLoginModal
 }) => {
   const { guardAction } = useGuestGuard(onOpenLoginModal, showToast);
-  const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
+  const { isInWishlist, toggleWishlist: toggleWishlistContext } = useWishlist();
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string | null>(null);
   const [showInStockOnly, setShowInStockOnly] = useState(false);
@@ -856,7 +857,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
     }
   };
 
-  const toggleWishlist = (e: React.MouseEvent, id: string) => {
+  const toggleWishlist = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const p = dbProducts.find(prod => prod.id === id);
     if (!p) return;
@@ -865,9 +866,11 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
       price: p.price, qty: 1, image: p.image, originalPrice: p.originalPrice
     };
     if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
-    setWishlistedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    try {
+      await toggleWishlistContext(item);
+    } catch (err) {
+      console.error('Failed to toggle wishlist:', err);
+    }
   };
 
   return (
@@ -1087,7 +1090,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
                               onClick={(e) => toggleWishlist(e, p.id)}
                               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md border border-[#006670]/15 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-105 active:scale-95 transition-all shadow-xs cursor-pointer z-10"
                             >
-                              <Heart className={`w-4 h-4 transition-colors ${wishlistedIds.includes(p.id) ? 'fill-rose-500 stroke-rose-500 text-rose-500' : 'text-slate-400 hover:text-rose-500'}`} />
+                              <Heart className={`w-4 h-4 transition-colors ${isInWishlist(p.id) ? 'fill-rose-500 stroke-rose-500 text-rose-500' : 'text-slate-400 hover:text-rose-500'}`} />
                             </button>
                           </div>
                         );

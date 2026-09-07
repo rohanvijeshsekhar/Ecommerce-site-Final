@@ -156,6 +156,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   });
 
   const [modalErrors, setModalErrors] = useState<Record<string, string>>({});
+  const [modalServerError, setModalServerError] = useState<string | null>(null);
   const [modalSaving, setModalSaving] = useState(false);
   const [modalPincodeStatus, setModalPincodeStatus] = useState<{
     checking: boolean;
@@ -384,6 +385,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     });
     setModalErrors({});
     setModalPincodeStatus({ checking: false });
+    setModalServerError(null);
     setIsAddressModalOpen(true);
   };
 
@@ -405,6 +407,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     });
     setModalErrors({});
     setModalPincodeStatus({ checking: false });
+    setModalServerError(null);
     setIsAddressModalOpen(true);
 
     // Check pincode serviceability for the existing address immediately
@@ -459,8 +462,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       errors.mobile = 'Enter a valid 10-digit Indian mobile number (starting with 6-9).';
     }
 
-    if (!modalForm.clinic_name || modalForm.clinic_name.trim().length < 2) {
-      errors.clinic_name = 'Please enter clinic / practice / business name.';
+    if (!modalForm.clinic_name || modalForm.clinic_name.trim().length < 5) {
+      errors.clinic_name = 'Please enter clinic / practice / business name (min 5 characters).';
     }
 
     if (!modalForm.street_address || modalForm.street_address.trim().length < 5) {
@@ -516,20 +519,22 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         if (res.success && res.data) {
           showToast?.('Practice address updated successfully.');
           setIsAddressModalOpen(false);
+          setModalServerError(null);
           await fetchAddresses();
           setSelectedAddressId(res.data.id);
         } else {
-          showToast?.(res.message || 'Failed to update address.');
+          setModalServerError(res.message || 'Failed to update address.');
         }
       } else {
         const res = await usersService.createAddress(payload);
         if (res.success && res.data) {
           showToast?.('New practice address saved.');
           setIsAddressModalOpen(false);
+          setModalServerError(null);
           await fetchAddresses();
           setSelectedAddressId(res.data.id);
         } else {
-          showToast?.(res.message || 'Failed to save address.');
+          setModalServerError(res.message || 'Failed to save address.');
         }
       }
     } catch (err: any) {
@@ -537,7 +542,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const errorMsg = backendErrors
         ? Object.values(backendErrors).flat().join(' ')
         : err?.response?.data?.error?.message || err?.response?.data?.message || 'Failed to save address.';
-      showToast?.(errorMsg);
+      setModalServerError(errorMsg);
     } finally {
       setModalSaving(false);
     }
@@ -1674,7 +1679,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setIsAddressModalOpen(false)}
+                onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -1911,11 +1916,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </label>
               </div>
 
+              {/* Server-side error banner — shown inside modal, above buttons */}
+              {modalServerError && (
+                <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold">
+                  <span className="shrink-0 mt-0.5">⚠</span>
+                  <span>{modalServerError}</span>
+                </div>
+              )}
+
               {/* Modal Buttons */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setIsAddressModalOpen(false)}
+                  onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel

@@ -35,12 +35,18 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return typeof p === 'string' ? p : p.id || p.product_id || p.product?.id || '';
   };
 
-  // Set of product IDs for fast O(1) checks
+  // Set of product IDs (both UUID and slug) for fast O(1) checks
   const wishlistProductIds = useMemo(() => {
     const set = new Set<string>();
     wishlistItems.forEach((item) => {
-      const pId = getProdId(item.product || item);
+      const prod = item.product || item;
+      const pId = getProdId(prod);
       if (pId) set.add(pId);
+      if (prod && typeof prod === 'object') {
+        if (prod.id) set.add(String(prod.id));
+        if (prod.slug) set.add(String(prod.slug));
+        if (prod.product_id) set.add(String(prod.product_id));
+      }
     });
     return set;
   }, [wishlistItems]);

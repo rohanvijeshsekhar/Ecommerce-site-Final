@@ -87,10 +87,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       const slug = c.slug || '';
       const title = c.name || '';
       return {
-        id:    slug || String(c.id),
+        id: slug || String(c.id),
         title: title,
         image: getAbsoluteImageUrl(c.image) || getCategoryFallbackImage(slug),
-        icon:  getCategoryIconBadge(title, slug, c.icon_key),
+        icon: getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
@@ -98,10 +98,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       const slug = c.category_slug ?? c.category ?? '';
       const title = c.display_title ?? c.category_name ?? '';
       return {
-        id:    slug,
+        id: slug,
         title: title,
         image: getAbsoluteImageUrl(c.card_image_url) || getCategoryFallbackImage(slug),
-        icon:  getCategoryIconBadge(title, slug, c.icon_key),
+        icon: getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
@@ -120,10 +120,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
               }
               // else: keep static defaults showing
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [initialCategories]);
 
   // Use static fallback when no backend categories loaded yet

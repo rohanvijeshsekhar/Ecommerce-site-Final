@@ -342,6 +342,14 @@ class ShiprocketAPIClient:
         """GET /v1/external/courier/track/awb/{awb_code}"""
         return self._execute_request("GET", f"/v1/external/courier/track/awb/{awb_code}")
 
+    def get_shipment_details(self, shipment_id: int | str) -> tuple[dict, int, float]:
+        """GET /v1/external/shipments/{shipment_id}"""
+        return self._execute_request("GET", f"/v1/external/shipments/{shipment_id}")
+
+    def get_order_details(self, order_id: int | str) -> tuple[dict, int, float]:
+        """GET /v1/external/orders/show/{order_id}"""
+        return self._execute_request("GET", f"/v1/external/orders/show/{order_id}")
+
     def cancel_order(self, order_ids: list) -> tuple[dict, int, float]:
         """POST /v1/external/orders/cancel"""
         payload = {"ids": [str(o) for o in order_ids]}

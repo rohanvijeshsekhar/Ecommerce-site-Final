@@ -31,6 +31,7 @@ interface OrderDetailPageProps {
   onBack: () => void;
   onProductClick: (slug: string) => void;
   showToast?: (msg: string) => void;
+  embedded?: boolean;
 }
 
 const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
@@ -38,6 +39,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   onBack,
   onProductClick,
   showToast,
+  embedded = false,
 }) => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,10 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 flex flex-col items-center justify-center space-y-4">
+      <div className={embedded 
+        ? "py-12 flex flex-col items-center justify-center space-y-4" 
+        : "w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[175px] pb-16 flex flex-col items-center justify-center space-y-4"
+      }>
         <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-bold text-slate-400">Loading order records...</p>
       </div>
@@ -164,8 +169,11 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
-      <div className="max-w-4xl mx-auto px-4 md:px-6">
+    <div className={embedded 
+      ? "w-full font-sans select-none text-left animate-in fade-in duration-300" 
+      : "w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[175px] pb-16 font-sans select-none text-left animate-in fade-in duration-300"
+    }>
+      <div className={embedded ? "w-full" : "max-w-4xl mx-auto px-4 md:px-6"}>
 
         {/* Back and Page Actions */}
         <div className="flex items-center justify-between gap-4 mb-6">

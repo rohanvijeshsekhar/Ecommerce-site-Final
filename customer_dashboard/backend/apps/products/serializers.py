@@ -39,6 +39,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     brand_name    = serializers.CharField(source="brand.name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     primary_image = serializers.SerializerMethodField()
+    image_url     = serializers.SerializerMethodField()
     pricing       = ProductPricingInlineSerializer(read_only=True, allow_null=True)
     inventory     = ProductInventoryInlineSerializer(read_only=True, allow_null=True)
 
@@ -54,6 +55,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "weight_kg",
             "warranty_months_override",
             "primary_image",
+            "image_url",
             # Phase 6A — pricing + inventory
             "pricing",
             "inventory",
@@ -63,10 +65,13 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_primary_image(self, obj):
         img = obj.primary_image
-        if img:
+        if img and img.image:
             request = self.context.get("request")
-            return request.build_absolute_uri(img.image.url) if request and img.image else None
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
         return None
+
+    def get_image_url(self, obj):
+        return self.get_primary_image(obj)
 
 
 # ── Detail ────────────────────────────────────────────────────────────────────
@@ -86,6 +91,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     documents            = ProductDocumentSerializer(many=True, read_only=True)
     effective_warranty   = serializers.IntegerField(source="effective_warranty_months", read_only=True)
     is_published         = serializers.BooleanField(read_only=True)
+    primary_image        = serializers.SerializerMethodField()
+    image_url            = serializers.SerializerMethodField()
     pricing              = ProductPricingInlineSerializer(read_only=True, allow_null=True)
     inventory            = ProductInventoryInlineSerializer(read_only=True, allow_null=True)
 
@@ -105,7 +112,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             # Warranty
             "warranty_months_override", "effective_warranty",
             # Assets
-            "images", "attributes", "documents",
+            "images", "primary_image", "image_url", "attributes", "documents",
             # Phase 6A — pricing + inventory
             "pricing",
             "inventory",
@@ -113,6 +120,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "slug", "is_published", "effective_warranty", "created_at", "updated_at"]
+
+    def get_primary_image(self, obj):
+        img = obj.primary_image
+        if img and img.image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
+
+    def get_image_url(self, obj):
+        return self.get_primary_image(obj)
 
 
 # ── Write ─────────────────────────────────────────────────────────────────────

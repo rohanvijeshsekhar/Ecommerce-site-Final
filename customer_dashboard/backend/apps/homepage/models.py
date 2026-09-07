@@ -335,8 +335,17 @@ class LimitedTimeOffer(BaseModel):
     class Meta:
         verbose_name = "Limited Time Offer"
         verbose_name_plural = "Limited Time Offers"
-        ordering = ["sort_order", "created_at"]
+        ordering = ["sort_order", "-created_at"]
 
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="limited_time_offers",
+        verbose_name="Associated Product",
+        help_text="Link to a real catalogue product for direct cart/inventory connection.",
+    )
     banner_image = OptimizedImageField(
         upload_to="homepage/offers/",
         null=True,
@@ -347,9 +356,48 @@ class LimitedTimeOffer(BaseModel):
         max_length=200,
         verbose_name="Heading",
     )
+    category = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Category",
+    )
+    brand = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Brand",
+    )
+    badge = models.CharField(
+        max_length=100,
+        default="Limited Time",
+        blank=True,
+        verbose_name="Badge",
+    )
     description = models.TextField(
         blank=True,
         verbose_name="Description",
+    )
+    original_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Original Price",
+    )
+    discounted_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Discounted Price",
+    )
+    validity_text = models.CharField(
+        max_length=200,
+        default="Valid while stock lasts",
+        blank=True,
+        verbose_name="Validity & Stock Note",
+    )
+    image_url = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="Image URL",
     )
     offer_text = models.CharField(
         max_length=100,
@@ -382,6 +430,11 @@ class LimitedTimeOffer(BaseModel):
         default=0,
         db_index=True,
         verbose_name="Sort Order",
+    )
+    is_featured = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Featured Promotion",
     )
     is_active = models.BooleanField(
         default=True,
@@ -545,3 +598,67 @@ class RecommendedProduct(BaseModel):
 
     def __str__(self):
         return f"Recommended: {self.product.name}"
+
+
+# ============================================================
+# 11. Special Offers Page Content (CMS)
+# ============================================================
+
+class SpecialOffersPageContent(BaseModel):
+    """
+    Singleton / page-level CMS configuration for the customer-facing Special Offers page (/offers).
+    Controls the top Hero section content (Left Column).
+    """
+
+    class Meta:
+        verbose_name = "Special Offers Page Content"
+        verbose_name_plural = "Special Offers Page Content"
+
+    hero_badge = models.CharField(
+        max_length=150,
+        default="PROFESSIONAL CLINICAL SAVINGS",
+        blank=True,
+        verbose_name="Hero Badge",
+    )
+    hero_title = models.CharField(
+        max_length=200,
+        default="Special Offers",
+        blank=True,
+        verbose_name="Hero Heading",
+    )
+    hero_description = models.TextField(
+        default="Discover exclusive deals, bundle offers and limited-time savings on premium certified dental equipment, imaging systems, and clinical consumables.",
+        blank=True,
+        verbose_name="Hero Description",
+    )
+    hero_cta_text = models.CharField(
+        max_length=100,
+        default="EXPLORE OFFERS",
+        blank=True,
+        verbose_name="Hero CTA Text",
+    )
+    hero_trust_text = models.CharField(
+        max_length=255,
+        default="✓ 100% Genuine Direct Import • Manufacturer Warranty",
+        blank=True,
+        verbose_name="Hero Trust Statement",
+    )
+
+    @classmethod
+    def get_instance(cls):
+        """Always return the single instance or create default."""
+        obj, _ = cls.objects.get_or_create(
+            id="00000000-0000-0000-0000-000000000001",
+            defaults={
+                "hero_badge": "PROFESSIONAL CLINICAL SAVINGS",
+                "hero_title": "Special Offers",
+                "hero_description": "Discover exclusive deals, bundle offers and limited-time savings on premium certified dental equipment, imaging systems, and clinical consumables.",
+                "hero_cta_text": "EXPLORE OFFERS",
+                "hero_trust_text": "✓ 100% Genuine Direct Import • Manufacturer Warranty",
+            },
+        )
+        return obj
+
+    def __str__(self):
+        return f"Special Offers Page Content: {self.hero_title}"
+

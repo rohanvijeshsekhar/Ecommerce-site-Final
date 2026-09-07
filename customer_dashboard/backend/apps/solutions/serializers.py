@@ -7,12 +7,14 @@ from apps.products.models import Product
 class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
     product_id = serializers.ReadOnlyField(source="product.id")
     product_name = serializers.ReadOnlyField(source="product.name")
+    product_slug = serializers.ReadOnlyField(source="product.slug")
     product_sku = serializers.ReadOnlyField(source="product.sku")
-    product_price = serializers.ReadOnlyField(source="product.price")
+    product_price = serializers.SerializerMethodField(method_name="get_product_price")
     product_image = serializers.SerializerMethodField(method_name="get_product_image")
     product_brand = serializers.ReadOnlyField(source="product.brand.name", default="")
     product_category = serializers.ReadOnlyField(source="product.category.name", default="")
     product_rating = serializers.ReadOnlyField(source="product.rating", default=4.8)
+    in_stock = serializers.SerializerMethodField(method_name="get_in_stock")
 
     class Meta:
         model = ClinicalSolutionProduct
@@ -20,23 +22,36 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
             "id",
             "product_id",
             "product_name",
+            "product_slug",
             "product_sku",
             "product_price",
             "product_image",
             "product_brand",
             "product_category",
             "product_rating",
+            "in_stock",
             "display_order",
             "is_featured",
             "created_at",
         ]
 
+    def get_product_price(self, obj):
+        if obj.product:
+            if hasattr(obj.product, 'pricing') and obj.product.pricing:
+                return float(obj.product.pricing.effective_price or obj.product.pricing.selling_price or 0)
+        return 0
+
+    def get_in_stock(self, obj):
+        if obj.product and hasattr(obj.product, 'inventory') and obj.product.inventory:
+            return obj.product.inventory.stock > 0
+        return True
+
     def get_product_image(self, obj):
         if obj.product:
-            if hasattr(obj.product, 'primary_image_url') and obj.product.primary_image_url:
-                return obj.product.primary_image_url
-            if hasattr(obj.product, 'images') and obj.product.images.exists():
-                return obj.product.images.first().image.url
+            img = obj.product.primary_image
+            if img and img.image:
+                request = self.context.get("request")
+                return request.build_absolute_uri(img.image.url) if request else img.image.url
         return "/images/bestseller_handpiece.png"
 
 
@@ -117,6 +132,8 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
 
 
 class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
+    banner = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    thumbnail = serializers.CharField(required=False, write_only=True, allow_blank=True)
     product_ids = serializers.ListField(
         child=serializers.CharField(),
         write_only=True,
@@ -138,8 +155,10 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "description",
+            "banner",
             "banner_image",
             "banner_image_url",
+            "thumbnail",
             "thumbnail_image",
             "thumbnail_image_url",
             "display_order",
@@ -156,6 +175,13 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
+        banner = validated_data.pop("banner", None)
+        thumbnail = validated_data.pop("thumbnail", None)
+        if banner is not None:
+            validated_data["banner_image_url"] = banner
+        if thumbnail is not None:
+            validated_data["thumbnail_image_url"] = thumbnail
+
         product_ids = validated_data.pop("product_ids", [])
         featured_product_ids = set(str(pid) for pid in validated_data.pop("featured_product_ids", []))
         
@@ -164,6 +190,13 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         return solution
 
     def update(self, instance, validated_data):
+        banner = validated_data.pop("banner", None)
+        thumbnail = validated_data.pop("thumbnail", None)
+        if banner is not None:
+            validated_data["banner_image_url"] = banner
+        if thumbnail is not None:
+            validated_data["thumbnail_image_url"] = thumbnail
+
         has_products = "product_ids" in validated_data
         product_ids = validated_data.pop("product_ids", [])
         featured_product_ids = set(str(pid) for pid in validated_data.pop("featured_product_ids", []))

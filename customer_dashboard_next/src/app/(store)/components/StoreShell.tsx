@@ -184,7 +184,7 @@ export default function StoreShell({ children }: StoreShellProps) {
 
       {/* Toast Notification */}
       {store.toastMessage && (
-        <div className={`fixed bottom-20 left-1/2 z-[999] text-white text-xs font-semibold uppercase tracking-wider px-5 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-toast-in border ${
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[9999] text-white text-xs font-semibold uppercase tracking-wider px-5 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-toast-in border max-w-sm w-[90vw] ${
           store.toastMessage.toLowerCase().includes('disabled') || 
           store.toastMessage.toLowerCase().includes('pending') || 
           store.toastMessage.toLowerCase().includes('rejected')

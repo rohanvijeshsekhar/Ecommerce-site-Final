@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.common.viewsets import BaseModelViewSet
 from apps.common.permissions import IsAdmin
@@ -27,6 +28,7 @@ from .models import (
     ExploreSolution,
     Testimonial,
     RecommendedProduct,
+    SpecialOffersPageContent,
 )
 from .serializers import (
     HeroSlideReadSerializer, HeroSlideWriteSerializer,
@@ -40,6 +42,7 @@ from .serializers import (
     TestimonialReadSerializer, TestimonialWriteSerializer,
     RecommendedProductReadSerializer, RecommendedProductWriteSerializer,
     ReorderSerializer,
+    SpecialOffersPageContentSerializer,
 )
 
 
@@ -220,7 +223,7 @@ class FeaturedCollectionItemViewSet(BaseModelViewSet):
 # ============================================================
 
 class LimitedTimeOfferViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["sort_order", "-created_at"]
 
     def get_queryset(self):
         qs = LimitedTimeOffer.objects.all()
@@ -238,6 +241,17 @@ class LimitedTimeOfferViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return LimitedTimeOfferWriteSerializer
         return LimitedTimeOfferReadSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_featured:
+            LimitedTimeOffer.objects.exclude(id=instance.id).update(is_featured=False)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.is_featured:
+            LimitedTimeOffer.objects.exclude(id=instance.id).update(is_featured=False)
+
 
 
 # ============================================================
@@ -315,3 +329,34 @@ class RecommendedProductViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return RecommendedProductWriteSerializer
         return RecommendedProductReadSerializer
+
+
+# ============================================================
+# 10. Special Offers Page Content (CMS Singleton)
+# ============================================================
+
+class SpecialOffersPageContentView(APIView):
+    """
+    GET: Public (AllowAny) - retrieves the singleton Special Offers page hero copy.
+    PUT/PATCH: Admin only (IsAuthenticated, IsAdmin) - updates the page hero copy.
+    """
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get(self, request):
+        content = SpecialOffersPageContent.get_instance()
+        serializer = SpecialOffersPageContentSerializer(content, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def patch(self, request):
+        content = SpecialOffersPageContent.get_instance()
+        serializer = SpecialOffersPageContentSerializer(content, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Special offers page content updated successfully.")
+        return error_response(message="Invalid data provided.", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        return self.patch(request)

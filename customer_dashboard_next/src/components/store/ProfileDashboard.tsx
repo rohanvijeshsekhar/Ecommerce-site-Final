@@ -348,6 +348,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     address_type: 'both', is_default: false,
   });
   const [addressSaving, setAddressSaving] = useState(false);
+  const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
 
   // Security
   const [securityForm, setSecurityForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
@@ -565,35 +566,33 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     setAddressForm({ label: 'Primary Clinic', full_name: '', mobile: '', line1: '', line2: '', city: '', state: '', pincode: '', address_type: 'both', is_default: false });
     setEditingAddress(null);
     setShowAddressForm(false);
+    setAddressFormErrors({});
   };
 
   const handleSaveAddress = async () => {
+    const newErrors: Record<string, string> = {};
     if (!addressForm.full_name || addressForm.full_name.trim().length < 3) {
-      fireToast('Recipient name must be at least 3 characters.');
-      return;
+      newErrors.full_name = 'Recipient name must be at least 3 characters.';
     }
     const cleanMobile = (addressForm.mobile || '').replace(/\D/g, '');
     if (cleanMobile.length < 10) {
-      fireToast('Please enter a valid 10-digit mobile number.');
-      return;
+      newErrors.mobile = 'Please enter a valid 10-digit mobile number.';
     }
     if (!addressForm.line1 || addressForm.line1.trim().length < 5) {
-      fireToast('Street address line 1 must be at least 5 characters.');
-      return;
+      newErrors.line1 = 'Street address must be at least 5 characters.';
     }
     if (!addressForm.city || addressForm.city.trim().length < 2) {
-      fireToast('Please enter a valid city name.');
-      return;
+      newErrors.city = 'Please enter a valid city name.';
     }
     if (!addressForm.state || addressForm.state.trim().length < 2) {
-      fireToast('Please select a valid State.');
-      return;
+      newErrors.state = 'Please select a valid State.';
     }
     const pin = (addressForm.pincode || '').trim();
     if (!/^\d{6}$/.test(pin)) {
-      fireToast('Pincode must be exactly 6 digits.');
-      return;
+      newErrors.pincode = 'Pincode must be exactly 6 digits.';
     }
+    setAddressFormErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
     setAddressSaving(true);
     try {
@@ -651,6 +650,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   const startEditAddress = (addr: Address) => {
     setEditingAddress(addr);
     setAddressForm({ ...addr });
+    setAddressFormErrors({});
     setShowAddressForm(true);
   };
 
@@ -1172,7 +1172,9 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                     <select
                       value={addressForm.state || ''}
                       onChange={e => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
-                      className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                      className={`w-full appearance-none px-4 py-2.5 border rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all ${
+                        addressFormErrors.state ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                      }`}
                     >
                       <option value="">— Select State / UT —</option>
                       {INDIAN_STATES.map(st => (
@@ -1192,9 +1194,20 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                         ? e.target.value.replace(/\D/g, '')
                         : e.target.value;
                       setAddressForm(prev => ({ ...prev, [f.key]: val }));
+                      // clear the inline error for this field as user types
+                      if (addressFormErrors[f.key]) {
+                        setAddressFormErrors(prev => ({ ...prev, [f.key]: '' }));
+                      }
                     }}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                    className={`w-full px-4 py-2.5 border rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all ${
+                      (addressFormErrors as any)[f.key] ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                    }`}
                   />
+                )}
+                {(addressFormErrors as any)[f.key] && (
+                  <span className="text-[10px] text-rose-500 font-semibold mt-1 block">
+                    {(addressFormErrors as any)[f.key]}
+                  </span>
                 )}
               </div>
             ))}
@@ -1310,6 +1323,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       return (
         <OrderDetailPage
           orderId={selectedOrderId}
+          embedded={true}
           onBack={() => {
             setSelectedOrderId(null);
             fetchUserOrders();
@@ -2385,7 +2399,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // ─── Main layout ─────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[180px] pb-24 font-sans select-none text-left">
+    <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[168px] pb-24 font-sans select-none text-left">
       <Toast message={localToast} />
 
       {/* Mobile header bar */}
@@ -2415,7 +2429,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       <div className="max-w-6xl mx-auto px-4 md:px-6 mt-14 lg:mt-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 sticky top-[140px]">
+          <div className="hidden lg:block lg:col-span-3 sticky top-[168px]">
             {renderSidebar()}
           </div>
 

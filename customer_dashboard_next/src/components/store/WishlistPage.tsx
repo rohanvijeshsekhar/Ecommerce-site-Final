@@ -2,14 +2,50 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star, Share2 } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star, Share2, Zap } from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useStore } from '@/contexts/StoreContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import { ShareModal } from './ShareModal';
+
+const getProductImage = (product: any, item: any): string => {
+  const candidate =
+    product?.primary_image ||
+    product?.image_url ||
+    product?.image ||
+    (product?.images && product.images[0]?.image) ||
+    (product?.images && product.images[0]?.src) ||
+    item?.image;
+
+  if (!candidate) return '/images/bestseller_handpiece.png';
+  const url = typeof candidate === 'object' ? (candidate.image || candidate.src || candidate.url || '') : candidate;
+  return getAbsoluteImageUrl(url) || '/images/bestseller_handpiece.png';
+};
 
 export const WishlistPage: React.FC = () => {
   const router = useRouter();
   const { wishlistItems, removeFromWishlist, moveToCart, loading } = useWishlist();
+  const { handleBuyNowDirect } = useStore();
   const [shareProduct, setShareProduct] = useState<any>(null);
+
+  const handleBuyNow = (product: any, item: any) => {
+    const prodId = product.id || product.slug || item.product_id || item.id;
+    const cartItem: any = {
+      id: product.slug || prodId,
+      name: product.name || product.title || 'Clinical Product',
+      category: product.category_name || product.category || '',
+      price: product.pricing?.effective_price || product.price || 0,
+      originalPrice: product.pricing?.mrp || product.originalPrice || undefined,
+      qty: 1,
+      image: getProductImage(product, item),
+    };
+
+    if (handleBuyNowDirect) {
+      handleBuyNowDirect(cartItem);
+    } else {
+      router.push('/checkout');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-left pt-[108px] lg:pt-[180px] pb-16 font-sans select-none">
@@ -32,7 +68,7 @@ export const WishlistPage: React.FC = () => {
 
           <button
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-600 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#006670] hover:text-[#004e56] transition-colors"
           >
             <span>Continue Shopping</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -52,7 +88,7 @@ export const WishlistPage: React.FC = () => {
             <div className="pt-2">
               <button
                 onClick={() => router.push('/')}
-                className="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md shadow-teal-700/20 transition-all"
+                className="px-6 py-3 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white font-bold text-xs shadow-md shadow-[#006670]/20 transition-all"
               >
                 Browse Products
               </button>
@@ -66,7 +102,7 @@ export const WishlistPage: React.FC = () => {
               const prodName = product.name || 'Clinical Product';
               const prodPrice = product.pricing?.effective_price || product.price || 0;
               const prodMrp = product.pricing?.mrp || product.originalPrice || 0;
-              const prodImg = product.image_url || product.image || (product.images && product.images[0]?.image) || '/images/bestseller_handpiece.png';
+              const prodImg = getProductImage(product, item);
 
               return (
                 <div
@@ -93,12 +129,12 @@ export const WishlistPage: React.FC = () => {
 
                     {/* Content */}
                     <div className="space-y-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006670]">
                         {product.category_name || product.category || 'Clinical Supply'}
                       </span>
                       <h3
                         onClick={() => router.push(`/products/${product.slug || prodId}`)}
-                        className="text-sm font-bold text-slate-900 line-clamp-2 hover:text-teal-700 transition-colors cursor-pointer"
+                        className="text-sm font-bold text-slate-900 line-clamp-2 hover:text-[#006670] transition-colors cursor-pointer"
                       >
                         {prodName}
                       </h3>
@@ -121,10 +157,20 @@ export const WishlistPage: React.FC = () => {
                   <div className="pt-5 border-t border-slate-100 mt-4 flex items-center gap-2">
                     <button
                       onClick={() => moveToCart(product)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                      title="Add to Cart"
                     >
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>Move to Cart</span>
+                      <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                      <span>Add to Cart</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleBuyNow(product, item)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                      title="Buy Now"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                      <span>Buy Now</span>
                     </button>
 
                     <button
