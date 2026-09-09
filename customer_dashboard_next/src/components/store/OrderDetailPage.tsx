@@ -467,33 +467,35 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
       {/* Professionally styled HTML Invoice Print Modal (Option A) */}
       {showInvoiceModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] h-[92vh] sm:h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
             {/* Header controls */}
-            <div className="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 print:hidden">
-              <span className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-4.5 h-4.5" />
-                FAAZO Official Procurement Invoice
+            <div className="bg-slate-50 px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-slate-200 flex items-center justify-between shrink-0 print:hidden gap-2">
+              <span className="text-[11px] sm:text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <FileText className="w-4 h-4 text-[#006670] shrink-0" />
+                <span className="truncate">Tax Invoice #{order.invoice_number || order.order_number}</span>
               </span>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   onClick={handleDownloadPDF}
                   disabled={downloadingPDF}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-[10.5px] sm:text-xs font-black uppercase transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
                 >
-                  <Download className="w-4 h-4" />
-                  {downloadingPDF ? 'Downloading...' : 'Download PDF'}
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{downloadingPDF ? 'Downloading...' : 'Download PDF'}</span>
+                  <span className="sm:hidden">{downloadingPDF ? '...' : 'PDF'}</span>
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer border border-slate-200"
+                  className="hidden sm:flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase transition-colors cursor-pointer border border-slate-200 shrink-0"
                 >
-                  <Printer className="w-4 h-4" />
-                  Print
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
                 </button>
                 <button
                   onClick={() => setShowInvoiceModal(false)}
-                  className="p-1.5 border border-slate-200 hover:border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="p-1.5 border border-slate-200 hover:border-slate-300 rounded-lg bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 cursor-pointer shrink-0 transition-colors"
+                  title="Close Invoice"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -501,7 +503,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             </div>
 
             {/* Invoice print sheet */}
-            <div className="flex-grow p-8 overflow-y-auto bg-white print:p-0" id="print-invoice-sheet">
+            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto bg-white print:p-0 overscroll-contain" id="print-invoice-sheet">
               {/* Styling specifically for printing layout */}
               <style dangerouslySetInnerHTML={{
                 __html: `
@@ -527,28 +529,28 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
               `}} />
 
               {/* Invoice Layout */}
-              <div className="space-y-6 text-xs text-slate-800 text-left">
+              <div className="space-y-4 sm:space-y-6 text-xs text-slate-800 text-left pb-4">
                 {/* Logo and billing header */}
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 pb-2 border-b border-slate-100 sm:border-0">
                   <div>
-                    <img src="/images/faazo-logo.png" alt="FAAZO Logo" className="h-10 w-auto object-contain" />
-                    <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-1">ENGINEERING CLINICAL EXCELLENCE</p>
+                    <img src="/images/faazo-logo.png" alt="FAAZO Logo" className="h-8 sm:h-10 w-auto object-contain" />
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest mt-0.5 sm:mt-1">ENGINEERING CLINICAL EXCELLENCE</p>
                   </div>
-                  <div className="text-right">
-                    <h1 className="text-lg font-black text-slate-900 tracking-tight">TAX INVOICE</h1>
-                    <p className="text-slate-500 font-mono mt-0.5">Invoice #: {order.invoice_number}</p>
-                    <p className="text-slate-500 font-mono mt-0.5">Order #: {order.order_number}</p>
-                    <p className="text-slate-500 font-mono mt-0.5">Date: {new Date(order.created_at).toLocaleDateString('en-IN')}</p>
+                  <div className="text-left sm:text-right w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
+                    <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">TAX INVOICE</h1>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Invoice #: {order.invoice_number}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Order #: {order.order_number}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Date: {new Date(order.created_at).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
 
-                <hr className="border-slate-200" />
+                <hr className="hidden sm:block border-slate-200" />
 
                 {/* Sender/Receiver grid info */}
-                <div className="grid grid-cols-2 gap-8 text-[11px] leading-relaxed">
-                  <div>
-                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-                      <Building className="w-3.5 h-3.5 text-slate-400" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-8 text-[11px] leading-relaxed">
+                  <div className="bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-100">
+                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1 text-[10px]">
+                      <Building className="w-3 h-3 text-slate-400" />
                       Sold By
                     </h4>
                     <p className="font-extrabold text-slate-900">FAAZO Dental Solutions Pvt. Ltd.</p>
@@ -556,9 +558,9 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                     <p className="text-slate-600">Mumbai, Maharashtra - 400051</p>
                     <p className="text-slate-500">GSTIN: 27AAFCD1024D1ZS</p>
                   </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-100">
+                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1 text-[10px]">
+                      <MapPin className="w-3 h-3 text-slate-400" />
                       Shipped To
                     </h4>
                     <p className="font-extrabold text-slate-900">{order.shipping_address_detail?.full_name}</p>
@@ -575,30 +577,32 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                 </div>
 
                 {/* Items detailed table */}
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-slate-800 font-extrabold uppercase text-slate-400 text-[10px]">
-                      <th className="py-2.5">Product Description</th>
-                      <th className="py-2.5 text-right">Unit Price</th>
-                      <th className="py-2.5 text-center w-16">Qty</th>
-                      <th className="py-2.5 text-right w-24">Total (INR)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {order.items.map((item, idx) => (
-                      <tr key={idx} className="font-sans font-medium text-slate-700">
-                        <td className="py-3 font-bold text-slate-800">{item.product_name}</td>
-                        <td className="py-3 text-right">₹{item.price.toLocaleString('en-IN')}</td>
-                        <td className="py-3 text-center">{item.quantity}</td>
-                        <td className="py-3 text-right font-bold text-slate-900">₹{(item.quantity * item.price).toLocaleString('en-IN')}</td>
+                <div className="overflow-x-auto -mx-1 px-1">
+                  <table className="w-full text-xs text-left border-collapse min-w-[320px]">
+                    <thead>
+                      <tr className="border-b-2 border-slate-800 font-extrabold uppercase text-slate-400 text-[9.5px] sm:text-[10px]">
+                        <th className="py-2">Product Description</th>
+                        <th className="py-2 text-right">Unit Price</th>
+                        <th className="py-2 text-center w-12 sm:w-16">Qty</th>
+                        <th className="py-2 text-right w-20 sm:w-24">Total (INR)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {order.items.map((item, idx) => (
+                        <tr key={idx} className="font-sans font-medium text-slate-700">
+                          <td className="py-2.5 font-bold text-slate-800 text-[11px] sm:text-xs">{item.product_name}</td>
+                          <td className="py-2.5 text-right text-[11px] sm:text-xs">₹{item.price.toLocaleString('en-IN')}</td>
+                          <td className="py-2.5 text-center text-[11px] sm:text-xs">{item.quantity}</td>
+                          <td className="py-2.5 text-right font-bold text-slate-900 text-[11px] sm:text-xs">₹{(item.quantity * item.price).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
                 {/* Pricing Summary */}
-                <div className="flex justify-end pt-4">
-                  <div className="w-72 space-y-2 text-slate-600 font-sans text-xs">
+                <div className="flex justify-end pt-2 sm:pt-4">
+                  <div className="w-full sm:w-72 space-y-1.5 sm:space-y-2 text-slate-600 font-sans text-xs bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none">
                     <div className="flex justify-between">
                       <span>Total Net Price</span>
                       <span className="font-bold text-slate-800">₹{order.selling_subtotal.toLocaleString('en-IN')}</span>
@@ -611,7 +615,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                       <span>Shipping Fees</span>
                       <span className="font-bold text-slate-800">{order.shipping_fee === 0 ? 'FREE' : `₹${order.shipping_fee.toLocaleString('en-IN')}`}</span>
                     </div>
-                    <div className="border-t-2 border-slate-800 pt-2 flex justify-between font-display text-sm font-black text-slate-900">
+                    <div className="border-t-2 border-slate-800 pt-2 flex justify-between font-display text-xs sm:text-sm font-black text-slate-900">
                       <span>Total Cost Paid</span>
                       <span className="text-[#006670]">₹{order.total_amount.toLocaleString('en-IN')}</span>
                     </div>
