@@ -8,7 +8,7 @@ import {
   AlertCircle, CheckCircle, RefreshCw, ShoppingBag,
   Ticket, Gift, ChevronDown, Upload, Eye, EyeOff,
   LayoutDashboard, CreditCard, Smartphone,
-  Layers, Globe, ChevronRight, Handshake
+  Layers, Globe, ChevronRight, Handshake, Search, Truck
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usersService } from '../../lib/services/users';
@@ -1361,12 +1361,35 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     };
 
     return (
-      <div className="space-y-6 text-left">
-        <SectionHeader title="My Orders" subtitle="Manage, track, and download invoices for clinical products." />
+      <div className="space-y-4 sm:space-y-6 text-left">
+        {/* Responsive Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight font-display">My Orders</h2>
+              {ordersTotal > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#005B63]/10 text-[#005B63] border border-[#005B63]/20">
+                  {ordersTotal}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">Track, manage, and download tax invoices for your clinical orders.</p>
+          </div>
+          {orderSearch && (
+            <button
+              onClick={() => { setOrderSearch(''); setOrdersPage(1); }}
+              className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+            >
+              Clear Search
+            </button>
+          )}
+        </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-grow">
+        {/* Search & Status Filter Row */}
+        <div className="space-y-3">
+          {/* Instant Search Bar */}
+          <div className="relative w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
               placeholder="Search by Order ID or Product Name..." 
@@ -1375,46 +1398,57 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                 setOrderSearch(e.target.value);
                 setOrdersPage(1);
               }}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  fetchUserOrders();
-                }
-              }}
-              className="w-full pl-4 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.01)]" 
+              className="w-full pl-10 pr-10 py-2.5 sm:py-3 border border-slate-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
             />
-          </div>
-          <div className="relative flex gap-2">
-            <button
-              onClick={() => fetchUserOrders()}
-              className="px-4 py-2.5 bg-[#005B63] text-white rounded-xl text-xs font-bold hover:bg-[#004b52] cursor-pointer"
-            >
-              Search
-            </button>
-            <div className="relative">
-              <select 
-                value={orderFilter} 
-                onChange={e => {
-                  setOrderFilter(e.target.value as any);
+            {orderSearch && (
+              <button
+                onClick={() => {
+                  setOrderSearch('');
                   setOrdersPage(1);
                 }}
-                className="appearance-none px-4 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005B63] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                title="Clear search"
               >
-                <option value="all">Filter: All Statuses</option>
-                <option value="pending_payment">Pending Payment</option>
-                <option value="processing">Processing</option>
-                <option value="packed">Packed</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Chips (Horizontal Scrollable) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+            {[
+              { value: 'all', label: 'All Orders' },
+              { value: 'processing', label: 'Processing' },
+              { value: 'packed', label: 'Packed' },
+              { value: 'shipped', label: 'Shipped' },
+              { value: 'delivered', label: 'Delivered' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ].map(tab => {
+              const isActive = orderFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => {
+                    setOrderFilter(tab.value as any);
+                    setOrdersPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                    isActive
+                      ? 'bg-[#005B63] text-white border-[#005B63] shadow-xs'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {ordersLoading ? (
           <div className="space-y-4">
-            {[1, 2].map(i => <SkeletonBlock key={i} className="h-32" />)}
+            {[1, 2].map(i => <SkeletonBlock key={i} className="h-36 rounded-2xl" />)}
           </div>
         ) : userOrders.length === 0 ? (
           <EmptyState 
@@ -1424,54 +1458,84 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             action={ordersTotal === 0 ? <button onClick={() => setCurrentView('portfolio')} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52] transition-colors" style={{ background: TEAL }}>Explore Catalog</button> : undefined}
           />
         ) : (
-          <div className="space-y-5">
-            {userOrders.map(order => (
-              <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] overflow-hidden transition-all duration-300">
-                <div className="p-4 border-b border-slate-50 bg-slate-50/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Order Reference</span>
-                    <p className="text-xs font-black text-slate-800 hover:text-[#005B63] cursor-pointer hover:underline" onClick={() => setSelectedOrderId(order.id)}>
-                      {order.order_number || `#${order.id}`}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {new Date(order.created_at).toLocaleDateString('en-IN')} · {order.payment_method}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
-                      order.status === 'delivered' ? 'text-emerald-700 bg-emerald-50 border-emerald-25' :
-                      order.status === 'cancelled' ? 'text-rose-700 bg-rose-50 border-rose-25' :
-                      order.status === 'processing' ? 'text-amber-700 bg-amber-50 border-amber-25' :
-                      'text-slate-700 bg-slate-50 border-slate-200'
-                    }`}>
-                      {getStatusLabel(order.status)}
-                    </span>
-                    <span className="text-sm font-black text-slate-800">₹{order.total_amount.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
+          <div className="space-y-4 sm:space-y-5">
+            {userOrders.map(order => {
+              const statusCfg: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
+                delivered: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: 'Delivered' },
+                shipped: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500', label: 'Shipped' },
+                packed: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', dot: 'bg-indigo-500', label: 'Packed' },
+                processing: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', label: 'Processing' },
+                pending_payment: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', label: 'Pending Payment' },
+                cancelled: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', dot: 'bg-rose-500', label: 'Cancelled' },
+                returned: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', dot: 'bg-slate-500', label: 'Returned' },
+              };
+              const st = statusCfg[order.status] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', dot: 'bg-slate-400', label: order.status || 'Processing' };
 
-                <div className="divide-y divide-slate-50">
-                  {order.items.map((item: any) => {
-                    const isWarrantyEligible = item.product_name.toLowerCase().includes('handpiece') || item.product_name.toLowerCase().includes('scaler') || item.product_name.toLowerCase().includes('light') || item.product_name.toLowerCase().includes('motor');
-                    return (
-                      <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-                        <div className="flex items-center gap-4">
-                          {item.image_url ? (
-                            <img src={`http://localhost:8000${item.image_url}`} alt={item.product_name} className="w-14 h-14 object-contain bg-slate-50 border border-slate-100 rounded-xl p-1.5 shrink-0" />
-                          ) : (
-                            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 text-slate-400">
-                              <Package className="w-6 h-6" />
+              return (
+                <div 
+                  key={order.id} 
+                  className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgba(0,91,99,0.06)] hover:border-[#005B63]/30 overflow-hidden transition-all duration-300"
+                >
+                  {/* Card Top Header */}
+                  <div className="p-3.5 sm:p-4.5 border-b border-slate-100 bg-slate-50/40">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${st.bg} ${st.text} ${st.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot} ${['processing', 'pending_payment'].includes(order.status) ? 'animate-pulse' : ''}`} />
+                        {st.label}
+                      </span>
+                      <span className="text-sm sm:text-base font-black text-slate-900 font-display">
+                        ₹{Number(order.total_amount).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-slate-400 uppercase text-[9px] tracking-wider">Ref:</span>
+                        <span 
+                          onClick={() => setSelectedOrderId(order.id)}
+                          className="font-black text-[#005B63] hover:underline cursor-pointer"
+                        >
+                          {order.order_number || `#${order.id}`}
+                        </span>
+                      </div>
+                      <div className="text-[10.5px] text-slate-400 font-medium">
+                        {new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {order.payment_method && ` · ${order.payment_method.toUpperCase()}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Products List in this order */}
+                  <div className="divide-y divide-slate-100/70 p-3 sm:p-4">
+                    {order.items.map((item: any) => {
+                      const isWarrantyEligible = item.product_name.toLowerCase().includes('handpiece') || item.product_name.toLowerCase().includes('scaler') || item.product_name.toLowerCase().includes('light') || item.product_name.toLowerCase().includes('motor');
+                      return (
+                        <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {item.image_url ? (
+                              <img 
+                                src={`http://localhost:8000${item.image_url}`} 
+                                alt={item.product_name} 
+                                className="w-13 h-13 sm:w-16 sm:h-16 object-contain bg-slate-50 border border-slate-100 rounded-xl p-1 shrink-0" 
+                              />
+                            ) : (
+                              <div className="w-13 h-13 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 text-slate-400">
+                                <Package className="w-6 h-6" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p 
+                                onClick={() => onProductClick(item.product_slug)}
+                                className="text-xs sm:text-sm font-black text-slate-800 hover:text-[#005B63] transition-colors cursor-pointer truncate"
+                              >
+                                {item.product_name}
+                              </p>
+                              <p className="text-[11px] text-slate-400 mt-0.5 font-bold">
+                                Qty: {item.quantity} · <span className="text-slate-600">₹{Number(item.price).toLocaleString('en-IN')}</span>
+                              </p>
                             </div>
-                          )}
-                          <div>
-                            <p className="text-xs font-black text-slate-800 hover:text-[#005B63] transition-colors cursor-pointer" onClick={() => onProductClick(item.product_slug)}>{item.product_name}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Qty: {item.quantity} · Unit Price: ₹{item.price.toLocaleString('en-IN')}</p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          <button onClick={() => setSelectedOrderId(order.id)} className="text-[10px] font-extrabold uppercase tracking-wider border border-slate-200 hover:border-[#005B63] hover:text-[#005B63] transition-colors px-3 py-1.5 rounded-lg text-slate-500 cursor-pointer">
-                            Track / View
-                          </button>
+
                           {isWarrantyEligible && (
                             <button 
                               onClick={() => {
@@ -1480,33 +1544,51 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                                 setShowWarrantyForm(true);
                                 setActiveSection('warranty');
                               }}
-                              className="text-[10px] font-extrabold uppercase tracking-wider bg-[#E6F2F2] text-[#005B63] border border-[#005B63]/10 hover:bg-[#005B63] hover:text-white transition-colors px-3 py-1.5 rounded-lg cursor-pointer"
+                              className="hidden sm:inline-flex text-[10px] font-extrabold uppercase tracking-wider bg-[#E6F2F2] text-[#005B63] border border-[#005B63]/20 hover:bg-[#005B63] hover:text-white transition-colors px-2.5 py-1 rounded-lg cursor-pointer shrink-0"
                             >
-                              Register Warranty
+                              Warranty
                             </button>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
 
-                <div className="px-4 py-3 flex flex-wrap gap-4 bg-slate-50/20 border-t border-slate-50">
-                  <button onClick={() => handleReorder(order)} className="flex items-center gap-1.5 text-[10px] font-black text-[#005B63] hover:underline uppercase tracking-wide cursor-pointer">
-                    <RefreshCw className="w-3.5 h-3.5" /> Reorder
-                  </button>
-                  <button onClick={() => setSelectedOrderId(order.id)} className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer ml-auto">
-                    <FileText className="w-3.5 h-3.5" /> Tax Invoice
-                  </button>
-                  <button 
-                    onClick={() => { setSupportOrderId(order.id); setIsCreatingTicket(true); setActiveSection('support'); }}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer"
-                  >
-                    <HeadphonesIcon className="w-3.5 h-3.5" /> Need Help
-                  </button>
+                  {/* Mobile Quick Action Buttons Bar */}
+                  <div className="p-3 bg-slate-50/60 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <button
+                      onClick={() => setSelectedOrderId(order.id)}
+                      className="w-full sm:w-auto px-4 py-2 bg-[#005B63] hover:bg-[#00484e] text-white rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-98"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Track & View Order</span>
+                      <ChevronRight className="w-3.5 h-3.5 ml-auto sm:ml-0" />
+                    </button>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/50">
+                      <button 
+                        onClick={() => handleReorder(order)} 
+                        className="flex items-center gap-1 text-[11px] font-black text-[#005B63] hover:underline uppercase tracking-wider cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Reorder
+                      </button>
+                      <button 
+                        onClick={() => setSelectedOrderId(order.id)} 
+                        className="flex items-center gap-1 text-[11px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wider cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Invoice
+                      </button>
+                      <button 
+                        onClick={() => { setSupportOrderId(order.id); setIsCreatingTicket(true); setActiveSection('support'); }}
+                        className="flex items-center gap-1 text-[11px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wider cursor-pointer"
+                      >
+                        <HeadphonesIcon className="w-3.5 h-3.5" /> Help
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Pagination Controls */}
             {ordersTotal > ordersPageSize && (
@@ -2426,7 +2508,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 mt-14 lg:mt-0">
+      <div className="max-w-6xl mx-auto px-2.5 sm:px-4 md:px-6 mt-14 lg:mt-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Desktop Sidebar */}
           <div className="hidden lg:block lg:col-span-3 sticky top-[168px]">
@@ -2435,7 +2517,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
           {/* Main content pane */}
           <div className="lg:col-span-9">
-            <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.015)]">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-3.5 sm:p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.015)]">
               {renderSection()}
               
               {/* Show future placeholders on the dashboard only */}
