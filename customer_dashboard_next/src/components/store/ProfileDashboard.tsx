@@ -1361,14 +1361,14 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     };
 
     return (
-      <div className="space-y-4 sm:space-y-6 text-left">
+      <div className="space-y-3 sm:space-y-6 text-left">
         {/* Responsive Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight font-display">My Orders</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight font-display">My Orders</h2>
               {ordersTotal > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#005B63]/10 text-[#005B63] border border-[#005B63]/20">
+                <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-[#005B63]/10 text-[#005B63] border border-[#005B63]/20">
                   {ordersTotal}
                 </span>
               )}
@@ -1378,7 +1378,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
           {orderSearch && (
             <button
               onClick={() => { setOrderSearch(''); setOrdersPage(1); }}
-              className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+              className="text-[11px] sm:text-xs font-bold text-rose-500 hover:underline cursor-pointer"
             >
               Clear Search
             </button>
@@ -1386,10 +1386,10 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         </div>
 
         {/* Search & Status Filter Row */}
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {/* Instant Search Bar */}
           <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
               placeholder="Search by Order ID or Product Name..." 
@@ -1398,7 +1398,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                 setOrderSearch(e.target.value);
                 setOrdersPage(1);
               }}
-              className="w-full pl-10 pr-10 py-2.5 sm:py-3 border border-slate-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
+              className="w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-1.5 sm:py-2.5 border border-slate-200 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-medium text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
             />
             {orderSearch && (
               <button
@@ -1406,10 +1406,10 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   setOrderSearch('');
                   setOrdersPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
                 title="Clear search"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -1433,7 +1433,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                     setOrderFilter(tab.value as any);
                     setOrdersPage(1);
                   }}
-                  className={`px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                  className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
                     isActive
                       ? 'bg-[#005B63] text-white border-[#005B63] shadow-xs'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
