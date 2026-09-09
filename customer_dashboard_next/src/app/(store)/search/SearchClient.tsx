@@ -721,50 +721,46 @@ export default function SearchClient({
             </div>
           </aside>
 
-          {/* Mobile Filter Bottom Sheet (Half-Screen) */}
+          {/* Mobile Filter Drawer (Half Screen Width from Right) */}
           {isMobileFilterOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-200">
-              {/* Clickable Backdrop Area at the top */}
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
+              {/* Clickable Backdrop on Left Half */}
               <div
                 onClick={() => setIsMobileFilterOpen(false)}
-                className="flex-1 w-full cursor-pointer"
+                className="flex-1 h-full cursor-pointer"
                 title="Close Filters"
               />
 
-              {/* Half-Screen Sheet Container */}
-              <div className="w-full h-[58vh] max-h-[60vh] bg-white rounded-t-[28px] shadow-2xl p-4 sm:p-6 flex flex-col justify-between animate-in slide-in-from-bottom duration-300 relative border-t border-slate-100">
-                {/* Pull Handle Bar */}
-                <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto -mt-1 mb-2.5 shrink-0" />
-
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    {hasActiveFilters && (
+              {/* Right Side Panel taking Half of the Screen */}
+              <div className="w-1/2 min-w-[220px] max-w-[50vw] bg-white h-full p-3.5 sm:p-5 space-y-3.5 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
+                <div className="space-y-4">
+                  {/* Drawer Header */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
+                      <Filter className="w-3.5 h-3.5 text-[#006670] shrink-0" /> Filter
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {hasActiveFilters && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-[10px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                       <button
-                        onClick={handleClearAll}
-                        className="text-[10px] sm:text-[11px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                        onClick={() => setIsMobileFilterOpen(false)}
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
                       >
-                        Clear All
+                        <X className="w-4 h-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => setIsMobileFilterOpen(false)}
-                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
-                    >
-                      <X className="w-4.5 h-4.5" />
-                    </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Scrollable Filter Content */}
-                <div className="space-y-4 overflow-y-auto py-3 scrollbar-thin pr-1 flex-1">
                   {/* Category Filter */}
                   {categories.length > 0 && (
                     <div className="space-y-1.5 relative">
-                      <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                      <label className="text-[10px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                         Category
                       </label>
                       <div className="relative">
@@ -774,39 +770,39 @@ export default function SearchClient({
                             setIsMobileCategoryOpen(!isMobileCategoryOpen);
                             setIsMobileBrandOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-2.5 py-2 text-[11px] sm:text-xs font-bold text-slate-800 transition-all cursor-pointer ${
                             isMobileCategoryOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          <span className="truncate pr-2">
+                          <span className="truncate pr-1">
                             {selectedCategory
                               ? activeCategoryObj?.name || selectedCategory
-                              : `All Categories (${categories.length})`}
+                              : `All (${categories.length})`}
                           </span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
                               isMobileCategoryOpen ? 'rotate-180 text-[#006670]' : ''
                             }`}
                           />
                         </button>
 
                         {isMobileCategoryOpen && (
-                          <div className="mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="mt-1 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
                             {categories.length > 6 && (
-                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                              <div className="px-2 pb-1.5 border-b border-slate-100 mb-1">
                                 <input
                                   type="text"
-                                  placeholder="Search categories..."
+                                  placeholder="Search..."
                                   value={mobileCategorySearchQuery}
                                   onChange={(e) => setMobileCategorySearchQuery(e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
                                 />
                               </div>
                             )}
-                            <div className="max-h-40 overflow-y-auto scrollbar-thin">
+                            <div className="max-h-44 overflow-y-auto scrollbar-thin">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -814,15 +810,15 @@ export default function SearchClient({
                                   setIsMobileCategoryOpen(false);
                                   setMobileCategorySearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer text-left ${
                                   !selectedCategory
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
-                                <span>All Categories ({categories.length})</span>
+                                <span className="truncate">All Categories</span>
                                 {!selectedCategory && (
-                                  <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                  <Check className="w-3 h-3 text-[#006670] shrink-0 ml-1" />
                                 )}
                               </button>
                               {categories
@@ -842,15 +838,15 @@ export default function SearchClient({
                                         setIsMobileCategoryOpen(false);
                                         setMobileCategorySearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer text-left ${
                                         isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
                                       }`}
                                     >
-                                      <span className="truncate pr-2">{c.name}</span>
+                                      <span className="truncate pr-1">{c.name}</span>
                                       {isSelected && (
-                                        <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                        <Check className="w-3 h-3 text-[#006670] shrink-0" />
                                       )}
                                     </button>
                                   );
@@ -865,7 +861,7 @@ export default function SearchClient({
                   {/* Brand Filter */}
                   {brands.length > 0 && (
                     <div className="space-y-1.5 relative">
-                      <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                      <label className="text-[10px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                         Brand
                       </label>
                       <div className="relative">
@@ -875,39 +871,39 @@ export default function SearchClient({
                             setIsMobileBrandOpen(!isMobileBrandOpen);
                             setIsMobileCategoryOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-2.5 py-2 text-[11px] sm:text-xs font-bold text-slate-800 transition-all cursor-pointer ${
                             isMobileBrandOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          <span className="truncate pr-2">
+                          <span className="truncate pr-1">
                             {selectedBrand
                               ? activeBrandObj?.name || selectedBrand
-                              : `All Brands (${brands.length})`}
+                              : `All (${brands.length})`}
                           </span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
                               isMobileBrandOpen ? 'rotate-180 text-[#006670]' : ''
                             }`}
                           />
                         </button>
 
                         {isMobileBrandOpen && (
-                          <div className="mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="mt-1 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
                             {brands.length > 6 && (
-                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                              <div className="px-2 pb-1.5 border-b border-slate-100 mb-1">
                                 <input
                                   type="text"
-                                  placeholder="Search brands..."
+                                  placeholder="Search..."
                                   value={mobileBrandSearchQuery}
                                   onChange={(e) => setMobileBrandSearchQuery(e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
                                 />
                               </div>
                             )}
-                            <div className="max-h-40 overflow-y-auto scrollbar-thin">
+                            <div className="max-h-44 overflow-y-auto scrollbar-thin">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -915,15 +911,15 @@ export default function SearchClient({
                                   setIsMobileBrandOpen(false);
                                   setMobileBrandSearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer text-left ${
                                   !selectedBrand
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
-                                <span>All Brands ({brands.length})</span>
+                                <span className="truncate">All Brands</span>
                                 {!selectedBrand && (
-                                  <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                  <Check className="w-3 h-3 text-[#006670] shrink-0 ml-1" />
                                 )}
                               </button>
                               {brands
@@ -943,15 +939,15 @@ export default function SearchClient({
                                         setIsMobileBrandOpen(false);
                                         setMobileBrandSearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer text-left ${
                                         isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
                                       }`}
                                     >
-                                      <span className="truncate pr-2">{b.name}</span>
+                                      <span className="truncate pr-1">{b.name}</span>
                                       {isSelected && (
-                                        <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                        <Check className="w-3 h-3 text-[#006670] shrink-0" />
                                       )}
                                     </button>
                                   );
@@ -964,13 +960,13 @@ export default function SearchClient({
                   )}
 
                   {/* Price Filter & Presets */}
-                  <div className="space-y-2">
-                    <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                       Price Range (₹)
                     </label>
 
                     {/* Price Preset Chips */}
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-2 gap-1">
                       {pricePresets.map((preset) => {
                         const isActive = minPrice === preset.min && maxPrice === preset.max;
                         return (
@@ -981,7 +977,7 @@ export default function SearchClient({
                               setInputMaxPrice(preset.max);
                               updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
                             }}
-                            className={`px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer border ${
+                            className={`px-1.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer border truncate ${
                               isActive
                                 ? 'bg-[#006670] text-white border-[#006670]'
                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -994,46 +990,46 @@ export default function SearchClient({
                     </div>
 
                     {/* Manual Inputs with Rupee Icon */}
-                    <div className="grid grid-cols-2 gap-2 pt-0.5">
+                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                       <div className="relative">
-                        <span className="absolute left-2.5 top-1.5 text-xs font-bold text-slate-400">₹</span>
+                        <span className="absolute left-2 top-1.5 text-[10px] font-bold text-slate-400">₹</span>
                         <input
                           type="number"
                           placeholder="Min"
                           value={inputMinPrice}
                           onChange={(e) => setInputMinPrice(e.target.value)}
                           onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-4 pr-1 py-1.5 text-[11px] font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
                         />
                       </div>
                       <div className="relative">
-                        <span className="absolute left-2.5 top-1.5 text-xs font-bold text-slate-400">₹</span>
+                        <span className="absolute left-2 top-1.5 text-[10px] font-bold text-slate-400">₹</span>
                         <input
                           type="number"
                           placeholder="Max"
                           value={inputMaxPrice}
                           onChange={(e) => setInputMaxPrice(e.target.value)}
                           onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-4 pr-1 py-1.5 text-[11px] font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Availability Filter Toggle Switch */}
-                  <div className="pt-2 border-t border-slate-100">
+                  <div className="pt-1.5 border-t border-slate-100">
                     <label className="flex items-center justify-between cursor-pointer select-none">
-                      <span className="text-xs font-bold text-slate-700">In-Stock Only</span>
+                      <span className="text-[11px] font-bold text-slate-700">In-Stock Only</span>
                       <button
                         type="button"
                         onClick={() => updateUrl({ in_stock: inStockOnly ? null : 'true' })}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                           inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
                         }`}
                       >
                         <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                            inStockOnly ? 'translate-x-4' : 'translate-x-0'
+                          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            inStockOnly ? 'translate-x-3.5' : 'translate-x-0'
                           }`}
                         />
                       </button>
@@ -1042,17 +1038,17 @@ export default function SearchClient({
                 </div>
 
                 {/* Bottom CTA */}
-                <div className="pt-2.5 border-t border-slate-100 space-y-2 shrink-0 bg-white">
+                <div className="pt-2 border-t border-slate-100 space-y-1.5 shrink-0 bg-white">
                   <button
                     onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full py-2.5 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md active:scale-98 cursor-pointer"
+                    className="w-full py-2 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-[11px] sm:text-xs rounded-full transition-all shadow-md active:scale-98 cursor-pointer"
                   >
                     Apply Filters
                   </button>
                   {hasActiveFilters && (
                     <button
                       onClick={handleClearAll}
-                      className="w-full py-1 text-center text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+                      className="w-full py-1 text-center text-[10px] font-bold text-rose-500 hover:underline cursor-pointer"
                     >
                       Clear All Filters
                     </button>
