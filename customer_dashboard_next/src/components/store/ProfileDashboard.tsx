@@ -19,6 +19,8 @@ import OrderDetailPage from './OrderDetailPage';
 import { getStatusLabel } from '@/lib/utils';
 import { ordersService } from '../../lib/services/ordersService';
 import { INDIAN_STATES } from '@/lib/constants/indianStates';
+import { useWishlist } from '@/contexts/WishlistContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,8 +43,8 @@ interface ProfileDashboardProps {
   setActiveSection: (s: DashboardSection) => void;
   orders: Order[];
   setCartItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
-  wishlistItems: CartItem[];
-  setWishlistItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  wishlistItems?: CartItem[];
+  setWishlistItems?: React.Dispatch<React.SetStateAction<CartItem[]>>;
   setCurrentView: (view: any) => void;
   onProductClick: (id: string) => void;
   showToast: (message: string) => void;
@@ -205,6 +207,14 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   showToast,
 }) => {
   const { user, profile, logout, refreshUser, resendVerification, logoutAll, activeSessions, verifyOTP, resendOTP } = useAuth();
+  const { 
+    wishlistItems: dbWishlistItems, 
+    wishlistCount, 
+    removeFromWishlist: dbRemoveFromWishlist, 
+    moveToCart: dbMoveToCart, 
+    loading: wishlistLoading,
+    fetchWishlist
+  } = useWishlist();
 
   // ── Local state ──
   const [localToast, setLocalToast] = useState<string | null>(null);
@@ -818,7 +828,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
           <DashboardStatCard label="Total Orders" value={orders.length} icon={<Package className="w-5 h-5 text-[#005B63]" />} color="bg-[#E6F2F2]" onClick={() => setActiveSection('orders')} />
           <DashboardStatCard label="Pending Delivery" value={pendingCount} icon={<RefreshCw className="w-5 h-5 text-amber-500" />} color="bg-amber-50" onClick={() => setActiveSection('orders')} />
-          <DashboardStatCard label="Wishlist Items" value={wishlistItems.length} icon={<Heart className="w-5 h-5 text-rose-500" />} color="bg-rose-50" onClick={() => setActiveSection('wishlist')} />
+          <DashboardStatCard label="Wishlist Items" value={wishlistCount} icon={<Heart className="w-5 h-5 text-rose-500" />} color="bg-rose-50" onClick={() => setActiveSection('wishlist')} />
           <DashboardStatCard label="Active Warranties" value={registeredWarranties.length} icon={<Shield className="w-5 h-5 text-emerald-600" />} color="bg-emerald-50" onClick={() => setActiveSection('warranty')} />
           <DashboardStatCard label="Open Support Tickets" value={supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} icon={<HeadphonesIcon className="w-5 h-5 text-indigo-500" />} color="bg-indigo-50" onClick={() => setActiveSection('support')} />
         </div>
@@ -1631,47 +1641,93 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // Wishlist
   const renderWishlist = () => {
-    const handleRemove = (id: string) => setWishlistItems(prev => prev.filter(i => i.id !== id));
-    const handleAddToCart = (item: CartItem) => {
-      setCartItems(prev => {
-        if (prev.some(c => c.id === item.id)) return prev.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c);
-        return [...prev, { ...item, qty: 1 }];
-      });
-      setWishlistItems(prev => prev.filter(w => w.id !== item.id));
-      fireToast('Moved to Cart!');
-    };
-
     return (
-      <div className="space-y-6">
-        <SectionHeader title={`Wishlist (${wishlistItems.length})`} subtitle="Dental items saved for quick purchase ordering." />
-        {wishlistItems.length === 0 ? (
-          <EmptyState icon={<Heart className="w-8 h-8 text-rose-400" />} title="Your Wishlist is Empty"
+      <div className="space-y-6 text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display">My Wishlist</h2>
+            {wishlistCount > 0 && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-100">
+                {wishlistCount}
+              </span>
+            )}
+          </div>
+          <button 
+            onClick={() => setCurrentView('portfolio')} 
+            className="text-xs font-bold text-[#005B63] hover:underline cursor-pointer"
+          >
+            Explore Catalog →
+          </button>
+        </div>
+
+        {wishlistLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <SkeletonBlock key={i} className="h-24 rounded-2xl" />)}
+          </div>
+        ) : dbWishlistItems.length === 0 ? (
+          <EmptyState 
+            icon={<Heart className="w-8 h-8 text-rose-400" />} 
+            title="Your Wishlist is Empty"
             subtitle="Save dental supplies or equipment by tapping the heart icon on any product."
             action={<button onClick={() => setCurrentView('portfolio')} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52]" style={{ background: TEAL }}>Browse Products</button>}
           />
         ) : (
-          <div className="space-y-4">
-            {wishlistItems.map(item => {
-              const originalPrice = item.originalPrice || Math.round(item.price * 1.25);
-              const disc = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+          <div className="space-y-3">
+            {dbWishlistItems.map((item) => {
+              const product = item.product || item;
+              const prodId = product.id || product.slug || item.product_id || item.id;
+              const prodSlug = product.slug || prodId;
+              const prodName = product.name || product.title || 'Clinical Product';
+              const prodPrice = product.pricing?.effective_price || product.price || 0;
+              const prodMrp = product.pricing?.mrp || product.originalPrice || Math.round(prodPrice * 1.25);
+              const disc = prodMrp > prodPrice ? Math.round(((prodMrp - prodPrice) / prodMrp) * 100) : 0;
+              
+              // Image resolution
+              const candidate = product?.primary_image || product?.image_url || product?.image || (product?.images && product.images[0]?.image) || item?.image;
+              const prodImg = candidate ? getAbsoluteImageUrl(typeof candidate === 'object' ? (candidate.image || candidate.url || '') : candidate) : '/images/bestseller_handpiece.png';
+
               return (
-                <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-4 flex flex-col sm:flex-row gap-4 items-center hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 object-contain bg-slate-50 rounded-xl border border-slate-100 p-1.5 shrink-0 cursor-pointer" onClick={() => onProductClick(item.id)} />
+                <div 
+                  key={item.id || prodId} 
+                  className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-4 flex flex-col sm:flex-row gap-4 items-center hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] hover:border-slate-200 transition-all duration-300"
+                >
+                  <img 
+                    src={prodImg} 
+                    alt={prodName} 
+                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-slate-50 rounded-xl border border-slate-100 p-1.5 shrink-0 cursor-pointer" 
+                    onClick={() => onProductClick(prodSlug)} 
+                  />
                   <div className="flex-1 min-w-0 text-center sm:text-left">
-                    <p className="text-xs font-black text-slate-800 truncate cursor-pointer hover:text-[#005B63] transition-colors" onClick={() => onProductClick(item.id)}>{item.name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{item.category || 'Clinical Supplies'}</p>
+                    <p 
+                      className="text-xs sm:text-sm font-black text-slate-800 truncate cursor-pointer hover:text-[#005B63] transition-colors" 
+                      onClick={() => onProductClick(prodSlug)}
+                    >
+                      {prodName}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{product.category_name || product.category || 'Clinical Supplies'}</p>
                     <div className="flex items-baseline justify-center sm:justify-start gap-2 mt-1">
-                      <span className="text-sm font-black text-slate-900">₹{item.price.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] text-slate-300 line-through">₹{originalPrice.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] font-bold text-emerald-600">({disc}% OFF)</span>
+                      <span className="text-sm font-black text-slate-900">₹{Number(prodPrice).toLocaleString('en-IN')}</span>
+                      {prodMrp > prodPrice && (
+                        <span className="text-[10px] text-slate-300 line-through">₹{Number(prodMrp).toLocaleString('en-IN')}</span>
+                      )}
+                      {disc > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-600">({disc}% OFF)</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2 sm:flex-col shrink-0 w-full sm:w-auto justify-center">
-                    <button onClick={() => handleAddToCart(item)} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-white cursor-pointer" style={{ background: TEAL }}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Order
+                    <button 
+                      onClick={() => dbMoveToCart(product)} 
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-white cursor-pointer hover:bg-[#004b52] transition-colors shadow-xs active:scale-98" 
+                      style={{ background: TEAL }}
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" /> Move to Cart
                     </button>
-                    <button onClick={() => handleRemove(item.id)} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-rose-500 border border-rose-100 hover:bg-rose-50 transition-colors cursor-pointer">
-                      <Trash2 className="w-3.5 h-3.5" /> Drop
+                    <button 
+                      onClick={() => dbRemoveFromWishlist(prodId)} 
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-rose-500 border border-rose-100 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Remove
                     </button>
                   </div>
                 </div>

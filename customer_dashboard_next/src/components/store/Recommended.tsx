@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import { ArrowRight, Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { useGuestGuard } from '../../hooks/useGuestGuard';
+import { useWishlist } from '../../contexts/WishlistContext';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 
 import 'swiper/css';
@@ -38,8 +39,8 @@ interface RecommendedProps {
   onProductClick: (id: string) => void;
   onOpenLoginModal: () => void;
   setCartItems: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
-  wishlistItems: MockCartItem[];
-  setWishlistItems: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
+  wishlistItems?: MockCartItem[];
+  setWishlistItems?: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
   showToast?: (message: string) => void;
   initialProducts?: RecProduct[];
 }
@@ -51,7 +52,7 @@ const Recommended: React.FC<RecommendedProps> = ({
   showToast,
   initialProducts
 }) => {
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [recProducts, setRecProducts] = useState<RecProduct[]>(initialProducts || []);
   const { guardAction } = useGuestGuard(onOpenLoginModal, showToast);
 
@@ -96,13 +97,20 @@ const Recommended: React.FC<RecommendedProps> = ({
       });
   }, [initialProducts]);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+  const toggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const p = recProducts.find(prod => prod.id === id);
     if (!p) return;
     const item: MockCartItem = { id: p.id, name: p.title, category: p.category || 'Clinical Equipment', price: p.price, qty: 1, image: p.image, originalPrice: p.originalPrice };
     if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
-    setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
+    await toggleWishlist({
+      id: p.id,
+      name: p.title,
+      slug: p.id,
+      price: p.price,
+      image: p.image,
+      category_name: p.category,
+    });
   };
 
   const handleCartClick = (e: React.MouseEvent, prod: RecProduct) => {
@@ -225,7 +233,7 @@ const Recommended: React.FC<RecommendedProps> = ({
                   >
                     <Heart 
                       className={`w-4 h-4 transition-colors ${
-                        favorites[prod.id] 
+                        isInWishlist(prod.id) 
                           ? 'fill-rose-500 stroke-rose-500 text-rose-500' 
                           : 'stroke-slate-400'
                       }`} 

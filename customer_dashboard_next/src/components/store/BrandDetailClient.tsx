@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { useStore } from '@/contexts/StoreContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface ProductItem {
@@ -83,6 +84,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   const router = useRouter();
   const store = useStore();
   const { isAuthenticated, setPendingAction } = useAuth();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [brand, setBrand] = useState<BrandDetailData | null>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -223,30 +225,21 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   }, [slug, currentPage, selectedSort, selectedCategory, inStockOnly]);
 
   // Wishlist handler
-  const isWishlisted = (id: string) => store.wishlistItems.some(item => String(item.id) === id);
-
-  const handleToggleWishlist = (e: React.MouseEvent, prod: ProductItem) => {
+  const handleToggleWishlist = async (e: React.MouseEvent, prod: ProductItem) => {
     e.stopPropagation();
     if (!isAuthenticated) {
       setPendingAction({ type: 'open-wishlist' });
       store.openLoginModal();
       return;
     }
-    if (isWishlisted(prod.id)) {
-      store.setWishlistItems(store.wishlistItems.filter(i => String(i.id) !== prod.id));
-      store.showToast(`Removed ${prod.name} from Wishlist`);
-    } else {
-      store.addItemToWishlist({
-        id: prod.id,
-        name: prod.name,
-        slug: prod.slug,
-        price: prod.pricing?.selling_price || 0,
-        image: prod.image || '',
-        category: prod.category_name || '',
-        qty: 1,
-      });
-      store.showToast(`Added ${prod.name} to Wishlist!`);
-    }
+    await toggleWishlist({
+      id: prod.id,
+      name: prod.name,
+      slug: prod.slug,
+      price: prod.pricing?.selling_price || 0,
+      image: prod.image || '',
+      category_name: prod.category_name || '',
+    });
   };
 
   // Add to Cart handler
@@ -521,7 +514,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
               {/* Product Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
                 {products.map(prod => {
-                  const wishlisted = isWishlisted(prod.id);
+                  const wishlisted = isInWishlist(prod.id);
                   const isOutOfStock = prod.inventory && prod.inventory.stock_quantity <= 0;
                   const mrp = prod.pricing?.mrp || 0;
                   const price = prod.pricing?.selling_price || 0;

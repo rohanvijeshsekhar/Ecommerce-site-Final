@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import { ArrowRight, ShoppingCart, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useWishlist } from '../../contexts/WishlistContext';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 import type { CartItem } from '../../types/pendingAction';
 
@@ -17,8 +18,8 @@ interface FeaturedCombosProps {
   onComboClick?: (slug: string) => void;
   setCurrentView?: (view: any) => void;
   setCartItems: React.SetStateAction<any>;
-  wishlistItems: CartItem[];
-  setWishlistItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  wishlistItems?: CartItem[];
+  setWishlistItems?: React.Dispatch<React.SetStateAction<CartItem[]>>;
   showToast: (msg: string) => void;
   onOpenLoginModal: () => void;
   initialCombos?: any[];
@@ -28,13 +29,12 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
   onComboClick,
   setCurrentView,
   setCartItems,
-  wishlistItems,
-  setWishlistItems,
   showToast,
   onOpenLoginModal,
   initialCombos
 }) => {
   const { user, isAuthenticated } = useAuth();
+  const { isInWishlist, toggleWishlist: dbToggleWishlist } = useWishlist();
   const isDealer = user?.role === 'dealer';
 
   const [combos, setCombos] = useState<any[]>(initialCombos || []);
@@ -57,9 +57,9 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
       });
   }, [initialCombos]);
 
-  const isWishlisted = (id: string) => wishlistItems.some(item => item.id === id);
+  const isWishlisted = (id: string) => isInWishlist(id);
 
-  const toggleWishlist = (combo: any, e: React.MouseEvent) => {
+  const toggleWishlist = async (combo: any, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
@@ -67,25 +67,15 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
       return;
     }
 
-    const isFav = isWishlisted(combo.id);
-    if (isFav) {
-      setWishlistItems(prev => prev.filter(item => item.id !== combo.id));
-      showToast('Removed from Wishlist');
-    } else {
-      const item: CartItem = {
-        id: combo.id,
-        name: combo.title,
-        category: 'Combo Deal',
-        price: parseFloat(isDealer && combo.dealer_price ? combo.dealer_price : combo.effective_price),
-        qty: 1,
-        image: getAbsoluteImageUrl(combo.thumbnail) || '/images/bestseller_scaler.png',
-        originalPrice: parseFloat(combo.original_price),
-        isCombo: true,
-        slug: combo.slug
-      };
-      setWishlistItems(prev => [...prev, item]);
-      showToast('Added to Wishlist');
-    }
+    const price = parseFloat(isDealer && combo.dealer_price ? combo.dealer_price : combo.effective_price);
+    await dbToggleWishlist({
+      id: combo.id,
+      name: combo.title,
+      slug: combo.slug,
+      price: price,
+      image: getAbsoluteImageUrl(combo.thumbnail) || '/images/bestseller_scaler.png',
+      category_name: 'Combo Deal',
+    });
   };
 
   const handleAddToCart = (combo: any, e: React.MouseEvent) => {

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { useStore } from '@/contexts/StoreContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useGuestGuard } from '@/hooks/useGuestGuard';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -55,13 +56,12 @@ export default function BestSellersClient() {
   const router = useRouter();
   const {
     addItemToCart,
-    addItemToWishlist,
     handleBuyNowDirect,
-    wishlistItems,
     showToast,
     openLoginModal,
   } = useStore();
 
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const { guardAction } = useGuestGuard(openLoginModal, showToast);
 
   const [banner, setBanner] = useState<BannerData | null>(null);
@@ -158,7 +158,7 @@ export default function BestSellersClient() {
     fetchBestSellersData();
   }, [page]);
 
-  const isWishlisted = (id: string) => wishlistItems?.some((w) => w.id === id);
+  const isWishlisted = (id: string) => isInWishlist(id);
 
   const handleProductCardClick = (productSlug: string) => {
     router.push(`/products/${productSlug}`);
@@ -179,7 +179,7 @@ export default function BestSellersClient() {
     addItemToCart(cartItem);
   };
 
-  const handleToggleWishlist = (e: React.MouseEvent, prod: BestSellerProductItem) => {
+  const handleToggleWishlist = async (e: React.MouseEvent, prod: BestSellerProductItem) => {
     e.stopPropagation();
     const wishItem = {
       id: prod.id,
@@ -191,7 +191,14 @@ export default function BestSellersClient() {
       originalPrice: prod.originalPrice,
     };
     if (!guardAction({ type: 'wishlist-toggle', payload: { item: wishItem } })) return;
-    addItemToWishlist(wishItem);
+    await toggleWishlist({
+      id: prod.id,
+      name: prod.name,
+      slug: prod.slug,
+      price: prod.price,
+      image: prod.image,
+      category_name: prod.category,
+    });
   };
 
   const handleBuyNow = (e: React.MouseEvent, prod: BestSellerProductItem) => {

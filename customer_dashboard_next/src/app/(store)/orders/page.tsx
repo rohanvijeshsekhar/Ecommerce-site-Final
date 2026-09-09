@@ -3,11 +3,13 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/contexts/StoreContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import MyOrdersPage from '@/components/store/MyOrdersPage';
 
 export default function OrdersRoute() {
   const router = useRouter();
   const store = useStore();
+  const { wishlistItems } = useWishlist();
 
   const handleProductClick = (slug: string) => {
     router.push(`/products/${slug}`);
@@ -22,15 +24,15 @@ export default function OrdersRoute() {
     else if (view === 'profile') router.push('/profile');
   };
 
-  // Convert wishlist items format
-  const mappedWishlistItems = store.wishlistItems.map(item => ({
-    id: item.id,
-    name: item.name,
-    category: item.category,
-    price: item.price,
-    qty: item.qty,
-    image: item.image,
-    originalPrice: item.originalPrice
+  // Convert wishlist items format from WishlistContext
+  const mappedWishlistItems = wishlistItems.map(item => ({
+    id: String(item.id || item.product?.id || ''),
+    name: item.name || item.product?.name || '',
+    category: item.category_name || item.product?.category_name || '',
+    price: Number(item.price || item.product?.pricing?.selling_price || 0),
+    qty: 1,
+    image: item.image || item.product?.primary_image || '',
+    originalPrice: Number(item.product?.pricing?.mrp || 0),
   }));
 
   return (
