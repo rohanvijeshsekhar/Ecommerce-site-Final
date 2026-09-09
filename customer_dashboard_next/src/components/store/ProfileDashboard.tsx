@@ -174,17 +174,19 @@ const Toast: React.FC<{ message: string | null }> = ({ message }) => {
                     message.toLowerCase().includes('pending') || 
                     message.toLowerCase().includes('rejected');
   return (
-    <div className={`fixed bottom-24 md:bottom-8 left-1/2 z-[200] text-white text-xs font-semibold uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-xl flex items-center gap-2.5 animate-toast-in border ${
-      isWarning 
-        ? 'bg-amber-950 border-amber-500/30' 
-        : 'bg-[#005B63] border-[#005B63]/30'
-    }`}>
-      {isWarning ? (
-        <AlertCircle className="w-4 h-4 text-amber-400 stroke-[2] shrink-0" />
-      ) : (
-        <CheckCircle className="w-4 h-4 text-emerald-300 stroke-[2] shrink-0" />
-      )}
-      <span>{message}</span>
+    <div className="fixed top-24 sm:top-6 inset-x-0 z-[99999] pointer-events-none flex justify-center px-4">
+      <div className={`pointer-events-auto text-white text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-toast-in border max-w-md w-auto ${
+        isWarning 
+          ? 'bg-amber-950 border-amber-500/30' 
+          : 'bg-[#005B63] border-[#005B63]/30'
+      }`}>
+        {isWarning ? (
+          <AlertCircle className="w-4 h-4 text-amber-400 stroke-[2] shrink-0" />
+        ) : (
+          <CheckCircle className="w-4 h-4 text-emerald-300 stroke-[2] shrink-0" />
+        )}
+        <span className="text-center">{message}</span>
+      </div>
     </div>
   );
 };
