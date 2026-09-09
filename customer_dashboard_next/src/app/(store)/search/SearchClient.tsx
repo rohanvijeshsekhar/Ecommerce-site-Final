@@ -721,38 +721,38 @@ export default function SearchClient({
             </div>
           </aside>
 
-          {/* Mobile Filter Drawer (Half Screen Width from Right) */}
+          {/* Mobile Filter Drawer (Wider to the Left) */}
           {isMobileFilterOpen && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
-              {/* Clickable Backdrop on Left Half */}
+              {/* Clickable Backdrop on Left */}
               <div
                 onClick={() => setIsMobileFilterOpen(false)}
                 className="flex-1 h-full cursor-pointer"
                 title="Close Filters"
               />
 
-              {/* Right Side Panel taking Half of the Screen */}
-              <div className="w-1/2 min-w-[220px] max-w-[50vw] bg-white h-full p-3.5 sm:p-5 space-y-3.5 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
+              {/* Right Side Panel extending to the Left */}
+              <div className="w-[75vw] sm:w-[65vw] max-w-sm bg-white h-full p-4 sm:p-5 space-y-4 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
                 <div className="space-y-4">
                   {/* Drawer Header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
-                      <Filter className="w-3.5 h-3.5 text-[#006670] shrink-0" /> Filter
+                    <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 truncate">
+                      <Filter className="w-4 h-4 text-[#006670] shrink-0" /> Filter Catalogue
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       {hasActiveFilters && (
                         <button
                           onClick={handleClearAll}
-                          className="text-[10px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                          className="text-[11px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
                         >
-                          Clear
+                          Clear All
                         </button>
                       )}
                       <button
                         onClick={() => setIsMobileFilterOpen(false)}
                         className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4.5 h-4.5" />
                       </button>
                     </div>
                   </div>
