@@ -6,6 +6,42 @@ from rest_framework import serializers
 from .models import Brand, BrandDocument, BrandPageBanner
 
 
+def _resolve_logo_url(brand_obj, request):
+    """
+    Canonical logo resolution for all brand serializers:
+    1. Use Brand.logo if set (uploaded via Admin → Brands).
+    2. Fall back to HomepageBrand.logo_override (Admin → Homepage → Brand Logos).
+    3. Return None if neither exists.
+    This ensures images uploaded in the homepage brand ticker section
+    also appear in the Brands directory and all brand cards sitewide.
+    """
+    logo_file = brand_obj.logo or None
+
+    # Fallback: check HomepageBrand.logo_override via reverse relation.
+    # related_name="homepage_showcases" (plural); unique=True means at most one record.
+    if not logo_file:
+        try:
+            # If prefetch_related('homepage_showcases') was applied on the queryset
+            # this is zero extra queries. Otherwise it triggers one DB hit.
+            showcases = brand_obj.homepage_showcases.all()
+            for showcase in showcases:
+                if showcase.logo_override:
+                    logo_file = showcase.logo_override
+                    break
+        except Exception:
+            pass
+
+    if logo_file:
+        try:
+            url = logo_file.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except Exception:
+            pass
+    return None
+
+
 class BrandPageBannerSerializer(serializers.ModelSerializer):
     banner_image_url = serializers.SerializerMethodField()
 
@@ -52,12 +88,7 @@ class BrandListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "slug", "product_count"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
-        return None
+        return _resolve_logo_url(obj, self.context.get("request"))
 
     def get_banner_image_url(self, obj):
         if obj.banner_image:
@@ -91,12 +122,7 @@ class BrandDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "slug", "created_at", "updated_at", "documents", "product_count"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
-        return None
+        return _resolve_logo_url(obj, self.context.get("request"))
 
     def get_banner_image_url(self, obj):
         if obj.banner_image:

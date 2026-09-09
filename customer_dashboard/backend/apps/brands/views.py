@@ -97,7 +97,7 @@ class BrandViewSet(BaseModelViewSet):
                 )
             )
             .select_related("created_by", "updated_by")
-            .prefetch_related("documents")
+            .prefetch_related("documents", "homepage_showcases")
         )
         if not (self.request.user.is_authenticated and getattr(self.request.user, "role", None) == "admin"):
             qs = qs.filter(is_active=True)

@@ -34,6 +34,7 @@ import {
   AlertCircle,
   Sparkles,
   Layers,
+  Package,
   Info
 } from 'lucide-react';
 import { useGuestGuard } from '../../hooks/useGuestGuard';
@@ -310,148 +311,63 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Gallery images list moved to top of component body
 
-  // Default fallback related products
-  const defaultRelatedProducts = [
-    {
-      id: 'nsk-pana-max-2-m4-high-speed-turbine',
-      title: 'NSK Pana-Max 2 M4',
-      subtitle: 'High Speed Turbine Handpiece',
-      brand: 'NSK',
-      price: 7800,
-      originalPrice: 9500,
-      rating: 4.9,
-      reviews: 96,
-      image: '/images/category_handpieces.png',
-      style: {}
-    },
-    {
-      id: 'woodpecker-ledh-orthodontic-curing-light',
-      title: 'Woodpecker LED.H Curing Light',
-      subtitle: 'Orthodontic Curing Light',
-      brand: 'WOODPECKER',
-      price: 6500,
-      originalPrice: 8500,
-      rating: 4.8,
-      reviews: 128,
-      image: '/images/woodpecker_scaler_studio.png',
-      style: {}
-    },
-    {
-      id: 'wh-synea-vision-wk-93-lt-contra-angle',
-      title: 'W&H Synea Vision WK-93 LT',
-      subtitle: 'Contra-Angle Handpiece',
-      brand: 'W&H',
-      price: 18000,
-      originalPrice: 22000,
-      rating: 4.8,
-      reviews: 86,
-      image: '/images/nsk_smax_studio.png',
-      style: {}
-    },
-    {
-      id: 'iphone-a2',
-      title: 'Iphone A2',
-      subtitle: 'Smart Devices',
-      brand: 'WOODPECKER',
-      price: 22999,
-      originalPrice: 45000,
-      rating: 4.7,
-      reviews: 64,
-      image: '/images/woodpecker_curing_studio.png',
-      style: {}
-    },
-    {
-      id: 'iphone-a1',
-      title: 'Iphone A1',
-      subtitle: 'Smart Devices',
-      brand: 'NSK',
-      price: 149999,
-      originalPrice: 200000,
-      rating: 4.7,
-      reviews: 52,
-      image: '/images/nsk_prophy_studio.png',
-      style: {}
-    }
-  ];
+  const [relatedProductsList, setRelatedProductsList] = useState<any[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
-  const [relatedProductsList, setRelatedProductsList] = useState<any[]>(defaultRelatedProducts);
-
-  // Dynamically fetch related products from backend based on category / catalog
+  // Dynamically fetch genuine related products from backend endpoint
   useEffect(() => {
-    if (!productData) return;
-
-    const catParam =
-      productData.category_detail?.slug ||
-      productData.category_detail?.id ||
-      (typeof productData.category === 'string' ? productData.category : productData.category?.slug);
-
-    const fetchParams: any = { ordering: 'popular' };
-    if (catParam) {
-      fetchParams.category = catParam;
+    const slug = productData?.slug || activeProductId;
+    if (!slug) {
+      setRelatedProductsList([]);
+      return;
     }
 
-    api.get('products/', { params: fetchParams })
+    setLoadingRelated(true);
+    api.get(`products/${slug}/related/`)
       .then((res) => {
-        const rawList = res.data?.data?.results ?? res.data?.results ?? res.data?.data ?? res.data ?? [];
+        const rawList = res.data?.data ?? res.data ?? [];
         if (Array.isArray(rawList)) {
-          const filtered = rawList.filter((p: any) => p.id !== productData.id && p.slug !== productData.slug);
-          if (filtered.length > 0) {
-            const mapped = filtered.map((p: any) => {
-              const sellPrice = parseFloat(p.pricing?.effective_price || p.pricing?.selling_price || '0');
-              const mrpPrice = parseFloat(p.pricing?.mrp || p.pricing?.selling_price || '0');
-              return {
-                id: p.slug || p.id,
-                title: p.name,
-                subtitle: p.short_description || p.category_detail?.name || 'Dental Equipment',
-                brand: p.brand_detail?.name || (p.brand ? (typeof p.brand === 'string' ? p.brand : p.brand.name) : 'FAAZO'),
-                price: sellPrice > 0 ? sellPrice : 7999,
-                originalPrice: mrpPrice > 0 ? mrpPrice : Math.round(sellPrice * 1.25),
-                rating: parseFloat(p.average_rating || '4.8'),
-                reviews: p.total_reviews || 42,
-                image: p.images && p.images.length > 0 ? getAbsoluteImageUrl(p.images[0].image) : '/images/category_handpieces.png',
-                style: {}
-              };
-            });
-            setRelatedProductsList(mapped);
-            return;
-          }
-        }
-        
-        // If category is small, fetch popular products across catalog
-        api.get('products/', { params: { ordering: 'popular' } })
-          .then((resPop) => {
-            const rawPop = resPop.data?.data?.results ?? resPop.data?.results ?? resPop.data?.data ?? resPop.data ?? [];
-            if (Array.isArray(rawPop)) {
-              const filteredPop = rawPop.filter((p: any) => p.id !== productData.id && p.slug !== productData.slug);
-              if (filteredPop.length > 0) {
-                const mappedPop = filteredPop.map((p: any) => {
-                  const sellPrice = parseFloat(p.pricing?.effective_price || p.pricing?.selling_price || '0');
-                  const mrpPrice = parseFloat(p.pricing?.mrp || p.pricing?.selling_price || '0');
-                  return {
-                    id: p.slug || p.id,
-                    title: p.name,
-                    subtitle: p.short_description || p.category_detail?.name || 'Dental Equipment',
-                    brand: p.brand_detail?.name || (p.brand ? (typeof p.brand === 'string' ? p.brand : p.brand.name) : 'FAAZO'),
-                    price: sellPrice > 0 ? sellPrice : 7999,
-                    originalPrice: mrpPrice > 0 ? mrpPrice : Math.round(sellPrice * 1.25),
-                    rating: parseFloat(p.average_rating || '4.8'),
-                    reviews: p.total_reviews || 42,
-                    image: p.images && p.images.length > 0 ? getAbsoluteImageUrl(p.images[0].image) : '/images/category_handpieces.png',
-                    style: {}
-                  };
-                });
-                setRelatedProductsList(mappedPop);
-              }
-            }
-          })
-          .catch(() => {
-            setRelatedProductsList(defaultRelatedProducts);
+          const mapped = rawList.map((p: any) => {
+            const sellPrice = p.pricing?.effective_price
+              ? parseFloat(p.pricing.effective_price)
+              : parseFloat(p.pricing?.selling_price || '0');
+            const mrpPrice = p.pricing?.mrp ? parseFloat(p.pricing.mrp) : null;
+            const discountPct = p.pricing?.discount_percentage
+              ? Math.round(p.pricing.discount_percentage)
+              : (mrpPrice && sellPrice > 0 && mrpPrice > sellPrice ? Math.round(((mrpPrice - sellPrice) / mrpPrice) * 100) : 0);
+
+            const rawImg = p.primary_image || p.image_url;
+            const image = rawImg ? getAbsoluteImageUrl(rawImg) : '';
+
+            const brandName = p.brand_name || (p.brand && typeof p.brand === 'object' ? p.brand.name : (typeof p.brand === 'string' ? p.brand : ''));
+
+            return {
+              id: p.slug || p.id,
+              title: p.name,
+              subtitle: p.short_description || p.category_name || '',
+              brand: brandName,
+              category: p.category_name || '',
+              price: sellPrice,
+              originalPrice: mrpPrice && mrpPrice > sellPrice ? mrpPrice : null,
+              discountPercent: discountPct > 0 ? discountPct : 0,
+              rating: p.average_rating ? parseFloat(p.average_rating) : 0,
+              reviews: p.total_reviews ? parseInt(p.total_reviews, 10) : 0,
+              image: image,
+              inStock: p.inventory ? p.inventory.stock_status !== 'out_of_stock' : p.status === 'active'
+            };
           });
+          setRelatedProductsList(mapped);
+        } else {
+          setRelatedProductsList([]);
+        }
       })
       .catch(() => {
-        setRelatedProductsList(defaultRelatedProducts);
+        setRelatedProductsList([]);
+      })
+      .finally(() => {
+        setLoadingRelated(false);
       });
-  }, [productData]);
+  }, [productData?.slug, activeProductId]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -1328,157 +1244,177 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       </section>
 
       {/* 5. You May Also Like Swiper Carousel (AJIO Style) */}
-      <section className="max-w-5xl mx-auto px-4 md:px-12 pb-14 select-none relative">
+      {!loadingRelated && relatedProductsList.length > 0 && (
+        <section className="max-w-5xl mx-auto px-4 md:px-12 pb-14 select-none relative">
 
-        {/* Header */}
-        <div className="flex items-end justify-between mb-8 text-left">
-          <div>
-            <span className="block text-[10px] font-extrabold tracking-[0.25em] text-[#006670] uppercase mb-1.5 font-sans">
-              RELATED EQUIPMENTS
-            </span>
-            <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight font-display">
-              You May Also Like
-            </h2>
+          {/* Header */}
+          <div className="flex items-end justify-between mb-8 text-left">
+            <div>
+              <span className="block text-[10px] font-extrabold tracking-[0.25em] text-[#006670] uppercase mb-1.5 font-sans">
+                RELATED EQUIPMENTS
+              </span>
+              <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight font-display">
+                You May Also Like
+              </h2>
+            </div>
+            <button
+              onClick={onBackToHome}
+              className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] transition-colors cursor-pointer"
+            >
+              View All Products
+              <ArrowRight className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+            </button>
           </div>
-          <button
-            onClick={onBackToHome}
-            className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] transition-colors cursor-pointer"
-          >
-            View All Products
-            <ArrowRight className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </div>
 
-        {/* AJIO Carousel Row Container */}
-        <div className="relative group/carousel">
-          {/* Scroll Container */}
-          <div
-            id="related-products-container"
-            className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory flex-nowrap pb-4"
-          >
-            {relatedProductsList.map((prod) => {
-              const originalPrice = prod.originalPrice || Math.round(prod.price * 1.2);
-              const discountPercent = Math.round(((originalPrice - prod.price) / originalPrice) * 100);
-              const isProdWishlisted = wishlistItems?.some(w => w.id === prod.id);
+          {/* AJIO Carousel Row Container */}
+          <div className="relative group/carousel">
+            {/* Scroll Container */}
+            <div
+              id="related-products-container"
+              className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory flex-nowrap pb-4"
+            >
+              {relatedProductsList.map((prod) => {
+                const isProdWishlisted = wishlistItems?.some(w => w.id === prod.id);
 
-              return (
-                <div
-                  key={prod.id}
-                  onClick={() => {
-                    onProductClick(prod.id);
-                    window.scrollTo(0, 0);
-                  }}
-                  className="w-[180px] sm:w-[220px] bg-white rounded-3xl p-3 border border-slate-100 hover:border-[#006670]/25 hover:shadow-[0_12px_30px_rgba(0,0,0,0.03)] cursor-pointer transition-all duration-300 flex-shrink-0 flex flex-col justify-between snap-start relative group/card"
-                >
-                  <div>
-                    {/* Image Container with aspect-[4/5] - AJIO Full Container Image style */}
-                    <div className="aspect-[4/5] bg-[#F7FAF9] rounded-2xl flex items-center justify-center relative overflow-hidden border border-slate-50 mb-3">
-                      <img
-                        src={prod.image}
-                        alt={prod.title}
-                        style={prod.style}
-                        className="w-full h-full object-cover transform transition-transform duration-500 group-hover/card:scale-[1.04]"
-                      />
-                      
-                      {/* Wishlist Heart Icon floating top-right (Ajio style) */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (wishlistItems && setWishlistItems) {
-                            if (isProdWishlisted) {
-                              setWishlistItems(prev => prev.filter(w => w.id !== prod.id));
-                              if (showToast) showToast("Removed from Wishlist");
-                            } else {
-                              setWishlistItems(prev => [
-                                ...prev,
-                                {
-                                  id: prod.id,
-                                  name: `${prod.title} ${prod.subtitle}`,
-                                  category: 'Clinical Equipment',
-                                  price: prod.price,
-                                  qty: 1,
-                                  image: prod.image,
-                                  originalPrice: originalPrice,
-                                  rating: prod.rating
-                                }
-                              ]);
-                              if (showToast) showToast("Added to Wishlist");
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => {
+                      onProductClick(prod.id);
+                      window.scrollTo(0, 0);
+                    }}
+                    className="w-[180px] sm:w-[220px] bg-white rounded-3xl p-3 border border-slate-100 hover:border-[#006670]/25 hover:shadow-[0_12px_30px_rgba(0,0,0,0.03)] cursor-pointer transition-all duration-300 flex-shrink-0 flex flex-col justify-between snap-start relative group/card"
+                  >
+                    <div>
+                      {/* Image Container with aspect-[4/5] - AJIO Full Container Image style */}
+                      <div className="aspect-[4/5] bg-[#F7FAF9] rounded-2xl flex items-center justify-center relative overflow-hidden border border-slate-50 mb-3">
+                        {prod.image ? (
+                          <img
+                            src={prod.image}
+                            alt={prod.title}
+                            className="w-full h-full object-cover transform transition-transform duration-500 group-hover/card:scale-[1.04]"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50 p-4 text-center">
+                            <Package className="w-8 h-8 stroke-[1.5] mb-1.5 text-slate-300" />
+                            <span className="text-[10px] font-semibold text-slate-400">FAAZO Clinical</span>
+                          </div>
+                        )}
+                        
+                        {/* Wishlist Heart Icon floating top-right (Ajio style) */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (wishlistItems && setWishlistItems) {
+                              if (isProdWishlisted) {
+                                setWishlistItems(prev => prev.filter(w => w.id !== prod.id));
+                                if (showToast) showToast("Removed from Wishlist");
+                              } else {
+                                setWishlistItems(prev => [
+                                  ...prev,
+                                  {
+                                    id: prod.id,
+                                    name: prod.title,
+                                    category: prod.category || 'Clinical Equipment',
+                                    price: prod.price,
+                                    qty: 1,
+                                    image: prod.image,
+                                    originalPrice: prod.originalPrice || undefined,
+                                    rating: prod.rating > 0 ? prod.rating : undefined
+                                  }
+                                ]);
+                                if (showToast) showToast("Added to Wishlist");
+                              }
                             }
-                          }
-                        }}
-                        className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.04)] flex items-center justify-center border border-slate-100/50 hover:scale-105 transition-transform"
-                      >
-                        <Heart
-                          className={`w-4 h-4 transition-colors ${
-                            isProdWishlisted ? 'fill-rose-500 text-rose-500' : 'text-slate-400 hover:text-[#006670]'
-                          }`}
-                        />
-                      </button>
-                    </div>
+                          }}
+                          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.04)] flex items-center justify-center border border-slate-100/50 hover:scale-105 transition-transform"
+                        >
+                          <Heart
+                            className={`w-4 h-4 transition-colors ${
+                              isProdWishlisted ? 'fill-rose-500 text-rose-500' : 'text-slate-400 hover:text-[#006670]'
+                            }`}
+                          />
+                        </button>
+                      </div>
 
-                    <div className="text-left px-1">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        {prod.brand || (prod.id.includes('nsk') ? 'NSK' : 'Woodpecker')}
-                      </span>
-                      <h4 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 leading-snug">
-                        {prod.title}
-                      </h4>
-                      <p className="text-[10.5px] text-slate-400 font-sans mt-0.5 font-medium leading-tight">
-                        {prod.subtitle}
-                      </p>
+                      <div className="text-left px-1">
+                        {prod.brand ? (
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block truncate">
+                            {prod.brand}
+                          </span>
+                        ) : null}
+                        <h4 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5 leading-snug">
+                          {prod.title}
+                        </h4>
+                        {prod.subtitle ? (
+                          <p className="text-[10.5px] text-slate-400 font-sans mt-0.5 font-medium leading-tight line-clamp-1">
+                            {prod.subtitle}
+                          </p>
+                        ) : null}
 
-                      {/* Star Rating */}
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="bg-emerald-600 text-white text-[9.5px] font-black rounded px-1.5 py-0.5 flex items-center gap-0.5 leading-none">
-                          {prod.rating} <Star className="w-2.5 h-2.5 fill-white stroke-none mt-[-1px]" />
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-semibold font-sans">({prod.reviews || 45})</span>
+                        {/* Star Rating & Reviews (no fabricated ratings) */}
+                        {prod.rating > 0 ? (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="bg-emerald-600 text-white text-[9.5px] font-black rounded px-1.5 py-0.5 flex items-center gap-0.5 leading-none">
+                              {prod.rating.toFixed(1)} <Star className="w-2.5 h-2.5 fill-white stroke-none mt-[-1px]" />
+                            </span>
+                            {prod.reviews > 0 ? (
+                              <span className="text-[10px] text-slate-400 font-semibold font-sans">({prod.reviews})</span>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Price Row (Ajio fashion style: offer price, original price, discount % in a row) */}
-                  <div className="flex items-baseline gap-1.5 flex-wrap mt-3.5 pt-2.5 border-t border-slate-50 px-1">
-                    <span className="text-xs font-black text-slate-900">
-                      ₹{prod.price.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 line-through font-semibold">
-                      ₹{originalPrice.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[10px] font-black text-[#F58734]">
-                      ({discountPercent}% OFF)
-                    </span>
+                    {/* Price Row (Ajio fashion style: offer price, original price, discount % in a row) */}
+                    <div className="flex items-baseline gap-1.5 flex-wrap mt-3.5 pt-2.5 border-t border-slate-50 px-1">
+                      <span className="text-xs font-black text-slate-900">
+                        ₹{prod.price.toLocaleString('en-IN')}
+                      </span>
+                      {prod.originalPrice && prod.originalPrice > prod.price ? (
+                        <>
+                          <span className="text-[10px] text-slate-400 line-through font-semibold">
+                            ₹{prod.originalPrice.toLocaleString('en-IN')}
+                          </span>
+                          {prod.discountPercent > 0 && (
+                            <span className="text-[10px] font-black text-[#F58734]">
+                              ({prod.discountPercent}% OFF)
+                            </span>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Carousel Left Navigation Arrow */}
+            <button
+              onClick={() => {
+                const container = document.getElementById('related-products-container');
+                if (container) container.scrollLeft -= 240;
+              }}
+              className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-[0_3px_10px_rgba(0,0,0,0.08)] border border-slate-100 flex items-center justify-center text-slate-600 hover:text-[#006670] hover:scale-105 transition-all z-20 cursor-pointer hidden md:flex"
+              title="Previous"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            
+            {/* Carousel Right Navigation Arrow */}
+            <button
+              onClick={() => {
+                const container = document.getElementById('related-products-container');
+                if (container) container.scrollLeft -= 240;
+              }}
+              className="absolute right-[-16px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-[0_3px_10px_rgba(0,0,0,0.08)] border border-slate-100 flex items-center justify-center text-slate-600 hover:text-[#006670] hover:scale-105 transition-all z-20 cursor-pointer hidden md:flex"
+              title="Next"
+            >
+              <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+            </button>
           </div>
-
-          {/* Carousel Left Navigation Arrow */}
-          <button
-            onClick={() => {
-              const container = document.getElementById('related-products-container');
-              if (container) container.scrollLeft -= 240;
-            }}
-            className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-[0_3px_10px_rgba(0,0,0,0.08)] border border-slate-100 flex items-center justify-center text-slate-600 hover:text-[#006670] hover:scale-105 transition-all z-20 cursor-pointer hidden md:flex"
-            title="Previous"
-          >
-            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
-          </button>
-          
-          {/* Carousel Right Navigation Arrow */}
-          <button
-            onClick={() => {
-              const container = document.getElementById('related-products-container');
-              if (container) container.scrollLeft += 240;
-            }}
-            className="absolute right-[-16px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-[0_3px_10px_rgba(0,0,0,0.08)] border border-slate-100 flex items-center justify-center text-slate-600 hover:text-[#006670] hover:scale-105 transition-all z-20 cursor-pointer hidden md:flex"
-            title="Next"
-          >
-            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
-          </button>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6. Sticky Bottom Bar Panel */}
       <div

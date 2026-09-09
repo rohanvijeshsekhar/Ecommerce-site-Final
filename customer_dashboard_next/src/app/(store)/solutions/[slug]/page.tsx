@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Package, Star, ShoppingCart, Filter, Search, ShieldCheck, Check } from 'lucide-react';
-import { api } from '../../../../lib/api';
+import { ArrowLeft, Sparkles, Package, Star, ShoppingCart, Filter, Search, ShieldCheck, Check, Zap, Heart } from 'lucide-react';
+import { api, getAbsoluteImageUrl } from '../../../../lib/api';
 import { useStore } from '@/contexts/StoreContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useGuestGuard } from '@/hooks/useGuestGuard';
 
 interface ProductItem {
@@ -18,6 +19,8 @@ interface ProductItem {
   product_sku?: string;
   price?: number;
   product_price?: number;
+  mrp?: number;
+  product_mrp?: number;
   image?: string;
   product_image?: string;
   brand?: string;
@@ -48,8 +51,9 @@ export default function SolutionDetailPage() {
   const router = useRouter();
   const slug = params?.slug as string;
 
-  const { addItemToCart, openLoginModal, showToast, cartItems } = useStore();
+  const { addItemToCart, handleBuyNowDirect, openLoginModal, showToast, cartItems } = useStore();
   const { guardAction } = useGuestGuard(openLoginModal, showToast);
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [solution, setSolution] = useState<SolutionDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,63 +66,14 @@ export default function SolutionDetailPage() {
     api.get(`solutions/${slug}/`)
       .then((res) => {
         const data = res.data?.data ?? res.data;
-        if (data) {
+        if (data && (data.title || data.slug)) {
           setSolution(data);
+        } else {
+          setSolution(null);
         }
       })
       .catch(() => {
-        setSolution({
-          id: 1,
-          title: 'Restorative Dentistry',
-          slug: 'restorative-dentistry',
-          short_description: 'Find complete product solutions designed for precision composite restorations, matrices, and curing.',
-          description: 'Comprehensive clinical procedure kit featuring high-output LED curing lights, universal bonding agents, nano-hybrid composites, and anatomical matrix systems engineered for direct anterior and posterior restorations.',
-          banner: '/images/hero1_ecommerce.png',
-          thumbnail: '/images/bestseller_curing.png',
-          product_count: 4,
-          products: [
-            {
-              id: 'p1',
-              product_name: 'Woodpecker i-LED Curing Light',
-              product_sku: 'WP-CURE-01',
-              product_price: 6499,
-              product_image: '/images/woodpecker_curing_studio.png',
-              product_brand: 'Woodpecker',
-              product_rating: 4.9,
-              is_featured: true,
-            },
-            {
-              id: 'p2',
-              product_name: 'NSK S-Max M95L High Speed Handpiece',
-              product_sku: 'NSK-M95L',
-              product_price: 18500,
-              product_image: '/images/nsk_smax_studio.png',
-              product_brand: 'NSK Japan',
-              product_rating: 4.8,
-              is_featured: false,
-            },
-            {
-              id: 'p3',
-              product_name: 'Universal Nano Composite Restorative Kit',
-              product_sku: 'COMP-REST-99',
-              product_price: 3890,
-              product_image: '/images/bestseller_materials.png',
-              product_brand: '3M ESPE',
-              product_rating: 4.9,
-              is_featured: false,
-            },
-            {
-              id: 'p4',
-              product_name: 'Piezo Ultrasonic Scaler Handpiece',
-              product_sku: 'WP-SCALER-02',
-              product_price: 4999,
-              product_image: '/images/woodpecker_scaler_studio.png',
-              product_brand: 'Woodpecker',
-              product_rating: 4.7,
-              is_featured: false,
-            }
-          ]
-        });
+        setSolution(null);
       })
       .finally(() => {
         setLoading(false);
@@ -197,6 +152,28 @@ export default function SolutionDetailPage() {
     showToast(`Added ${cartItem.name} to cart`);
   };
 
+  const handleBuyNow = (e: React.MouseEvent, p: ProductItem) => {
+    e.stopPropagation();
+    const price = p.product_price || p.price || 0;
+    const item = {
+      id: String(p.product_id || p.id),
+      name: p.product_name || p.name || 'Clinical Dental Product',
+      category: p.product_category || p.category || 'Clinical Solutions',
+      price: price,
+      qty: 1,
+      image: p.product_image || p.image || '/images/bestseller_handpiece.png',
+      originalPrice: p.product_mrp || p.mrp || price,
+      slug: p.product_slug || p.slug,
+    };
+    if (!guardAction({ type: 'buy-now', payload: { item } })) return;
+    handleBuyNowDirect(item);
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent, prodId: string | number) => {
+    e.stopPropagation();
+    toggleWishlist(String(prodId));
+  };
+
   const handleProductCardClick = (p: ProductItem) => {
     const target = p.product_slug || p.slug || p.product_id || p.id;
     if (target) {
@@ -205,11 +182,11 @@ export default function SolutionDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] lg:pt-[150px] pb-24 text-left select-none">
+    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] lg:pt-[160px] pb-24 text-left select-none">
       {/* Banner & Header */}
       <div className="relative w-full h-[320px] md:h-[380px] bg-slate-950 overflow-hidden">
         <img
-          src={solution.banner || solution.thumbnail}
+          src={getAbsoluteImageUrl(solution.banner || solution.thumbnail || '/images/hero1_ecommerce.png')}
           alt={solution.title}
           className="w-full h-full object-cover opacity-50 brightness-90"
         />
@@ -314,86 +291,150 @@ export default function SolutionDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayProducts.map((p) => {
+              const prodId = p.product_id || p.id;
               const name = p.product_name || p.name || 'Clinical Dental Product';
               const price = p.product_price || p.price || 0;
-              const image = p.product_image || p.image || '/images/bestseller_handpiece.png';
-              const brand = p.product_brand || p.brand || 'FAAZO Care';
-              const rating = p.product_rating || p.rating || 4.8;
+              const mrp = p.product_mrp || p.mrp || 0;
+              const image = getAbsoluteImageUrl(p.product_image || p.image || '/images/bestseller_handpiece.png');
+              const brand = p.product_brand || p.brand || '';
+              const category = p.product_category || p.category || '';
+              const rating = typeof p.product_rating === 'number' ? p.product_rating : (typeof p.rating === 'number' ? p.rating : 0);
               const inStock = p.in_stock !== false;
-              const alreadyInCart = isInCart(p.product_id || p.id);
+              const alreadyInCart = isInCart(prodId);
+              const wishlisted = isInWishlist(String(prodId));
+              const discount = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
               return (
                 <div
                   key={p.id}
                   onClick={() => handleProductCardClick(p)}
-                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs hover:shadow-[0_12px_28px_rgba(0,95,99,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group"
+                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs hover:shadow-[0_14px_30px_rgba(0,95,99,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group select-none"
                 >
-                  {p.is_featured && (
-                    <div className="absolute top-3 left-3 z-10 bg-[#005F63] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-300" />
-                      Featured in Solution
+                  {/* Top Floating Badges & Wishlist Heart */}
+                  <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {p.is_featured ? (
+                        <span className="inline-flex items-center gap-1 bg-[#005F63] text-white text-[9.5px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          Featured
+                        </span>
+                      ) : discount > 0 ? (
+                        <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md shadow-xs">
+                          {discount}% OFF
+                        </span>
+                      ) : null}
                     </div>
-                  )}
 
-                  <div className="relative w-full h-48 bg-slate-50 flex items-center justify-center p-4">
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleWishlist(e, prodId)}
+                      className="pointer-events-auto w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/60 shadow-xs hover:shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                      title={wishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                      aria-label="Wishlist"
+                    >
+                      <Heart
+                        className={`w-4 h-4 transition-colors ${
+                          wishlisted ? 'fill-rose-500 stroke-rose-500 text-rose-500' : 'stroke-slate-400 fill-none'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Product Image Container */}
+                  <div className="relative w-full aspect-square bg-slate-50/80 p-4 flex items-center justify-center overflow-hidden border-b border-slate-100">
                     <img
                       src={image}
                       alt={name}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500 filter brightness-[1.02]"
                     />
                   </div>
 
-                  <div className="p-4 flex flex-col justify-between flex-1">
+                  {/* Card Content Body */}
+                  <div className="p-4 flex flex-col justify-between flex-grow text-left">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        {brand}
-                      </span>
-                      <h4 className="text-sm font-extrabold text-slate-800 line-clamp-2 leading-tight font-display mb-2 group-hover:text-[#005F63] transition-colors">
+                      {/* Brand & Category Label */}
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider mb-1 text-slate-400">
+                        <span className="truncate max-w-[120px] text-[#006670]">{brand || 'FAAZO'}</span>
+                        {category && <span className="truncate max-w-[100px]">{category}</span>}
+                      </div>
+
+                      {/* Product Title */}
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006670] transition-colors mb-2 font-display">
                         {name}
                       </h4>
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-1 text-amber-500 text-xs font-bold mb-3">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                        <span>{rating}</span>
-                        <span className="text-slate-400 text-[10px] font-normal">(Verified Clinical)</span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                        <div>
-                          <span className="text-[10px] font-semibold text-slate-400 block">B2B Price</span>
-                          <span className="text-base font-black text-[#005F63] font-display">
-                            {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Price on Request'}
-                          </span>
+                      {/* Rating & Stock Status */}
+                      <div className="flex items-center justify-between my-2">
+                        <div className="flex items-center gap-1 bg-amber-50/80 border border-amber-200/60 px-2 py-0.5 rounded-md text-[10px] font-bold text-amber-800">
+                          <Star className="w-3 h-3 fill-amber-400 stroke-amber-400" />
+                          <span>{rating > 0 ? rating.toFixed(1) : '4.8'}</span>
+                          <span className="text-amber-600/70 font-normal">| Verified</span>
                         </div>
 
-                        {inStock ? (
-                          <button
-                            onClick={(e) => handleAddToCart(e, p)}
-                            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 ${
-                              alreadyInCart
-                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                : 'bg-[#005F63] hover:bg-[#0B7C80]'
-                            }`}
-                          >
-                            {alreadyInCart ? (
-                              <>
-                                <Check className="w-3.5 h-3.5" />
-                                <span>In Cart</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingCart className="w-3.5 h-3.5" />
-                                <span>Add</span>
-                              </>
-                            )}
-                          </button>
-                        ) : (
-                          <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg">
-                            Out of Stock
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          inStock ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' : 'text-rose-600 bg-rose-50 border border-rose-100'
+                        }`}>
+                          {inStock ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                      </div>
+
+                      {/* Price Row */}
+                      <div className="pt-2.5 border-t border-slate-100 flex items-baseline justify-between mb-3">
+                        <div>
+                          <span className="text-base sm:text-lg font-black text-slate-900 font-display">
+                            {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Price on Request'}
+                          </span>
+                          {mrp > price && (
+                            <span className="text-xs text-slate-400 line-through ml-2 font-medium">
+                              ₹{mrp.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+
+                        {discount > 0 && !p.is_featured && (
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                            {discount}% OFF
                           </span>
                         )}
+                      </div>
+
+                      {/* Action Row: Cart & Buy Now Buttons */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToCart(e, p)}
+                          disabled={!inStock}
+                          className={`py-2 px-2.5 rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 shadow-xs active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+                            alreadyInCart
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                              : 'bg-white border border-[#006670]/30 hover:border-[#006670] text-[#006670] hover:bg-[#006670]/5'
+                          }`}
+                        >
+                          {alreadyInCart ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                              <span>In Cart</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="w-3.5 h-3.5 text-[#006670] stroke-[2.2]" />
+                              <span>Cart</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleBuyNow(e, p)}
+                          disabled={!inStock}
+                          className="py-2 px-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                          <span>Buy Now</span>
+                        </button>
                       </div>
                     </div>
                   </div>

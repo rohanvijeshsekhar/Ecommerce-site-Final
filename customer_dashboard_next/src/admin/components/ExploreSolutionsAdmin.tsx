@@ -132,7 +132,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
       description: '',
       banner: '/images/hero1_ecommerce.png',
       thumbnail: '/images/category_equipment.png',
-      display_order: solutions.length + 1,
+      display_order: 0,
       is_active: true,
       show_on_homepage: true,
       seo_title: '',

@@ -13,7 +13,8 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
     product_image = serializers.SerializerMethodField(method_name="get_product_image")
     product_brand = serializers.ReadOnlyField(source="product.brand.name", default="")
     product_category = serializers.ReadOnlyField(source="product.category.name", default="")
-    product_rating = serializers.ReadOnlyField(source="product.rating", default=4.8)
+    product_rating = serializers.SerializerMethodField(method_name="get_product_rating")
+    product_mrp = serializers.SerializerMethodField(method_name="get_product_mrp")
     in_stock = serializers.SerializerMethodField(method_name="get_in_stock")
 
     class Meta:
@@ -25,6 +26,7 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
             "product_slug",
             "product_sku",
             "product_price",
+            "product_mrp",
             "product_image",
             "product_brand",
             "product_category",
@@ -35,15 +37,26 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    def get_product_rating(self, obj):
+        if obj.product and hasattr(obj.product, 'average_rating') and obj.product.average_rating is not None:
+            return float(obj.product.average_rating)
+        return 0.0
+
+    def get_product_mrp(self, obj):
+        if obj.product and hasattr(obj.product, 'pricing') and obj.product.pricing:
+            return float(obj.product.pricing.mrp or 0)
+        return 0.0
+
     def get_product_price(self, obj):
         if obj.product:
             if hasattr(obj.product, 'pricing') and obj.product.pricing:
                 return float(obj.product.pricing.effective_price or obj.product.pricing.selling_price or 0)
-        return 0
+        return 0.0
 
     def get_in_stock(self, obj):
         if obj.product and hasattr(obj.product, 'inventory') and obj.product.inventory:
-            return obj.product.inventory.stock > 0
+            inv = obj.product.inventory
+            return bool(getattr(inv, 'allow_backorders', False) or getattr(inv, 'available_stock', 0) > 0)
         return True
 
     def get_product_image(self, obj):
@@ -52,7 +65,7 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
             if img and img.image:
                 request = self.context.get("request")
                 return request.build_absolute_uri(img.image.url) if request else img.image.url
-        return "/images/bestseller_handpiece.png"
+        return ""
 
 
 class ClinicalSolutionListSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Sparkles, Package } from 'lucide-react';
-import { api } from '../../lib/api';
+import { api, getMediaUrl } from '../../lib/api';
 
 export interface ClinicalSolutionData {
   id: string | number;
@@ -18,125 +18,27 @@ export interface ClinicalSolutionData {
   show_on_homepage: boolean;
 }
 
-const STATIC_SOLUTIONS: ClinicalSolutionData[] = [
-  {
-    id: 1,
-    title: 'Restorative Dentistry',
-    slug: 'restorative-dentistry',
-    short_description: 'Complete workflow for composite fillings, matrices, curing lights, and bonding agents.',
-    banner: '/images/hero1_ecommerce.png',
-    thumbnail: '/images/bestseller_curing.png',
-    product_count: 8,
-    display_order: 1,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 2,
-    title: 'Endodontic Solutions',
-    slug: 'endodontic-solutions',
-    short_description: 'Endo motors, rotary files, apex locators, and obturation systems for root canal treatments.',
-    banner: '/images/hero_ecommerce.png',
-    thumbnail: '/images/bestseller_locator.png',
-    product_count: 6,
-    display_order: 2,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 3,
-    title: 'Orthodontic Solutions',
-    slug: 'orthodontic-solutions',
-    short_description: 'Brackets, archwires, pliers, aligner accessories, and orthodontic bonding.',
-    banner: '/images/hero_equipment.png',
-    thumbnail: '/images/category_instruments.png',
-    product_count: 12,
-    display_order: 3,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 4,
-    title: 'Prosthodontic Solutions',
-    slug: 'prosthodontic-solutions',
-    short_description: 'Impression materials, crown & bridge resins, retraction cords, and articulators.',
-    banner: '/images/hero1_ecommerce.png',
-    thumbnail: '/images/category_materials.png',
-    product_count: 9,
-    display_order: 4,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 5,
-    title: 'Implant Solutions',
-    slug: 'implant-solutions',
-    short_description: 'Surgical physiodispensers, implant handpieces, torque wrenches, and bone grafting instruments.',
-    banner: '/images/hero_ecommerce.png',
-    thumbnail: '/images/category_equipment.png',
-    product_count: 5,
-    display_order: 5,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 6,
-    title: 'Preventive Care',
-    slug: 'preventive-care',
-    short_description: 'Ultrasonic scalers, prophy handpieces, fluoride gels, and dental hygiene consumables.',
-    banner: '/images/hero_equipment.png',
-    thumbnail: '/images/bestseller_scaler.png',
-    product_count: 10,
-    display_order: 6,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 7,
-    title: 'Pediatric Dentistry',
-    slug: 'pediatric-dentistry',
-    short_description: 'Child-friendly pediatric crowns, topical anesthetics, space maintainers, and gentle handpieces.',
-    banner: '/images/hero1_ecommerce.png',
-    thumbnail: '/images/category_handpieces.png',
-    product_count: 7,
-    display_order: 7,
-    is_active: true,
-    show_on_homepage: true,
-  },
-  {
-    id: 8,
-    title: 'Oral Surgery',
-    slug: 'oral-surgery',
-    short_description: 'Surgical burs, extraction forceps, elevators, bone chisels, and surgical suctions.',
-    banner: '/images/hero_ecommerce.png',
-    thumbnail: '/images/category_instruments.png',
-    product_count: 11,
-    display_order: 8,
-    is_active: true,
-    show_on_homepage: true,
-  },
-];
-
 interface ExploreSolutionsProps {
   onSelectSolution?: (slug: string) => void;
   onViewAllSolutions?: () => void;
   onViewPortfolio?: () => void;
+  initialSolutions?: ClinicalSolutionData[];
 }
 
-const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, onViewAllSolutions }) => {
+const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, onViewAllSolutions, initialSolutions }) => {
   const router = useRouter();
-  const [solutions, setSolutions] = useState<ClinicalSolutionData[]>(STATIC_SOLUTIONS);
+  const [solutions, setSolutions] = useState<ClinicalSolutionData[]>(initialSolutions ?? []);
 
   useEffect(() => {
-    api.get('solutions/?homepage=true')
+    api.get('solutions/?homepage=true&limit=12')
       .then((res) => {
         const data = res.data?.data ?? res.data?.results ?? res.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setSolutions(data);
         }
       })
       .catch(() => {
-        // Fallback to static data if offline
+        // Keep initialSolutions
       });
   }, []);
 
@@ -148,9 +50,16 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
     }
   };
 
+  // Defensively enforce maximum 12 solution cards on the homepage
+  const displayedSolutions = solutions.slice(0, 12);
+
+  if (!displayedSolutions || displayedSolutions.length === 0) {
+    return null;
+  }
+
   return (
     <>
-      {/* Desktop view */}
+      {/* Desktop view: 4 cards per row, max 3 rows (12 cards) */}
       <section className="hidden md:block w-full bg-[#F2FBFB] py-16 select-none" id="solutions">
         <div className="max-w-7xl mx-auto px-8">
           {/* Header */}
@@ -169,7 +78,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
             </div>
 
             <button
-              onClick={() => onViewAllSolutions ? onViewAllSolutions() : handleSolutionClick(solutions[0]?.slug || 'restorative-dentistry')}
+              onClick={() => onViewAllSolutions ? onViewAllSolutions() : router.push('/solutions')}
               className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#E2E8F0] text-sm font-bold text-[#005F63] hover:bg-[#F2FBFB] hover:border-[#005F63] transition-all shadow-xs cursor-pointer"
             >
               <span>View All Solutions</span>
@@ -177,9 +86,9 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
             </button>
           </div>
 
-          {/* Solutions Grid */}
+          {/* Solutions Grid: Exactly 4 cards per row on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-            {solutions.map((sol) => (
+            {displayedSolutions.map((sol) => (
               <div
                 key={sol.id}
                 onClick={() => handleSolutionClick(sol.slug)}
@@ -188,7 +97,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
                 {/* Background Banner Image with Dark Gradient Overlay */}
                 <div className="absolute inset-0 z-0 overflow-hidden">
                   <img
-                    src={sol.banner || sol.thumbnail}
+                    src={getMediaUrl(sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
                     alt={sol.title}
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 brightness-[0.85] group-hover:brightness-[0.95]"
                   />
@@ -243,7 +152,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
         </div>
 
         <div className="flex flex-col gap-4 text-left">
-          {solutions.map((sol) => (
+          {displayedSolutions.map((sol) => (
             <div
               key={sol.id}
               onClick={() => handleSolutionClick(sol.slug)}
@@ -251,7 +160,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
             >
               <div className="absolute inset-0 z-0">
                 <img
-                  src={sol.banner || sol.thumbnail}
+                  src={getMediaUrl(sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
                   alt={sol.title}
                   className="w-full h-full object-cover opacity-60"
                 />

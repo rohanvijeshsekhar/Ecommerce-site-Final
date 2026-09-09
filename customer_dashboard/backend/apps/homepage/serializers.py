@@ -140,6 +140,20 @@ class HomepageBrandWriteSerializer(serializers.ModelSerializer):
         fields = ["id", "brand", "logo_override", "sort_order", "is_visible"]
         read_only_fields = ["id"]
 
+    def validate_brand(self, value):
+        qs = HomepageBrand.objects.filter(brand=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("This brand is already showcased on the homepage.")
+        return value
+
+    def validate_logo_override(self, value):
+        if isinstance(value, list):
+            raise serializers.ValidationError("Only a single image is allowed for brand logo.")
+        return value
+
+
 
 # ============================================================
 # 4. Best Sellers
@@ -214,11 +228,15 @@ class FeaturedCollectionItemReadSerializer(serializers.ModelSerializer):
 
 
 class FeaturedCollectionReadSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
     items = FeaturedCollectionItemReadSerializer(many=True, read_only=True)
 
     class Meta:
         model  = FeaturedCollection
-        fields = ["id", "title", "description", "sort_order", "is_visible", "items"]
+        fields = ["id", "title", "description", "image", "image_url", "sort_order", "is_visible", "items"]
+
+    def get_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.image)
 
 
 class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
@@ -229,10 +247,29 @@ class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
 
 
 class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+    image_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model  = FeaturedCollection
-        fields = ["id", "title", "description", "sort_order", "is_visible"]
-        read_only_fields = ["id"]
+        fields = ["id", "title", "description", "image", "image_url", "sort_order", "is_visible"]
+        read_only_fields = ["id", "image_url"]
+
+    def get_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.image)
+
+    def to_internal_value(self, data):
+        # Handle clear instruction: if image is passed as empty string or 'null'
+        # in multipart/form-data or JSON, convert it to None so the field is cleared.
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = dict(data)
+        
+        if "image" in data and (data["image"] == "" or data["image"] == "null" or data["image"] is False):
+            data["image"] = None
+        return super().to_internal_value(data)
+
 
 
 # ============================================================
@@ -584,18 +621,23 @@ class RecommendedProductReadSerializer(serializers.ModelSerializer):
     product_sku   = serializers.CharField(source="product.sku", read_only=True)
     primary_image = serializers.SerializerMethodField()
     brand_name    = serializers.CharField(source="product.brand.name", read_only=True)
+    category_name = serializers.CharField(source="product.category.name", read_only=True)
+    category_slug = serializers.CharField(source="product.category.slug", read_only=True)
     short_description = serializers.CharField(source="product.short_description", read_only=True)
     is_featured   = serializers.BooleanField(source="product.is_featured", read_only=True)
     pricing          = ProductPricingInlineSerializer(source="product.pricing", read_only=True, allow_null=True)
     inventory        = ProductInventoryInlineSerializer(source="product.inventory", read_only=True, allow_null=True)
+    average_rating   = serializers.DecimalField(source="product.average_rating", max_digits=3, decimal_places=2, read_only=True)
+    total_reviews    = serializers.IntegerField(source="product.total_reviews", read_only=True)
 
     class Meta:
         model  = RecommendedProduct
         fields = [
             "id", "product", "product_name", "product_slug", "product_sku",
-            "brand_name", "short_description", "is_featured",
+            "brand_name", "category_name", "category_slug", "short_description", "is_featured",
             "primary_image", "sort_order", "is_visible",
             "pricing", "inventory",
+            "average_rating", "total_reviews",
         ]
 
     def get_primary_image(self, obj):

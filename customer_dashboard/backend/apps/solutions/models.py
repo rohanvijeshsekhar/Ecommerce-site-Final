@@ -31,7 +31,7 @@ class ClinicalSolution(models.Model):
     class Meta:
         verbose_name = "Clinical Solution"
         verbose_name_plural = "Clinical Solutions"
-        ordering = ["display_order", "title"]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return self.title

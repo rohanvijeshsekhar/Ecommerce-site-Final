@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
-import { ArrowRight, Star, ShoppingCart, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { useGuestGuard } from '../../hooks/useGuestGuard';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 
@@ -15,15 +15,13 @@ interface RecProduct {
   id: string;
   title: string;
   manufacturer: string;
+  category?: string;
   rating?: number;
   reviews?: number;
   price: number;
   originalPrice?: number;
   image: string;
   discount: string;
-  scale?: number;
-  gradient?: string;
-  glowColor?: string;
 }
 
 interface MockCartItem {
@@ -67,18 +65,19 @@ const Recommended: React.FC<RecommendedProps> = ({
         ? `${Math.round(discountPct)}% OFF` 
         : (mrp && mrp > price ? `${Math.round(((mrp - price) / mrp) * 100)}% OFF` : '');
 
-      const rating = item.rating || item.avg_rating ? parseFloat(item.rating || item.avg_rating) : undefined;
-      const reviews = item.reviews_count || item.review_count ? parseInt(item.reviews_count || item.review_count) : undefined;
+      const rating = item.average_rating || item.avg_rating || item.rating ? parseFloat(item.average_rating || item.avg_rating || item.rating) : undefined;
+      const reviews = item.total_reviews || item.reviews_count || item.review_count || item.reviews ? parseInt(item.total_reviews || item.reviews_count || item.review_count || item.reviews) : undefined;
 
       return {
-        id:           item.product_slug ?? item.product ?? item.slug ?? String(item.id),
-        title:        item.product_name ?? item.name ?? 'Dental Product',
+        id:           item.product_slug ?? item.slug ?? item.product ?? String(item.id),
+        title:        item.product_name ?? item.name ?? '',
         manufacturer: (item.brand_name || 'Brand').toUpperCase(),
-        rating:       rating,
-        reviews:      reviews,
+        category:     item.category_name,
+        rating:       rating && rating > 0 ? rating : undefined,
+        reviews:      reviews && reviews > 0 ? reviews : undefined,
         price:        price,
         originalPrice: mrp && mrp > price ? mrp : undefined,
-        image:        getAbsoluteImageUrl(item.primary_image || item.image) || '/images/bestseller_scaler.png',
+        image:        getAbsoluteImageUrl(item.primary_image || (item.images && item.images[0]?.image) || item.image) || '',
         discount:     discountStr,
       };
     };
@@ -89,31 +88,26 @@ const Recommended: React.FC<RecommendedProps> = ({
         if (Array.isArray(data) && data.length > 0) {
           setRecProducts(data.map((item) => mapRecProduct(item)));
         } else {
-          api.get('products/?page_size=10')
-            .then(pRes => {
-              const pData = pRes.data?.data ?? pRes.data?.results ?? pRes.data ?? [];
-              if (Array.isArray(pData) && pData.length > 0) {
-                setRecProducts(pData.map((item: any) => mapRecProduct(item)));
-              }
-            })
-            .catch(() => {});
+          setRecProducts([]);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setRecProducts([]);
+      });
   }, [initialProducts]);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const p = recProducts.find(prod => prod.id === id);
     if (!p) return;
-    const item: MockCartItem = { id: p.id, name: p.title, category: 'Clinical Equipment', price: p.price, qty: 1, image: p.image, originalPrice: p.originalPrice };
+    const item: MockCartItem = { id: p.id, name: p.title, category: p.category || 'Clinical Equipment', price: p.price, qty: 1, image: p.image, originalPrice: p.originalPrice };
     if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
     setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleCartClick = (e: React.MouseEvent, prod: RecProduct) => {
     e.stopPropagation();
-    const item: MockCartItem = { id: prod.id, name: prod.title, category: 'Clinical Equipment', price: prod.price, qty: 1, image: prod.image, originalPrice: prod.originalPrice };
+    const item: MockCartItem = { id: prod.id, name: prod.title, category: prod.category || 'Clinical Equipment', price: prod.price, qty: 1, image: prod.image, originalPrice: prod.originalPrice };
     if (!guardAction({ type: 'add-to-cart', payload: { item } })) return;
     setCartItems(prev => {
       const existing = prev.find(c => c.id === prod.id);
@@ -203,11 +197,18 @@ const Recommended: React.FC<RecommendedProps> = ({
               >
                 {/* Image Container */}
                 <div className="relative w-full aspect-[4/3.6] sm:h-[210px] rounded-[22px] overflow-hidden bg-slate-50 flex items-center justify-center mb-3.5">
-                  <img 
-                    src={prod.image || '/images/nsk_handpiece_portrait.png'} 
-                    alt={prod.title} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  {prod.image ? (
+                    <img 
+                      src={prod.image} 
+                      alt={prod.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100/80 text-slate-400 gap-1.5 p-4">
+                      <Package className="w-8 h-8 text-slate-300 stroke-[1.5]" />
+                      <span className="text-[11px] font-bold text-slate-400 font-sans tracking-wide">FAAZO</span>
+                    </div>
+                  )}
                   
                   {/* Discount Badge */}
                   {prod.discount && (
@@ -238,7 +239,7 @@ const Recommended: React.FC<RecommendedProps> = ({
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">
                       {prod.manufacturer}
                     </span>
-                    <h3 className="text-[14px] font-extrabold text-[#0B1D26] tracking-tight truncate mb-2 font-sans">
+                    <h3 className="text-[14px] font-extrabold text-[#0B1D26] tracking-tight truncate mb-2 font-sans" title={prod.title}>
                       {prod.title}
                     </h3>
                     

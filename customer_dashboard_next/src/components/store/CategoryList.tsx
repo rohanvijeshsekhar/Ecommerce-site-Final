@@ -6,7 +6,6 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import { ArrowRight } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
-import { getCategoryIconBadge } from '../../utils/categoryIcons';
 
 import 'swiper/css';
 
@@ -14,7 +13,6 @@ interface CategoryItem {
   id: string;
   title: string;
   image: string;
-  icon: React.ReactNode;
 }
 
 const categoryMapping: Record<string, string> = {};
@@ -25,40 +23,33 @@ const STATIC_CATEGORIES: CategoryItem[] = [
     id: 'dental-handpieces',
     title: 'Dental Handpieces',
     image: '/images/category_handpieces.png',
-    icon: <span className="text-[24px] leading-none select-none">🦷</span>,
   },
   {
     id: 'dental-imaging',
     title: 'Dental Imaging',
     image: '/images/category_imaging.png',
-    icon: <span className="text-[24px] leading-none select-none">📷</span>,
   },
   {
     id: 'dental-instruments',
     title: 'Dental Instruments',
     image: '/images/category_instruments.png',
-    icon: <span className="text-[24px] leading-none select-none">✂️</span>,
   },
   {
     id: 'dental-equipment',
     title: 'Dental Equipment',
     image: '/images/category_equipment.png',
-    icon: <span className="text-[24px] leading-none select-none">🔌</span>,
   },
   {
     id: 'dental-chairs',
     title: 'Dental Chairs',
     image: '/images/category_chairs.png',
-    icon: <span className="text-[24px] leading-none select-none">🪑</span>,
   },
   {
     id: 'dental-materials',
     title: 'Dental Materials',
     image: '/images/category_materials.png',
-    icon: <span className="text-[24px] leading-none select-none">📦</span>,
   },
 ];
-
 
 interface CategoryListProps {
   onCategoryClick?: (categoryName: string) => void;
@@ -90,7 +81,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
         id: slug || String(c.id),
         title: title,
         image: getAbsoluteImageUrl(c.image) || getCategoryFallbackImage(slug),
-        icon: getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
@@ -101,7 +91,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
         id: slug,
         title: title,
         image: getAbsoluteImageUrl(c.card_image_url) || getCategoryFallbackImage(slug),
-        icon: getCategoryIconBadge(title, slug, c.icon_key),
       };
     };
 
@@ -118,7 +107,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
               if (Array.isArray(cData) && cData.length > 0) {
                 setCategories(cData.map(mapCategory));
               }
-              // else: keep static defaults showing
             })
             .catch(() => { });
         }
@@ -149,7 +137,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
       window.scrollTo(0, 0);
     }
   };
-
 
   return (
     <>
@@ -201,31 +188,26 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-${idx}`} style={{ width: 'auto' }}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col h-[390px] cursor-pointer relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-[280px] bg-white border border-slate-200/80 rounded-[32px] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col h-[390px] cursor-pointer relative overflow-hidden group">
                   {/* Top: Image Area */}
-                  <div className="w-full h-[250px] bg-slate-50 flex items-center justify-center overflow-hidden relative">
+                  <div className="w-full h-[230px] bg-slate-50 flex items-center justify-center overflow-hidden relative">
                     <Image
                       src={cat.image || '/images/category_materials.png'}
                       alt={cat.title}
                       fill
                       sizes="280px"
-                      className="object-cover"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
 
-                  {/* Overlapping floating badge */}
-                  <div className="absolute top-[223px] left-[24px] z-10 w-[52px] h-[52px] bg-[#006670] text-white rounded-full flex items-center justify-center shadow-[0_4px_14px_rgba(0,43,46,0.18)]">
-                    {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
-                  </div>
-
                   {/* Bottom: Text area */}
-                  <div className="bg-white text-left px-6.5 pt-9 pb-6 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-slate-100">
-                    <h3 className="text-[19px] font-black text-[#0F2D30] tracking-tight leading-snug font-sans">
+                  <div className="bg-white text-left px-6 pt-5 pb-5 flex flex-col justify-between flex-grow rounded-b-[32px] border-t border-slate-100">
+                    <h3 className="text-[17px] font-black text-[#0F2D30] tracking-tight leading-snug font-sans line-clamp-2">
                       {cat.title}
                     </h3>
-                    <div className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#007C82]">
+                    <div className="mt-2 flex items-center gap-1.5 text-sm font-bold text-[#007C82] group-hover:text-[#004e56] transition-colors">
                       <span>Shop Now</span>
-                      <span>→</span>
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </div>
                   </div>
                 </div>
@@ -280,9 +262,9 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
           >
             {displayCategories.map((cat, idx) => (
               <SwiperSlide key={`${cat.id}-mob-${idx}`}>
-                <div onClick={() => handleCategoryClick(cat.id)} className="w-full bg-gradient-to-br from-white/45 via-[#F2FAF9]/30 to-white/40 backdrop-blur-xl border border-[#006670]/20 rounded-[20px] shadow-[0_4px_16px_rgba(0, 43, 46,0.02)] flex flex-col h-[224px] cursor-pointer relative overflow-hidden">
+                <div onClick={() => handleCategoryClick(cat.id)} className="w-full bg-gradient-to-br from-white/45 via-[#F2FAF9]/30 to-white/40 backdrop-blur-xl border border-[#006670]/20 rounded-[20px] shadow-[0_4px_16px_rgba(0, 43, 46,0.02)] flex flex-col h-[224px] cursor-pointer relative overflow-hidden group">
                   {/* Top: Image Area */}
-                  <div className="w-full h-[140px] bg-[#F5FBFB]/20 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.11)_0%,transparent_65%)] flex items-center justify-center overflow-hidden relative">
+                  <div className="w-full h-[130px] bg-[#F5FBFB]/20 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.11)_0%,transparent_65%)] flex items-center justify-center overflow-hidden relative">
                     <img
                       src={cat.image}
                       alt={cat.title}
@@ -290,16 +272,9 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                     />
                   </div>
 
-                  {/* Overlapping floating badge */}
-                  <div className="absolute top-[118px] left-3.5 z-10 w-9 h-9 bg-[#006670] text-white rounded-full flex items-center justify-center shadow-md">
-                    <div className="scale-90 flex items-center justify-center">
-                      {cat.icon || getCategoryIconBadge(cat.title, cat.id, (cat as any).icon_key)}
-                    </div>
-                  </div>
-
                   {/* Bottom: Text area */}
-                  <div className="bg-white/60 text-left px-4 pt-5 pb-3 flex flex-col justify-between flex-grow rounded-b-[20px] border-t border-[#006670]/10">
-                    <h3 className="text-[13px] font-black text-[#0F2D30] tracking-tight leading-tight font-display truncate">
+                  <div className="bg-white/60 text-left px-3.5 pt-4 pb-3 flex flex-col justify-between flex-grow rounded-b-[20px] border-t border-[#006670]/10">
+                    <h3 className="text-[13px] font-black text-[#0F2D30] tracking-tight leading-tight font-display line-clamp-2">
                       {cat.title}
                     </h3>
                     <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#007C82]">

@@ -167,13 +167,14 @@ class HomepageBrand(BaseModel):
     class Meta:
         verbose_name = "Homepage Brand"
         verbose_name_plural = "Homepage Brands"
-        ordering = ["sort_order", "created_at"]
+        ordering = ["-updated_at"]
 
     brand = models.ForeignKey(
         "brands.Brand",
         on_delete=models.CASCADE,
         related_name="homepage_showcases",
         verbose_name="Brand",
+        unique=True,
     )
     logo_override = OptimizedImageField(
         upload_to="homepage/brands/",
@@ -275,6 +276,13 @@ class FeaturedCollection(BaseModel):
     description = models.TextField(
         blank=True,
         verbose_name="Collection Description",
+    )
+    image = OptimizedImageField(
+        upload_to="homepage/collections/",
+        null=True,
+        blank=True,
+        verbose_name="Collection Image",
+        help_text="Featured image shown on the homepage collection section.",
     )
     sort_order = models.PositiveSmallIntegerField(
         default=0,
@@ -577,7 +585,7 @@ class RecommendedProduct(BaseModel):
     class Meta:
         verbose_name = "Recommended Product"
         verbose_name_plural = "Recommended Products"
-        ordering = ["sort_order", "created_at"]
+        ordering = ["-created_at"]
 
     product = models.ForeignKey(
         "products.Product",

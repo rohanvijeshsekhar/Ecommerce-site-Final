@@ -75,7 +75,7 @@ export function resolveCategory(name: string, categoriesList: any[]): {
     "Dental Air Compressors",
     "Advanced Dental Equipment & Accessories"
   ];
-  
+
   const exactMain = mainCategories.find(mc => mc.toLowerCase() === nameLower);
   if (exactMain) {
     return { mainCategory: exactMain };
@@ -704,7 +704,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
     const nameLower = category.toLowerCase();
 
     // 1. Try matching the category name in our DB categories list
-    const matched = dbCategoriesList.find((c: any) => 
+    const matched = dbCategoriesList.find((c: any) =>
       c.name.toLowerCase() === nameLower ||
       c.slug.toLowerCase() === nameLower ||
       String(c.id) === nameLower
@@ -886,11 +886,10 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
-          <h1 className={`font-black text-slate-900 tracking-tight font-display leading-tight ${
-            category.toLowerCase().includes('accessories') || category.length > 25
+          <h1 className={`font-black text-slate-900 tracking-tight font-display leading-tight ${category.toLowerCase().includes('accessories') || category.length > 25
               ? 'text-lg md:text-xl lg:text-2xl'
               : 'text-2xl md:text-3xl lg:text-4xl'
-          }`}>
+            }`}>
             {category}
           </h1>
         </div>
@@ -1121,25 +1120,23 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
                           </div>
                           {/* Stock status badge */}
                           {p.inventory?.stock_status ? (
-                            <span className={`text-[8px] sm:text-[9px] border px-1 sm:px-1.5 py-0.5 rounded font-black ${
-                              p.inventory.stock_status === 'in_stock'
+                            <span className={`text-[8px] sm:text-[9px] border px-1 sm:px-1.5 py-0.5 rounded font-black ${p.inventory.stock_status === 'in_stock'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                 : p.inventory.stock_status === 'low_stock'
-                                ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                : 'bg-rose-50 text-rose-700 border-rose-100'
-                            }`}>
+                                  ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                  : 'bg-rose-50 text-rose-700 border-rose-100'
+                              }`}>
                               {p.inventory.stock_status === 'in_stock'
                                 ? 'In Stock'
                                 : p.inventory.stock_status === 'low_stock'
-                                ? 'Low Stock'
-                                : 'Out of Stock'}
+                                  ? 'Low Stock'
+                                  : 'Out of Stock'}
                             </span>
                           ) : (
-                            <span className={`text-[8px] sm:text-[9px] border px-1 sm:px-1.5 py-0.5 rounded font-black ${
-                              p.inStock
+                            <span className={`text-[8px] sm:text-[9px] border px-1 sm:px-1.5 py-0.5 rounded font-black ${p.inStock
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                 : 'bg-rose-50 text-rose-700 border-rose-100'
-                            }`}>
+                              }`}>
                               {p.inStock ? 'In Stock' : 'Out of Stock'}
                             </span>
                           )}

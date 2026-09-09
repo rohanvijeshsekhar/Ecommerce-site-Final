@@ -6,11 +6,12 @@ import { useStore } from '@/contexts/StoreContext';
 import dynamic from 'next/dynamic';
 import Hero from '@/components/store/Hero';
 import CategoryList from '@/components/store/CategoryList';
-import { getCategoryIconBadge } from '@/utils/categoryIcons';
 import BrandLogos from '@/components/store/BrandLogos';
 const BestSellers = dynamic(() => import('@/components/store/BestSellers'), { ssr: true });
+import FeaturedCollection from '@/components/store/FeaturedCollection';
 import WhyChooseBanner from '@/components/store/WhyChooseBanner';
 const FeaturedCombos = dynamic(() => import('@/components/store/FeaturedCombos'), { ssr: true });
+const ExploreSolutions = dynamic(() => import('@/components/store/ExploreSolutions'), { ssr: true });
 import WhyChoosePanel from '@/components/store/WhyChoosePanel';
 const Testimonials = dynamic(() => import('@/components/store/Testimonials'), { ssr: true });
 const Recommended = dynamic(() => import('@/components/store/Recommended'), { ssr: true });
@@ -22,6 +23,8 @@ interface HomeClientProps {
   initialBestSellers: any[];
   initialRecommended: any[];
   initialCombos: any[];
+  initialCollections?: any[];
+  initialSolutions?: any[];
 }
 
 export default function HomeClient({
@@ -29,7 +32,9 @@ export default function HomeClient({
   initialCategories,
   initialBestSellers,
   initialRecommended,
-  initialCombos
+  initialCombos,
+  initialCollections,
+  initialSolutions
 }: HomeClientProps) {
   const router = useRouter();
   const store = useStore();
@@ -69,8 +74,6 @@ export default function HomeClient({
       id: c.category_slug ?? c.category,
       title: c.display_title,
       image: c.card_image_url || getCategoryFallbackImage(slug),
-      icon: getCategoryIconBadge(c.display_title, slug, c.icon_key),
-      icon_key: c.icon_key
     };
   });
 
@@ -87,34 +90,28 @@ export default function HomeClient({
     };
   });
 
-  const mappedRecommended = initialRecommended.map((item: any, index: number) => {
-    const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price || 10499);
-    const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : item.originalPrice;
+  const mappedRecommended = initialRecommended.map((item: any) => {
+    const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price ? parseFloat(item.price) : 0);
+    const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : (item.originalPrice || item.original_price ? parseFloat(item.originalPrice || item.original_price) : undefined);
     const discountPct = item.pricing?.discount_percentage;
-    const discountStr = discountPct && discountPct > 0 ? `${Math.round(discountPct)}% OFF` : '';
+    const discountStr = discountPct && discountPct > 0 
+      ? `${Math.round(discountPct)}% OFF` 
+      : (mrp && mrp > price ? `${Math.round(((mrp - price) / mrp) * 100)}% OFF` : '');
 
-    const scales = [1.25, 1.35, 1.45, 1.15, 1.3];
-    const gradients = [
-      'linear-gradient(135deg, #FCFCFC 0%, #F4F8F7 50%, #E2EDEC 100%)',
-      'linear-gradient(135deg, #FCFCFC 0%, #F2F7F8 55%, #DFEEF0 100%)',
-      'linear-gradient(135deg, #FAFBFB 0%, #EFF5F5 45%, #DCECEC 100%)',
-      'linear-gradient(135deg, #FCFCFC 0%, #F1F6F5 60%, #DEEAE8 100%)',
-      'linear-gradient(135deg, #FAFAFA 0%, #F3F7F7 50%, #E1ECEB 100%)'
-    ];
+    const rating = item.average_rating || item.avg_rating || item.rating ? parseFloat(item.average_rating || item.avg_rating || item.rating) : undefined;
+    const reviews = item.total_reviews || item.reviews_count || item.review_count || item.reviews ? parseInt(item.total_reviews || item.reviews_count || item.review_count || item.reviews) : undefined;
 
     return {
-      id:           item.product_slug ?? item.product ?? item.slug,
-      title:        item.product_name ?? item.name,
+      id:           item.product_slug ?? item.slug ?? item.product ?? String(item.id),
+      title:        item.product_name ?? item.name ?? '',
       manufacturer: item.brand_name || 'Brand',
-      rating:       4.8,
-      reviews:      50 + (index * 7) % 80,
+      category:     item.category_name,
+      rating:       rating && rating > 0 ? rating : undefined,
+      reviews:      reviews && reviews > 0 ? reviews : undefined,
       price:        price,
       originalPrice: mrp && mrp > price ? mrp : undefined,
-      image:        item.primary_image || item.image || '/images/bestseller_scaler.png',
+      image:        item.primary_image || (item.images && item.images[0]?.image) || item.image || '',
       discount:     discountStr,
-      scale:        scales[index % scales.length],
-      gradient:     gradients[index % gradients.length],
-      glowColor:    'rgba(0, 43, 46, 0.05)'
     };
   });
 
@@ -131,6 +128,7 @@ export default function HomeClient({
         showToast={store.showToast}
         initialProducts={mappedBestSellers}
       />
+      <FeaturedCollection initialCollections={initialCollections} />
       <BrandLogos />
       <WhyChooseBanner />
       <FeaturedCombos
@@ -143,6 +141,7 @@ export default function HomeClient({
         onOpenLoginModal={store.openLoginModal}
         initialCombos={initialCombos}
       />
+      <ExploreSolutions initialSolutions={initialSolutions} />
       <WhyChoosePanel />
       <Testimonials />
       <Recommended

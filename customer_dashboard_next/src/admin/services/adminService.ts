@@ -753,12 +753,14 @@ export const homepageService = {
     const res = await api.get('homepage/featured-collections/');
     return res.data;
   },
-  async createFeaturedCollection(data: any): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
-    const res = await api.post('homepage/featured-collections/', data);
+  async createFeaturedCollection(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
+    const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
+    const res = await api.post('homepage/featured-collections/', data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
     return res.data;
   },
-  async updateFeaturedCollection(id: string, data: any): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
-    const res = await api.patch(`homepage/featured-collections/${id}/`, data);
+  async updateFeaturedCollection(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
+    const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
+    const res = await api.patch(`homepage/featured-collections/${id}/`, data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
     return res.data;
   },
   async deleteFeaturedCollection(id: string): Promise<ServiceResponse<void>> {

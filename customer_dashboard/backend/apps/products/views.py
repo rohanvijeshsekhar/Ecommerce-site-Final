@@ -14,7 +14,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from apps.common.viewsets import BaseModelViewSet
 from apps.common.permissions import IsAdmin
 from apps.common.responses import success_response, error_response
-
+from apps.categories.models import Category
 from .models import Product, ProductImage, ProductAttribute, ProductStatus, ProductDocument
 from .filters import ProductFilterSet
 from .serializers import (
@@ -144,11 +144,166 @@ class ProductViewSet(BaseModelViewSet):
         serializer = ProductSuggestionSerializer(suggestions_qs, many=True, context={"request": request})
         return success_response(data=serializer.data)
 
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        val = self.kwargs.get(lookup_url_kwarg)
+        obj = None
+        try:
+            import uuid
+            uuid_val = uuid.UUID(str(val))
+            obj = queryset.filter(Q(id=uuid_val) | Q(slug=val)).first()
+        except (ValueError, TypeError, AttributeError):
+            obj = queryset.filter(slug=val).first()
+        if not obj:
+            from django.http import Http404
+            raise Http404("No product found matching the query.")
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve", "suggestions"):
+        if self.action in ("list", "retrieve", "suggestions", "related"):
             return [AllowAny()]
         return [IsAuthenticated(), IsAdmin()]
+
+    @action(detail=True, methods=["get"], url_path="related", permission_classes=[AllowAny])
+    def related(self, request, slug=None):
+        """
+        GET /api/v1/products/{slug}/related/
+        Returns genuine deterministic catalog-related products for 'You may also like this'.
+        Prioritizes:
+        1. Exact same category / subcategory (+100)
+        2. Subcategory / descendant (+80)
+        3. Sibling category (+60)
+        4. Same category tree / root branch (+40)
+        5. Shared clinical solution / use case (+35)
+        6. Shared tags / attributes (+20)
+        7. Same brand (secondary relevance signal on qualified candidates: +25)
+
+        Candidates MUST qualify through category, clinical solution, or shared tags.
+        Brand alone does not qualify a completely unrelated product.
+        Excludes the current product.
+        Excludes inactive / soft-deleted products.
+        Returns empty list [] if no genuine related products exist.
+        """
+        product = self.get_object()
+
+        cat = product.category
+        exact_cat_id = cat.id if cat else None
+        descendant_cat_ids = []
+        sibling_cat_ids = []
+        ancestor_cat_ids = []
+        branch_cat_ids = []
+
+        if cat:
+            descendant_cat_ids = [c.id for c in cat.get_descendants(include_self=False) if c.is_active]
+            if cat.parent_id:
+                sibling_cat_ids = list(
+                    Category.objects.filter(parent_id=cat.parent_id, is_active=True)
+                    .exclude(id=cat.id)
+                    .values_list("id", flat=True)
+                )
+            ancestor_cat_ids = [c.id for c in cat.ancestors if c.is_active]
+            root_cat = ancestor_cat_ids and cat.ancestors[0] or cat
+            branch_cat_ids = [
+                c.id for c in root_cat.get_descendants(include_self=True)
+                if c.is_active and c.id != cat.id
+                and c.id not in descendant_cat_ids
+                and c.id not in sibling_cat_ids
+                and c.id not in ancestor_cat_ids
+            ]
+
+        # Shared clinical solutions
+        solution_ids = list(product.solution_mappings.values_list("clinical_solution_id", flat=True))
+        from apps.solutions.models import ClinicalSolutionProduct
+        shared_sol_prod_ids = set(
+            ClinicalSolutionProduct.objects.filter(clinical_solution_id__in=solution_ids)
+            .exclude(product_id=product.id)
+            .values_list("product_id", flat=True)
+        ) if solution_ids else set()
+
+        # Shared product tags
+        shared_tag_prod_ids = set()
+        if product.tags and isinstance(product.tags, list):
+            tag_q = Q()
+            has_tags = False
+            for t in product.tags:
+                if isinstance(t, str) and t.strip():
+                    tag_q |= Q(tags__icontains=t.strip())
+                    has_tags = True
+            if has_tags:
+                shared_tag_prod_ids = set(
+                    Product.objects.filter(status=ProductStatus.ACTIVE)
+                    .filter(tag_q)
+                    .exclude(id=product.id)
+                    .values_list("id", flat=True)
+                )
+
+        qualification_q = Q()
+        has_criteria = False
+
+        related_cat_ids = []
+        if exact_cat_id:
+            related_cat_ids.append(exact_cat_id)
+        related_cat_ids.extend(descendant_cat_ids)
+        related_cat_ids.extend(sibling_cat_ids)
+        related_cat_ids.extend(ancestor_cat_ids)
+        related_cat_ids.extend(branch_cat_ids)
+
+        if related_cat_ids:
+            qualification_q |= Q(category_id__in=related_cat_ids)
+            has_criteria = True
+
+        if shared_sol_prod_ids:
+            qualification_q |= Q(id__in=shared_sol_prod_ids)
+            has_criteria = True
+
+        if shared_tag_prod_ids:
+            qualification_q |= Q(id__in=shared_tag_prod_ids)
+            has_criteria = True
+
+        if not has_criteria:
+            return success_response(data=[])
+
+        qs = Product.objects.filter(status=ProductStatus.ACTIVE).exclude(id=product.id).filter(qualification_q)
+        qs = qs.select_related("brand", "category").prefetch_related("images", "pricing", "inventory")
+
+        cat_whens = []
+        if exact_cat_id:
+            cat_whens.append(When(category_id=exact_cat_id, then=Value(100)))
+        if descendant_cat_ids:
+            cat_whens.append(When(category_id__in=descendant_cat_ids, then=Value(80)))
+        if sibling_cat_ids:
+            cat_whens.append(When(category_id__in=sibling_cat_ids, then=Value(60)))
+        if ancestor_cat_ids:
+            cat_whens.append(When(category_id__in=ancestor_cat_ids, then=Value(40)))
+        if branch_cat_ids:
+            cat_whens.append(When(category_id__in=branch_cat_ids, then=Value(40)))
+
+        cat_score = Case(*cat_whens, default=Value(0), output_field=IntegerField()) if cat_whens else Value(0)
+        sol_score = Case(When(id__in=shared_sol_prod_ids, then=Value(35)), default=Value(0), output_field=IntegerField()) if shared_sol_prod_ids else Value(0)
+        tag_score = Case(When(id__in=shared_tag_prod_ids, then=Value(20)), default=Value(0), output_field=IntegerField()) if shared_tag_prod_ids else Value(0)
+        brand_score = Case(When(brand_id=product.brand_id, then=Value(25)), default=Value(0), output_field=IntegerField()) if product.brand_id else Value(0)
+
+        qs = qs.annotate(
+            cat_relevance=cat_score,
+            sol_relevance=sol_score,
+            tag_relevance=tag_score,
+            brand_relevance=brand_score,
+            total_relevance=F("cat_relevance") + F("sol_relevance") + F("tag_relevance") + F("brand_relevance")
+        )
+
+        qs = qs.order_by("-total_relevance", "-total_reviews", "-created_at")
+
+        limit = 8
+        try:
+            limit = min(int(request.query_params.get("limit", 8)), 20)
+        except (ValueError, TypeError):
+            limit = 8
+
+        related_products = list(qs[:limit])
+        serializer = ProductListSerializer(related_products, many=True, context={"request": request})
+        return success_response(data=serializer.data)
 
     def filter_queryset(self, queryset):
         q_param = self.request.query_params.get("q", "").strip() if getattr(self, "request", None) else ""

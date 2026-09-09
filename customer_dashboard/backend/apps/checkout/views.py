@@ -42,11 +42,7 @@ def calculate_checkout_pricing(user, cart_items, delivery_method, address=None):
                 "product": item.product
             })
 
-    delivery_fee = {
-        'standard': Decimal("0.00"),
-        'express': Decimal("1500.00"),
-        'install': Decimal("3500.00"),
-    }.get(delivery_method, Decimal("0.00"))
+    delivery_fee = Decimal("0.00")
 
     warehouse_state = get_warehouse_state()
     delivery_state = address.state if address else warehouse_state

@@ -453,6 +453,8 @@ export interface FeaturedCollection {
   id: string;
   title: string;
   description: string;
+  image?: string | null;
+  image_url?: string | null;
   sort_order: number;
   is_visible: boolean;
   items: FeaturedCollectionItem[];

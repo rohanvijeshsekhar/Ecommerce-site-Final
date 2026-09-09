@@ -52,6 +52,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "short_description",
             "status", "is_featured",
             "tags",
+            "average_rating",
+            "total_reviews",
             "weight_kg",
             "warranty_months_override",
             "primary_image",

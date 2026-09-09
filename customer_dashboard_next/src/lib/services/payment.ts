@@ -12,7 +12,7 @@ export interface CreatePaymentResponse {
 
 export interface CreatePaymentOrderPayload {
   address_id: string;
-  delivery_method: string;
+  delivery_method?: string;
   payment_method: string;
   gst_number?: string;
   items?: Array<{ product_id: string; quantity: number }>;

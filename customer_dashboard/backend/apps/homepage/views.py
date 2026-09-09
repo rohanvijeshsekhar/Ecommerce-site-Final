@@ -9,6 +9,7 @@ Pattern:
 
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -126,7 +127,7 @@ class HomepageCategoryViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class HomepageBrandViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["-updated_at"]
 
     def get_queryset(self):
         qs = HomepageBrand.objects.select_related("brand")
@@ -178,7 +179,8 @@ class BestSellerViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["sort_order", "-updated_at"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         qs = FeaturedCollection.objects.prefetch_related(
@@ -198,6 +200,16 @@ class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return FeaturedCollectionWriteSerializer
         return FeaturedCollectionReadSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_visible:
+            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.is_visible:
+            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
 
 
 class FeaturedCollectionItemViewSet(BaseModelViewSet):
@@ -309,11 +321,11 @@ class TestimonialViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class RecommendedProductViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         qs = RecommendedProduct.objects.select_related(
-            "product", "product__brand", "product__category"
+            "product", "product__brand", "product__category", "product__pricing", "product__inventory"
         ).prefetch_related("product__images")
         if not (self.request.user.is_authenticated and
                 getattr(self.request.user, "role", None) == "admin"):

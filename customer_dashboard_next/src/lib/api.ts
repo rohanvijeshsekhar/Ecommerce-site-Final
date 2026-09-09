@@ -240,3 +240,6 @@ export const getAbsoluteImageUrl = (url: string | null | undefined): string => {
   if (url.startsWith('/')) return `${MEDIA_BASE_URL}${url}`;
   return `${MEDIA_BASE_URL}/${url}`;
 };
+
+export const getMediaUrl = getAbsoluteImageUrl;
+

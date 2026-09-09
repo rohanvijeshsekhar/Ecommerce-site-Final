@@ -53,6 +53,9 @@ export async function serverFetch<T>(
 
   if (options?.revalidate !== undefined) {
     fetchOptions.next!.revalidate = options.revalidate;
+    if (options.revalidate === 0) {
+      fetchOptions.cache = 'no-store';
+    }
   }
   if (options?.tags) {
     fetchOptions.next!.tags = options.tags;
