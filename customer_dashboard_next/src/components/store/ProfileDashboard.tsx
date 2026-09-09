@@ -1389,16 +1389,16 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         <div className="space-y-2 sm:space-y-3">
           {/* Instant Search Bar */}
           <div className="relative w-full">
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search by Order ID or Product Name..." 
+              placeholder="Search by Order ID or Product..." 
               value={orderSearch}
               onChange={e => {
                 setOrderSearch(e.target.value);
                 setOrdersPage(1);
               }}
-              className="w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-1.5 sm:py-2.5 border border-slate-200 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-medium text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
+              className="w-full pl-7 sm:pl-8.5 pr-7 sm:pr-8.5 py-1 sm:py-2 h-7.5 sm:h-9 border border-slate-200 rounded-lg sm:rounded-xl text-[10.5px] sm:text-xs font-medium text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
             />
             {orderSearch && (
               <button
@@ -1406,10 +1406,10 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   setOrderSearch('');
                   setOrdersPage(1);
                 }}
-                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
                 title="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             )}
           </div>
