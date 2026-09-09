@@ -832,13 +832,13 @@ export default function SearchClient({
           <div className="lg:col-span-3">
             {isLoading ? (
               /* Loading Skeletons */
-              <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+              <div className={viewMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6" : "space-y-4"}>
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs animate-pulse">
-                    <div className="w-full h-48 bg-slate-100 rounded-2xl mb-4" />
-                    <div className="h-4 bg-slate-100 rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
-                    <div className="h-8 bg-slate-100 rounded-full w-full" />
+                  <div key={n} className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-100 shadow-xs animate-pulse">
+                    <div className="w-full h-36 sm:h-48 bg-slate-100 rounded-xl sm:rounded-2xl mb-3 sm:mb-4" />
+                    <div className="h-3.5 sm:h-4 bg-slate-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2 mb-3 sm:mb-4" />
+                    <div className="h-7 sm:h-8 bg-slate-100 rounded-full w-full" />
                   </div>
                 ))}
               </div>
@@ -846,7 +846,7 @@ export default function SearchClient({
               <>
                 {/* GRID VIEW */}
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                     {products.map((p) => {
                       const rawImage = p.primary_image || (p.images && p.images[0]?.image);
                       const image = getAbsoluteImageUrl(rawImage) || '/images/nsk_handpiece_portrait.png';
@@ -864,11 +864,11 @@ export default function SearchClient({
                         <div
                           key={p.id}
                           onClick={() => router.push(`/products/${p.slug || p.id}`)}
-                          className="bg-white rounded-3xl p-4 border border-slate-200/80 hover:border-[#006670]/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer group relative overflow-hidden text-left"
+                          className="bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 border border-slate-200/80 hover:border-[#006670]/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer group relative overflow-hidden text-left"
                         >
                           <div>
                             {/* Image Box Container */}
-                            <div className="relative w-full h-64 rounded-2xl bg-[#EBEBEB] flex items-center justify-center p-4 overflow-hidden mb-4">
+                            <div className="relative w-full h-36 sm:h-56 md:h-64 rounded-xl sm:rounded-2xl bg-[#EBEBEB] flex items-center justify-center p-2 sm:p-4 overflow-hidden mb-2.5 sm:mb-4">
                               <img
                                 src={image}
                                 alt={p.name}
@@ -878,77 +878,77 @@ export default function SearchClient({
                               {/* Wishlist Heart Icon on Top Right */}
                               <button
                                 onClick={(e) => handleWishlistToggle(e, p)}
-                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-slate-400 hover:text-rose-500 shadow-md flex items-center justify-center transition-all z-10 cursor-pointer"
+                                className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white text-slate-400 hover:text-rose-500 shadow-md flex items-center justify-center transition-all z-10 cursor-pointer"
                                 title={isStarred ? 'Remove from Wishlist' : 'Add to Wishlist'}
                               >
-                                <Heart className={`w-4.5 h-4.5 ${isStarred ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                                <Heart className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 ${isStarred ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
                               </button>
                             </div>
 
                             {/* Brand Label */}
-                            <span className="text-xs font-black uppercase tracking-wider text-[#006670] mb-1 block">
+                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#006670] mb-0.5 sm:mb-1 block truncate">
                               {p.brand_name || (typeof p.brand === 'string' ? p.brand : 'FAAZO')}
                             </span>
 
                             {/* Product Title */}
-                            <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#006670] transition-colors leading-snug line-clamp-2 mb-2">
+                            <h3 className="text-xs sm:text-base font-extrabold text-slate-900 group-hover:text-[#006670] transition-colors leading-tight sm:leading-snug line-clamp-2 mb-1.5 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
                               {p.name}
                             </h3>
 
                             {/* Rating Stars & Count */}
-                            <div className="flex items-center gap-1.5 mb-3">
+                            <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3">
                               <div className="flex items-center text-amber-400 gap-0.5">
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 text-slate-300 stroke-slate-300" />
+                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
+                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
+                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
+                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
+                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-300 stroke-slate-300" />
                               </div>
-                              <span className="text-xs font-extrabold text-slate-800 ml-1">4.8</span>
-                              <span className="text-xs font-medium text-slate-400 ml-0.5">(48)</span>
+                              <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 ml-0.5">4.8</span>
+                              <span className="text-[10px] sm:text-xs font-medium text-slate-400 ml-0.5">(48)</span>
                             </div>
 
                             {/* Divider Line */}
-                            <div className="border-b border-slate-100 mb-3" />
+                            <div className="border-b border-slate-100 mb-2 sm:mb-3" />
                           </div>
 
                           {/* Price & Action Section */}
                           <div>
                             {/* Price Row with Discount Tag Floated Right */}
-                            <div className="flex items-center justify-between gap-2 mb-4">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-xl font-black text-slate-900">
+                            <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2.5 sm:mb-4 flex-wrap sm:flex-nowrap">
+                              <div className="flex items-baseline gap-1 sm:gap-2">
+                                <span className="text-sm sm:text-xl font-black text-slate-900">
                                   ₹{price.toLocaleString('en-IN')}
                                 </span>
                                 {originalPrice && originalPrice > price && (
-                                  <span className="text-xs text-slate-400 line-through font-semibold">
+                                  <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
                                     ₹{originalPrice.toLocaleString('en-IN')}
                                   </span>
                                 )}
                               </div>
 
                               {discountPct > 0 && (
-                                <span className="bg-[#E6F7F5] border border-[#A5E8DF] text-[#006670] font-black text-xs px-2.5 py-1 rounded-lg">
+                                <span className="bg-[#E6F7F5] border border-[#A5E8DF] text-[#006670] font-black text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg">
                                   {discountPct}% OFF
                                 </span>
                               )}
                             </div>
 
                             {/* Equal Width Buttons */}
-                            <div className="grid grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5">
                               <button
                                 onClick={(e) => handleAddToCart(e, p)}
-                                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#006670] hover:bg-[#004d54] text-white text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-2 bg-[#006670] hover:bg-[#004d54] text-white text-[10px] sm:text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
                               >
-                                <ShoppingCart className="w-4 h-4 text-white stroke-[2.5]" />
-                                <span>Add</span>
+                                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 text-white stroke-[2.5]" />
+                                <span className="truncate">Add</span>
                               </button>
                               <button
                                 onClick={(e) => handleBuyNow(e, p)}
-                                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-2 bg-[#0F172A] hover:bg-slate-800 text-white text-[10px] sm:text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
                               >
-                                <Zap className="w-4 h-4 text-[#FFB800] fill-[#FFB800]" />
-                                <span>Buy Now</span>
+                                <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-[#FFB800] fill-[#FFB800]" />
+                                <span className="truncate">Buy Now</span>
                               </button>
                             </div>
                           </div>
