@@ -92,6 +92,19 @@ class GA4AnalyticsService:
 
         return BetaAnalyticsDataClient()
 
+    def _production_hostname_filter(self):
+        from google.analytics.data_v1beta.types import FilterExpression, Filter
+
+        return FilterExpression(
+            filter=Filter(
+                field_name="hostName",
+                string_filter=Filter.StringFilter(
+                    match_type=Filter.StringFilter.MatchType.EXACT,
+                    value="faazo.cloud",
+                ),
+            )
+        )
+
     # ------------------------------------------------------------------
     # Date range helpers
     # ------------------------------------------------------------------
@@ -166,6 +179,7 @@ class GA4AnalyticsService:
                     Metric(name="userEngagementDuration"),
                     Metric(name="activeUsers"),
                 ],
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 
@@ -267,6 +281,7 @@ class GA4AnalyticsService:
                     Metric(name="sessions"),
                 ],
                 order_bys=[OrderBy(dimension=OrderBy.DimensionOrderBy(dimension_name="date"))],
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 
@@ -402,6 +417,7 @@ class GA4AnalyticsService:
                 ],
                 order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)],
                 limit=15,
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 
@@ -457,6 +473,7 @@ class GA4AnalyticsService:
                 ],
                 order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="sessions"), desc=True)],
                 limit=10,
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 
@@ -500,6 +517,7 @@ class GA4AnalyticsService:
                 date_ranges=[DateRange(start_date=start_cur, end_date=end_cur)],
                 dimensions=[Dimension(name="deviceCategory")],
                 metrics=[Metric(name="totalUsers")],
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 
@@ -546,6 +564,7 @@ class GA4AnalyticsService:
                 metrics=[Metric(name="totalUsers")],
                 order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="totalUsers"), desc=True)],
                 limit=10,
+            dimension_filter=self._production_hostname_filter(),
             )
             response = client.run_report(request)
 

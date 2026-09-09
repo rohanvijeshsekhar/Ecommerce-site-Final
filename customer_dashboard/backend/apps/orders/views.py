@@ -317,6 +317,46 @@ class AdminOrderDetailView(APIView):
                 order.status = new_status
                 order.save()
 
+                # Trigger ORDER_PACKED notification when order reaches Packed status
+                if new_status == OrderStatus.PACKED:
+                    cust_name = (
+                        getattr(order.user, "full_name", None)
+                        or getattr(order.user, "first_name", None)
+                        or getattr(getattr(order, "shipping_address", None), "full_name", None)
+                        or "Doctor"
+                    )
+                    cust_phone = (
+                        getattr(order.user, "phone_number", None)
+                        or getattr(getattr(order.user, "profile", None), "phone_number", None)
+                        or getattr(getattr(order, "shipping_address", None), "mobile", None)
+                    )
+                    ord_num = order.order_number or str(order.id)[:8]
+                    order_obj = order
+
+                    transaction.on_commit(
+                        lambda: NotificationService.create(
+                            user=order_obj.user,
+                            notification_type=NotificationType.ORDER_PACKED,
+                            title="Order Packed",
+                            message=f"Your order #{ord_num} has been packed and is ready for dispatch.",
+                            idempotency_key=f"order_packed_{order_obj.id}",
+                            channels=[
+                                DeliveryChannel.IN_APP,
+                                DeliveryChannel.EMAIL,
+                                DeliveryChannel.SMS,
+                            ],
+                            context={
+                                "customer_name": cust_name,
+                                "order_number": ord_num,
+                                "phone": cust_phone,
+                            },
+                            metadata={
+                                "order_id": str(order_obj.id),
+                                "order_number": ord_num,
+                            },
+                        )
+                    )
+
                 if new_status == OrderStatus.DELIVERED:
                     from apps.warranty.services import create_warranty_registrations
                     create_warranty_registrations(order)

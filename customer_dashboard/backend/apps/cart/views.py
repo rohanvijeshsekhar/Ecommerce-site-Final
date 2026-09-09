@@ -102,7 +102,7 @@ class CartAddView(APIView):
         else:
             product = Product.objects.filter(slug=prod_id).first()
 
-        if not product or product.is_deleted or product.status != "published":
+        if not product or product.is_deleted or product.status != "active":
             return error_response("Product is unavailable or does not exist.", status_code=status.HTTP_404_NOT_FOUND)
 
         existing_item = CartItem.objects.filter(cart=cart, product=product, is_saved_for_later=False).first()

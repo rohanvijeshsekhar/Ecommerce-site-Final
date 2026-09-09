@@ -53,6 +53,7 @@ class SMSChannel(BaseNotificationChannel):
     # Allowed SMS types with approved DLT templates
     ALLOWED_SMS_TYPES = {
         NotificationType.ORDER_CONFIRMED,
+        NotificationType.ORDER_PACKED,
         NotificationType.ORDER_PLACED,
         NotificationType.REFUND_INITIATED,
         NotificationType.REFUND_COMPLETED,
@@ -229,6 +230,7 @@ class EmailChannel(BaseNotificationChannel):
         NotificationType.ORDER_PLACED: "emails/order_placed",
         NotificationType.PAYMENT_SUCCESS: "emails/payment_success",
         NotificationType.ORDER_CONFIRMED: "emails/order_placed",
+        NotificationType.ORDER_PACKED: "emails/order_placed",
         NotificationType.ORDER_SHIPPED: "emails/order_shipped",
         NotificationType.ORDER_DELIVERED: "emails/order_delivered",
         NotificationType.ORDER_CANCELLED: "emails/order_cancelled",

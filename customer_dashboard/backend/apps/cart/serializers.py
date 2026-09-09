@@ -93,7 +93,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_validation_error(self, obj):
         prod = obj.product
-        if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+        if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "active":
             return f"'{prod.name}' is no longer available."
 
         info = self._get_stock_info(obj)
@@ -119,7 +119,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         if not product:
             raise serializers.ValidationError({"product_id": "Product details not found."})
 
-        if getattr(product, "is_deleted", False) or getattr(product, "status", "") != "published":
+        if getattr(product, "is_deleted", False) or getattr(product, "status", "") != "active":
             raise serializers.ValidationError({"product_id": f"'{product.name}' is no longer available."})
 
         stock_info = get_product_stock_info(product)
@@ -184,7 +184,7 @@ class CartSerializer(serializers.ModelSerializer):
             return False
         for item in active_items:
             prod = item.product
-            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "active":
                 return False
             stock_info = get_product_stock_info(prod)
             if not stock_info["allow_backorders"] and (stock_info["available_stock"] <= 0 or item.quantity > stock_info["available_stock"]):
@@ -195,7 +195,7 @@ class CartSerializer(serializers.ModelSerializer):
         warnings = []
         for item in self._get_active_items(obj):
             prod = item.product
-            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "published":
+            if getattr(prod, "is_deleted", False) or getattr(prod, "status", "") != "active":
                 warnings.append({
                     "product_id": str(prod.id),
                     "product_name": prod.name,

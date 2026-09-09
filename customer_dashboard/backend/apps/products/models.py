@@ -1,3 +1,4 @@
+from cloudinary_storage.storage import MediaCloudinaryStorage
 """
 FAAZO – Product Models
 
@@ -314,7 +315,8 @@ class ProductImage(models.Model):
         verbose_name="Product",
     )
     image = OptimizedImageField(
-        upload_to="products/images/",
+        upload_to="faazo/products/",
+        storage=MediaCloudinaryStorage(),
         verbose_name="Image",
     )
     alt_text = models.CharField(

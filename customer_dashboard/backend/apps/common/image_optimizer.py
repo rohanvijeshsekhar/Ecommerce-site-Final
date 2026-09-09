@@ -265,6 +265,13 @@ class OptimizedImageField(models.ImageField):
     ):
         self.max_dimension = max_dimension
         self.webp_quality = webp_quality
+
+        # All OptimizedImageField images use Cloudinary by default.
+        # An explicit storage=... passed by a model still takes precedence.
+        if "storage" not in kwargs:
+            from cloudinary_storage.storage import MediaCloudinaryStorage
+            kwargs["storage"] = MediaCloudinaryStorage()
+
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):

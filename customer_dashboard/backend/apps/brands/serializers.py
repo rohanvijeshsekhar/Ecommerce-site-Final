@@ -52,11 +52,27 @@ class BrandListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "slug", "product_count"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
+        # Prefer the visible homepage brand override, then fall back to Brand.logo.
+        logo = None
+
+        showcase = (
+            obj.homepage_showcases
+            .filter(is_visible=True, logo_override__isnull=False)
+            .order_by("sort_order", "created_at")
+            .first()
+        )
+
+        if showcase and showcase.logo_override:
+            logo = showcase.logo_override
+        elif obj.logo:
+            logo = obj.logo
+
+        if logo:
             request = self.context.get("request")
             if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
+                return request.build_absolute_uri(logo.url)
+            return logo.url
+
         return None
 
     def get_banner_image_url(self, obj):
@@ -91,11 +107,27 @@ class BrandDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "slug", "created_at", "updated_at", "documents", "product_count"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
+        # Prefer the visible homepage brand override, then fall back to Brand.logo.
+        logo = None
+
+        showcase = (
+            obj.homepage_showcases
+            .filter(is_visible=True, logo_override__isnull=False)
+            .order_by("sort_order", "created_at")
+            .first()
+        )
+
+        if showcase and showcase.logo_override:
+            logo = showcase.logo_override
+        elif obj.logo:
+            logo = obj.logo
+
+        if logo:
             request = self.context.get("request")
             if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
+                return request.build_absolute_uri(logo.url)
+            return logo.url
+
         return None
 
     def get_banner_image_url(self, obj):

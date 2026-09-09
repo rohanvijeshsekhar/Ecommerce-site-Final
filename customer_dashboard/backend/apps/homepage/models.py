@@ -16,6 +16,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from apps.common.image_optimizer import OptimizedImageField
+from cloudinary_storage.storage import MediaCloudinaryStorage
 from apps.common.mixins import BaseModel
 
 
@@ -39,6 +40,7 @@ class HeroSlide(BaseModel):
 
     desktop_image = OptimizedImageField(
         upload_to="homepage/hero/desktop/",
+        storage=MediaCloudinaryStorage(),
         null=True,
         blank=True,
         verbose_name="Desktop Image",
@@ -46,6 +48,7 @@ class HeroSlide(BaseModel):
     )
     mobile_image = OptimizedImageField(
         upload_to="homepage/hero/mobile/",
+        storage=MediaCloudinaryStorage(),
         null=True,
         blank=True,
         verbose_name="Mobile Image",
