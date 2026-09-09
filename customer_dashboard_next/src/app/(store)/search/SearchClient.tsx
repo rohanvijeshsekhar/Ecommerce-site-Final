@@ -83,6 +83,10 @@ export default function SearchClient({
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
+  const [isMobileBrandOpen, setIsMobileBrandOpen] = useState(false);
+  const [mobileCategorySearchQuery, setMobileCategorySearchQuery] = useState('');
+  const [mobileBrandSearchQuery, setMobileBrandSearchQuery] = useState('');
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const brandDropdownRef = useRef<HTMLDivElement>(null);
@@ -719,106 +723,324 @@ export default function SearchClient({
 
           {/* Mobile Filter Drawer */}
           {isMobileFilterOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end">
-              <div className="w-full max-w-xs bg-white h-full p-6 space-y-6 overflow-y-auto shadow-2xl flex flex-col justify-between">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
+              <div className="w-full max-w-sm bg-white h-full p-5 sm:p-6 space-y-6 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
                 <div className="space-y-6">
+                  {/* Drawer Header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
                       <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue
                     </h3>
-                    <button onClick={() => setIsMobileFilterOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
-                      <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {hasActiveFilters && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-[11px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsMobileFilterOpen(false)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Category Filter */}
                   {categories.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase">Category</label>
+                    <div className="space-y-2 relative">
+                      <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                        Category
+                      </label>
                       <div className="relative">
-                        <select
-                          value={selectedCategory}
-                          onChange={(e) => updateUrl({ category: e.target.value || null })}
-                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileCategoryOpen(!isMobileCategoryOpen);
+                            setIsMobileBrandOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                            isMobileCategoryOpen
+                              ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
                         >
-                          <option value="">All Categories ({categories.length})</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.slug}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                          <span className="truncate pr-2">
+                            {selectedCategory
+                              ? activeCategoryObj?.name || selectedCategory
+                              : `All Categories (${categories.length})`}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                              isMobileCategoryOpen ? 'rotate-180 text-[#006670]' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {isMobileCategoryOpen && (
+                          <div className="mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                            {categories.length > 6 && (
+                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                                <input
+                                  type="text"
+                                  placeholder="Search categories..."
+                                  value={mobileCategorySearchQuery}
+                                  onChange={(e) => setMobileCategorySearchQuery(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                />
+                              </div>
+                            )}
+                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ category: null });
+                                  setIsMobileCategoryOpen(false);
+                                  setMobileCategorySearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                  !selectedCategory
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span>All Categories ({categories.length})</span>
+                                {!selectedCategory && (
+                                  <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                )}
+                              </button>
+                              {categories
+                                .filter(
+                                  (c) =>
+                                    !mobileCategorySearchQuery ||
+                                    c.name.toLowerCase().includes(mobileCategorySearchQuery.toLowerCase())
+                                )
+                                .map((c) => {
+                                  const isSelected = selectedCategory === c.slug;
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateUrl({ category: c.slug });
+                                        setIsMobileCategoryOpen(false);
+                                        setMobileCategorySearchQuery('');
+                                      }}
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                        isSelected
+                                          ? 'bg-[#006670]/10 text-[#006670]'
+                                          : 'text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <span className="truncate pr-2">{c.name}</span>
+                                      {isSelected && (
+                                        <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
+                  {/* Brand Filter */}
                   {brands.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase">Brand</label>
+                    <div className="space-y-2 relative">
+                      <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                        Brand
+                      </label>
                       <div className="relative">
-                        <select
-                          value={selectedBrand}
-                          onChange={(e) => updateUrl({ brand: e.target.value || null })}
-                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileBrandOpen(!isMobileBrandOpen);
+                            setIsMobileCategoryOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                            isMobileBrandOpen
+                              ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
                         >
-                          <option value="">All Brands ({brands.length})</option>
-                          {brands.map((b) => (
-                            <option key={b.id} value={b.slug}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                          <span className="truncate pr-2">
+                            {selectedBrand
+                              ? activeBrandObj?.name || selectedBrand
+                              : `All Brands (${brands.length})`}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                              isMobileBrandOpen ? 'rotate-180 text-[#006670]' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {isMobileBrandOpen && (
+                          <div className="mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                            {brands.length > 6 && (
+                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
+                                <input
+                                  type="text"
+                                  placeholder="Search brands..."
+                                  value={mobileBrandSearchQuery}
+                                  onChange={(e) => setMobileBrandSearchQuery(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                />
+                              </div>
+                            )}
+                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ brand: null });
+                                  setIsMobileBrandOpen(false);
+                                  setMobileBrandSearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                  !selectedBrand
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span>All Brands ({brands.length})</span>
+                                {!selectedBrand && (
+                                  <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                )}
+                              </button>
+                              {brands
+                                .filter(
+                                  (b) =>
+                                    !mobileBrandSearchQuery ||
+                                    b.name.toLowerCase().includes(mobileBrandSearchQuery.toLowerCase())
+                                )
+                                .map((b) => {
+                                  const isSelected = selectedBrand === b.slug;
+                                  return (
+                                    <button
+                                      key={b.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateUrl({ brand: b.slug });
+                                        setIsMobileBrandOpen(false);
+                                        setMobileBrandSearchQuery('');
+                                      }}
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                        isSelected
+                                          ? 'bg-[#006670]/10 text-[#006670]'
+                                          : 'text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <span className="truncate pr-2">{b.name}</span>
+                                      {isSelected && (
+                                        <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-extrabold text-slate-700 uppercase">Price Range (₹)</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={inputMinPrice}
-                        onChange={(e) => setInputMinPrice(e.target.value)}
-                        onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={inputMaxPrice}
-                        onChange={(e) => setInputMaxPrice(e.target.value)}
-                        onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
+                  {/* Price Filter & Presets */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                      Price Range (₹)
+                    </label>
+
+                    {/* Price Preset Chips */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {pricePresets.map((preset) => {
+                        const isActive = minPrice === preset.min && maxPrice === preset.max;
+                        return (
+                          <button
+                            key={preset.label}
+                            onClick={() => {
+                              setInputMinPrice(preset.min);
+                              setInputMaxPrice(preset.max);
+                              updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                              isActive
+                                ? 'bg-[#006670] text-white border-[#006670]'
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Manual Inputs with Rupee Icon */}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={inputMinPrice}
+                          onChange={(e) => setInputMinPrice(e.target.value)}
+                          onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={inputMaxPrice}
+                          onChange={(e) => setInputMaxPrice(e.target.value)}
+                          onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    <label className="flex items-center justify-between cursor-pointer">
+                  {/* Availability Filter Toggle Switch (Identical to Desktop) */}
+                  <div className="pt-3 border-t border-slate-100">
+                    <label className="flex items-center justify-between cursor-pointer select-none">
                       <span className="text-xs font-bold text-slate-700">In-Stock Only</span>
-                      <input
-                        type="checkbox"
-                        checked={inStockOnly}
-                        onChange={(e) => updateUrl({ in_stock: e.target.checked ? 'true' : null })}
-                        className="w-4 h-4 accent-[#006670] rounded"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => updateUrl({ in_stock: inStockOnly ? null : 'true' })}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            inStockOnly ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
                     </label>
                   </div>
                 </div>
 
+                {/* Bottom CTA */}
                 <div className="pt-6 border-t border-slate-100 space-y-3">
                   <button
                     onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full py-3 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md"
+                    className="w-full py-3 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md active:scale-98 cursor-pointer"
                   >
                     Apply Filters
                   </button>
                   {hasActiveFilters && (
                     <button
                       onClick={handleClearAll}
-                      className="w-full py-2.5 text-center text-xs font-bold text-rose-500 hover:underline"
+                      className="w-full py-2 text-center text-xs font-bold text-rose-500 hover:underline cursor-pointer"
                     >
                       Clear All Filters
                     </button>
