@@ -265,7 +265,7 @@ export default function SearchClient({
   const hasActiveFilters = Boolean(selectedBrand || selectedCategory || minPrice || maxPrice || inStockOnly);
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-[88px] sm:pt-[108px] lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
+    <div className="bg-[#F8FAFC] min-h-screen pt-[115px] sm:pt-[125px] lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header Breadcrumb & Search Title Banner */}
