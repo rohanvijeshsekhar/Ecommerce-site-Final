@@ -721,38 +721,50 @@ export default function SearchClient({
             </div>
           </aside>
 
-          {/* Mobile Filter Drawer */}
+          {/* Mobile Filter Bottom Sheet (Half-Screen) */}
           {isMobileFilterOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
-              <div className="w-full max-w-sm bg-white h-full p-5 sm:p-6 space-y-6 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
-                <div className="space-y-6">
-                  {/* Drawer Header */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue
-                    </h3>
-                    <div className="flex items-center gap-3">
-                      {hasActiveFilters && (
-                        <button
-                          onClick={handleClearAll}
-                          className="text-[11px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
-                        >
-                          Clear All
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setIsMobileFilterOpen(false)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-200">
+              {/* Clickable Backdrop Area at the top */}
+              <div
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="flex-1 w-full cursor-pointer"
+                title="Close Filters"
+              />
 
+              {/* Half-Screen Sheet Container */}
+              <div className="w-full h-[58vh] max-h-[60vh] bg-white rounded-t-[28px] shadow-2xl p-4 sm:p-6 flex flex-col justify-between animate-in slide-in-from-bottom duration-300 relative border-t border-slate-100">
+                {/* Pull Handle Bar */}
+                <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto -mt-1 mb-2.5 shrink-0" />
+
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    {hasActiveFilters && (
+                      <button
+                        onClick={handleClearAll}
+                        className="text-[10px] sm:text-[11px] font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsMobileFilterOpen(false)}
+                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                    >
+                      <X className="w-4.5 h-4.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scrollable Filter Content */}
+                <div className="space-y-4 overflow-y-auto py-3 scrollbar-thin pr-1 flex-1">
                   {/* Category Filter */}
                   {categories.length > 0 && (
-                    <div className="space-y-2 relative">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                         Category
                       </label>
                       <div className="relative">
@@ -762,7 +774,7 @@ export default function SearchClient({
                             setIsMobileCategoryOpen(!isMobileCategoryOpen);
                             setIsMobileBrandOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
                             isMobileCategoryOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
@@ -781,7 +793,7 @@ export default function SearchClient({
                         </button>
 
                         {isMobileCategoryOpen && (
-                          <div className="mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
                             {categories.length > 6 && (
                               <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
                                 <input
@@ -794,7 +806,7 @@ export default function SearchClient({
                                 />
                               </div>
                             )}
-                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                            <div className="max-h-40 overflow-y-auto scrollbar-thin">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -802,7 +814,7 @@ export default function SearchClient({
                                   setIsMobileCategoryOpen(false);
                                   setMobileCategorySearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
                                   !selectedCategory
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
@@ -830,7 +842,7 @@ export default function SearchClient({
                                         setIsMobileCategoryOpen(false);
                                         setMobileCategorySearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
                                         isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
@@ -852,8 +864,8 @@ export default function SearchClient({
 
                   {/* Brand Filter */}
                   {brands.length > 0 && (
-                    <div className="space-y-2 relative">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                         Brand
                       </label>
                       <div className="relative">
@@ -863,7 +875,7 @@ export default function SearchClient({
                             setIsMobileBrandOpen(!isMobileBrandOpen);
                             setIsMobileCategoryOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
                             isMobileBrandOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
@@ -882,7 +894,7 @@ export default function SearchClient({
                         </button>
 
                         {isMobileBrandOpen && (
-                          <div className="mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
                             {brands.length > 6 && (
                               <div className="px-2.5 pb-2 border-b border-slate-100 mb-1">
                                 <input
@@ -895,7 +907,7 @@ export default function SearchClient({
                                 />
                               </div>
                             )}
-                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                            <div className="max-h-40 overflow-y-auto scrollbar-thin">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -903,7 +915,7 @@ export default function SearchClient({
                                   setIsMobileBrandOpen(false);
                                   setMobileBrandSearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
                                   !selectedBrand
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
@@ -931,7 +943,7 @@ export default function SearchClient({
                                         setIsMobileBrandOpen(false);
                                         setMobileBrandSearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
+                                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer text-left ${
                                         isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
@@ -952,8 +964,8 @@ export default function SearchClient({
                   )}
 
                   {/* Price Filter & Presets */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                  <div className="space-y-2">
+                    <label className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                       Price Range (₹)
                     </label>
 
@@ -969,7 +981,7 @@ export default function SearchClient({
                               setInputMaxPrice(preset.max);
                               updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                            className={`px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer border ${
                               isActive
                                 ? 'bg-[#006670] text-white border-[#006670]'
                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -982,34 +994,34 @@ export default function SearchClient({
                     </div>
 
                     {/* Manual Inputs with Rupee Icon */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-2 gap-2 pt-0.5">
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                        <span className="absolute left-2.5 top-1.5 text-xs font-bold text-slate-400">₹</span>
                         <input
                           type="number"
                           placeholder="Min"
                           value={inputMinPrice}
                           onChange={(e) => setInputMinPrice(e.target.value)}
                           onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
                         />
                       </div>
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                        <span className="absolute left-2.5 top-1.5 text-xs font-bold text-slate-400">₹</span>
                         <input
                           type="number"
                           placeholder="Max"
                           value={inputMaxPrice}
                           onChange={(e) => setInputMaxPrice(e.target.value)}
                           onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Availability Filter Toggle Switch (Identical to Desktop) */}
-                  <div className="pt-3 border-t border-slate-100">
+                  {/* Availability Filter Toggle Switch */}
+                  <div className="pt-2 border-t border-slate-100">
                     <label className="flex items-center justify-between cursor-pointer select-none">
                       <span className="text-xs font-bold text-slate-700">In-Stock Only</span>
                       <button
@@ -1030,17 +1042,17 @@ export default function SearchClient({
                 </div>
 
                 {/* Bottom CTA */}
-                <div className="pt-6 border-t border-slate-100 space-y-3">
+                <div className="pt-2.5 border-t border-slate-100 space-y-2 shrink-0 bg-white">
                   <button
                     onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full py-3 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md active:scale-98 cursor-pointer"
+                    className="w-full py-2.5 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md active:scale-98 cursor-pointer"
                   >
                     Apply Filters
                   </button>
                   {hasActiveFilters && (
                     <button
                       onClick={handleClearAll}
-                      className="w-full py-2 text-center text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+                      className="w-full py-1 text-center text-xs font-bold text-rose-500 hover:underline cursor-pointer"
                     >
                       Clear All Filters
                     </button>
