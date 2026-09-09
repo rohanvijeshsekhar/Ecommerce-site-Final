@@ -578,7 +578,8 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
   const { guardAction } = useGuestGuard(onOpenLoginModal, showToast);
   const { isInWishlist, toggleWishlist: toggleWishlistContext } = useWishlist();
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<string | null>(null);
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
   const [showInStockOnly, setShowInStockOnly] = useState(false);
   const [sortOption, setSortOption] = useState<'popularity' | 'price-asc' | 'price-desc' | 'rating'>('popularity');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -586,7 +587,16 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
   const [mobileBrandSearchQuery, setMobileBrandSearchQuery] = useState('');
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const hasActiveFilters = Boolean(selectedBrands.length > 0 || priceRange !== null || showInStockOnly);
+  const pricePresets = [
+    { label: 'Under ₹1k', min: '', max: '1000' },
+    { label: '₹1k - ₹5k', min: '1000', max: '5000' },
+    { label: '₹5k - ₹15k', min: '5000', max: '15000' },
+    { label: '₹15k - ₹50k', min: '15000', max: '50000' },
+    { label: '₹50k - ₹100k', min: '50000', max: '100000' },
+    { label: 'Above ₹100k', min: '100000', max: '' },
+  ];
+
+  const hasActiveFilters = Boolean(selectedBrands.length > 0 || minPrice || maxPrice || showInStockOnly);
 
   // Start empty — DB products replace static mocks once loaded
   const [dbProducts, setDbProducts] = useState<ListingProduct[]>([]);
@@ -789,8 +799,19 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
       result = result.filter(p => selectedBrands.includes(p.brand));
     }
 
-    // NOTE: Price filter is intentionally disabled until real pricing data is implemented.
-    // DB products use a placeholder price of 0 — applying price ranges would hide all of them.
+    // Filter by Price
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      if (!isNaN(min)) {
+        result = result.filter(p => p.price >= min);
+      }
+    }
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max)) {
+        result = result.filter(p => p.price <= max);
+      }
+    }
 
     // Filter by availability
     if (showInStockOnly) {
@@ -803,7 +824,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
     }
 
     return result;
-  }, [categoryProducts, selectedBrands, showInStockOnly, sortOption]);
+  }, [categoryProducts, selectedBrands, minPrice, maxPrice, showInStockOnly, sortOption]);
 
   const toggleBrand = (brandName: string) => {
     setSelectedBrands(prev =>
@@ -815,7 +836,8 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
 
   const clearAllFilters = () => {
     setSelectedBrands([]);
-    setPriceRange(null);
+    setMinPrice('');
+    setMaxPrice('');
     setShowInStockOnly(false);
     setMobileBrandSearchQuery('');
   };
@@ -912,7 +934,7 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
                 <Filter className="w-4 h-4" />
                 Filters
               </h3>
-              {(selectedBrands.length > 0 || priceRange !== null || showInStockOnly) && (
+              {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
                   className="text-[10px] font-extrabold uppercase tracking-wider text-rose-500 hover:text-rose-600 cursor-pointer"
@@ -942,25 +964,59 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
 
             {/* Filter Section: Price Ranges */}
             <div className="py-5 border-b border-slate-100">
-              <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-3">Price Range</h4>
-              <div className="space-y-2">
-                {[
-                  { value: 'under-15k', label: 'Under ₹15,000' },
-                  { value: '15k-50k', label: '₹15,000 - ₹50,000' },
-                  { value: '50k-200k', label: '₹50,000 - ₹200,000' },
-                  { value: 'over-200k', label: 'Over ₹200,000' }
-                ].map(item => (
-                  <label key={item.value} className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-700">
-                    <input
-                      type="radio"
-                      name="priceRangeRadio"
-                      checked={priceRange === item.value}
-                      onChange={() => setPriceRange(item.value)}
-                      className="w-4 h-4 border-slate-200 text-[#006670] focus:ring-[#006670]/25 cursor-pointer"
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
+              <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-3">Price Range (₹)</h4>
+              
+              {/* Preset Chips */}
+              <div className="grid grid-cols-2 gap-1.5 mb-3">
+                {pricePresets.map((preset) => {
+                  const isActive = minPrice === preset.min && maxPrice === preset.max;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        if (isActive) {
+                          setMinPrice('');
+                          setMaxPrice('');
+                        } else {
+                          setMinPrice(preset.min);
+                          setMaxPrice(preset.max);
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer border truncate ${
+                        isActive
+                          ? 'bg-[#006670] text-white border-[#006670]'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Manual Min/Max Inputs */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative">
+                  <span className="absolute left-2.5 top-2 text-xs font-bold text-slate-400">₹</span>
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-2 text-xs font-bold text-slate-400">₹</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1352,19 +1408,24 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
                 <label className="text-xs sm:text-[13px] font-black text-slate-800 uppercase tracking-wider block">
                   Price Range (₹)
                 </label>
+
+                {/* Preset Chips */}
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: 'under-15k', label: 'Under ₹15k' },
-                    { value: '15k-50k', label: '₹15k - ₹50k' },
-                    { value: '50k-200k', label: '₹50k - ₹200k' },
-                    { value: 'over-200k', label: 'Over ₹200k' }
-                  ].map((preset) => {
-                    const isActive = priceRange === preset.value;
+                  {pricePresets.map((preset) => {
+                    const isActive = minPrice === preset.min && maxPrice === preset.max;
                     return (
                       <button
-                        key={preset.value}
+                        key={preset.label}
                         type="button"
-                        onClick={() => setPriceRange(isActive ? null : preset.value)}
+                        onClick={() => {
+                          if (isActive) {
+                            setMinPrice('');
+                            setMaxPrice('');
+                          } else {
+                            setMinPrice(preset.min);
+                            setMaxPrice(preset.max);
+                          }
+                        }}
                         className={`px-3 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border truncate ${
                           isActive
                             ? 'bg-[#006670] text-white border-[#006670]'
@@ -1375,6 +1436,30 @@ const ProductListingPage: React.FC<ProductListingPageProps> = ({
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Manual Min/Max Inputs */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2.5 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2.5 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                    />
+                  </div>
                 </div>
               </div>
 

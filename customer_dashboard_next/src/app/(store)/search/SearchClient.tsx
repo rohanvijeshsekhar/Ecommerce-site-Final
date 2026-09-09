@@ -256,8 +256,10 @@ export default function SearchClient({
   const pricePresets = [
     { label: 'Under ₹1k', min: '', max: '1000' },
     { label: '₹1k - ₹5k', min: '1000', max: '5000' },
-    { label: '₹5k - ₹20k', min: '5000', max: '20000' },
-    { label: 'Above ₹20k', min: '20000', max: '' },
+    { label: '₹5k - ₹15k', min: '5000', max: '15000' },
+    { label: '₹15k - ₹50k', min: '15000', max: '50000' },
+    { label: '₹50k - ₹100k', min: '50000', max: '100000' },
+    { label: 'Above ₹100k', min: '100000', max: '' },
   ];
 
   const activeCategoryObj = categories.find((c) => c.slug === selectedCategory);
