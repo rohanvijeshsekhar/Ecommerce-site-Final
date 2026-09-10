@@ -167,6 +167,8 @@ class BestSellerReadSerializer(serializers.ModelSerializer):
     display_short_description = serializers.SerializerMethodField()
     pricing          = ProductPricingInlineSerializer(source="product.pricing", read_only=True, allow_null=True)
     inventory        = ProductInventoryInlineSerializer(source="product.inventory", read_only=True, allow_null=True)
+    average_rating   = serializers.DecimalField(source="product.average_rating", max_digits=3, decimal_places=2, read_only=True)
+    total_reviews    = serializers.IntegerField(source="product.total_reviews", read_only=True)
 
     class Meta:
         model  = BestSeller
@@ -175,6 +177,7 @@ class BestSellerReadSerializer(serializers.ModelSerializer):
             "display_heading", "display_short_description",
             "display_image_url", "sort_order", "is_visible",
             "pricing", "inventory",
+            "average_rating", "total_reviews",
         ]
 
     def get_display_heading(self, obj):
@@ -214,10 +217,16 @@ class FeaturedCollectionItemReadSerializer(serializers.ModelSerializer):
     product_image = serializers.SerializerMethodField()
     pricing          = ProductPricingInlineSerializer(source="product.pricing", read_only=True, allow_null=True)
     inventory        = ProductInventoryInlineSerializer(source="product.inventory", read_only=True, allow_null=True)
+    average_rating   = serializers.DecimalField(source="product.average_rating", max_digits=3, decimal_places=2, read_only=True)
+    total_reviews    = serializers.IntegerField(source="product.total_reviews", read_only=True)
 
     class Meta:
         model  = FeaturedCollectionItem
-        fields = ["id", "product", "product_name", "product_slug", "product_image", "sort_order", "pricing", "inventory"]
+        fields = [
+            "id", "product", "product_name", "product_slug", "product_image",
+            "sort_order", "pricing", "inventory",
+            "average_rating", "total_reviews",
+        ]
 
     def get_product_image(self, obj):
         request = self.context.get("request")

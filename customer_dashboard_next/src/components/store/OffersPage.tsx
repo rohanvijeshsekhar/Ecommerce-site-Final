@@ -1,28 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  CheckCircle2, 
-  ShieldCheck, 
-  Truck, 
-  Award, 
-  Percent, 
-  ArrowRight, 
-  Filter, 
-  Clock, 
-  Tag, 
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import {
+  CheckCircle2,
+  ShieldCheck,
+  Truck,
+  Award,
+  Percent,
+  ArrowRight,
+  Clock,
+  Tag,
   Sparkles,
   ShoppingBag,
   RotateCcw,
   Building2,
   AlertTriangle,
-  Zap,
-  ExternalLink
+  Zap
 } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { useStore } from '@/contexts/StoreContext';
+import ListingToolbar, { SortOption } from './listing/ListingToolbar';
+import ActiveFilterChips from './listing/ActiveFilterChips';
+import ListingFilterSidebar, { FilterItemOption } from './listing/ListingFilterSidebar';
+import ListingFilterDrawer from './listing/ListingFilterDrawer';
 
 interface OfferItem {
   id: string;
@@ -58,6 +60,13 @@ interface OffersPageProps {
   showToast?: (msg: string) => void;
 }
 
+const offerSortOptions: SortOption[] = [
+  { value: 'rank', label: 'Featured / Best Offers' },
+  { value: 'discount-desc', label: 'Discount: High to Low' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+];
+
 function mapRawOffers(rawData: any[]): OfferItem[] {
   if (!Array.isArray(rawData)) return [];
   return rawData.map((item: any, idx: number) => {
@@ -66,7 +75,7 @@ function mapRawOffers(rawData: any[]): OfferItem[] {
     const diff = Math.max(0, orig - disc);
     const pct = orig > 0 ? Math.round((diff / orig) * 100) : 0;
     const savings = orig > disc ? `Save ₹${diff.toLocaleString('en-IN')} (${pct}% OFF)` : '';
-    const validity = item.validity_text || (item.end_date 
+    const validity = item.validity_text || (item.end_date
       ? `Valid until ${new Date(item.end_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`
       : (item.offer_text || ''));
 
@@ -95,6 +104,10 @@ function mapRawOffers(rawData: any[]): OfferItem[] {
 
 export default function OffersPage({ initialPageContent, initialOffersRaw, setCartItems, showToast }: OffersPageProps) {
   const store = useStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [offersList, setOffersList] = useState<OfferItem[]>(() => {
     if (initialOffersRaw && initialOffersRaw.length > 0) {
       return mapRawOffers(initialOffersRaw);
@@ -103,6 +116,31 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
   });
   const [loading, setLoading] = useState(!initialOffersRaw || initialOffersRaw.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // URL state
+  const searchQuery = searchParams.get('q') || '';
+  const selectedCategory = searchParams.get('category') || '';
+  const brandParam = searchParams.get('brand') || '';
+  const selectedBrands = useMemo(() => brandParam ? brandParam.split(',').filter(Boolean) : [], [brandParam]);
+  const minPrice = searchParams.get('min_price') || '';
+  const maxPrice = searchParams.get('max_price') || '';
+  const inStockOnly = searchParams.get('in_stock') === 'true';
+  const sortBy = searchParams.get('sort') || 'rank';
+
+  const updateUrlParams = (updates: Record<string, string | null>) => {
+    const p = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '' || value === undefined) {
+        p.delete(key);
+      } else {
+        p.set(key, value);
+      }
+    });
+    const queryString = p.toString();
+    router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, { scroll: false });
+  };
 
   // Dynamic Special Offers Page Content (Hero CMS)
   const [pageContent, setPageContent] = useState<{
@@ -141,10 +179,9 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
 
   const fetchOffers = async () => {
     try {
-      // Fetch directly from Django REST Framework API endpoint
       const res = await api.get('homepage/offers/');
       const rawData = res.data?.data ?? res.data?.results ?? res.data ?? [];
-      
+
       if (Array.isArray(rawData)) {
         setOffersList(mapRawOffers(rawData));
       } else {
@@ -168,52 +205,160 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
     return offersList.find(o => o.isFeatured) || (offersList.length > 0 ? offersList[0] : null);
   }, [offersList]);
 
-  const heroOffer = useMemo(() => {
-    if (offersList.length === 0) return null;
-    return offersList.find(o => o.id !== featuredOffer?.id) || featuredOffer;
-  }, [offersList, featuredOffer]);
+  // Extract available categories & brands
+  const { availableCategories, availableBrands } = useMemo(() => {
+    const catMap = new Map<string, number>();
+    const brandMap = new Map<string, number>();
 
-  // Compute Dynamic Filters List
-  const availableCategories = useMemo(() => {
-    const cats = Array.from(new Set(offersList.map(o => o.category).filter(Boolean)));
-    return ['All', ...cats];
+    offersList.forEach((o) => {
+      if (o.category) catMap.set(o.category, (catMap.get(o.category) || 0) + 1);
+      if (o.brand) brandMap.set(o.brand, (brandMap.get(o.brand) || 0) + 1);
+    });
+
+    const categories: FilterItemOption[] = Array.from(catMap.entries()).map(([name, count]) => ({
+      id: name,
+      slug: name,
+      name,
+      count,
+    }));
+
+    const brands: FilterItemOption[] = Array.from(brandMap.entries()).map(([name, count]) => ({
+      id: name,
+      slug: name,
+      name,
+      count,
+    }));
+
+    return { availableCategories: categories, availableBrands: brands };
   }, [offersList]);
 
-  const availableOfferTypes = useMemo(() => {
-    const types = Array.from(new Set(offersList.map(o => o.offerType).filter(Boolean)));
-    return ['All', ...types];
-  }, [offersList]);
+  // Filter and sort display offers
+  const displayOffers = useMemo(() => {
+    let list = [...offersList];
 
-  const availableBrands = useMemo(() => {
-    const brands = Array.from(new Set(offersList.map(o => o.brand).filter(Boolean)));
-    return ['All', ...brands];
-  }, [offersList]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(o =>
+        o.title.toLowerCase().includes(q) ||
+        o.category.toLowerCase().includes(q) ||
+        o.brand.toLowerCase().includes(q) ||
+        o.description.toLowerCase().includes(q)
+      );
+    }
 
-  // Filter States
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedOfferType, setSelectedOfferType] = useState<string>('All');
-  const [selectedBrand, setSelectedBrand] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<'newest' | 'highest-savings' | 'popular'>('popular');
+    if (selectedCategory) {
+      list = list.filter(o => o.category.toLowerCase() === selectedCategory.toLowerCase());
+    }
 
-  // Filtered & Sorted Offers list
-  const filteredOffers = useMemo(() => {
-    return offersList.filter(item => {
-      if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
-      if (selectedOfferType !== 'All' && item.offerType !== selectedOfferType) return false;
-      if (selectedBrand !== 'All' && item.brand !== selectedBrand) return false;
-      return true;
-    }).sort((a, b) => {
-      if (sortBy === 'highest-savings') {
-        const savingsA = a.originalPrice - a.discountedPrice;
-        const savingsB = b.originalPrice - b.discountedPrice;
-        return savingsB - savingsA;
+    if (selectedBrands.length > 0) {
+      list = list.filter(o => selectedBrands.some(b => b.toLowerCase() === o.brand.toLowerCase()));
+    }
+
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      if (!isNaN(min)) list = list.filter(o => o.discountedPrice >= min);
+    }
+
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max)) list = list.filter(o => o.discountedPrice <= max);
+    }
+
+    if (inStockOnly) {
+      list = list.filter(o => (o.stockQuantity === undefined || o.stockQuantity > 0));
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (sortBy === 'discount-desc') {
+        const discA = a.originalPrice > 0 ? (a.originalPrice - a.discountedPrice) / a.originalPrice : 0;
+        const discB = b.originalPrice > 0 ? (b.originalPrice - b.discountedPrice) / b.originalPrice : 0;
+        return discB - discA;
       }
-      if (sortBy === 'newest') {
-        return a.id.localeCompare(b.id);
-      }
+      if (sortBy === 'price-asc') return a.discountedPrice - b.discountedPrice;
+      if (sortBy === 'price-desc') return b.discountedPrice - a.discountedPrice;
+      // Default: Featured first, then rank
+      if (a.isFeatured !== b.isFeatured) return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
       return (a.popularRank || 1) - (b.popularRank || 1);
     });
-  }, [offersList, selectedCategory, selectedOfferType, selectedBrand, sortBy]);
+
+    return list;
+  }, [offersList, searchQuery, selectedCategory, selectedBrands, minPrice, maxPrice, inStockOnly, sortBy]);
+
+  const activeFilterCount = (selectedCategory ? 1 : 0) +
+    selectedBrands.length +
+    (minPrice ? 1 : 0) +
+    (maxPrice ? 1 : 0) +
+    (inStockOnly ? 1 : 0) +
+    (searchQuery ? 1 : 0);
+  const hasActiveFilters = activeFilterCount > 0;
+
+  const activeChips = useMemo(() => {
+    const list: any[] = [];
+    if (selectedCategory) {
+      list.push({
+        id: 'category',
+        label: `Category: ${availableCategories.find(c => c.slug === selectedCategory)?.name || selectedCategory}`,
+        type: 'category',
+        onRemove: () => updateUrlParams({ category: null }),
+      });
+    }
+    selectedBrands.forEach((bSlug) => {
+      const bName = availableBrands.find(b => b.slug === bSlug)?.name || bSlug;
+      list.push({
+        id: `brand-${bSlug}`,
+        label: `Brand: ${bName}`,
+        type: 'brand',
+        onRemove: () => handleToggleBrand(bSlug),
+      });
+    });
+    if (minPrice || maxPrice) {
+      list.push({
+        id: 'price',
+        label: `₹${minPrice || '0'} - ₹${maxPrice || '∞'}`,
+        type: 'price',
+        onRemove: () => updateUrlParams({ min_price: null, max_price: null }),
+      });
+    }
+    if (inStockOnly) {
+      list.push({
+        id: 'stock',
+        label: 'In Stock Only',
+        type: 'stock',
+        onRemove: () => updateUrlParams({ in_stock: null }),
+      });
+    }
+    if (searchQuery) {
+      list.push({
+        id: 'search',
+        label: `"${searchQuery}"`,
+        type: 'other',
+        onRemove: () => updateUrlParams({ q: null }),
+      });
+    }
+    return list;
+  }, [selectedCategory, availableCategories, selectedBrands, availableBrands, minPrice, maxPrice, inStockOnly, searchQuery]);
+
+  const handleClearAll = () => {
+    updateUrlParams({
+      q: null,
+      category: null,
+      brand: null,
+      min_price: null,
+      max_price: null,
+      in_stock: null,
+    });
+  };
+
+  const handleToggleBrand = (brandSlug: string) => {
+    let next: string[];
+    if (selectedBrands.includes(brandSlug)) {
+      next = selectedBrands.filter((b) => b !== brandSlug);
+    } else {
+      next = [...selectedBrands, brandSlug];
+    }
+    updateUrlParams({ brand: next.length > 0 ? next.join(',') : null });
+  };
 
   const handleAddToCart = (offer: OfferItem) => {
     const item = {
@@ -262,90 +407,74 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
     }
   };
 
-  const handleResetFilters = () => {
-    setSelectedCategory('All');
-    setSelectedOfferType('All');
-    setSelectedBrand('All');
-    setSortBy('popular');
-  };
+  // Clean dynamic text to ensure professional rendering
+  const cleanHeroTitle = (pageContent.hero_title || 'Special Offers').replace(/Offerss/gi, 'Offers');
+  const cleanHeroDesc = (pageContent.hero_description || '').replace(/\.hmm$/gi, '');
+  const cleanHeroTrust = (pageContent.hero_trust_text || '✓ 100% Genuine Direct Import • Manufacturer Warranty').replace(/, yes$/gi, '');
 
   return (
-    <div className="w-full bg-[#F8FAFC] min-h-screen text-slate-800 font-sans text-left pt-[116px] lg:pt-[180px] pb-24 select-none">
-      
+    <div className="w-full bg-[#F8FAFC] min-h-screen text-slate-800 font-sans text-left pt-[108px] lg:pt-[176px] pb-24 select-none">
+
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 1. HERO SECTION (Compact Height & Dynamic Hero Content) */}
+      {/* 1. HERO SECTION (Compact Height & Clean Responsive Layout) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <section className="w-full bg-[#E2EAD9] bg-gradient-to-r from-[#D9E3D0] via-[#E5ECE0] to-[#DAE4D2] border-b border-[#6E8154]/20 py-6 lg:py-8 px-6 lg:px-12 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
-          
-          {/* Text Content (Dynamic from Page Content CMS) */}
-          <div className="lg:col-span-7 space-y-3">
+      <section className="w-full bg-[#E2EAD9] bg-gradient-to-r from-[#D9E3D0] via-[#E5ECE0] to-[#DAE4D2] border-b border-[#6E8154]/20 py-4 sm:py-7 px-4 sm:px-6 lg:px-12 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative z-10">
+
+          {/* Text Content */}
+          <div className="lg:col-span-7 space-y-2 sm:space-y-3 text-left">
             {pageContent.hero_badge && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006670]/10 border border-[#006670]/20 text-[#006670] text-[11px] font-black tracking-wider uppercase">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#006670]/10 border border-[#006670]/20 text-[#006670] text-[10px] sm:text-[11px] font-black tracking-wider uppercase">
                 <Sparkles className="w-3 h-3" />
                 <span>{pageContent.hero_badge}</span>
               </div>
             )}
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight font-display">
-              {pageContent.hero_title || 'Special Offers'}
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight font-display">
+              {cleanHeroTitle}
             </h1>
 
-            {pageContent.hero_description && (
+            {cleanHeroDesc && (
               <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-xl">
-                {pageContent.hero_description}
+                {cleanHeroDesc}
               </p>
             )}
 
-            <div className="pt-1 flex flex-wrap items-center gap-3">
+            <div className="pt-0.5 flex flex-wrap items-center gap-2.5 sm:gap-3">
               <a
                 href="#offers-catalog"
-                className="px-5 py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white font-extrabold text-xs uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow hover:-translate-y-0.5 inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white font-extrabold text-[11px] sm:text-xs uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow hover:-translate-y-0.5 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <span>{pageContent.hero_cta_text || 'Explore Offers'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
 
-              {pageContent.hero_trust_text && (
-                <span className="text-[11px] font-bold text-slate-600">
-                  {pageContent.hero_trust_text}
+              {cleanHeroTrust && (
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600">
+                  {cleanHeroTrust}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Hero Banner Visual Card (Compact Dynamic Featured Offer) */}
-          <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
+          {/* Hero Banner Visual Card (Desktop Only) */}
+          <div className="hidden lg:flex lg:col-span-5 relative justify-end">
             {loading ? (
-              <div className="w-full max-w-md bg-white rounded-2xl p-4 sm:p-4.5 border border-slate-200/80 shadow-lg animate-pulse">
-                <div className="w-full h-36 sm:h-40 bg-slate-100 rounded-xl mb-3" />
+              <div className="w-full max-w-md bg-white rounded-2xl p-4 border border-slate-200/80 shadow-lg animate-pulse">
+                <div className="w-full h-36 bg-slate-100 rounded-xl mb-3" />
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="h-4 bg-slate-100 rounded w-1/2" />
-                    <div className="h-4 bg-slate-100 rounded w-1/4" />
-                  </div>
+                  <div className="h-4 bg-slate-100 rounded w-1/2" />
                   <div className="h-3 bg-slate-100 rounded w-1/3" />
-                  <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-                    <div className="h-6 bg-slate-100 rounded w-1/3" />
-                    <div className="h-7 bg-slate-100 rounded-lg w-1/3" />
-                  </div>
                 </div>
               </div>
             ) : featuredOffer ? (
-              <div className="w-full max-w-md bg-white rounded-2xl p-4 sm:p-4.5 border border-slate-200/80 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#006670]/5 rounded-full blur-xl pointer-events-none" />
-                
-                {/* Dynamic Image Area */}
-                <div className="w-full h-36 sm:h-40 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-slate-100 shadow-inner">
+              <div className="w-full max-w-md bg-white rounded-2xl p-4 border border-slate-200/80 shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl">
+                <div className="w-full h-36 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-slate-100 shadow-inner">
                   {featuredOffer.image ? (
-                    <img 
-                      src={getAbsoluteImageUrl(featuredOffer.image)} 
-                      alt={featuredOffer.title} 
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLElement).classList.remove('object-cover');
-                        (e.target as HTMLElement).classList.add('object-contain', 'p-3');
-                      }}
+                    <img
+                      src={getAbsoluteImageUrl(featuredOffer.image)}
+                      alt={featuredOffer.title}
+                      className="w-full h-full object-contain p-2 transition-transform duration-300 hover:scale-105"
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center text-slate-300">
@@ -367,7 +496,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
                       </p>
                     </div>
                     {featuredOffer.savingsText && (
-                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0">
+                      <span className="text-[10px] font-extrabold text-[#006670] bg-[#E6F2F2] border border-[#006670]/20 px-2 py-0.5 rounded-full shrink-0">
                         {featuredOffer.savingsText}
                       </span>
                     )}
@@ -375,7 +504,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
 
                   <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg sm:text-xl font-black text-[#006670] font-display">
+                      <span className="text-lg font-black text-[#006670] font-display">
                         ₹{featuredOffer.discountedPrice.toLocaleString('en-IN')}
                       </span>
                       {featuredOffer.originalPrice > featuredOffer.discountedPrice && (
@@ -395,125 +524,120 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="w-full max-w-md bg-white/70 border border-dashed border-slate-300 rounded-2xl p-6 text-center flex flex-col items-center justify-center space-y-1.5">
-                <Sparkles className="w-6 h-6 text-[#006670]/40" />
-                <h4 className="text-xs font-bold text-slate-700">Clinical Special Offers</h4>
-                <p className="text-[11px] text-slate-500">Explore our promotional deals and discounts below</p>
-              </div>
-            )}
+            ) : null}
           </div>
 
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-12" id="offers-catalog">
-        
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10" id="offers-catalog">
+
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 2. FEATURED OFFER SHOWCASE CARD (100% Dynamic from Backend) */}
+        {/* 2. FEATURED OFFER SHOWCASE CARD */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {featuredOffer && (
-          <section className="mb-16">
-            <div className="w-full bg-white rounded-[32px] border border-slate-200/80 p-6 lg:p-10 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+          <section className="mb-6 sm:mb-10 w-full overflow-hidden">
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-3.5 sm:p-6 lg:p-8 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-[#006670]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                {/* Product Image */}
-                <div className="lg:col-span-5 relative">
-                  <div className="bg-slate-50 rounded-2xl p-6 flex items-center justify-center h-72 lg:h-80 relative overflow-hidden">
-                    <Image 
-                      src={featuredOffer.image || '/images/featured_digital_equipment.jpg'} 
-                      alt={featuredOffer.title} 
-                      fill
-                      sizes="400px"
-                      className="object-contain p-4"
-                    />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center">
+                <div className="lg:col-span-5 relative w-full">
+                  <div className="bg-slate-50 rounded-xl sm:rounded-2xl h-52 sm:h-64 lg:h-80 w-full relative overflow-hidden border border-slate-100 shadow-inner">
+                    {featuredOffer.image ? (
+                      <img
+                        src={getAbsoluteImageUrl(featuredOffer.image)}
+                        alt={featuredOffer.title}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <Tag className="w-10 h-10" />
+                      </div>
+                    )}
                   </div>
-                  <span className="absolute -top-3.5 left-4 bg-emerald-600 text-white text-[10.5px] font-extrabold px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5 animate-pulse z-20 border-2 border-white">
+                  <span className="absolute -top-2 left-2.5 bg-[#006670] text-white text-[8.5px] sm:text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 z-20 border-2 border-white">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
                     <span>{featuredOffer.badge || 'Limited time offer'}</span>
                   </span>
                 </div>
 
-                {/* Offer Details */}
-                <div className="lg:col-span-7 space-y-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="px-3 py-1 rounded-full bg-[#006670]/10 text-[#006670] text-xs font-bold uppercase tracking-wider">
+                <div className="lg:col-span-7 space-y-2 sm:space-y-3.5 min-w-0 w-full">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#E6F2F2] text-[#006670] text-[9.5px] sm:text-xs font-extrabold uppercase tracking-wider">
                       {featuredOffer.category || 'Special Offer Package'}
                     </span>
                     {featuredOffer.validityText && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{featuredOffer.validityText}</span>
+                      <span className="flex items-center gap-1 text-[9.5px] sm:text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span className="truncate max-w-[200px] sm:max-w-none">{featuredOffer.validityText}</span>
                       </span>
                     )}
                   </div>
 
-                  <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight font-display">
+                  <h2 className="text-base sm:text-xl lg:text-2xl font-black text-slate-900 tracking-tight font-display leading-snug break-words">
                     {featuredOffer.title}
                   </h2>
 
                   {featuredOffer.description && (
-                    <p className="text-xs lg:text-sm text-slate-600 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium line-clamp-2 sm:line-clamp-none break-all sm:break-words">
                       {featuredOffer.description}
                     </p>
                   )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 py-2">
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Brand</span>
-                      <span className="text-xs font-extrabold text-[#006670]">
-                        {featuredOffer.brand || 'FAAZO Certified'}
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 py-1">
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 text-center sm:text-left min-w-0">
+                      <span className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase block truncate">Brand</span>
+                      <span className="text-[10px] sm:text-xs font-black text-[#006670] truncate block">
+                        {featuredOffer.brand || 'FAAZO'}
                       </span>
                     </div>
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Warranty</span>
-                      <span className="text-xs font-extrabold text-slate-800">Manufacturer Direct</span>
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 text-center sm:text-left min-w-0">
+                      <span className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase block truncate">Warranty</span>
+                      <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 truncate block">Manufacturer</span>
                     </div>
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 col-span-2 sm:col-span-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Verification</span>
-                      <span className="text-xs font-extrabold text-emerald-600">100% Genuine</span>
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 text-center sm:text-left min-w-0">
+                      <span className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase block truncate">Verification</span>
+                      <span className="text-[10px] sm:text-xs font-black text-[#006670] truncate block">100% Genuine</span>
                     </div>
                   </div>
 
-                  {/* Price & CTA */}
-                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100">
-                    <div 
+                  <div className="pt-2 sm:pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100">
+                    <div
                       onClick={() => handleBuyNow(featuredOffer)}
-                      className="cursor-pointer group/price"
+                      className="cursor-pointer group/price flex items-baseline justify-between sm:block"
                       title="Click to Buy Now"
                     >
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-2xl lg:text-3xl font-black text-[#006670] group-hover/price:text-[#004e56] font-display transition-colors">
+                      <div className="flex items-baseline gap-1.5 sm:gap-3 flex-wrap">
+                        <span className="text-lg sm:text-2xl lg:text-3xl font-black text-[#006670] group-hover/price:text-[#004e56] font-display transition-colors">
                           ₹{featuredOffer.discountedPrice.toLocaleString('en-IN')}
                         </span>
                         {featuredOffer.originalPrice > featuredOffer.discountedPrice && (
-                          <span className="text-sm text-slate-400 line-through font-semibold">
+                          <span className="text-[11px] sm:text-sm text-slate-400 line-through font-semibold">
                             ₹{featuredOffer.originalPrice.toLocaleString('en-IN')}
                           </span>
                         )}
                       </div>
                       {featuredOffer.savingsText && (
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full inline-block mt-1 group-hover/price:bg-emerald-100 transition-colors">
+                        <span className="text-[9.5px] sm:text-xs font-bold text-[#006670] bg-[#E6F2F2] px-2 py-0.5 rounded-md inline-block mt-0.5 sm:mt-1">
                           {featuredOffer.savingsText}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
                       <button
                         onClick={() => handleAddToCart(featuredOffer)}
-                        className="px-5 py-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow inline-flex items-center justify-center gap-2 cursor-pointer"
+                        className="py-2.5 sm:px-5 sm:py-3 rounded-xl sm:rounded-full bg-slate-100 hover:bg-[#E6F2F2] text-slate-800 hover:text-[#006670] font-bold text-[11px] sm:text-xs uppercase tracking-wider transition-all duration-200 inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <ShoppingBag className="w-4 h-4 text-[#006670]" />
+                        <ShoppingBag className="w-3.5 h-3.5 text-[#006670]" />
                         <span>Add to Cart</span>
                       </button>
 
                       <button
                         onClick={() => handleBuyNow(featuredOffer)}
-                        className="px-6 py-3.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white font-extrabold text-xs uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center justify-center gap-2 cursor-pointer"
+                        className="py-2.5 sm:px-6 sm:py-3 rounded-xl sm:rounded-full bg-[#006670] hover:bg-[#004e56] text-white font-black text-[11px] sm:text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
+                        <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
                         <span>Buy Now</span>
                       </button>
                     </div>
@@ -525,247 +649,197 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
         )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 3. DYNAMIC FILTER & SORT BAR */}
+        {/* 3. OFFERS CATALOG WITH UNIFIED FILTER SIDEBAR & TOOLBAR */}
         {/* ─────────────────────────────────────────────────────────────────── */}
-        <section className="mb-10 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2 text-slate-800 font-extrabold text-sm">
-              <Filter className="w-4 h-4 text-[#006670]" />
-              <span>Filter Special Offers</span>
-              <span className="text-xs font-bold text-slate-400 ml-1">
-                ({filteredOffers.length} {filteredOffers.length === 1 ? 'Offer' : 'Offers'} Found)
-              </span>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start mb-16">
+          {/* Desktop Filter Sidebar */}
+          <ListingFilterSidebar
+            categories={availableCategories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={(cat) => updateUrlParams({ category: cat })}
+            brands={availableBrands}
+            selectedBrands={selectedBrands}
+            onToggleBrand={handleToggleBrand}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            onPriceChange={(min, max) => updateUrlParams({ min_price: min, max_price: max })}
+            hideRatingFilter={true}
+            inStockOnly={inStockOnly}
+            onToggleInStock={() => updateUrlParams({ in_stock: inStockOnly ? null : 'true' })}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={handleClearAll}
+            className="lg:col-span-1"
+          />
 
-            {/* Sort options */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sort By:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#006670] cursor-pointer"
-              >
-                <option value="popular">Popular Offers</option>
-                <option value="highest-savings">Highest Savings</option>
-                <option value="newest">Newest First</option>
-              </select>
-            </div>
-          </div>
+          {/* Main Offers Grid Area */}
+          <div className="lg:col-span-3 space-y-5">
+            {/* Unified Toolbar */}
+            <ListingToolbar
+              totalCount={displayOffers.length}
+              itemName="offers"
+              sortValue={sortBy}
+              onSortChange={(val) => updateUrlParams({ sort: val })}
+              sortOptions={offerSortOptions}
+              onOpenMobileFilters={() => setMobileFilterOpen(true)}
+              activeFiltersCount={activeFilterCount}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
 
-          {/* Dynamic Filter Selects */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            
-            {/* Dynamic Category Filter */}
-            <div>
-              <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Category
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#006670] cursor-pointer"
-              >
-                {availableCategories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat === 'All' ? 'All Categories' : cat}
-                  </option>
+            {/* Active Chips */}
+            <ActiveFilterChips
+              chips={activeChips}
+              onClearAll={handleClearAll}
+            />
+
+            {/* Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs animate-pulse space-y-2.5">
+                    <div className="w-full h-32 sm:h-44 bg-slate-100 rounded-lg" />
+                    <div className="h-3 bg-slate-100 rounded w-1/3" />
+                    <div className="h-4 bg-slate-100 rounded w-3/4" />
+                    <div className="h-7 bg-slate-100 rounded-lg mt-2" />
+                  </div>
                 ))}
-              </select>
-            </div>
-
-            {/* Dynamic Offer Type Filter */}
-            <div>
-              <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Offer Type
-              </label>
-              <select
-                value={selectedOfferType}
-                onChange={(e) => setSelectedOfferType(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#006670] cursor-pointer"
-              >
-                {availableOfferTypes.map(type => (
-                  <option key={type} value={type}>
-                    {type === 'All' ? 'All Offer Types' : type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dynamic Brand Filter */}
-            <div>
-              <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Brand
-              </label>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#006670] cursor-pointer"
-              >
-                {availableBrands.map(b => (
-                  <option key={b} value={b}>
-                    {b === 'All' ? 'All Brands' : b}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 4. OFFERS GRID */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {loading ? (
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-14">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <div key={n} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs animate-pulse space-y-3">
-                <div className="w-full h-48 bg-slate-100 rounded-xl" />
-                <div className="h-3 bg-slate-100 rounded w-1/3" />
-                <div className="h-4 bg-slate-100 rounded w-3/4" />
-                <div className="h-8 bg-slate-100 rounded-xl mt-3" />
               </div>
-            ))}
-          </section>
-        ) : error ? (
-          <section className="bg-white rounded-3xl border border-rose-200/80 p-12 text-center my-12 shadow-sm space-y-4 max-w-lg mx-auto">
-            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800">Unable to Load Offers</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">{error}</p>
-            <button
-              onClick={fetchOffers}
-              className="px-5 py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Retry</span>
-            </button>
-          </section>
-        ) : filteredOffers.length > 0 ? (
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-14">
-            {filteredOffers.map((offer) => (
-              <div 
-                key={offer.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-lg hover:border-[#006670]/40 hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden"
-              >
-                <div>
-                  {/* Top Image Box (2/3 of Card Container) */}
-                  <div className="relative mb-3">
-                    <div className="w-full h-64 sm:h-72 bg-slate-50 rounded-xl flex items-center justify-center relative overflow-hidden">
-                      {offer.image ? (
-                        <img 
-                          src={getAbsoluteImageUrl(offer.image)} 
-                          alt={offer.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLElement).classList.remove('object-cover');
-                            (e.target as HTMLElement).classList.add('object-contain', 'p-3');
-                          }}
-                        />
-                      ) : (
-                        <Tag className="w-10 h-10 text-slate-300" />
-                      )}
+            ) : error ? (
+              <div className="bg-white rounded-2xl border border-rose-200/80 p-8 text-center shadow-xs space-y-3 max-w-md mx-auto">
+                <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800">Unable to Load Offers</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">{error}</p>
+                <button
+                  onClick={fetchOffers}
+                  className="px-4 py-2 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Retry</span>
+                </button>
+              </div>
+            ) : displayOffers.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center shadow-xs space-y-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+                  <Tag className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800">No Offers Match Your Filter</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+                  Try clearing or relaxing your selected filters to see more active promotions.
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearAll}
+                    className="px-5 py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <span>Clear All Filters</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5' : 'space-y-4'}>
+                {displayOffers.map((offer) => (
+                  <div
+                    key={offer.id}
+                    className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs hover:shadow-md hover:border-[#006670]/40 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden"
+                  >
+                    <div>
+                      {/* Top Image Box */}
+                      <div className="relative mb-2 sm:mb-2.5">
+                        <div className="w-full h-36 sm:h-48 md:h-52 bg-slate-100 rounded-lg sm:rounded-xl relative overflow-hidden">
+                          {offer.image ? (
+                            <img
+                              src={getAbsoluteImageUrl(offer.image)}
+                              alt={offer.title}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                              <Tag className="w-8 h-8 text-slate-300" />
+                            </div>
+                          )}
 
-                      {offer.brand && (
-                        <span className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-md text-slate-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-xs z-10">
-                          {offer.brand}
+                          {offer.brand && (
+                            <span className="absolute bottom-1.5 right-1.5 bg-white/95 backdrop-blur-xs text-slate-700 text-[8.5px] sm:text-[9.5px] font-extrabold px-1.5 py-0.5 rounded border border-slate-200/80 shadow-2xs z-10">
+                              {offer.brand}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Badge Floating Above Image */}
+                        <span className="absolute -top-1.5 left-2 bg-[#006670] text-white text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs border border-white z-20">
+                          {offer.badge}
                         </span>
-                      )}
+                      </div>
+
+                      {/* Offer Info */}
+                      <div className="space-y-0.5 sm:space-y-1 mb-2">
+                        <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-[#006670] block truncate">
+                          {offer.category}
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug group-hover:text-[#006670] transition-colors line-clamp-2 h-7 sm:h-9">
+                          {offer.title}
+                        </h3>
+                      </div>
                     </div>
 
-                    {/* Premium Badge Floating Above Image */}
-                    <span className="absolute -top-2.5 left-3 bg-emerald-600 text-white text-[9.5px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-white z-20 animate-pulse">
-                      {offer.badge}
-                    </span>
-                  </div>
-
-                  {/* Offer Info (1/3 of Card Container) */}
-                  <div className="space-y-1 mb-2">
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block">
-                      {offer.category}
-                    </span>
-                    <h3 className="text-sm font-extrabold text-slate-900 leading-snug group-hover:text-[#006670] transition-colors line-clamp-1">
-                      {offer.title}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Pricing & CTA */}
-                <div className="pt-2 border-t border-slate-100 space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-lg font-black text-[#006670] font-display">
-                          ₹{offer.discountedPrice.toLocaleString('en-IN')}
-                        </span>
-                        {offer.originalPrice > offer.discountedPrice && (
-                          <span className="text-[11px] text-slate-400 line-through font-semibold">
-                            ₹{offer.originalPrice.toLocaleString('en-IN')}
+                    {/* Pricing & CTA */}
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5 sm:space-y-2">
+                      <div>
+                        <div className="flex items-baseline gap-1 sm:gap-1.5 flex-wrap">
+                          <span className="text-sm sm:text-base font-black text-[#006670] font-display">
+                            ₹{offer.discountedPrice.toLocaleString('en-IN')}
+                          </span>
+                          {offer.originalPrice > offer.discountedPrice && (
+                            <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+                              ₹{offer.originalPrice.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                        {offer.savingsText && (
+                          <span className="text-[8.5px] sm:text-[9.5px] font-bold text-[#006670] bg-[#E6F2F2] px-1.5 py-0.5 rounded inline-block mt-0.5">
+                            {offer.savingsText}
                           </span>
                         )}
                       </div>
-                      {offer.savingsText && (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-0.5">
-                          {offer.savingsText}
-                        </span>
+
+                      {offer.validityText && (
+                        <div className="flex items-center text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                          <span className="flex items-center gap-1 truncate">
+                            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#006670] shrink-0" />
+                            <span className="truncate">{offer.validityText}</span>
+                          </span>
+                        </div>
                       )}
+
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        <button
+                          onClick={() => handleAddToCart(offer)}
+                          className="py-1.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-[#E6F2F2] text-slate-700 hover:text-[#006670] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <ShoppingBag className="w-3 h-3 text-[#006670]" />
+                          <span>Add</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleBuyNow(offer)}
+                          className="py-1.5 sm:py-2 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-2xs hover:shadow flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Zap className="w-3 h-3 fill-amber-300 text-amber-300" />
+                          <span>Buy</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {offer.validityText && (
-                    <div className="flex items-center text-[10px] text-slate-400 font-medium">
-                      <span className="flex items-center gap-1 truncate">
-                        <Clock className="w-3 h-3 text-[#006670] shrink-0" />
-                        <span className="truncate">{offer.validityText}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      onClick={() => handleAddToCart(offer)}
-                      className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5 text-[#006670]" />
-                      <span>Add</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleBuyNow(offer)}
-                      className="py-2 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-extrabold uppercase tracking-wider transition-all shadow-xs hover:shadow flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                      <span>Buy Now</span>
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </section>
-        ) : (
-          /* ───────────────────────────────────────────────────────────────── */
-          /* 5. EMPTY STATE */
-          /* ───────────────────────────────────────────────────────────────── */
-          <section className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center my-12 shadow-sm space-y-4 max-w-lg mx-auto">
-            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
-              <Tag className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800">No Active Offers Found</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              No promotions currently match your selected filters. Please adjust your filters or reset to view all available clinical offers.
-            </p>
-            <button
-              onClick={handleResetFilters}
-              className="px-5 py-2.5 rounded-full bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Filters</span>
-            </button>
-          </section>
-        )}
+            )}
+          </div>
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 6. PROMOTIONAL INSET BANNER */}
+        {/* 4. PROMOTIONAL INSET BANNER */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         <section className="mb-16 rounded-3xl bg-gradient-to-r from-[#004D52] via-[#005F63] to-[#003B3E] p-8 lg:p-12 text-white shadow-xl relative overflow-hidden">
           <div className="absolute -top-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
@@ -797,7 +871,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
         </section>
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 7. WHY SHOP DURING OFFERS (TRUST CARDS) */}
+        {/* 5. WHY SHOP DURING OFFERS (TRUST CARDS) */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         <section className="mb-16">
           <div className="text-center max-w-xl mx-auto mb-8">
@@ -810,7 +884,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            
+
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 text-center shadow-sm space-y-2">
               <div className="w-10 h-10 rounded-xl bg-[#006670]/10 text-[#006670] flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-5 h-5" />
@@ -865,6 +939,27 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
         </section>
 
       </div>
+
+      {/* Mobile Filter Drawer */}
+      <ListingFilterDrawer
+        isOpen={mobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        categories={availableCategories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(cat) => updateUrlParams({ category: cat })}
+        brands={availableBrands}
+        selectedBrands={selectedBrands}
+        onToggleBrand={handleToggleBrand}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        onPriceChange={(min, max) => updateUrlParams({ min_price: min, max_price: max })}
+        hideRatingFilter={true}
+        inStockOnly={inStockOnly}
+        onToggleInStock={() => updateUrlParams({ in_stock: inStockOnly ? null : 'true' })}
+        hasActiveFilters={hasActiveFilters}
+        onClearAll={handleClearAll}
+        totalCount={displayOffers.length}
+      />
     </div>
   );
 }

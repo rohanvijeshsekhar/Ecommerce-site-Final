@@ -440,10 +440,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 overflow-y-auto"
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 overflow-y-auto overscroll-contain"
       onClick={(e) => { if (e.target === e.currentTarget) { onClose(); resetForm(); } }}
     >
-      <div className="relative w-full h-full md:h-auto md:max-w-[800px] min-h-screen md:min-h-[520px] bg-white rounded-none md:rounded-[28px] shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col md:flex-row my-0 md:my-4"
+      <div className="relative w-full h-[100dvh] md:h-auto md:max-w-[800px] min-h-[100dvh] md:min-h-[520px] bg-white rounded-none md:rounded-[28px] shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col md:flex-row my-0 md:my-4"
       >
         {/* ══════════════════════ LEFT PANEL ══════════════════════ */}
         <div
@@ -511,7 +511,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </button>
 
           {/* Mobile Teal Header Banner */}
-          <div className="block md:hidden pt-9 pb-12 px-5 relative overflow-hidden min-h-[160px] flex flex-col justify-end select-none">
+          <div className="block md:hidden pt-[calc(env(safe-area-inset-top,0px)+3.25rem)] pb-14 px-5 relative overflow-hidden min-h-[calc(env(safe-area-inset-top,0px)+175px)] flex flex-col justify-end select-none">
             {/* Background pattern */}
             <div className="absolute inset-0 z-0 bg-white">
               <img
@@ -524,7 +524,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             {/* Close button */}
             <button
               onClick={() => { onClose(); resetForm(); }}
-              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200/95 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+              className="absolute top-[calc(env(safe-area-inset-top,0px)+0.75rem)] right-3.5 z-30 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs hover:bg-white flex items-center justify-center text-slate-600 border border-slate-200/60 transition-colors cursor-pointer active:scale-95"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
@@ -535,7 +535,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => handleModeChange('login')}
-                className="absolute top-3.5 left-4 z-30 text-[#006670] hover:text-[#004e56] text-xs font-bold flex items-center gap-1 cursor-pointer bg-transparent border-none"
+                className="absolute top-[calc(env(safe-area-inset-top,0px)+0.75rem)] left-3.5 z-30 text-[#006670] hover:text-[#004e56] text-xs font-bold flex items-center gap-1 cursor-pointer bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-[#006670]/20 shadow-xs active:scale-95 transition-transform"
               >
                 ← Back to Sign In
               </button>
@@ -580,7 +580,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Main form content card */}
-          <div className="flex-grow bg-white rounded-t-[32px] md:rounded-none -mt-7 md:mt-0 z-10 relative px-4 py-6 md:px-6 md:pt-4 md:pb-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)] md:shadow-none">
+          <div className="flex-grow bg-white rounded-t-[32px] md:rounded-none -mt-7 md:mt-0 z-10 relative px-4 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] md:px-6 md:pt-4 md:pb-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)] md:shadow-none">
             {/* Heading section */}
             <div className="mb-4 md:mb-5">
               {/* Mobile View Title Card */}

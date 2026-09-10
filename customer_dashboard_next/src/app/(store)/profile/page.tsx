@@ -20,6 +20,14 @@ export default function ProfileRoute() {
     }
   }, [isAuthenticated, isLoading, router, store]);
 
+  // Wishlist Section Guard: Redirect to canonical /wishlist page
+  useEffect(() => {
+    if (store.dashboardSection === 'wishlist') {
+      store.setDashboardSection('dashboard');
+      router.push('/wishlist');
+    }
+  }, [store.dashboardSection, router, store]);
+
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">

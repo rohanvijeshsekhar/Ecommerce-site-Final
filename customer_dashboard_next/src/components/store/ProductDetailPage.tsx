@@ -40,7 +40,19 @@ import {
 import { useGuestGuard } from '../../hooks/useGuestGuard';
 import { useAuth } from '../../hooks/useAuth';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
-import { allProducts } from './ProductListingPage';
+
+const fallbackStaticProducts: any[] = [
+  {
+    id: 'nsk-handpiece',
+    title: 'NSK Pana-Max High Speed Handpiece',
+    subtitle: 'Standard head, push button chuck with clean head system',
+    brand: 'NSK',
+    category: 'Handpieces',
+    price: 18999,
+    originalPrice: 22499,
+    image: '/images/bestseller_handpiece.png'
+  }
+];
 
 interface MockCartItem {
   id: string;
@@ -85,7 +97,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const getStaticProductDetail = (slug: string): any => {
-    const sp = allProducts.find(p => p.id === slug || p.id.replace(/-/g, '') === slug.replace(/-/g, ''));
+    const sp = fallbackStaticProducts.find((p: any) => p.id === slug || p.id.replace(/-/g, '') === slug.replace(/-/g, ''));
     if (!sp) return null;
     return {
       id: sp.id,
@@ -157,7 +169,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       return parseFloat(productData.pricing.effective_price || productData.pricing.selling_price);
     }
     const staticSlug = activeProductId || 'nsk-handpiece';
-    const sp = allProducts.find(p => p.id === staticSlug || p.id.replace(/-/g, '') === staticSlug.replace(/-/g, ''));
+    const sp = fallbackStaticProducts.find((p: any) => p.id === staticSlug || p.id.replace(/-/g, '') === staticSlug.replace(/-/g, ''));
     return sp ? sp.price : 18999;
   };
 
@@ -166,7 +178,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       return parseFloat(productData.pricing.mrp || productData.pricing.selling_price);
     }
     const staticSlug = activeProductId || 'nsk-handpiece';
-    const sp = allProducts.find(p => p.id === staticSlug || p.id.replace(/-/g, '') === staticSlug.replace(/-/g, ''));
+    const sp = fallbackStaticProducts.find((p: any) => p.id === staticSlug || p.id.replace(/-/g, '') === staticSlug.replace(/-/g, ''));
     return sp ? (sp.originalPrice || sp.price) : 22499;
   };
 
@@ -574,8 +586,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       src={img.src}
                       alt={img.alt}
                       loading="eager"
-                      className={`w-full h-full object-contain rounded-xl transition-transform duration-300
-                        ${img.isLifestyle ? 'object-cover' : 'filter brightness-[1.02]'}`}
+                      className="w-full h-full object-cover rounded-xl transition-transform duration-300 filter brightness-[1.02]"
                     />
                   </button>
                 ))}
@@ -797,8 +808,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       src={img.src}
                       alt={img.alt}
                       loading="eager"
-                      className={`w-full h-full object-contain rounded-xl transition-transform duration-300
-                        ${img.isLifestyle ? 'object-cover' : 'filter brightness-[1.02]'}`}
+                      className="w-full h-full object-cover rounded-xl transition-transform duration-300 filter brightness-[1.02]"
                     />
                   </button>
                 ))}

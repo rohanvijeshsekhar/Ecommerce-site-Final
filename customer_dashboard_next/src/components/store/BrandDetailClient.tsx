@@ -1,53 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Search,
   Star,
   Heart,
   ShoppingCart,
   Zap,
   ChevronRight,
-  ArrowRight,
   ShieldCheck,
   Package,
-  Layers,
-  SlidersHorizontal,
-  RefreshCw,
+  RotateCcw,
   ExternalLink,
   Phone,
   Mail,
   Globe,
-  Award,
-  ChevronLeft
+  ChevronLeft,
 } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { useStore } from '@/contexts/StoreContext';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { useAuth } from '@/hooks/useAuth';
-
-export interface ProductItem {
-  id: string;
-  name: string;
-  slug: string;
-  sku?: string;
-  brand_name?: string;
-  category_name?: string;
-  image?: string;
-  primary_image?: { image: string } | string;
-  images?: any[];
-  pricing?: {
-    mrp: number;
-    selling_price: number;
-    discount_percent?: number;
-  };
-  inventory?: {
-    stock_quantity: number;
-  };
-  rating?: number;
-}
+import { useGuestGuard } from '@/hooks/useGuestGuard';
+import ListingToolbar, { defaultProductSortOptions } from './listing/ListingToolbar';
+import ActiveFilterChips, { ActiveChipItem } from './listing/ActiveFilterChips';
+import ListingFilterSidebar, { FilterItemOption } from './listing/ListingFilterSidebar';
+import ListingFilterDrawer from './listing/ListingFilterDrawer';
+import ListingPagination from './listing/ListingPagination';
 
 export interface BrandDetailData {
   id: string;
@@ -82,204 +61,271 @@ interface BrandDetailClientProps {
 
 export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const store = useStore();
-  const { isAuthenticated, setPendingAction } = useAuth();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { guardAction } = useGuestGuard(store.openLoginModal, store.showToast);
 
+  // URL State
+  const urlCategory = searchParams.get('category') || '';
+  const urlMinPrice = searchParams.get('min_price') || '';
+  const urlMaxPrice = searchParams.get('max_price') || '';
+  const urlMinRating = searchParams.get('min_rating') || '';
+  const urlInStock = searchParams.get('in_stock') === 'true';
+  const urlOrdering = searchParams.get('ordering') || 'newest';
+  const urlPage = parseInt(searchParams.get('page') || '1', 10) || 1;
+
+  // View Mode
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Brand data state
   const [brand, setBrand] = useState<BrandDetailData | null>(null);
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [categoriesList, setCategoriesList] = useState<FilterItemOption[]>([]);
   const [brandLoading, setBrandLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState({ count: 0, total_pages: 1, page: 1, page_size: 24 });
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 12;
-
-  // Filter & Sort state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSort, setSelectedSort] = useState('newest');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [categoriesList, setCategoriesList] = useState<string[]>([]);
-
-  // 1. Fetch Brand Detail
-  const fetchBrandDetail = async () => {
+  // 1. Fetch Brand Info & All Categories
+  useEffect(() => {
     setBrandLoading(true);
     setError(null);
-    try {
-      const res = await api.get(`brands/${slug}/`);
-      if (res.data?.success && res.data?.data) {
-        setBrand(res.data.data);
-      } else if (res.data?.id || res.data?.name) {
-        setBrand(res.data);
-      } else {
-        setError('Brand not found.');
-      }
-    } catch (err: any) {
-      console.error('Failed to load brand detail:', err);
-      if (err.response?.status === 404) {
-        setError('Brand not found.');
-      } else {
-        setError('Unable to load brand information. Please try again.');
-      }
-    } finally {
-      setBrandLoading(false);
-    }
-  };
 
-  // 2. Fetch Brand Products
-  const fetchBrandProducts = async () => {
-    setProductsLoading(true);
-    try {
-      const params: Record<string, any> = {
-        page: currentPage,
-        page_size: pageSize,
-        sort: selectedSort,
-      };
-
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-      if (selectedCategory !== 'all') {
-        params.category = selectedCategory;
-      }
-      if (inStockOnly) {
-        params.in_stock = 'true';
-      }
-
-      const res = await api.get(`brands/${slug}/products/`, { params });
-      let prodList: any[] = [];
-
-      if (res.data?.data && Array.isArray(res.data.data)) {
-        prodList = res.data.data;
-        setTotalPages(res.data.total_pages || 1);
-        setTotalCount(res.data.count || prodList.length);
-      } else if (res.data?.results && Array.isArray(res.data.results)) {
-        prodList = res.data.results;
-        setTotalPages(Math.ceil((res.data.count || prodList.length) / pageSize));
-        setTotalCount(res.data.count || prodList.length);
-      } else if (Array.isArray(res.data)) {
-        prodList = res.data;
-        setTotalPages(1);
-        setTotalCount(prodList.length);
-      }
-
-      // Map raw API products to UI model
-      const mapped = prodList.map(p => {
-        let imgUrl = '/images/placeholder.jpg';
-        if (p.primary_image) {
-          imgUrl = typeof p.primary_image === 'object' ? p.primary_image.image : p.primary_image;
-        } else if (p.images && p.images.length > 0) {
-          imgUrl = p.images[0].image || p.images[0];
-        } else if (p.image) {
-          imgUrl = p.image;
+    Promise.all([
+      api.get(`brands/${slug}/`).catch((err) => {
+        console.error('Failed to load brand:', err);
+        return { data: null };
+      }),
+      api.get('categories/?page_size=200').catch(() => ({ data: { data: [] } })),
+    ])
+      .then(([brandRes, catRes]) => {
+        const bData = brandRes.data?.data || brandRes.data;
+        if (bData && (bData.name || bData.id)) {
+          setBrand(bData);
+        } else {
+          setError('Brand not found.');
         }
 
-        return {
-          id: String(p.id),
-          name: p.name,
-          slug: p.slug,
-          sku: p.sku,
-          brand_name: p.brand_name || p.brand?.name || brand?.name,
-          category_name: p.category_name || p.category?.name,
-          image: getAbsoluteImageUrl(imgUrl),
-          pricing: p.pricing ? {
-            mrp: Number(p.pricing.mrp || p.pricing.selling_price || 0),
-            selling_price: Number(p.pricing.selling_price || 0),
-            discount_percent: p.pricing.discount_percent || 0,
-          } : undefined,
-          inventory: p.inventory ? {
-            stock_quantity: Number(p.inventory.stock_quantity || 0),
-          } : undefined,
-          rating: p.rating || 4.5,
-        };
+        const cats = catRes.data?.data ?? (Array.isArray(catRes.data) ? catRes.data : []);
+        setCategoriesList(
+          cats.map((c: any) => ({
+            id: c.id,
+            slug: c.slug,
+            name: c.name,
+          }))
+        );
+      })
+      .finally(() => {
+        setBrandLoading(false);
       });
-
-      setProducts(mapped);
-
-      // Extract unique categories for filter
-      const cats = Array.from(
-        new Set(
-          mapped.map(p => p.category_name).filter((c): c is string => Boolean(c))
-        )
-      );
-      if (cats.length > 0) {
-        setCategoriesList(cats);
-      }
-    } catch (err) {
-      console.error('Failed to load brand products:', err);
-    } finally {
-      setProductsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBrandDetail();
   }, [slug]);
 
+  // 2. Fetch Brand Products scoped strictly to brand slug
   useEffect(() => {
-    fetchBrandProducts();
-  }, [slug, currentPage, selectedSort, selectedCategory, inStockOnly]);
+    setProductsLoading(true);
+    const params: Record<string, any> = {
+      page: urlPage,
+      page_size: 24,
+    };
 
-  // Wishlist handler
-  const handleToggleWishlist = async (e: React.MouseEvent, prod: ProductItem) => {
-    e.stopPropagation();
-    if (!isAuthenticated) {
-      setPendingAction({ type: 'open-wishlist' });
-      store.openLoginModal();
-      return;
+    if (urlCategory) params.category = urlCategory;
+    if (urlMinPrice) params.min_price = urlMinPrice;
+    if (urlMaxPrice) params.max_price = urlMaxPrice;
+    if (urlMinRating) params.min_rating = urlMinRating;
+    if (urlInStock) params.in_stock = 'true';
+    if (urlOrdering) params.ordering = urlOrdering;
+
+    api
+      .get(`brands/${slug}/products/`, { params })
+      .then((res) => {
+        const prodData = res.data?.data ?? res.data?.products ?? [];
+        setProducts(prodData);
+        setMeta({
+          count: res.data?.count ?? prodData.length,
+          total_pages: res.data?.total_pages ?? 1,
+          page: res.data?.current_page ?? urlPage,
+          page_size: 24,
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to load brand products:', err);
+        setProducts([]);
+        setMeta({ count: 0, total_pages: 1, page: 1, page_size: 24 });
+      })
+      .finally(() => {
+        setProductsLoading(false);
+      });
+  }, [slug, urlCategory, urlMinPrice, urlMaxPrice, urlMinRating, urlInStock, urlOrdering, urlPage]);
+
+  // Helper to update URL params cleanly
+  const updateUrl = (updates: Record<string, string | null>) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+
+    Object.entries(updates).forEach(([key, val]) => {
+      if (val === null || val === '') {
+        current.delete(key);
+      } else {
+        current.set(key, val);
+      }
+    });
+
+    if (!('page' in updates)) {
+      current.delete('page');
     }
-    await toggleWishlist({
-      id: prod.id,
-      name: prod.name,
-      slug: prod.slug,
-      price: prod.pricing?.selling_price || 0,
-      image: prod.image || '',
-      category_name: prod.category_name || '',
-    });
+
+    const search = current.toString();
+    const queryStr = search ? `?${search}` : '';
+    router.push(`/brands/${slug}${queryStr}`);
   };
 
-  // Add to Cart handler
-  const handleAddToCart = (e: React.MouseEvent, prod: ProductItem) => {
-    e.stopPropagation();
-    store.addItemToCart({
-      id: prod.id,
-      name: prod.name,
-      slug: prod.slug,
-      price: prod.pricing?.selling_price || 0,
-      image: prod.image || '',
-      category: prod.category_name || '',
-      qty: 1,
-    });
-    store.showToast(`Added ${prod.name} to Bag!`);
+  const handleSelectCategory = (catSlug: string | null) => {
+    updateUrl({ category: catSlug });
   };
 
-  // Buy Now handler
-  const handleBuyNow = (e: React.MouseEvent, prod: ProductItem) => {
+  const handlePriceChange = (min: string | null, max: string | null) => {
+    updateUrl({ min_price: min, max_price: max });
+  };
+
+  const handleRatingChange = (rating: string | null) => {
+    updateUrl({ min_rating: rating });
+  };
+
+  const handleToggleInStock = () => {
+    updateUrl({ in_stock: urlInStock ? null : 'true' });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    updateUrl({ ordering: newSort });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    updateUrl({ page: String(newPage) });
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
+
+  const handleClearAll = () => {
+    router.push(`/brands/${slug}`);
+  };
+
+  // Active Filter Chips
+  const activeChips: ActiveChipItem[] = useMemo(() => {
+    const chips: ActiveChipItem[] = [];
+
+    if (urlCategory) {
+      const catObj = categoriesList.find((c) => c.slug === urlCategory);
+      chips.push({
+        id: 'category',
+        label: `Category: ${catObj?.name || urlCategory}`,
+        type: 'category',
+        onRemove: () => updateUrl({ category: null }),
+      });
+    }
+
+    if (urlMinPrice || urlMaxPrice) {
+      chips.push({
+        id: 'price',
+        label: `Price: ₹${urlMinPrice || '0'} - ₹${urlMaxPrice || '∞'}`,
+        type: 'price',
+        onRemove: () => updateUrl({ min_price: null, max_price: null }),
+      });
+    }
+
+    if (urlMinRating) {
+      chips.push({
+        id: 'rating',
+        label: `${urlMinRating}★ & Above`,
+        type: 'rating',
+        onRemove: () => updateUrl({ min_rating: null }),
+      });
+    }
+
+    if (urlInStock) {
+      chips.push({
+        id: 'in-stock',
+        label: 'In-Stock Only',
+        type: 'stock',
+        onRemove: () => updateUrl({ in_stock: null }),
+      });
+    }
+
+    return chips;
+  }, [urlCategory, urlMinPrice, urlMaxPrice, urlMinRating, urlInStock, categoriesList]);
+
+  // Cart & Wishlist Handlers
+  const handleAddToCart = (e: React.MouseEvent, p: any) => {
     e.stopPropagation();
-    store.handleBuyNowDirect({
-      id: prod.id,
-      name: prod.name,
-      slug: prod.slug,
-      price: prod.pricing?.selling_price || 0,
-      image: prod.image || '',
-      category: prod.category_name || '',
+    const rawImg = p.primary_image || (p.images && p.images[0]?.image) || p.image;
+    const price = p.pricing ? parseFloat(p.pricing.effective_price || p.pricing.selling_price || '0') : parseFloat(p.price || '0');
+    const mrp = p.pricing ? parseFloat(p.pricing.mrp || '0') : undefined;
+
+    const item = {
+      id: p.slug || p.id,
+      name: p.name,
+      category: p.category_name || brand?.name || 'Brand Product',
+      price: price,
       qty: 1,
-    });
+      image: getAbsoluteImageUrl(rawImg) || '/images/nsk_handpiece_portrait.png',
+      originalPrice: mrp && mrp > price ? mrp : undefined,
+      sku: p.sku,
+    };
+
+    if (!guardAction({ type: 'add-to-cart', payload: { item } })) return;
+    store.addItemToCart(item);
+    store.showToast(`Added ${p.name} to Bag!`);
+  };
+
+  const handleBuyNow = (e: React.MouseEvent, p: any) => {
+    e.stopPropagation();
+    const rawImg = p.primary_image || (p.images && p.images[0]?.image) || p.image;
+    const price = p.pricing ? parseFloat(p.pricing.effective_price || p.pricing.selling_price || '0') : parseFloat(p.price || '0');
+    const mrp = p.pricing ? parseFloat(p.pricing.mrp || '0') : undefined;
+
+    const item = {
+      id: p.slug || p.id,
+      name: p.name,
+      category: p.category_name || brand?.name || 'Brand Product',
+      price: price,
+      qty: 1,
+      image: getAbsoluteImageUrl(rawImg) || '/images/nsk_handpiece_portrait.png',
+      originalPrice: mrp && mrp > price ? mrp : undefined,
+      sku: p.sku,
+    };
+
+    if (!guardAction({ type: 'buy-now', payload: { item } })) return;
+    store.handleBuyNowDirect(item);
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent, p: any) => {
+    e.stopPropagation();
+    const rawImg = p.primary_image || (p.images && p.images[0]?.image) || p.image;
+    const price = p.pricing ? parseFloat(p.pricing.effective_price || p.pricing.selling_price || '0') : parseFloat(p.price || '0');
+    const mrp = p.pricing ? parseFloat(p.pricing.mrp || '0') : undefined;
+
+    const item = {
+      id: p.slug || p.id,
+      name: p.name,
+      category: p.category_name || brand?.name || 'Brand Product',
+      price: price,
+      qty: 1,
+      image: getAbsoluteImageUrl(rawImg) || '/images/nsk_handpiece_portrait.png',
+      originalPrice: mrp && mrp > price ? mrp : undefined,
+    };
+
+    if (!guardAction({ type: 'wishlist-toggle', payload: { item } })) return;
+    toggleWishlist(p);
   };
 
   const logoSrc = getAbsoluteImageUrl(brand?.logo_url || brand?.logo);
   const bannerSrc = getAbsoluteImageUrl(brand?.banner_image_url || brand?.banner_image);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-[108px] lg:pt-[180px]">
-
-      {/* ── BRAND HERO BANNER HEADER ── */}
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[180px] select-none text-left font-sans text-slate-800">
+      
+      {/* ── Brand Hero Header ── */}
       {brandLoading ? (
-        <div className="w-full h-[220px] sm:h-[300px] bg-slate-200 animate-pulse" />
+        <div className="w-full h-[240px] sm:h-[320px] bg-slate-200 animate-pulse" />
       ) : error ? (
         <div className="max-w-7xl mx-auto px-4 pt-10 text-center">
           <div className="bg-white rounded-2xl p-10 border border-slate-200 shadow-sm max-w-md mx-auto">
@@ -292,7 +338,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
             </p>
             <Link
               href="/brands"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white font-bold text-xs rounded-xl shadow-md"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" /> Back to All Brands
             </Link>
@@ -304,13 +350,12 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
             src={bannerSrc || '/images/brands_hero_bg.png'}
             alt={brand.name}
             loading="eager"
-            className="w-full h-[240px] sm:h-[320px] md:h-[380px] object-cover opacity-85 brightness-[0.95]"
+            className="w-full h-[240px] sm:h-[320px] md:h-[360px] object-cover opacity-85 brightness-[0.95]"
           />
 
-          {/* Overlay with brand details */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/85 to-slate-950/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20 py-6">
             <div className="max-w-5xl w-full flex flex-col md:flex-row md:items-center gap-6">
-
+              
               {/* Logo Card */}
               <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-2xl p-4 shadow-xl border border-slate-100 flex items-center justify-center shrink-0">
                 {logoSrc ? (
@@ -326,11 +371,11 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
                 )}
               </div>
 
-              {/* Brand Meta & Description */}
+              {/* Meta & Description */}
               <div className="space-y-2 text-white flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-3 py-1 bg-[#006670] text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full shadow-sm">
-                    Authorized Brand
+                    Authorized Brand Scope
                   </span>
                   {brand.country_of_origin && (
                     <span className="px-2.5 py-1 bg-white/10 backdrop-blur-md text-slate-200 text-[10px] font-bold tracking-wider uppercase rounded-full border border-white/20">
@@ -349,10 +394,13 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
                 </h1>
 
                 <p className="text-slate-300 text-xs sm:text-sm max-w-3xl line-clamp-3 leading-relaxed font-medium">
-                  {brand.short_description || brand.full_description || brand.description || `Explore 100% genuine ${brand.name} clinical equipment, instruments, and supplies directly from authorized channels.`}
+                  {brand.short_description ||
+                    brand.full_description ||
+                    brand.description ||
+                    `Explore 100% genuine ${brand.name} clinical equipment, instruments, and supplies directly from authorized channels.`}
                 </p>
 
-                {/* External Website & Contacts */}
+                {/* Contacts & Website */}
                 <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-300">
                   {brand.website_url && (
                     <a
@@ -383,9 +431,9 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
       ) : null}
 
       {!error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-
-          {/* ── Breadcrumb ── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          
+          {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500 mb-6">
             <Link href="/" className="hover:text-[#006670] transition-colors font-medium">
               Home
@@ -398,273 +446,251 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
             <span className="font-bold text-slate-900">{brand?.name || slug}</span>
           </nav>
 
-          {/* ── Filter Bar & Search ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Main Grid: Sidebar Filters + Products */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+            
+            {/* Sidebar (Brand filter hidden because context is locked to this brand) */}
+            <ListingFilterSidebar
+              categories={categoriesList}
+              selectedCategory={urlCategory}
+              onSelectCategory={handleSelectCategory}
+              hideBrandFilter={true}
+              minPrice={urlMinPrice}
+              maxPrice={urlMaxPrice}
+              onPriceChange={handlePriceChange}
+              minRating={urlMinRating}
+              onRatingChange={handleRatingChange}
+              inStockOnly={urlInStock}
+              onToggleInStock={handleToggleInStock}
+              hasActiveFilters={activeChips.length > 0}
+              onClearAll={handleClearAll}
+            />
 
-            {/* Live Search */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder={`Search ${brand?.name || 'brand'} products...`}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
+            {/* Mobile Drawer */}
+            <ListingFilterDrawer
+              isOpen={isMobileDrawerOpen}
+              onClose={() => setIsMobileDrawerOpen(false)}
+              totalCount={meta.count}
+              categories={categoriesList}
+              selectedCategory={urlCategory}
+              onSelectCategory={handleSelectCategory}
+              hideBrandFilter={true}
+              minPrice={urlMinPrice}
+              maxPrice={urlMaxPrice}
+              onPriceChange={handlePriceChange}
+              minRating={urlMinRating}
+              onRatingChange={handleRatingChange}
+              inStockOnly={urlInStock}
+              onToggleInStock={handleToggleInStock}
+              hasActiveFilters={activeChips.length > 0}
+              onClearAll={handleClearAll}
+            />
+
+            {/* Product Section */}
+            <main className="lg:col-span-3 flex flex-col">
+              <ListingToolbar
+                totalCount={meta.count}
+                itemName={`${brand?.name || 'Brand'} Products`}
+                isLoading={productsLoading}
+                onOpenMobileFilters={() => setIsMobileDrawerOpen(true)}
+                activeFiltersCount={activeChips.length}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                sortValue={urlOrdering}
+                sortOptions={defaultProductSortOptions}
+                onSortChange={handleSortChange}
               />
-            </div>
 
-            {/* Category Filter & Stock Filter & Sorting */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Category Filter */}
-              {categoriesList.length > 0 && (
-                <select
-                  value={selectedCategory}
-                  onChange={e => {
-                    setSelectedCategory(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#006670]/30 cursor-pointer"
-                >
-                  <option value="all">All Categories</option>
-                  {categoriesList.map(cat => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <ActiveFilterChips chips={activeChips} onClearAll={handleClearAll} />
 
-              {/* In Stock Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 select-none hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={e => {
-                    setInStockOnly(e.target.checked);
-                    setCurrentPage(1);
-                  }}
-                  className="rounded text-[#006670] focus:ring-[#006670]"
-                />
-                In Stock Only
-              </label>
-
-              {/* Sorting Select */}
-              <select
-                value={selectedSort}
-                onChange={e => {
-                  setSelectedSort(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#006670]/30 cursor-pointer"
-              >
-                <option value="newest">Newest First</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="rating">Customer Rating</option>
-              </select>
-            </div>
-          </div>
-
-          {/* ── PRODUCTS GRID ── */}
-          {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-              {Array.from({ length: 8 }).map((_, idx) => (
+              {productsLoading ? (
                 <div
-                  key={idx}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm animate-pulse flex flex-col justify-between h-[320px]"
+                  className={`grid gap-4 sm:gap-6 ${
+                    viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1'
+                  }`}
                 >
-                  <div className="w-full aspect-square bg-slate-200 rounded-xl mb-3" />
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
-                  <div className="h-9 bg-slate-200 rounded-xl w-full" />
-                </div>
-              ))}
-            </div>
-          ) : products.length === 0 ? (
-            /* Empty State */
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto shadow-sm my-8">
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">No Products Found</h3>
-              <p className="text-xs sm:text-sm text-slate-500 mb-6">
-                {searchQuery || selectedCategory !== 'all'
-                  ? 'No products match your filters. Try clearing your search or category filter.'
-                  : `Currently there are no products listed under ${brand?.name || 'this brand'}.`}
-              </p>
-              {(searchQuery || selectedCategory !== 'all' || inStockOnly) && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('all');
-                    setInStockOnly(false);
-                    setCurrentPage(1);
-                  }}
-                  className="px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#005159] transition-all shadow-md"
-                >
-                  Reset All Filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Product Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-                {products.map(prod => {
-                  const wishlisted = isInWishlist(prod.id);
-                  const isOutOfStock = prod.inventory && prod.inventory.stock_quantity <= 0;
-                  const mrp = prod.pricing?.mrp || 0;
-                  const price = prod.pricing?.selling_price || 0;
-                  const discount = prod.pricing?.discount_percent || (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0);
-
-                  return (
+                  {Array.from({ length: 6 }).map((_, idx) => (
                     <div
-                      key={prod.id}
-                      onClick={() => router.push(`/products/${prod.slug}`)}
-                      className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between overflow-hidden relative group cursor-pointer"
+                      key={idx}
+                      className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm animate-pulse flex flex-col justify-between h-[340px]"
                     >
-                      {/* Top Badges & Wishlist */}
-                      <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between pointer-events-none">
-                        {discount > 0 ? (
-                          <span className="bg-rose-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md shadow-sm pointer-events-auto">
-                            {discount}% OFF
-                          </span>
-                        ) : (
-                          <span />
-                        )}
+                      <div className="w-full aspect-square bg-slate-200 rounded-xl mb-3" />
+                      <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
+                      <div className="h-9 bg-slate-200 rounded-xl w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
+                /* Genuine Empty State */
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto shadow-sm my-6">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
+                    <Package className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 mb-2">No Products Match Filters</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mb-6">
+                    No products found under {brand?.name} matching your active filters. Try clearing your filters.
+                  </p>
+                  {activeChips.length > 0 && (
+                    <button
+                      onClick={handleClearAll}
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset Brand Filters</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-4 sm:gap-6 ${
+                    viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1'
+                  }`}
+                >
+                  {products.map((prod) => {
+                    const wishlisted = isInWishlist(prod.slug || prod.id);
+                    const isOutOfStock =
+                      prod.inventory?.stock_status === 'out_of_stock' ||
+                      (prod.inventory && prod.inventory.available_stock <= 0 && !prod.inventory.allow_backorders);
+                    const mrp = prod.pricing ? parseFloat(prod.pricing.mrp || '0') : 0;
+                    const price = prod.pricing ? parseFloat(prod.pricing.effective_price || prod.pricing.selling_price || '0') : parseFloat(prod.price || '0');
+                    const discount =
+                      prod.pricing?.discount_percentage ||
+                      (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0);
+                    const rawImg = prod.primary_image || (prod.images && prod.images[0]?.image) || prod.image;
+                    const imgUrl = getAbsoluteImageUrl(rawImg) || '/images/nsk_handpiece_portrait.png';
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleWishlist(e, prod)}
-                          className="pointer-events-auto p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white text-slate-400 hover:text-rose-500 transition-all hover:scale-110 active:scale-95"
-                          aria-label="Toggle Wishlist"
-                        >
-                          <Heart
-                            className={`w-4 h-4 transition-all ${wishlisted ? 'fill-rose-500 stroke-rose-500' : 'stroke-slate-400 fill-none'
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => router.push(`/products/${prod.slug || prod.id}`)}
+                        className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between overflow-hidden relative group cursor-pointer"
+                      >
+                        {/* Top Badges & Wishlist */}
+                        <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between pointer-events-none">
+                          {discount > 0 ? (
+                            <span className="bg-[#006670] text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md shadow-sm pointer-events-auto">
+                              {discount}% OFF
+                            </span>
+                          ) : (
+                            <span />
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleWishlist(e, prod)}
+                            className="pointer-events-auto p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white text-slate-400 hover:text-rose-500 transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                            aria-label="Toggle Wishlist"
+                          >
+                            <Heart
+                              className={`w-4 h-4 transition-all ${
+                                wishlisted ? 'fill-rose-500 stroke-rose-500' : 'stroke-slate-400 fill-none'
                               }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Image Container */}
-                      <div className="w-full aspect-square bg-slate-50 p-4 flex items-center justify-center overflow-hidden relative border-b border-slate-100">
-                        <img
-                          src={prod.image}
-                          alt={prod.name}
-                          loading="lazy"
-                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-
-                      {/* Content Body */}
-                      <div className="p-4 flex flex-col justify-between flex-grow">
-                        <div>
-                          {/* Brand & Category */}
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                            <span className="truncate max-w-[110px] text-[#006670]">{brand?.name || prod.brand_name}</span>
-                            {prod.category_name && <span className="truncate max-w-[90px]">{prod.category_name}</span>}
-                          </div>
-
-                          {/* Title */}
-                          <h3 className="font-bold text-xs sm:text-sm text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006670] transition-colors mb-2">
-                            {prod.name}
-                          </h3>
+                            />
+                          </button>
                         </div>
 
-                        <div>
-                          {/* Rating & Stock */}
-                          <div className="flex items-center justify-between my-2">
-                            <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/50 text-[10px] font-black text-amber-700">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              <span>{prod.rating ? prod.rating.toFixed(1) : '4.5'}</span>
-                            </div>
-                            <span className={`text-[10px] font-bold ${isOutOfStock ? 'text-rose-500' : 'text-emerald-600'}`}>
-                              {isOutOfStock ? 'Out of Stock' : 'In Stock'}
-                            </span>
-                          </div>
+                        {/* Image Container */}
+                        <div className="w-full aspect-square bg-slate-50 p-4 flex items-center justify-center overflow-hidden relative border-b border-slate-100">
+                          <img
+                            src={imgUrl}
+                            alt={prod.name}
+                            loading="lazy"
+                            className="w-full h-full max-h-full max-w-full object-contain object-center group-hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
 
-                          {/* Pricing */}
-                          <div className="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                            <div>
-                              <span className="text-sm sm:text-base font-black text-slate-900">
-                                ₹{price.toLocaleString('en-IN')}
+                        {/* Content */}
+                        <div className="p-4 flex flex-col justify-between flex-grow">
+                          <div>
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              <span className="truncate max-w-[110px] text-[#006670]">
+                                {brand?.name || prod.brand_name}
                               </span>
-                              {mrp > price && (
-                                <span className="text-[11px] text-slate-400 line-through ml-1.5 font-medium">
-                                  ₹{mrp.toLocaleString('en-IN')}
-                                </span>
+                              {prod.category_name && (
+                                <span className="truncate max-w-[90px]">{prod.category_name}</span>
                               )}
                             </div>
+
+                            <h3 className="font-bold text-xs sm:text-sm text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006670] transition-colors mb-2">
+                              {prod.name}
+                            </h3>
                           </div>
 
-                          {/* Actions: Add to Cart / Buy Now */}
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <button
-                              onClick={(e) => handleAddToCart(e, prod)}
-                              disabled={isOutOfStock}
-                              className="w-full py-2 bg-slate-100 hover:bg-[#006670] text-slate-700 hover:text-white disabled:opacity-50 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1"
-                            >
-                              <ShoppingCart className="w-3.5 h-3.5" /> Bag
-                            </button>
-                            <button
-                              onClick={(e) => handleBuyNow(e, prod)}
-                              disabled={isOutOfStock}
-                              className="w-full py-2 bg-[#006670] hover:bg-[#005159] text-white disabled:opacity-50 text-[11px] font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1"
-                            >
-                              <Zap className="w-3.5 h-3.5 fill-current" /> Buy
-                            </button>
+                          <div>
+                            <div className="flex items-center justify-between my-2">
+                              {(() => {
+                                const ratingVal = prod.average_rating ? parseFloat(prod.average_rating) : (prod.rating ? parseFloat(prod.rating) : 0);
+                                const reviewCount = prod.total_reviews ? parseInt(prod.total_reviews) : (prod.reviews ? parseInt(prod.reviews) : 0);
+                                if (reviewCount > 0 && ratingVal > 0) {
+                                  return (
+                                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/50 text-[10px] font-black text-amber-700">
+                                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                      <span>{ratingVal.toFixed(1)}</span>
+                                      <span className="text-slate-400 font-normal">({reviewCount})</span>
+                                    </div>
+                                  );
+                                }
+                                return <span />;
+                              })()}
+                              <span
+                                className={`text-[10px] font-bold ${
+                                  isOutOfStock ? 'text-rose-500' : 'text-emerald-600'
+                                }`}
+                              >
+                                {isOutOfStock ? 'Out of Stock' : 'In Stock'}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                              <div>
+                                <span className="text-sm sm:text-base font-black text-slate-900">
+                                  ₹{price.toLocaleString('en-IN')}
+                                </span>
+                                {mrp > price && (
+                                  <span className="text-[11px] text-slate-400 line-through ml-1.5 font-medium">
+                                    ₹{mrp.toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => handleAddToCart(e, prod)}
+                                disabled={isOutOfStock}
+                                className="w-full py-2 bg-slate-100 hover:bg-[#006670] text-slate-700 hover:text-white disabled:opacity-50 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" /> Bag
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleBuyNow(e, prod)}
+                                disabled={isOutOfStock}
+                                className="w-full py-2 bg-[#006670] hover:bg-[#005159] text-white disabled:opacity-50 text-[11px] font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <Zap className="w-3.5 h-3.5 fill-current" /> Buy
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* ── PAGINATION CONTROLS ── */}
-              {totalPages > 1 && (
-                <div className="mt-10 flex items-center justify-center gap-2 select-none">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors"
-                  >
-                    Previous
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }).map((_, idx) => {
-                      const pageNum = idx + 1;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 rounded-xl text-xs font-black transition-all ${currentPage === pageNum
-                              ? 'bg-[#006670] text-white shadow-md'
-                              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                            }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-colors"
-                  >
-                    Next
-                  </button>
+                    );
+                  })}
                 </div>
               )}
-            </>
-          )}
 
+              <ListingPagination
+                currentPage={meta.page || urlPage}
+                totalPages={meta.total_pages || 1}
+                totalCount={meta.count || 0}
+                pageSize={meta.page_size || 24}
+                onPageChange={handlePageChange}
+                itemName={`${brand?.name || 'Brand'} Products`}
+              />
+            </main>
+          </div>
         </div>
       )}
     </div>

@@ -282,7 +282,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                         : 'border border-slate-200/80 opacity-65 hover:opacity-100 hover:border-slate-350 hover:scale-[1.01]'
                       }`}
                   >
-                    <img src={img.src} alt={img.alt} loading="eager" className="w-full h-full object-contain rounded-xl transition-transform duration-300" />
+                    <img src={img.src} alt={img.alt} loading="eager" className="w-full h-full object-cover rounded-xl transition-transform duration-300" />
                   </button>
                 ))}
               </div>
@@ -378,7 +378,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                         : 'border border-slate-200/80 opacity-65 hover:opacity-100 hover:border-slate-350 hover:scale-[1.01]'
                       }`}
                   >
-                    <img src={img.src} alt={img.alt} loading="eager" className="w-full h-full object-contain rounded-xl transition-transform duration-300" />
+                    <img src={img.src} alt={img.alt} loading="eager" className="w-full h-full object-cover rounded-xl transition-transform duration-300" />
                   </button>
                 ))}
               </div>
@@ -506,20 +506,24 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
       </section>
 
       {/* 4. Prominent "WHAT'S INSIDE THIS COMBO" Section */}
-      <section id="combo-whats-inside" className="max-w-5xl mx-auto px-4 md:px-12 pb-12">
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/70 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-100">
+      <section id="combo-whats-inside" className="max-w-5xl mx-auto px-3 sm:px-4 md:px-12 pb-10 sm:pb-12 scroll-mt-24 sm:scroll-mt-28">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#006670]/[0.07] via-white/85 to-[#006670]/[0.03] backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-[#006670]/20 shadow-[0_12px_40px_rgba(0,102,112,0.08)]">
+          {/* Subtle Ambient Teal Glow Elements */}
+          <div className="absolute -top-24 -right-24 w-60 h-60 bg-[#006670]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-[#006670]/10">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#006670] shrink-0"></span>
-                <span className="text-[10px] font-black tracking-widest text-[#006670] uppercase">WHAT'S INSIDE THIS COMBO</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#006670] shadow-[0_0_10px_rgba(0,102,112,0.6)] shrink-0"></span>
+                <span className="text-[10px] font-black tracking-widest text-[#006670] uppercase">WHAT&apos;S INSIDE THIS COMBO</span>
               </div>
               <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight font-display">
                 Included Products in this Setup
               </h2>
             </div>
             {combo.combo_products && combo.combo_products.length > 0 && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs font-bold shrink-0 self-start sm:self-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#006670]/10 backdrop-blur-md border border-[#006670]/25 text-[#006670] text-xs font-bold shrink-0 self-start sm:self-auto shadow-xs">
                 <CheckCircle2 className="w-4 h-4 text-[#006670]" />
                 {combo.combo_products.length} {combo.combo_products.length === 1 ? 'Product' : 'Products'} Bundled
               </div>
@@ -528,7 +532,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
 
           {/* Product list */}
           {combo.combo_products && combo.combo_products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6">
               {combo.combo_products.map((item: any) => {
                 const product = item.product;
                 const sellingPrice = product.pricing?.selling_price ? parseFloat(product.pricing.selling_price) : null;
@@ -539,9 +543,9 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                   <Link
                     key={item.id}
                     href={`/products/${product.slug}`}
-                    className="group relative bg-[#FAFBFB] hover:bg-white border border-slate-200/70 hover:border-[#006670]/40 rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,102,112,0.08)] flex gap-4 items-center block text-left"
+                    className="group relative bg-white/75 hover:bg-white/95 backdrop-blur-md border border-[#006670]/15 hover:border-[#006670]/50 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:shadow-[0_12px_28px_rgba(0,102,112,0.12)] hover:-translate-y-0.5 flex gap-3 sm:gap-4 items-center block text-left"
                   >
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white border border-slate-200/60 flex items-center justify-center p-2 shrink-0 overflow-hidden relative group-hover:scale-102 transition-transform">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl bg-white/90 backdrop-blur-sm border border-[#006670]/15 flex items-center justify-center p-1.5 sm:p-2 shrink-0 overflow-hidden relative group-hover:scale-102 transition-transform shadow-xs">
                       {imgUrl ? (
                         <img
                           src={imgUrl}
@@ -552,26 +556,26 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                           }}
                         />
                       ) : (
-                        <Package className="w-8 h-8 text-slate-300" />
+                        <Package className="w-6 h-6 text-slate-300" />
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-[#006670] text-white uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                        <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black bg-gradient-to-r from-[#006670] to-[#00818d] text-white uppercase tracking-wider shadow-xs">
                           Qty: {item.quantity}
                         </span>
                         {product.brand_name && (
-                          <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-200/70 px-2 py-0.5 rounded-md">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase bg-slate-100/90 backdrop-blur-xs border border-slate-200/60 px-1.5 sm:px-2 py-0.5 rounded-md">
                             {product.brand_name}
                           </span>
                         )}
-                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <span className="text-[8.5px] sm:text-[9px] font-bold text-[#006670] bg-[#006670]/10 border border-[#006670]/20 px-1.5 sm:px-2 py-0.5 rounded-full inline-flex items-center gap-0.5">
                           <Check className="w-2.5 h-2.5 stroke-[3]" /> Included in Combo
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-slate-800 group-hover:text-[#006670] transition-colors line-clamp-1 leading-snug">
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#006670] transition-colors line-clamp-1 leading-snug">
                         {product.name}
                       </h3>
 
@@ -581,25 +585,25 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                         </p>
                       )}
 
-                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-200/40 pt-1.5">
-                        <div className="flex items-baseline gap-1.5">
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 border-t border-[#006670]/10 pt-1.5">
+                        <div className="flex flex-wrap items-baseline gap-1 sm:gap-1.5">
                           {sellingPrice !== null && (
-                            <span className="text-xs font-black text-slate-700">
+                            <span className="text-xs sm:text-sm font-black text-slate-700">
                               ₹{sellingPrice.toLocaleString('en-IN')}
                             </span>
                           )}
                           {mrp !== null && sellingPrice !== null && mrp > sellingPrice && (
-                            <span className="text-[10px] text-slate-400 line-through">
+                            <span className="text-[9px] sm:text-[10px] text-slate-400 line-through">
                               ₹{mrp.toLocaleString('en-IN')}
                             </span>
                           )}
-                          <span className="text-[9px] text-slate-400 font-medium">
+                          <span className="text-[8.5px] sm:text-[9px] text-slate-400 font-medium whitespace-nowrap">
                             (Individual value)
                           </span>
                         </div>
 
-                        <span className="text-[11px] font-bold text-[#006670] inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0">
-                          View details <ChevronRight className="w-3.5 h-3.5" />
+                        <span className="text-[10px] sm:text-[11px] font-bold text-[#006670] inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-auto">
+                          View details <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </span>
                       </div>
                     </div>
@@ -608,8 +612,8 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
               })}
             </div>
           ) : (
-            <div className="mt-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center">
-              <Package className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+            <div className="relative z-10 mt-6 bg-white/60 backdrop-blur-md border border-dashed border-[#006670]/30 rounded-2xl p-8 text-center">
+              <Package className="w-10 h-10 text-teal-600/50 mx-auto mb-2" />
               <h4 className="text-sm font-bold text-slate-700">No products have been added to this combo yet.</h4>
               <p className="text-xs text-slate-400 mt-1">This bundle setup is currently being prepared.</p>
             </div>
@@ -729,29 +733,33 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
       </section>
 
       {/* 6. Sticky bottom bar (appears when CTA scrolled out of view) */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 ${isStickyVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-        <div className="max-w-5xl mx-auto px-4 md:px-12 py-3 flex items-center gap-3">
-          {combo.thumbnail && (
-            <img src={getAbsoluteImageUrl(combo.thumbnail) || ''} alt={combo.title} className="w-10 h-10 rounded-xl object-cover border border-slate-100 shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-slate-800 truncate">{combo.title}</p>
-            <p className="text-[10px] text-[#006670] font-bold">₹{activePrice.toLocaleString('en-IN')}</p>
+      <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 pb-[max(0.5rem,env(safe-area-inset-bottom))] ${isStickyVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-12 py-2 sm:py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {combo.thumbnail && (
+              <img src={getAbsoluteImageUrl(combo.thumbnail) || ''} alt={combo.title} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-slate-100 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs font-black text-slate-800 truncate">{combo.title}</p>
+              <p className="text-[11px] sm:text-xs text-[#006670] font-black">₹{activePrice.toLocaleString('en-IN')}</p>
+            </div>
           </div>
-          <button
-            onClick={handleAddToCart}
-            disabled={combo.inventory <= 0}
-            className="px-4 h-9 rounded-lg bg-white border border-[#006670] text-[#006670] text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 transition-all shrink-0 disabled:opacity-50"
-          >
-            <ShoppingCart className="w-3.5 h-3.5" /> Cart
-          </button>
-          <button
-            onClick={handleBuyNow}
-            disabled={combo.inventory <= 0}
-            className="px-4 h-9 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all shrink-0 disabled:opacity-50"
-          >
-            Buy Now
-          </button>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={handleAddToCart}
+              disabled={combo.inventory <= 0}
+              className="px-2.5 sm:px-3.5 h-8 sm:h-9 rounded-lg bg-white border border-[#006670] text-[#006670] text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:bg-slate-50 transition-all shrink-0 disabled:opacity-50"
+            >
+              <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> <span className="hidden xs:inline sm:inline">Cart</span>
+            </button>
+            <button
+              onClick={handleBuyNow}
+              disabled={combo.inventory <= 0}
+              className="px-3 sm:px-4 h-8 sm:h-9 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all shrink-0 disabled:opacity-50 shadow-sm"
+            >
+              Buy Now
+            </button>
+          </div>
         </div>
       </div>
 

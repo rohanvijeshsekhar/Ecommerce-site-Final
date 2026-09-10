@@ -41,7 +41,7 @@ class ProductViewSet(BaseModelViewSet):
 
     filterset_class = ProductFilterSet
     search_fields    = ["name", "sku", "short_description", "tags"]
-    ordering_fields  = ["name", "created_at", "launched_at", "status", "effective_price_value", "total_units_sold", "relevance_score"]
+    ordering_fields  = ["name", "created_at", "launched_at", "status", "effective_price_value", "total_units_sold", "relevance_score", "average_rating"]
     ordering         = ["-created_at"]
 
     def get_queryset(self):
@@ -102,6 +102,8 @@ class ProductViewSet(BaseModelViewSet):
                 qs = qs.order_by("-launched_at", "-created_at")
             elif ordering_param in ["popular", "-popular"]:
                 qs = qs.order_by("-total_units_sold", "-total_reviews", "-created_at")
+            elif ordering_param in ["rating", "-rating"]:
+                qs = qs.order_by("-average_rating", "-total_reviews", "-created_at")
             elif ordering_param in ["relevance", "-relevance"]:
                 if query_param:
                     qs = qs.order_by("-relevance_score", "-created_at")

@@ -9,7 +9,7 @@ const WhyChooseBanner: React.FC = () => {
       {/* Desktop view */}
       <section className="hidden md:block w-full py-8 px-8 select-none">
         <div className="relative max-w-7xl mx-auto overflow-hidden rounded-[2.5rem] bg-[#EAF8F8] backdrop-blur-2xl p-8 border border-[#E2E8F0] shadow-[0_16px_40px_-12px_rgba(0,95,99,0.08)] ring-1 ring-slate-900/5">
-          
+
           {/* Ambient Glass Glow Orbs */}
           <div className="absolute -top-20 -left-20 w-72 h-72 bg-[#005F63]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[#45AFED]/15 rounded-full blur-3xl pointer-events-none" />
@@ -48,7 +48,7 @@ const WhyChooseBanner: React.FC = () => {
             </div>
 
             {/* Glass CTA Button */}
-            <a 
+            <a
               href="#about"
               className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold shadow-[0_4px_20px_0_rgba(0,95,99,0.22)] hover:shadow-[0_6px_24px_0_rgba(0,95,99,0.32)] transition-all duration-300 select-none cursor-pointer"
             >
@@ -62,7 +62,7 @@ const WhyChooseBanner: React.FC = () => {
       {/* Mobile view */}
       <section className="block md:hidden w-full py-5 px-4 select-none" id="why-choose-banner-mobile">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-emerald-50/90 via-white/85 to-teal-50/90 backdrop-blur-xl p-6 border border-white/90 shadow-[0_12px_32px_-8px_rgba(0,102,112,0.08)] ring-1 ring-slate-900/5">
-          
+
           {/* Mobile Ambient Orbs */}
           <div className="absolute -top-16 -left-16 w-48 h-48 bg-[#006670]/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
@@ -95,8 +95,8 @@ const WhyChooseBanner: React.FC = () => {
               </div>
               <span className="text-slate-800 font-bold">Expert Customer Support</span>
             </div>
-            
-            <a 
+
+            <a
               href="#about"
               className="group inline-flex items-center justify-center gap-2 w-full mt-2 px-5 py-3 rounded-full bg-[#006670] text-white text-xs font-bold shadow-[0_4px_16px_0_rgba(0,102,112,0.2)] transition-all select-none cursor-pointer"
             >

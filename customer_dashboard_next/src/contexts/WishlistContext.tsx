@@ -7,6 +7,21 @@ import { useStore } from '@/contexts/StoreContext';
 import { showToast } from '@/components/store/Toast';
 
 const GUEST_WISHLIST_KEY = 'faazo_guest_wishlist';
+const AUTH_WISHLIST_CACHE_KEY = 'faazo_auth_wishlist_cache';
+
+// Synchronously restore last known wishlist from cache on initial mount
+const getInitialWishlist = (): any[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const cached = localStorage.getItem(AUTH_WISHLIST_CACHE_KEY) || localStorage.getItem(GUEST_WISHLIST_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return [];
+};
 
 interface WishlistContextType {
   wishlistItems: any[];
@@ -23,11 +38,27 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { addItemToCart } = useStore();
 
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+
+  // Restore cached wishlist items after mounting on client to prevent SSR hydration mismatches
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(AUTH_WISHLIST_CACHE_KEY) || localStorage.getItem(GUEST_WISHLIST_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWishlistItems(parsed);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   // Helper to extract product ID
   const getProdId = (p: any): string => {
@@ -56,19 +87,33 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return wishlistProductIds.has(productId);
   };
 
+  // Sync cache for authenticated user
+  const updateAuthCache = (items: any[]) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(AUTH_WISHLIST_CACHE_KEY, JSON.stringify(items));
+      } catch (e) {
+        // ignore
+      }
+    }
+  };
+
   // Fetch Wishlist from API (for logged-in user) or localStorage (for guest)
   const fetchWishlist = async () => {
     if (isAuthenticated) {
       setLoading(true);
       try {
         const data = await wishlistService.getWishlist();
-        setWishlistItems(data.items || []);
+        const items = data.items || [];
+        setWishlistItems(items);
+        updateAuthCache(items);
       } catch (err: any) {
         if (err?.response?.status !== 401 && err?.response?.status !== 403) {
           console.error('Error fetching wishlist:', err);
         }
       } finally {
         setLoading(false);
+        setInitialFetchDone(true);
       }
     } else {
       // Guest user: read from localStorage
@@ -81,12 +126,17 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       } catch (err) {
         setWishlistItems([]);
+      } finally {
+        setLoading(false);
+        setInitialFetchDone(true);
       }
     }
   };
 
   // On auth state change, fetch or sync
   useEffect(() => {
+    if (authLoading) return; // Wait until initial authentication check completes
+
     if (isAuthenticated) {
       // Sync guest wishlist items to database upon login
       try {
@@ -107,9 +157,12 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       fetchWishlist();
     } else {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(AUTH_WISHLIST_CACHE_KEY);
+      }
       fetchWishlist();
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, authLoading, user?.id]);
 
   // Save guest wishlist to localStorage whenever it changes (if not authenticated)
   const updateGuestStorage = (items: any[]) => {
@@ -135,6 +188,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newItems = prevItems.filter((i) => getProdId(i.product || i) !== prodId);
       setWishlistItems(newItems);
       updateGuestStorage(newItems);
+      if (isAuthenticated) updateAuthCache(newItems);
       showToast('Removed from Wishlist');
 
       if (isAuthenticated) {
@@ -144,6 +198,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Rollback on failure
           setWishlistItems(prevItems);
           updateGuestStorage(prevItems);
+          if (isAuthenticated) updateAuthCache(prevItems);
           showToast('Failed to update Wishlist');
           return true;
         }
@@ -160,16 +215,20 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newItems = [newItem, ...prevItems];
       setWishlistItems(newItems);
       updateGuestStorage(newItems);
+      if (isAuthenticated) updateAuthCache(newItems);
       showToast('Added to Wishlist');
 
       if (isAuthenticated) {
         try {
           const res = await wishlistService.toggleWishlist(prodId);
-          setWishlistItems(res.wishlist?.items || newItems);
+          const finalItems = res.wishlist?.items || newItems;
+          setWishlistItems(finalItems);
+          updateAuthCache(finalItems);
         } catch (err) {
           // Rollback on failure
           setWishlistItems(prevItems);
           updateGuestStorage(prevItems);
+          if (isAuthenticated) updateAuthCache(prevItems);
           showToast('Failed to update Wishlist');
           return false;
         }
@@ -184,6 +243,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newItems = prevItems.filter((i) => getProdId(i.product || i) !== productId);
     setWishlistItems(newItems);
     updateGuestStorage(newItems);
+    if (isAuthenticated) updateAuthCache(newItems);
     showToast('Removed from Wishlist');
 
     if (isAuthenticated) {
@@ -192,6 +252,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (err) {
         setWishlistItems(prevItems);
         updateGuestStorage(prevItems);
+        if (isAuthenticated) updateAuthCache(prevItems);
         showToast('Failed to remove item');
       }
     }

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
-import { ArrowRight, ShoppingCart, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Zap, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { useStore } from '@/contexts/StoreContext';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 import type { CartItem } from '../../types/pendingAction';
 
@@ -33,6 +34,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
   onOpenLoginModal,
   initialCombos
 }) => {
+  const store = useStore();
   const { user, isAuthenticated } = useAuth();
   const { isInWishlist, toggleWishlist: dbToggleWishlist } = useWishlist();
   const isDealer = user?.role === 'dealer';
@@ -104,14 +106,57 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
       slug: combo.slug
     };
 
-    setCartItems((prev: CartItem[]) => {
-      const existing = prev.find(i => i.id === combo.id);
-      if (existing) {
-        return prev.map(i => i.id === combo.id ? { ...i, qty: i.qty + 1 } : i);
-      }
-      return [...prev, item];
-    });
+    if (store?.addItemToCart) {
+      store.addItemToCart(item);
+    } else {
+      setCartItems((prev: CartItem[]) => {
+        const existing = prev.find(i => i.id === combo.id);
+        if (existing) {
+          return prev.map(i => i.id === combo.id ? { ...i, qty: i.qty + 1 } : i);
+        }
+        return [...prev, item];
+      });
+    }
     showToast(`Added ${combo.title} to cart`);
+  };
+
+  const handleBuyNow = (combo: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      onOpenLoginModal();
+      return;
+    }
+
+    if (combo.inventory <= 0) {
+      showToast('Item is out of stock');
+      return;
+    }
+
+    const price = parseFloat(isDealer && combo.dealer_price ? combo.dealer_price : combo.effective_price);
+    const item: CartItem = {
+      id: combo.id,
+      name: combo.title,
+      category: 'Combo Deal',
+      price: price,
+      qty: 1,
+      image: getAbsoluteImageUrl(combo.thumbnail) || '/images/bestseller_scaler.png',
+      originalPrice: parseFloat(combo.original_price),
+      isCombo: true,
+      slug: combo.slug
+    };
+
+    if (store?.handleBuyNowDirect) {
+      store.handleBuyNowDirect(item);
+    } else {
+      setCartItems((prev: CartItem[]) => {
+        const existing = prev.find(i => i.id === combo.id);
+        if (existing) {
+          return prev.map(i => i.id === combo.id ? { ...i, qty: i.qty + 1 } : i);
+        }
+        return [...prev, item];
+      });
+    }
   };
 
   if (loading) {
@@ -267,18 +312,34 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                        <span className={`text-[10px] font-bold ${combo.inventory > 5 ? 'text-emerald-600' : combo.inventory > 0 ? 'text-amber-500' : 'text-rose-500'}`}>
-                          {combo.inventory > 5 ? 'In Stock' : combo.inventory > 0 ? 'Low Stock' : 'Out of Stock'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleAddToCart(combo, e)}
-                          disabled={combo.inventory <= 0}
-                          className="flex items-center justify-center p-2 text-white bg-[#006670] hover:bg-[#004e56] disabled:bg-slate-100 disabled:text-slate-400 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                        </button>
+                      <div className="space-y-2 mt-3 text-left">
+                        <div className="flex items-center justify-between text-[10px] font-bold">
+                          <span className={combo.inventory > 5 ? 'text-emerald-600' : combo.inventory > 0 ? 'text-amber-500' : 'text-rose-500'}>
+                            {combo.inventory > 5 ? 'In Stock' : combo.inventory > 0 ? 'Low Stock' : 'Out of Stock'}
+                          </span>
+                        </div>
+
+                        {/* Full Action Buttons: Bag & Buy */}
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddToCart(combo, e)}
+                            disabled={combo.inventory <= 0}
+                            className="py-2 px-2 bg-slate-100 hover:bg-[#E6F2F2] text-slate-700 hover:text-[#006670] font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span>Bag</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleBuyNow(combo, e)}
+                            disabled={combo.inventory <= 0}
+                            className="py-2 px-2 bg-[#006670] hover:bg-[#004e56] text-white font-black text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                          >
+                            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                            <span>Buy</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -329,46 +390,67 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
               <Link
                 key={combo.id}
                 href={`/combo-deals/${combo.slug}`}
-                className="w-64 bg-white border border-slate-200/50 rounded-2xl p-4 shrink-0 snap-start shadow-xs flex flex-col justify-between h-[360px] block text-left"
+                className="w-64 bg-white border border-slate-200/50 rounded-2xl p-3.5 shrink-0 snap-start shadow-xs flex flex-col justify-between h-[390px] block text-left relative"
               >
                 <div>
-                  <div className="relative aspect-square rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-1 mb-3 overflow-hidden">
+                  {/* Badge & Wishlist */}
+                  <div className="absolute top-5 left-5 right-5 z-10 flex items-center justify-between pointer-events-none">
+                    <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-black bg-[#006670] text-white uppercase tracking-wider shadow-xs pointer-events-auto">
+                      COMBO
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => toggleWishlist(combo, e)}
+                      className="pointer-events-auto p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md text-slate-400 hover:text-rose-500 cursor-pointer"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${isWishlisted(combo.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                    </button>
+                  </div>
+
+                  <div className="relative aspect-square rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-1 mb-2.5 overflow-hidden">
                     {combo.thumbnail ? (
-                      <img src={getAbsoluteImageUrl(combo.thumbnail)} alt={combo.title} className="w-full h-full object-cover" />
+                      <img src={getAbsoluteImageUrl(combo.thumbnail)} alt={combo.title} className="w-full h-full object-contain" />
                     ) : (
                       <Sparkles className="w-6 h-6 text-slate-300" />
                     )}
                   </div>
-                  <h3 className="text-xs font-bold text-slate-800 line-clamp-1 leading-snug">{combo.title}</h3>
+                  <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">{combo.title}</h3>
                   <p className="text-[10px] font-semibold text-teal-600 mt-0.5">{combo.combo_products.length} products included</p>
                 </div>
 
-                <div className="space-y-3 mt-3">
+                <div className="space-y-2 mt-2">
                   <div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-sm font-black text-slate-850">₹{activePrice.toLocaleString('en-IN')}</span>
+                      <span className="text-sm font-black text-slate-900">₹{activePrice.toLocaleString('en-IN')}</span>
                       {originalPriceVal > activePrice && (
-                        <span className="text-[10px] text-slate-450 line-through">₹{originalPriceVal.toLocaleString('en-IN')}</span>
+                        <span className="text-[10px] text-slate-400 line-through font-semibold">₹{originalPriceVal.toLocaleString('en-IN')}</span>
                       )}
                     </div>
                     {originalPriceVal > activePrice && (
-                      <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1 py-0.5 rounded-md inline-block mt-0.5">
+                      <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1 py-0.5 rounded inline-block mt-0.5">
                         SAVE {discountPct}%
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] font-bold">
-                    <span className={combo.inventory > 0 ? 'text-emerald-600' : 'text-rose-500'}>
-                      {combo.inventory > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={(e) => handleAddToCart(combo, e)}
                       disabled={combo.inventory <= 0}
-                      className="p-1.5 text-white bg-[#006670] rounded-lg cursor-pointer"
+                      className="py-1.5 bg-slate-100 text-slate-700 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40"
                     >
                       <ShoppingCart className="w-3.5 h-3.5" />
+                      <span>Bag</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleBuyNow(combo, e)}
+                      disabled={combo.inventory <= 0}
+                      className="py-1.5 bg-[#006670] text-white font-black text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40 shadow-xs"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                      <span>Buy</span>
                     </button>
                   </div>
                 </div>

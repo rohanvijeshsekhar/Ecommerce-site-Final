@@ -357,6 +357,71 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
+      {/* Account dropdown & global Navbar CSS styles */}
+      <style>{`
+        .nav-account-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 10px 14px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: #334155 !important;
+          background-color: transparent !important;
+          border: 1.5px solid transparent !important;
+          transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          text-decoration: none !important;
+        }
+        .nav-account-item:hover, 
+        .nav-account-item:active, 
+        .nav-account-item:focus {
+          background-color: #E6F4F6 !important;
+          border-color: rgba(0, 102, 112, 0.35) !important;
+          color: #006670 !important;
+          transform: translateX(4px) !important;
+          box-shadow: 0 4px 12px rgba(0, 102, 112, 0.08) !important;
+        }
+        .nav-account-item:hover svg, 
+        .nav-account-item:active svg,
+        .nav-account-item:focus svg {
+          color: #006670 !important;
+          transform: scale(1.15) !important;
+        }
+        .nav-account-signout {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 10px 14px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: #EF4444 !important;
+          background-color: transparent !important;
+          border: 1.5px solid transparent !important;
+          transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          text-align: left !important;
+        }
+        .nav-account-signout:hover, 
+        .nav-account-signout:active, 
+        .nav-account-signout:focus {
+          background-color: #FFF1F2 !important;
+          border-color: rgba(239, 68, 68, 0.35) !important;
+          color: #DC2626 !important;
+          transform: translateX(4px) !important;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08) !important;
+        }
+        .nav-account-signout:hover svg, 
+        .nav-account-signout:active svg,
+        .nav-account-signout:focus svg {
+          color: #DC2626 !important;
+          transform: scale(1.15) !important;
+        }
+      `}</style>
       {/* Background Overlay for categories mega menu, cart drawer, or mobile menu */}
       {(activeMenu === 'categories' || isCartOpen || isMobileMenuOpen) && (
         <div
@@ -489,7 +554,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 {/* Authenticated Dropdown */}
                 {isAuthenticated && isAccountOpen && user && (
                   <div
-                    className="absolute right-0 top-[56px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.06)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 top-[56px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.08)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
                     onMouseLeave={() => setIsAccountOpen(false)}
                   >
                     <div className="border-b border-slate-100 pb-3 mb-3">
@@ -504,52 +569,58 @@ const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       )}
                     </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {/* Dealer Portal link — only visible to dealer accounts */}
                       {user.role === 'dealer' && (
                         <li>
                           <a href="#dealer-portal" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('dealer-portal'); window.scrollTo(0, 0); }}
-                            className="flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-[#005B63] bg-[#005B63]/5 hover:bg-[#005B63]/10 transition-colors border border-[#005B63]/10 mb-2">
-                            <div className="flex items-center gap-2">
-                              <Handshake className="w-4 h-4 opacity-80" />
+                            className="group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-2 shadow-2xs cursor-pointer">
+                            <div className="flex items-center gap-2.5">
+                              <Handshake className="w-4 h-4 text-[#005B63] group-hover:scale-110 transition-transform duration-150" />
                               Dealer Portal
                             </div>
-                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                              user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                              user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-700' :
-                              'bg-amber-100 text-amber-700'
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                              user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                              user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                              'bg-amber-100 text-amber-800'
                             }`}>{user.dealer_status ?? 'pending'}</span>
                           </a>
                         </li>
                       )}
                       <li>
                         <a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('dashboard'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Compass className="w-4 h-4 opacity-70" /> Clinical Dashboard
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Clinical Dashboard
                         </a>
                       </li>
                       <li>
                         <a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('orders'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Package className="w-4 h-4 opacity-70" /> My Orders
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> My Orders
                         </a>
                       </li>
                       <li>
-                        <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('wishlist'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Heart className="w-4 h-4 opacity-70" /> Wishlist
+                        <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:scale-110 transition-all duration-150" /> Wishlist
+                        </a>
+                      </li>
+                      <li>
+                        <a href="#cart" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('cart'); window.scrollTo(0, 0); }}
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Cart
                         </a>
                       </li>
                       <li>
                         <a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('warranty'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Shield className="w-4 h-4 opacity-70" /> Warranty
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Warranty
                         </a>
                       </li>
-                      <li className="border-t border-slate-100 pt-2.5 mt-2.5">
+                      <li className="border-t border-slate-100 pt-2 mt-2">
                         <button onClick={() => { setIsAccountOpen(false); logout(); }}
-                          className="flex items-center w-full gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer text-left">
-                          <LogOut className="w-4 h-4 opacity-80" /> Sign Out
+                          className="group flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-200/60 border border-transparent active:bg-rose-100 hover:translate-x-1 transition-all duration-150 cursor-pointer text-left">
+                          <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-150" /> Sign Out
                         </button>
                       </li>
                     </ul>
@@ -569,7 +640,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <div className="relative">
                   <Heart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
+                  <span suppressHydrationWarning className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
                     {wishlistCount}
                   </span>
                 </div>
@@ -593,7 +664,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <div className="relative">
                   <ShoppingCart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
+                  <span suppressHydrationWarning className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
                     {cartItems.length}
                   </span>
                 </div>
@@ -658,14 +729,12 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1 sm:gap-1.5 relative shrink-0">
 
             {/* Account Icon — Mobile */}
-            <div
-              className="relative block"
-              onClick={() => setIsAccountOpen(!isAccountOpen)}
-            >
+            <div className="relative block">
               {isAuthenticated && user ? (
                 <>
                   {/* Avatar icon for small mobile (<640px) */}
                   <button
+                    onClick={(e) => { e.stopPropagation(); setIsAccountOpen(!isAccountOpen); }}
                     className="p-1 sm:hidden rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-[#006670] flex items-center justify-center"
                     aria-label="My Account"
                   >
@@ -676,6 +745,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Avatar chip for mobile tablet (>=640px) */}
                   <button
+                    onClick={(e) => { e.stopPropagation(); setIsAccountOpen(!isAccountOpen); }}
                     className={`hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border transition-all duration-200 cursor-pointer select-none
                       ${isAccountOpen
                         ? 'border-[#006670] bg-[#e6f3f5] text-[#006670]'
@@ -692,7 +762,8 @@ const Navbar: React.FC<NavbarProps> = ({
                   {/* Mobile authenticated dropdown */}
                   {isAccountOpen && (
                     <div
-                      className="absolute right-0 top-[48px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.06)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-[48px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.08)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
                       onMouseLeave={() => setIsAccountOpen(false)}
                     >
                       <div className="border-b border-slate-100 pb-3 mb-3">
@@ -707,14 +778,58 @@ const Navbar: React.FC<NavbarProps> = ({
                           </span>
                         )}
                       </div>
-                      <ul className="space-y-1.5">
-                        <li><a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Compass className="w-4 h-4 opacity-70" /> Clinical Dashboard</a></li>
-                        <li><a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Package className="w-4 h-4 opacity-70" /> My Orders</a></li>
-                        <li><a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Heart className="w-4 h-4 opacity-70" /> Wishlist</a></li>
-                        <li><a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Shield className="w-4 h-4 opacity-70" /> Warranty</a></li>
-                        <li className="border-t border-slate-100 pt-2.5 mt-2.5">
-                          <button onClick={() => { setIsAccountOpen(false); logout(); }} className="flex items-center w-full gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer text-left">
-                            <LogOut className="w-4 h-4 opacity-80" /> Sign Out
+                      <ul className="space-y-1">
+                        {/* Dealer Portal link — only visible to dealer accounts */}
+                        {user.role === 'dealer' && (
+                          <li>
+                            <a href="#dealer-portal" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('dealer-portal'); window.scrollTo(0, 0); }}
+                              className="group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-2 shadow-2xs cursor-pointer">
+                              <div className="flex items-center gap-2.5">
+                                <Handshake className="w-4 h-4 text-[#005B63] group-hover:scale-110 transition-transform duration-150" />
+                                Dealer Portal
+                              </div>
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                                user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                                'bg-amber-100 text-amber-800'
+                              }`}>{user.dealer_status ?? 'pending'}</span>
+                            </a>
+                          </li>
+                        )}
+                        <li>
+                          <a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('dashboard'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                            <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Clinical Dashboard
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('orders'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                            <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> My Orders
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                            <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:scale-110 transition-all duration-150" /> Wishlist
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#cart" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('cart'); window.scrollTo(0, 0); }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                            <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Cart
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('warranty'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                            <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Warranty
+                          </a>
+                        </li>
+                        <li className="border-t border-slate-100 pt-2 mt-2">
+                          <button onClick={() => { setIsAccountOpen(false); logout(); }}
+                            className="group flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-200/60 border border-transparent active:bg-rose-100 hover:translate-x-1 transition-all duration-150 cursor-pointer text-left">
+                            <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-150" /> Sign Out
                           </button>
                         </li>
                       </ul>
@@ -752,9 +867,9 @@ const Navbar: React.FC<NavbarProps> = ({
               aria-label="Wishlist"
             >
               <Heart className="w-[18px] h-[18px] stroke-[1.8]" />
-              {wishlistItems.length > 0 && (
-                <span className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
-                  {wishlistItems.length}
+              {wishlistCount > 0 && (
+                <span suppressHydrationWarning className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
+                  {wishlistCount}
                 </span>
               )}
             </button>

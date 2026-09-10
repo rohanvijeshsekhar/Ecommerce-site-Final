@@ -115,13 +115,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "warranty_months_override", "effective_warranty",
             # Assets
             "images", "primary_image", "image_url", "attributes", "documents",
+            # Ratings & Reviews
+            "average_rating", "total_reviews", "rating_distribution",
             # Phase 6A — pricing + inventory
             "pricing",
             "inventory",
             # Timestamps
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "slug", "is_published", "effective_warranty", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "slug", "is_published", "effective_warranty",
+            "average_rating", "total_reviews", "rating_distribution",
+            "created_at", "updated_at",
+        ]
 
     def get_primary_image(self, obj):
         img = obj.primary_image

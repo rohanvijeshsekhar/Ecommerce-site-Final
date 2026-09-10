@@ -22,5 +22,5 @@ export default async function CategorySlugPage({ params }: Props) {
   const { slug } = await params;
   const categoryName = getCategoryDisplayName(slug);
 
-  return <CategoryListingClient categoryName={categoryName} />;
+  return <CategoryListingClient slug={slug} categoryName={categoryName} />;
 }

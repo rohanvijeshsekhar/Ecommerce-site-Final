@@ -81,7 +81,8 @@ const FlipkartWishlist: React.FC<FlipkartWishlistProps> = ({
           {wishlistItems.map((item) => {
             const originalPrice = item.originalPrice || Math.round(item.price * 1.2);
             const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
-            const rating = item.rating || 4.8;
+            const rating = item.rating;
+            const reviews = item.total_reviews || (item as any).reviews;
 
             return (
               <div key={item.id} className="p-5 md:p-6 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between relative group hover:bg-[#F7FAF9]/25 transition-colors">
@@ -108,12 +109,14 @@ const FlipkartWishlist: React.FC<FlipkartWishlistProps> = ({
                     </p>
 
                     {/* Ratings Star Badge */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="bg-emerald-600 text-white text-[9.5px] font-black rounded px-1.5 py-0.5 flex items-center gap-0.5">
-                        {rating} <Star className="w-2.5 h-2.5 fill-white stroke-none mt-[-1px]" />
-                      </span>
-                      <span className="text-[10px] font-sans text-slate-400">(128)</span>
-                    </div>
+                    {rating && reviews && reviews > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-emerald-600 text-white text-[9.5px] font-black rounded px-1.5 py-0.5 flex items-center gap-0.5">
+                          {parseFloat(String(rating)).toFixed(1)} <Star className="w-2.5 h-2.5 fill-white stroke-none mt-[-1px]" />
+                        </span>
+                        <span className="text-[10px] font-sans text-slate-400">({reviews})</span>
+                      </div>
+                    ) : null}
 
                     {/* Pricing */}
                     <div className="flex items-baseline gap-2 pt-1">

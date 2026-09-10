@@ -27,6 +27,7 @@ export default function CategoryListingClient({ slug, categoryName }: CategoryLi
   return (
     <ProductListingPage
       category={categoryDisplayName}
+      categorySlug={slug}
       onBackToPortfolio={handleBackToPortfolio}
       onProductClick={handleProductClick}
       setCartItems={store.setCartItems}

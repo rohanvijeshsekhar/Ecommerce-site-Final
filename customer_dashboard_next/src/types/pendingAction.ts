@@ -12,6 +12,9 @@ export interface CartItem {
   image: string;
   originalPrice?: number;
   rating?: number;
+  average_rating?: string | number;
+  total_reviews?: number;
+  reviews?: number;
   isCombo?: boolean;
   slug?: string;
 }

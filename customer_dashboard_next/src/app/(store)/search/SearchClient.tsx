@@ -734,7 +734,7 @@ export default function SearchClient({
               />
 
               {/* Right Side Panel extending to the Left */}
-              <div className="w-[82vw] sm:w-[72vw] max-w-md bg-white h-full p-5 sm:p-6 space-y-5 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
+              <div className="w-[82vw] sm:w-[72vw] max-w-md bg-white h-full pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] px-5 sm:px-6 space-y-5 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
                 <div className="space-y-5">
                   {/* Drawer Header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -1128,17 +1128,31 @@ export default function SearchClient({
                             </h3>
 
                             {/* Rating Stars & Count */}
-                            <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3">
-                              <div className="flex items-center text-amber-400 gap-0.5">
-                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-300 stroke-slate-300" />
-                              </div>
-                              <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 ml-0.5">4.8</span>
-                              <span className="text-[10px] sm:text-xs font-medium text-slate-400 ml-0.5">(48)</span>
-                            </div>
+                            {(() => {
+                              const ratingVal = p.average_rating ? parseFloat(p.average_rating) : 0;
+                              const reviewCount = p.total_reviews ? parseInt(p.total_reviews) : 0;
+                              if (reviewCount > 0 && ratingVal > 0) {
+                                return (
+                                  <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3">
+                                    <div className="flex items-center text-amber-400 gap-0.5">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
+                                            i < Math.floor(ratingVal)
+                                              ? 'fill-amber-400 stroke-amber-400'
+                                              : 'text-slate-300 stroke-slate-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 ml-0.5">{ratingVal.toFixed(1)}</span>
+                                    <span className="text-[10px] sm:text-xs font-medium text-slate-400 ml-0.5">({reviewCount})</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             {/* Divider Line */}
                             <div className="border-b border-slate-100 mb-2 sm:mb-3" />
@@ -1237,14 +1251,30 @@ export default function SearchClient({
                               {p.name}
                             </h3>
 
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <div className="flex items-center text-amber-400">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star key={star} className="w-3 h-3 fill-current" />
-                                ))}
-                              </div>
-                              <span className="font-bold text-slate-700">4.8 (24 reviews)</span>
-                            </div>
+                            {(() => {
+                              const ratingVal = p.average_rating ? parseFloat(p.average_rating) : 0;
+                              const reviewCount = p.total_reviews ? parseInt(p.total_reviews) : 0;
+                              if (reviewCount > 0 && ratingVal > 0) {
+                                return (
+                                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <div className="flex items-center text-amber-400">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 ${
+                                            i < Math.floor(ratingVal)
+                                              ? 'fill-amber-400 stroke-amber-400'
+                                              : 'text-slate-300 stroke-slate-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="font-bold text-slate-700">{ratingVal.toFixed(1)} ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             <p className="text-xs text-slate-500 line-clamp-2 font-medium">
                               {p.description || 'High quality professional clinical equipment designed for durability and optimal performance.'}

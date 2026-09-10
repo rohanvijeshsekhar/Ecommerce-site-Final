@@ -300,10 +300,6 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
                 </div>
                 <div className="mt-3 space-y-1">
                   <h4 className="text-[11px] font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-[#006670] transition-colors">{rec.name}</h4>
-                  <div className="flex items-center gap-0.5 text-amber-500">
-                    <Star className="w-2.5 h-2.5 fill-amber-500 stroke-none" />
-                    <span className="text-[9px] font-bold text-slate-600 mt-0.5">{rec.rating}</span>
-                  </div>
                   <span className="text-xs font-black text-[#006670] font-display block pt-1">₹{rec.price.toLocaleString('en-IN')}</span>
                 </div>
               </div>
@@ -321,29 +317,25 @@ const recommendations = [
     id: 'rec-1',
     name: 'NSK Lubricating Spray (Pack of 3)',
     price: 3899,
-    rating: 4.8,
     image: '/images/bestseller_handpiece.png', // Fallback to handpiece placeholder for image consistency
   },
   {
     id: 'rec-2',
     name: 'Woodpecker Scaler Detachable Tips Set',
     price: 2499,
-    rating: 4.7,
     image: '/images/bestseller_scaler.png',
   },
   {
     id: 'rec-3',
     name: 'Broadband Curing Light Replacement Lens',
     price: 1899,
-    rating: 4.6,
     image: '/images/bestseller_curing.png',
   },
   {
     id: 'rec-4',
     name: 'Dental Turbine O-Ring Maintenance Kit',
     price: 999,
-    rating: 4.9,
-    image: '/images/bestseller_handpiece.png',
+    image: '/images/bestseller_materials.png',
   }
 ];
 

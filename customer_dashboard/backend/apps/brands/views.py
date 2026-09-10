@@ -136,6 +136,10 @@ class BrandViewSet(BaseModelViewSet):
     @action(detail=True, methods=["get"], url_path="products", permission_classes=[AllowAny])
     def products(self, request, slug=None):
         """GET /api/v1/brands/{slug}/products/ — list products for a specific brand."""
+        from decimal import Decimal
+        from django.db.models import F
+        from apps.categories.models import Category
+
         brand = self.get_object()
         qs = Product.objects.filter(
             brand=brand,
@@ -143,17 +147,49 @@ class BrandViewSet(BaseModelViewSet):
             status="active",
         ).select_related("brand", "category", "pricing", "inventory").prefetch_related("images")
 
-        # Category filter
+        # Category filter (supports slug, name, and descendants)
         cat = request.query_params.get("category")
         if cat and cat.lower() != "all":
-            qs = qs.filter(category__name__iexact=cat)
+            cat_obj = Category.objects.filter(Q(slug__iexact=cat) | Q(name__iexact=cat)).first()
+            if cat_obj:
+                cat_ids = [c.id for c in cat_obj.get_descendants(include_self=True)]
+                qs = qs.filter(category_id__in=cat_ids)
+            else:
+                qs = qs.filter(Q(category__slug__iexact=cat) | Q(category__name__iexact=cat))
+
+        # Price filters
+        min_price = request.query_params.get("min_price")
+        if min_price:
+            try:
+                qs = qs.filter(pricing__selling_price__gte=Decimal(min_price))
+            except (ValueError, TypeError):
+                pass
+
+        max_price = request.query_params.get("max_price")
+        if max_price:
+            try:
+                qs = qs.filter(pricing__selling_price__lte=Decimal(max_price))
+            except (ValueError, TypeError):
+                pass
+
+        # Rating filter
+        min_rating = request.query_params.get("min_rating")
+        if min_rating:
+            try:
+                qs = qs.filter(average_rating__gte=Decimal(min_rating))
+            except (ValueError, TypeError):
+                pass
 
         # In-stock filter
         if request.query_params.get("in_stock") in ["true", "1"]:
-            qs = qs.filter(inventory__stock_quantity__gt=0)
+            qs = qs.filter(
+                Q(inventory__allow_backorders=True)
+                | Q(inventory__current_stock__gt=F("inventory__reserved_stock"))
+                | Q(inventory__isnull=True)
+            )
 
         # Search filter
-        search = request.query_params.get("search")
+        search = request.query_params.get("search") or request.query_params.get("q")
         if search:
             qs = qs.filter(
                 Q(name__icontains=search) |
@@ -163,16 +199,16 @@ class BrandViewSet(BaseModelViewSet):
 
         # Sorting
         sort = request.query_params.get("ordering") or request.query_params.get("sort")
-        if sort == "price_asc":
+        if sort in ["price_asc", "price"]:
             qs = qs.order_by("pricing__selling_price", "-created_at")
-        elif sort == "price_desc":
+        elif sort in ["price_desc", "-price"]:
             qs = qs.order_by("-pricing__selling_price", "-created_at")
-        elif sort == "newest":
-            qs = qs.order_by("-created_at")
-        elif sort == "rating":
-            qs = qs.order_by("-rating", "-created_at")
+        elif sort in ["newest", "-newest"]:
+            qs = qs.order_by("-launched_at", "-created_at")
+        elif sort in ["rating", "-rating"]:
+            qs = qs.order_by("-average_rating", "-total_reviews", "-created_at")
         else:
-            qs = qs.order_by("sort_order", "-created_at")
+            qs = qs.order_by("-created_at")
 
         paginator = PageNumberPagination()
         paginator.page_size = int(request.query_params.get("page_size", 24))

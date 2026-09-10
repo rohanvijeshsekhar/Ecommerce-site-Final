@@ -1,3 +1,6 @@
+from decimal import Decimal
+from django.db.models import Q, F, Value
+from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -6,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from apps.common.permissions import IsAdmin
+from apps.categories.models import Category
 
 from .models import BestSellerBanner, BestSellerProduct
 from .serializers import BestSellerBannerSerializer, BestSellerProductSerializer, BestSellerProductAdminSerializer
@@ -71,6 +75,8 @@ class BestSellerProductListView(APIView):
     GET /api/v1/bestsellers/products/
 
     Returns list of active Best Seller products ordered by display_order.
+    Supports contextual filtering by category, brand, price, rating, in_stock.
+    Preserves admin-curated display_order by default.
     """
 
     permission_classes = [AllowAny]
@@ -91,8 +97,91 @@ class BestSellerProductListView(APIView):
             )
             .select_related("product", "product__brand", "product__category", "product__pricing", "product__inventory")
             .prefetch_related("product__images")
-            .order_by("display_order", "-created_at")
         )
+
+        # 1. Category filter (including descendants)
+        cat_param = request.query_params.get("category", "").strip()
+        if cat_param:
+            cat_tokens = [t.strip() for t in cat_param.split(",") if t.strip()]
+            cat_q = Q()
+            for val in cat_tokens:
+                cat_q |= (
+                    Q(slug__iexact=val)
+                    | Q(name__iexact=val)
+                    | Q(id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
+                )
+            categories = Category.objects.filter(cat_q)
+            if categories.exists():
+                cat_ids = set()
+                for cat in categories:
+                    for desc in cat.get_descendants(include_self=True):
+                        cat_ids.add(desc.id)
+                qs = qs.filter(product__category_id__in=cat_ids)
+            else:
+                qs = qs.none()
+
+        # 2. Brand filter (multi-select)
+        brand_param = request.query_params.get("brand", "").strip()
+        if brand_param:
+            brand_tokens = [t.strip() for t in brand_param.split(",") if t.strip()]
+            brand_q = Q()
+            for val in brand_tokens:
+                brand_q |= (
+                    Q(product__brand__slug__iexact=val)
+                    | Q(product__brand__name__iexact=val)
+                    | Q(product__brand__id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
+                )
+            qs = qs.filter(brand_q)
+
+        # 3. Price filter
+        min_price = request.query_params.get("min_price")
+        if min_price:
+            try:
+                qs = qs.filter(product__pricing__selling_price__gte=Decimal(min_price))
+            except (ValueError, TypeError):
+                pass
+
+        max_price = request.query_params.get("max_price")
+        if max_price:
+            try:
+                qs = qs.filter(product__pricing__selling_price__lte=Decimal(max_price))
+            except (ValueError, TypeError):
+                pass
+
+        # 4. Rating filter
+        min_rating = request.query_params.get("min_rating")
+        if min_rating:
+            try:
+                qs = qs.filter(product__average_rating__gte=Decimal(min_rating))
+            except (ValueError, TypeError):
+                pass
+
+        # 5. In-stock filter
+        in_stock = request.query_params.get("in_stock")
+        if in_stock in ["true", "True", "1"]:
+            qs = qs.filter(
+                Q(product__inventory__allow_backorders=True)
+                | Q(product__inventory__current_stock__gt=F("product__inventory__reserved_stock"))
+                | Q(product__inventory__isnull=True)
+            )
+
+        # 6. Sorting / Ordering (preserve curated display_order by default)
+        ordering_param = request.query_params.get("ordering", "").strip()
+        if ordering_param in ["price_asc", "price"]:
+            qs = qs.annotate(
+                effective_price_val=Coalesce(F("product__pricing__selling_price"), Value(Decimal("0.00")))
+            ).order_by("effective_price_val", "display_order", "-created_at")
+        elif ordering_param in ["price_desc", "-price"]:
+            qs = qs.annotate(
+                effective_price_val=Coalesce(F("product__pricing__selling_price"), Value(Decimal("0.00")))
+            ).order_by("-effective_price_val", "display_order", "-created_at")
+        elif ordering_param in ["newest", "-newest"]:
+            qs = qs.order_by("-product__launched_at", "-product__created_at")
+        elif ordering_param in ["rating", "-rating"]:
+            qs = qs.order_by("-product__average_rating", "-product__total_reviews", "display_order")
+        else:
+            # DEFAULT: PRESERVE ADMIN CURATION ORDER
+            qs = qs.order_by("display_order", "-created_at")
 
         paginator = BestSellerPagination()
         page = paginator.paginate_queryset(qs, request)
