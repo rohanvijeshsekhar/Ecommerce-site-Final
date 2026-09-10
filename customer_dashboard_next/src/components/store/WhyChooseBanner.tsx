@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { ShieldCheck, Truck, Users, Headphones, ArrowRight } from 'lucide-react';
 
 const WhyChooseBanner: React.FC = () => {
@@ -48,13 +49,13 @@ const WhyChooseBanner: React.FC = () => {
             </div>
 
             {/* Glass CTA Button */}
-            <a
-              href="#about"
+            <Link
+              href="/products"
               className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold shadow-[0_4px_20px_0_rgba(0,95,99,0.22)] hover:shadow-[0_6px_24px_0_rgba(0,95,99,0.32)] transition-all duration-300 select-none cursor-pointer"
             >
               <span>Explore Now</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -96,13 +97,13 @@ const WhyChooseBanner: React.FC = () => {
               <span className="text-slate-800 font-bold">Expert Customer Support</span>
             </div>
 
-            <a
-              href="#about"
+            <Link
+              href="/products"
               className="group inline-flex items-center justify-center gap-2 w-full mt-2 px-5 py-3 rounded-full bg-[#006670] text-white text-xs font-bold shadow-[0_4px_16px_0_rgba(0,102,112,0.2)] transition-all select-none cursor-pointer"
             >
               <span>Explore Now</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       </section>

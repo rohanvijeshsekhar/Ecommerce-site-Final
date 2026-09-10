@@ -150,6 +150,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const modalScrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      if (modalScrollRef.current) {
+        modalScrollRef.current.scrollTop = 0;
+      }
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, mode]);
+
   if (!isOpen) return null;
 
   const resetForm = () => {
@@ -440,10 +456,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4 overflow-y-auto overscroll-contain"
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-start md:items-center justify-center p-0 md:p-4 overflow-y-auto overscroll-contain"
       onClick={(e) => { if (e.target === e.currentTarget) { onClose(); resetForm(); } }}
     >
-      <div className="relative w-full h-[100dvh] md:h-auto md:max-w-[800px] min-h-[100dvh] md:min-h-[520px] bg-white rounded-none md:rounded-[28px] shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col md:flex-row my-0 md:my-4"
+      <div
+        ref={modalScrollRef}
+        className="relative w-full h-auto min-h-[100dvh] md:min-h-[520px] md:max-w-[800px] bg-white rounded-none md:rounded-[28px] shadow-2xl flex flex-col md:flex-row my-0 md:my-auto overflow-y-auto md:overflow-hidden"
       >
         {/* ══════════════════════ LEFT PANEL ══════════════════════ */}
         <div
@@ -511,7 +529,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </button>
 
           {/* Mobile Teal Header Banner */}
-          <div className="block md:hidden pt-[calc(env(safe-area-inset-top,0px)+3.25rem)] pb-14 px-5 relative overflow-hidden min-h-[calc(env(safe-area-inset-top,0px)+175px)] flex flex-col justify-end select-none">
+          <div className="block md:hidden pt-[max(calc(env(safe-area-inset-top,0px)+1.75rem),2rem)] pb-9 px-5 relative overflow-hidden min-h-[140px] flex flex-col justify-end select-none">
             {/* Background pattern */}
             <div className="absolute inset-0 z-0 bg-white">
               <img
@@ -524,7 +542,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             {/* Close button */}
             <button
               onClick={() => { onClose(); resetForm(); }}
-              className="absolute top-[calc(env(safe-area-inset-top,0px)+0.75rem)] right-3.5 z-30 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs hover:bg-white flex items-center justify-center text-slate-600 border border-slate-200/60 transition-colors cursor-pointer active:scale-95"
+              className="absolute top-[max(calc(env(safe-area-inset-top,0px)+0.5rem),0.75rem)] right-3.5 z-30 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs hover:bg-white flex items-center justify-center text-slate-600 border border-slate-200/60 transition-colors cursor-pointer active:scale-95"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
@@ -535,15 +553,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => handleModeChange('login')}
-                className="absolute top-[calc(env(safe-area-inset-top,0px)+0.75rem)] left-3.5 z-30 text-[#006670] hover:text-[#004e56] text-xs font-bold flex items-center gap-1 cursor-pointer bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-[#006670]/20 shadow-xs active:scale-95 transition-transform"
+                className="absolute top-[max(calc(env(safe-area-inset-top,0px)+0.5rem),0.75rem)] left-3.5 z-30 text-[#006670] hover:text-[#004e56] text-xs font-bold flex items-center gap-1 cursor-pointer bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-[#006670]/20 shadow-xs active:scale-95 transition-transform"
               >
                 ← Back to Sign In
               </button>
             )}
 
             {/* Banner Text */}
-            <div className="relative z-10">
-              <h2 className="text-[#004e56] text-lg font-black leading-tight tracking-tight max-w-[280px]">
+            <div className="relative z-10 pt-4">
+              <h2 className="text-[#004e56] text-base sm:text-lg font-black leading-tight tracking-tight max-w-[280px]">
                 {mobileHeaders[mode].title}
               </h2>
               <p className="text-[#006670] text-[11px] mt-1 font-semibold max-w-[280px]">
@@ -580,7 +598,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Main form content card */}
-          <div className="flex-grow bg-white rounded-t-[32px] md:rounded-none -mt-7 md:mt-0 z-10 relative px-4 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] md:px-6 md:pt-4 md:pb-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)] md:shadow-none">
+          <div className="flex-grow bg-white rounded-t-[28px] md:rounded-none -mt-4 md:mt-0 z-10 relative px-4 pt-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] md:px-6 md:pt-4 md:pb-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)] md:shadow-none">
             {/* Heading section */}
             <div className="mb-4 md:mb-5">
               {/* Mobile View Title Card */}

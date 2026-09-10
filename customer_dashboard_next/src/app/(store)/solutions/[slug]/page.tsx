@@ -380,53 +380,55 @@ export default function SolutionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] lg:pt-[160px] pb-24 text-left select-none">
+    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] sm:pt-[110px] lg:pt-[160px] pb-24 text-left select-none">
       {/* Banner & Header */}
-      <div className="relative w-full h-[320px] md:h-[380px] bg-slate-950 overflow-hidden">
+      <div className="relative w-full min-h-[300px] sm:min-h-[350px] md:min-h-[380px] bg-slate-950 overflow-hidden flex flex-col justify-between">
         <img
           src={getAbsoluteImageUrl(solution.banner || solution.thumbnail || '/images/hero1_ecommerce.png')}
           alt={solution.title}
-          className="w-full h-full object-cover opacity-50 brightness-90"
+          className="absolute inset-0 w-full h-full object-cover opacity-45 brightness-90"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/40" />
 
-        <div className="absolute inset-0 max-w-7xl mx-auto px-6 md:px-8 flex flex-col justify-between pt-5 pb-10 md:pb-14">
-          <div className="flex items-center gap-3">
+        <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 md:px-8 pt-5 sm:pt-7 md:pt-9 pb-7 sm:pb-9 md:pb-11 flex flex-col justify-start gap-4 sm:gap-5 md:gap-6 flex-grow">
+          {/* Breadcrumb & Back Navigation */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               onClick={() => router.push('/')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-bold transition-all border border-white/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 backdrop-blur-md text-white text-[11px] sm:text-xs font-bold transition-all border border-white/20 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Back to Homepage</span>
             </button>
             <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-300/80">
-              <span className="hover:text-white cursor-pointer" onClick={() => router.push('/')}>Home</span>
+              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => router.push('/')}>Home</span>
               <span>/</span>
-              <span className="hover:text-white cursor-pointer" onClick={() => router.push('/#solutions')}>Solutions</span>
+              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => router.push('/#solutions')}>Solutions</span>
               <span>/</span>
               <span className="text-teal-300 font-semibold">{solution.title}</span>
             </div>
           </div>
 
-          <div className="max-w-3xl -translate-y-2 md:-translate-y-4">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#005F63] text-white text-xs font-bold tracking-wider uppercase mb-2.5">
-              <Sparkles className="w-3.5 h-3.5" />
+          {/* Hero Content */}
+          <div className="max-w-3xl mt-1.5 sm:mt-3 md:mt-4">
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-[#005F63] text-white text-[10px] sm:text-xs font-black tracking-wider uppercase mb-1.5 sm:mb-2 shadow-xs">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300" />
               <span>Clinical Treatment Solution</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight font-display mb-2.5">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight font-display mb-1.5 sm:mb-2 leading-tight">
               {solution.title}
             </h1>
-            <p className="text-sm md:text-base font-medium text-slate-200 leading-relaxed mb-3.5">
+            <p className="text-xs sm:text-sm md:text-base font-medium text-slate-200 leading-relaxed mb-2.5 sm:mb-3.5 max-w-2xl line-clamp-3 sm:line-clamp-none">
               {solution.short_description}
             </p>
-            <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs font-semibold text-slate-300">
-              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
-                <Package className="w-4 h-4 text-teal-300" />
-                {solution.product_count || solution.products?.length || 0} Clinical Products
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-semibold text-slate-300">
+              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10">
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300 shrink-0" />
+                <span>{solution.product_count || solution.products?.length || 0} Clinical Products</span>
               </span>
-              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                100% Certified Genuine Equipment
+              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10">
+                <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                <span>100% Certified Genuine</span>
               </span>
             </div>
           </div>
@@ -434,19 +436,19 @@ export default function SolutionDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
         {solution.description && (
-          <div className="bg-white rounded-2xl p-6 md:p-8 border border-[#E2E8F0] shadow-xs mb-8">
-            <h3 className="text-lg font-extrabold text-slate-800 tracking-tight mb-2 font-display">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-xs mb-5 sm:mb-8">
+            <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight mb-1.5 sm:mb-2 font-display">
               Clinical Workflow Overview
             </h3>
-            <p className="text-sm text-slate-600 leading-relaxed font-sans">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
               {solution.description}
             </p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
           {/* Desktop Filter Sidebar */}
           <ListingFilterSidebar
             categories={availableCategories}
@@ -468,7 +470,7 @@ export default function SolutionDetailPage() {
           />
 
           {/* Main Listing Section */}
-          <div className="lg:col-span-3 space-y-5">
+          <div className="lg:col-span-3 space-y-4 sm:space-y-5">
             {/* Unified Toolbar */}
             <ListingToolbar
               totalCount={displayProducts.length}
@@ -490,9 +492,9 @@ export default function SolutionDetailPage() {
 
             {/* Product Grid */}
             {displayProducts.length === 0 ? (
-              <div className="bg-white rounded-3xl p-16 text-center border border-[#E2E8F0] shadow-xs">
-                <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h4 className="text-base font-bold text-slate-800">No products found</h4>
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-10 sm:p-16 text-center border border-slate-200/80 shadow-xs">
+                <Package className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
+                <h4 className="text-sm sm:text-base font-bold text-slate-800">No products found</h4>
                 <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
                   {hasActiveFilters ? 'No products match your selected filters in this clinical solution.' : 'There are no products currently mapped to this solution.'}
                 </p>
@@ -500,14 +502,20 @@ export default function SolutionDetailPage() {
                   <button
                     type="button"
                     onClick={handleClearAll}
-                    className="mt-5 px-5 py-2.5 bg-[#005F63] hover:bg-[#004e56] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors cursor-pointer"
+                    className="mt-4 sm:mt-5 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#005F63] hover:bg-[#004e56] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors cursor-pointer active:scale-95 shadow-xs"
                   >
                     Clear All Filters
                   </button>
                 )}
               </div>
             ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              <div
+                className={
+                  viewMode === 'grid'
+                    ? 'grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-6'
+                    : 'space-y-3 sm:space-y-4'
+                }
+              >
                 {displayProducts.map((p) => {
                   const prodId = p.product_id || p.id;
                   const name = p.product_name || p.name || 'Clinical Dental Product';
@@ -523,22 +531,112 @@ export default function SolutionDetailPage() {
                   const wishlisted = isInWishlist(String(prodId));
                   const discount = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
+                  if (viewMode === 'list') {
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => handleProductCardClick(p)}
+                        className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 cursor-pointer group select-none"
+                      >
+                        <div className="w-full sm:w-32 h-36 sm:h-32 bg-slate-50/80 rounded-xl p-2 shrink-0 flex items-center justify-center border border-slate-100 relative overflow-hidden">
+                          <img
+                            src={image}
+                            alt={name}
+                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                          />
+                          {discount > 0 && (
+                            <span className="absolute top-2 left-2 bg-[#006670] text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded shadow-xs">
+                              {discount}% OFF
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleWishlist(e, prodId)}
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-xs flex items-center justify-center text-slate-400 hover:text-rose-500 cursor-pointer"
+                            title="Wishlist"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${wishlisted ? 'fill-rose-500 stroke-rose-500 text-rose-500' : 'stroke-slate-400 fill-none'}`} />
+                          </button>
+                        </div>
+
+                        <div className="flex-1 min-w-0 w-full space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
+                            <span className="text-[#006670]">{brand || 'FAAZO'}</span>
+                            {category && <span>{category}</span>}
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 group-hover:text-[#006670] transition-colors line-clamp-2">
+                            {name}
+                          </h4>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            {totalReviews > 0 && rating > 0 && (
+                              <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 border border-amber-200/60">
+                                <span>★</span>
+                                <span>{rating.toFixed(1)}</span>
+                                <span className="text-amber-600/70">({totalReviews})</span>
+                              </div>
+                            )}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${inStock ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                              {inStock ? 'In Stock' : 'Out of Stock'}
+                            </span>
+                          </div>
+
+                          <div className="pt-2 flex items-center justify-between gap-3 flex-wrap">
+                            <div>
+                              <span className="text-base sm:text-lg font-black text-slate-900 font-display">
+                                {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Price on Request'}
+                              </span>
+                              {mrp > price && (
+                                <span className="text-xs text-slate-400 line-through ml-2">
+                                  ₹{mrp.toLocaleString('en-IN')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => handleAddToCart(e, p)}
+                                disabled={!inStock}
+                                className={`py-1.5 px-3 rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1 ${
+                                  alreadyInCart
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                                    : 'bg-white border border-[#006670]/30 hover:border-[#006670] text-[#006670]'
+                                }`}
+                              >
+                                {alreadyInCart ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+                                <span>{alreadyInCart ? 'In Cart' : 'Cart'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleBuyNow(e, p)}
+                                disabled={!inStock}
+                                className="py-1.5 px-3.5 bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                              >
+                                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                                <span>Buy Now</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={p.id}
                       onClick={() => handleProductCardClick(p)}
-                      className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs hover:shadow-[0_14px_30px_rgba(0,95,99,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group select-none"
+                      className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-[0_14px_30px_rgba(0,95,99,0.12)] hover:-translate-y-1 sm:hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group select-none"
                     >
                       {/* Top Badges & Wishlist */}
-                      <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="absolute top-2 sm:top-2.5 left-2 sm:left-2.5 right-2 sm:right-2.5 z-10 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-1 flex-wrap">
                           {p.is_featured ? (
-                            <span className="inline-flex items-center gap-1 bg-[#005F63] text-white text-[9.5px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
-                              <Sparkles className="w-3 h-3 text-amber-300" />
-                              Featured
+                            <span className="inline-flex items-center gap-1 bg-[#005F63] text-white text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md shadow-xs">
+                              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300" />
+                              <span className="hidden sm:inline">Featured</span>
                             </span>
                           ) : discount > 0 ? (
-                            <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md shadow-xs">
+                            <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
                               {discount}% OFF
                             </span>
                           ) : null}
@@ -547,12 +645,12 @@ export default function SolutionDetailPage() {
                         <button
                           type="button"
                           onClick={(e) => handleToggleWishlist(e, prodId)}
-                          className="pointer-events-auto w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/60 shadow-xs hover:shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                          className="pointer-events-auto w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/60 shadow-xs hover:shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95 transition-all cursor-pointer"
                           title={wishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                           aria-label="Wishlist"
                         >
                           <Heart
-                            className={`w-4 h-4 transition-colors ${
+                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
                               wishlisted ? 'fill-rose-500 stroke-rose-500 text-rose-500' : 'stroke-slate-400 fill-none'
                             }`}
                           />
@@ -560,7 +658,7 @@ export default function SolutionDetailPage() {
                       </div>
 
                       {/* Product Image */}
-                      <div className="relative w-full aspect-square bg-slate-50/80 p-4 flex items-center justify-center overflow-hidden border-b border-slate-100">
+                      <div className="relative w-full aspect-square bg-slate-50/80 p-2.5 sm:p-4 flex items-center justify-center overflow-hidden border-b border-slate-100">
                         <img
                           src={image}
                           alt={name}
@@ -570,60 +668,60 @@ export default function SolutionDetailPage() {
                       </div>
 
                       {/* Card Content Body */}
-                      <div className="p-4 flex flex-col justify-between flex-grow text-left">
+                      <div className="p-2.5 sm:p-4 flex flex-col justify-between flex-grow text-left">
                         <div>
-                          <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider mb-1 text-slate-400">
-                            <span className="truncate max-w-[120px] text-[#006670]">{brand || 'FAAZO'}</span>
-                            {category && <span className="truncate max-w-[100px]">{category}</span>}
+                          <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1 text-slate-400 gap-1">
+                            <span className="truncate max-w-[80px] sm:max-w-[120px] text-[#006670]">{brand || 'FAAZO'}</span>
+                            {category && <span className="truncate max-w-[70px] sm:max-w-[100px] hidden xs:inline">{category}</span>}
                           </div>
 
-                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006670] transition-colors mb-2 font-display">
+                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006670] transition-colors mb-1.5 sm:mb-2 font-display min-h-[32px] sm:min-h-[38px]">
                             {name}
                           </h4>
                         </div>
 
                         <div>
-                          <div className="flex items-center justify-between my-2">
+                          <div className="flex items-center justify-between my-1 sm:my-2 gap-1 flex-wrap">
                             {totalReviews > 0 && rating > 0 ? (
-                              <div className="flex items-center gap-1 bg-amber-50/80 border border-amber-200/60 px-2 py-0.5 rounded-md text-[10px] font-bold text-amber-800">
+                              <div className="flex items-center gap-0.5 sm:gap-1 bg-amber-50/80 border border-amber-200/60 px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-amber-800">
                                 <span>★</span>
                                 <span>{rating.toFixed(1)}</span>
-                                <span className="text-amber-600/70 font-normal">({totalReviews})</span>
+                                <span className="text-amber-600/70 font-normal hidden sm:inline">({totalReviews})</span>
                               </div>
                             ) : <span />}
 
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                            <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded ${
                               inStock ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' : 'text-rose-600 bg-rose-50 border border-rose-100'
                             }`}>
                               {inStock ? 'In Stock' : 'Out of Stock'}
                             </span>
                           </div>
 
-                          <div className="pt-2.5 border-t border-slate-100 flex items-baseline justify-between mb-3">
+                          <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between mb-2 sm:mb-3 flex-wrap gap-1">
                             <div>
-                              <span className="text-base sm:text-lg font-black text-slate-900 font-display">
-                                {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Price on Request'}
+                              <span className="text-sm sm:text-base lg:text-lg font-black text-slate-900 font-display">
+                                {price > 0 ? `₹${price.toLocaleString('en-IN')}` : 'Request'}
                               </span>
                               {mrp > price && (
-                                <span className="text-xs text-slate-400 line-through ml-2 font-medium">
+                                <span className="text-[10px] sm:text-xs text-slate-400 line-through ml-1 sm:ml-2 font-medium">
                                   ₹{mrp.toLocaleString('en-IN')}
                                 </span>
                               )}
                             </div>
 
                             {discount > 0 && !p.is_featured && (
-                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded hidden sm:inline">
                                 {discount}% OFF
                               </span>
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                             <button
                               type="button"
                               onClick={(e) => handleAddToCart(e, p)}
                               disabled={!inStock}
-                              className={`py-2 px-2.5 rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 shadow-xs active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+                              className={`py-1.5 sm:py-2 px-1.5 sm:px-2.5 rounded-xl text-[10px] sm:text-[11px] font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 shadow-2xs active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
                                 alreadyInCart
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
                                   : 'bg-white border border-[#006670]/30 hover:border-[#006670] text-[#006670] hover:bg-[#006670]/5'
@@ -631,13 +729,13 @@ export default function SolutionDetailPage() {
                             >
                               {alreadyInCart ? (
                                 <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
-                                  <span>In Cart</span>
+                                  <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 stroke-[2.5]" />
+                                  <span className="truncate">In Cart</span>
                                 </>
                               ) : (
                                 <>
-                                  <ShoppingCart className="w-3.5 h-3.5 text-[#006670] stroke-[2.2]" />
-                                  <span>Cart</span>
+                                  <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#006670] stroke-[2.2]" />
+                                  <span className="truncate">Cart</span>
                                 </>
                               )}
                             </button>
@@ -646,10 +744,10 @@ export default function SolutionDetailPage() {
                               type="button"
                               onClick={(e) => handleBuyNow(e, p)}
                               disabled={!inStock}
-                              className="py-2 px-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="py-1.5 sm:py-2 px-1.5 sm:px-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-[10px] sm:text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer active:scale-95 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                              <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                              <span>Buy Now</span>
+                              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                              <span className="truncate">Buy Now</span>
                             </button>
                           </div>
                         </div>
