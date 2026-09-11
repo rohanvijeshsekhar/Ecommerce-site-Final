@@ -321,7 +321,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
   const bannerSrc = getAbsoluteImageUrl(brand?.banner_image_url || brand?.banner_image);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[180px] select-none text-left font-sans text-slate-800">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[144px] select-none text-left font-sans text-slate-800">
       
       {/* ── Brand Hero Header ── */}
       {brandLoading ? (

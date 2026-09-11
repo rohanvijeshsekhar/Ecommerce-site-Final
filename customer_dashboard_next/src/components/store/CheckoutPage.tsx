@@ -1294,7 +1294,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           {/* ============================================================ */}
           {/* RIGHT COLUMN (4 cols): Sticky Price Details & Place Order   */}
           {/* ============================================================ */}
-          <div className="lg:col-span-4 lg:sticky lg:top-[160px] space-y-4 text-left">
+          <div className="lg:col-span-4 lg:sticky lg:top-[140px] space-y-4 text-left">
             
             {/* Promo Code Card (Myntra Style) */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">

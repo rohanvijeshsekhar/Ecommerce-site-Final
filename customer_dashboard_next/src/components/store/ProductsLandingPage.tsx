@@ -642,7 +642,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
   }
 
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[180px] text-slate-800 select-none overflow-x-hidden font-sans">
+    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[144px] text-slate-800 select-none overflow-x-hidden font-sans">
 
       {/* 1. Premium Hero Section with Full-Bleed Background Image */}
       <section className="relative w-full overflow-hidden select-none bg-white">

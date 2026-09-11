@@ -375,7 +375,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
             </div>
 
             {/* Right Column: Price breakdown card (FAAZO Style) */}
-            <div className="lg:col-span-4 lg:sticky lg:top-[160px] space-y-3">
+            <div className="lg:col-span-4 lg:sticky lg:top-[140px] space-y-3">
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5 text-left">
                 <h3 className="text-xs font-extrabold text-[#006670] uppercase tracking-wider border-b border-slate-100 pb-3 mb-3.5">
                   Price Details

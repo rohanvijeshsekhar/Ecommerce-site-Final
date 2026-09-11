@@ -93,7 +93,7 @@ export default function StoreShell({ children }: StoreShellProps) {
         <div className={`fixed left-0 right-0 z-40 bg-amber-50 border-b border-amber-100 px-4 py-2.5 text-center text-xs font-bold text-amber-800 flex items-center justify-center gap-2 select-none shadow-xs transition-all duration-300 ${
           scrolled 
             ? 'top-[-100px] opacity-0 pointer-events-none' 
-            : 'top-[60px] lg:top-[160px] opacity-100'
+            : 'top-[60px] lg:top-[124px] opacity-100'
         }`}>
           <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
           <span>

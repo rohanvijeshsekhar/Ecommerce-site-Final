@@ -342,7 +342,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[108px] lg:pt-[180px]">
+    <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[108px] lg:pt-[144px]">
       {/* Hero Banner Section */}
       <div 
         className="relative bg-[#0f172a] text-white py-14 px-6 md:px-12 overflow-hidden shadow-md"

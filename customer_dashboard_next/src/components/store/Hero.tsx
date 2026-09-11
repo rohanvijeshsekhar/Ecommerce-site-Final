@@ -105,7 +105,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
   );
 
   return (
-    <div className="relative w-full bg-transparent pt-[108px] lg:pt-[180px] px-0 md:px-8">
+    <div className="relative w-full bg-transparent pt-[108px] lg:pt-[144px] px-0 md:px-8">
       <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
         {promoBanner.is_active && (promoBanner.title || promoBanner.subtitle) && (

@@ -380,7 +380,7 @@ export default function SolutionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] sm:pt-[110px] lg:pt-[160px] pb-24 text-left select-none">
+    <div className="min-h-screen bg-[#F8FAFC] pt-[100px] sm:pt-[110px] lg:pt-[124px] pb-24 text-left select-none">
       {/* Banner & Header */}
       <div className="relative w-full min-h-[300px] sm:min-h-[350px] md:min-h-[380px] bg-slate-950 overflow-hidden flex flex-col justify-between">
         <img

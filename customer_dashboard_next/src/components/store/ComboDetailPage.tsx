@@ -236,7 +236,7 @@ const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
 
   // ── RENDER ────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[112px] lg:pt-[180px] text-left select-none">
+    <div className="w-full bg-[#FAFBFB] pt-[112px] lg:pt-[144px] text-left select-none">
 
       {/* 1. Breadcrumb row */}
       <div className="max-w-5xl mx-auto px-4 md:px-12 py-4 flex items-center gap-4">

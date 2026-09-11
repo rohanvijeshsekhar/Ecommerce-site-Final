@@ -360,7 +360,7 @@ export default function BestSellersClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[180px] select-none text-left font-sans text-slate-800">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[144px] select-none text-left font-sans text-slate-800">
       
       {/* ── TOP HERO BANNER ── */}
       {banner && banner.is_active && (

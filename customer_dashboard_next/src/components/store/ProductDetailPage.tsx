@@ -507,7 +507,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[180px] text-left select-none">
+    <div className="w-full bg-[#FAFBFB] pt-[108px] lg:pt-[144px] text-left select-none">
 
       {/* 1. Back Button and Breadcrumbs Row (Desktop/Tablet) */}
       <div className="max-w-5xl mx-auto px-4 md:px-12 py-4 flex items-center gap-4">

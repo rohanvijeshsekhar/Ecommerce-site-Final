@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function ShippingPolicyPage() {
   return (
-    <div className="min-h-screen bg-slate-50/50 pt-[112px] lg:pt-[180px] pb-16 md:pb-24 text-slate-800 font-sans select-none">
+    <div className="min-h-screen bg-slate-50/50 pt-[112px] lg:pt-[144px] pb-16 md:pb-24 text-slate-800 font-sans select-none">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         
         {/* Breadcrumb Navigation */}
