@@ -695,7 +695,12 @@ const Navbar: React.FC<NavbarProps> = ({
                 <>
                   {/* Avatar icon for small mobile (<640px) */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); setIsAccountOpen(!isAccountOpen); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeAllMenus();
+                      setDashboardSection?.('dashboard');
+                      router.push('/profile');
+                    }}
                     className="p-1 sm:hidden rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-[#006670] flex items-center justify-center"
                     aria-label="My Account"
                   >
@@ -706,96 +711,20 @@ const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Avatar chip for mobile tablet (>=640px) */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); setIsAccountOpen(!isAccountOpen); }}
-                    className={`hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border transition-all duration-200 cursor-pointer select-none
-                      ${isAccountOpen
-                        ? 'border-[#006670] bg-[#e6f3f5] text-[#006670]'
-                        : 'border-slate-200 bg-white text-slate-700'
-                      }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeAllMenus();
+                      setDashboardSection?.('dashboard');
+                      router.push('/profile');
+                    }}
+                    className="hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-[#006670] hover:text-[#006670] transition-all duration-200 cursor-pointer select-none"
                     aria-label="My Account"
                   >
                     <span className="w-6 h-6 rounded-full bg-[#006670] text-white text-[10px] font-black flex items-center justify-center shrink-0">
                       {avatarInitials}
                     </span>
-                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isAccountOpen ? 'rotate-180' : ''}`} />
+                    <span className="text-[10px] font-bold tracking-wider uppercase">{displayFirstName}</span>
                   </button>
-
-                  {/* Mobile authenticated dropdown */}
-                  {isAccountOpen && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute right-0 top-[48px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.08)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
-                      onMouseLeave={() => setIsAccountOpen(false)}
-                    >
-                      <div className="border-b border-slate-100 pb-3 mb-3">
-                        <span className="text-[10px] font-extrabold tracking-widest text-[#006670] uppercase block mb-1">
-                          {user.role === 'dealer' ? 'Dealer Portal' : 'Clinic Portal'}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-800">{user.full_name}</h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{user.email}</p>
-                        {user.role === 'dealer' && (
-                          <span className="inline-block bg-orange-100 text-orange-800 text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5">
-                            B2B Dealer
-                          </span>
-                        )}
-                      </div>
-                      <ul className="space-y-1">
-                        {/* Dealer Portal link — only visible to dealer accounts */}
-                        {user.role === 'dealer' && (
-                          <li>
-                            <a href="#dealer-portal" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('dealer-portal'); window.scrollTo(0, 0); }}
-                              className="group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-2 shadow-2xs cursor-pointer">
-                              <div className="flex items-center gap-2.5">
-                                <Handshake className="w-4 h-4 text-[#005B63] group-hover:scale-110 transition-transform duration-150" />
-                                Dealer Portal
-                              </div>
-                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                                user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-800' :
-                                'bg-amber-100 text-amber-800'
-                              }`}>{user.dealer_status ?? 'pending'}</span>
-                            </a>
-                          </li>
-                        )}
-                        <li>
-                          <a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('dashboard'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                            <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Clinical Dashboard
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('orders'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                            <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> My Orders
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                            <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:scale-110 transition-all duration-150" /> Wishlist
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#cart" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('cart'); window.scrollTo(0, 0); }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                            <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Cart
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('warranty'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                            <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Warranty
-                          </a>
-                        </li>
-                        <li className="border-t border-slate-100 pt-2 mt-2">
-                          <button onClick={() => { setIsAccountOpen(false); logout(); }}
-                            className="group flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-200/60 border border-transparent active:bg-rose-100 hover:translate-x-1 transition-all duration-150 cursor-pointer text-left">
-                            <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-150" /> Sign Out
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
                 </>
               ) : (
                 <>

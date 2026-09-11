@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  User, Building2, MapPin, Package, Heart, Shield, HeadphonesIcon,
+  User, Building2, MapPin, Package, Heart, Shield, HeadphonesIcon, Headphones,
   Lock, LogOut, Camera, Pencil, Trash2, Plus,
   Check, X, ShoppingCart, FileText, Phone, Mail,
   AlertCircle, CheckCircle, RefreshCw, ShoppingBag,
   Ticket, Gift, ChevronDown, Upload, Eye, EyeOff,
   LayoutDashboard, CreditCard, Smartphone,
-  Layers, Globe, ChevronRight, Handshake, Search, Truck, Star
+  Layers, Globe, ChevronRight, Handshake, Search, Truck, Star,
+  ArrowLeft, Bell, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usersService } from '../../lib/services/users';
@@ -21,6 +22,7 @@ import { getStatusLabel } from '@/lib/utils';
 import { ordersService } from '../../lib/services/ordersService';
 import { INDIAN_STATES } from '@/lib/constants/indianStates';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useStore } from '@/contexts/StoreContext';
 import { getAbsoluteImageUrl } from '@/lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -210,6 +212,8 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   const router = useRouter();
   const { user, profile, logout, refreshUser, resendVerification, logoutAll, activeSessions, verifyOTP, resendOTP } = useAuth();
   const { wishlistCount } = useWishlist();
+  const { cartItems } = useStore();
+  const cartTotalQty = cartItems?.reduce((acc, item) => acc + (item.qty || 1), 0) || 0;
 
   // Redirect wishlist or cart activeSection to canonical pages if navigated via external state
   useEffect(() => {
@@ -2463,44 +2467,354 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     );
   };
 
+  // ─── Mobile Landing Page (Matches reference design) ───
+  const renderMobileLanding = () => {
+    return (
+      <div className="space-y-4 pb-12 font-sans">
+        {/* Profile Summary Card */}
+        <div
+          onClick={() => setActiveSection('profile')}
+          className="bg-white rounded-2xl p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-14 h-14 rounded-full bg-[#E6F2F2] border border-teal-100 flex items-center justify-center text-[#005B63] text-lg font-black shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={displayName} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span>{displayInitials || 'U'}</span>
+              )}
+            </div>
+            <div className="min-w-0 text-left">
+              <h3 className="text-base font-bold text-slate-900 truncate">
+                {displayName || 'Customer'}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5 mt-0.5">
+                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{user?.email || profile?.clinic_email || 'No email attached'}</span>
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+        </div>
+
+        {/* Quick Action Card (3 Columns: My Orders | Wishlist | Bag) */}
+        <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] grid grid-cols-3 divide-x divide-slate-100 p-2 text-center">
+          {/* My Orders */}
+          <button
+            onClick={() => setActiveSection('orders')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-700 mb-1.5 border border-slate-100/80">
+              <Package className="w-4 h-4 text-slate-600" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">My Orders</span>
+          </button>
+
+          {/* Wishlist */}
+          <button
+            onClick={() => router.push('/wishlist')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 mb-1.5 border border-rose-100/60">
+              <Heart className="w-4 h-4 text-rose-500" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">
+              Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ''}
+            </span>
+          </button>
+
+          {/* Bag */}
+          <button
+            onClick={() => router.push('/cart')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-1.5 border border-amber-100/60">
+              <ShoppingBag className="w-4 h-4 text-amber-600" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">
+              Bag {cartTotalQty > 0 ? `(${cartTotalQty})` : ''}
+            </span>
+          </button>
+        </div>
+
+        {/* Section 1: ORDERS & PROCUREMENT */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Orders & Procurement
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => setActiveSection('orders')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-700 shrink-0 border border-sky-100/60">
+                  <Package className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">All Orders & Tracking</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/returns')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0 border border-emerald-100/60">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Returns & Replacement Requests</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Section 2: ACCOUNT & PRACTICE */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Account & Practice
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => setActiveSection('profile')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <User className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Profile Information</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('clinic')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Edit Clinic Details & GSTIN</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('addresses')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Saved Delivery Addresses</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/notifications')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Notifications</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('security')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Security & Change Password</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Section 3: SHOPPING LISTS */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Shopping Lists
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => router.push('/wishlist')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 shrink-0 border border-rose-100/60">
+                  <Heart className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Wishlist</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/cart')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 border border-amber-100/60">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Shopping Bag</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {cartTotalQty > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-[#F58220] text-white text-[11px] font-bold flex items-center justify-center">
+                    {cartTotalQty}
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Section 4: CLINICAL SUPPORT & LOGISTICS */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Clinical Support & Logistics
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <a
+              href="mailto:faazodental@gmail.com"
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer block"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0 border border-teal-100/60">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Email Support</span>
+                  <span className="text-xs text-slate-500 font-medium">faazodental@gmail.com</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </a>
+
+            <a
+              href="tel:+919289188852"
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer block"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0 border border-teal-100/60">
+                  <Headphones className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Logistics Desk Hotline</span>
+                  <span className="text-xs text-slate-500 font-medium">+91 92891 88852</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </a>
+          </div>
+        </div>
+
+        {/* Sign Out Button */}
+        <div className="pt-2">
+          <button
+            onClick={async () => {
+              await logout();
+              router.push('/');
+            }}
+            className="w-full py-3.5 px-4 rounded-2xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100/70 text-rose-600 font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+
+        {/* Footer Version */}
+        <div className="text-center py-4">
+          <p className="text-[11px] text-slate-400 font-normal">
+            FAAZO · Dental Supply & Equipment Platform · v1.0.0
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const sectionTitles: Record<string, string> = {
+    dashboard: 'My Account',
+    orders: 'My Orders',
+    profile: 'Profile Information',
+    clinic: 'Edit Clinic Details & GSTIN',
+    addresses: 'Saved Delivery Addresses',
+    security: 'Security & Change Password',
+    warranty: 'Warranty Assets',
+    support: 'Clinical Support',
+    'dealer-status': 'Dealer Application Status',
+  };
+
   // ─── Main layout ─────────────────────────────────────────────────────────────
   return (
     <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[168px] pb-24 font-sans select-none text-left">
       <Toast message={localToast} />
 
-      {/* Mobile header bar */}
-      <div className="lg:hidden fixed top-[100px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between shadow-sm">
-        <span className="text-xs font-black uppercase tracking-widest text-[#005B63]">
-          {navItems.find(n => n.id === activeSection)?.label || 'Dashboard'}
-        </span>
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="flex items-center gap-1.5 text-xs font-bold border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 cursor-pointer hover:bg-slate-50 transition-all"
-        >
-          <User className="w-3.5 h-3.5" /> Options
-        </button>
+      {/* ─── MOBILE VIEW (lg:hidden) ─── */}
+      <div className="block lg:hidden">
+        {/* Mobile Header Bar */}
+        <div className="fixed top-[100px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 h-[52px] flex items-center justify-between shadow-2xs">
+          <button
+            onClick={() => {
+              if (activeSection !== 'dashboard') {
+                setActiveSection('dashboard');
+              } else {
+                router.push('/');
+              }
+            }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+            aria-label="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <h1 className="text-sm font-bold text-slate-900 font-sans tracking-tight">
+            {sectionTitles[activeSection] || 'My Account'}
+          </h1>
+
+          <div className="w-8" />
+        </div>
+
+        {/* Mobile Content Container */}
+        <div className="px-3.5 sm:px-5 pt-16">
+          {activeSection === 'dashboard' ? (
+            renderMobileLanding()
+          ) : (
+            <div className="mt-2">
+              <div className={`${activeSection === 'orders' ? 'bg-transparent p-0 shadow-none' : 'bg-white rounded-2xl border border-slate-100 p-3.5 sm:p-5 shadow-[0_4px_30px_rgba(0,0,0,0.015)]'}`}>
+                {renderSection()}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Mobile sidebar overlay */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 z-[90] flex">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-          <div className="relative w-72 max-w-[85vw] bg-[#f7fafa] h-full overflow-y-auto p-4 shadow-2xl">
-            <button onClick={() => setIsSidebarOpen(false)} className="mb-4 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-5 h-5" /></button>
-            {renderSidebar(() => setIsSidebarOpen(false))}
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-6xl mx-auto px-2.5 sm:px-4 md:px-6 mt-14 lg:mt-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ─── DESKTOP VIEW (hidden lg:block) ─── */}
+      <div className="hidden lg:block max-w-6xl mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-12 gap-6 items-start">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 sticky top-[168px]">
+          <div className="col-span-3 sticky top-[168px]">
             {renderSidebar()}
           </div>
 
-          {/* Main content pane */}
-          <div className="lg:col-span-9">
+          {/* Desktop Main Content Pane */}
+          <div className="col-span-9">
             <div className={`${activeSection === 'orders' ? 'bg-transparent sm:bg-white border-0 sm:border border-slate-100 p-0 sm:p-6 md:p-8 shadow-none sm:shadow-[0_4px_30px_rgba(0,0,0,0.015)]' : 'bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-3.5 sm:p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.015)]'}`}>
               {renderSection()}
               
