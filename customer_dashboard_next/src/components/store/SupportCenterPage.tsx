@@ -92,27 +92,37 @@ export const SupportCenterPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-left select-none pb-16 font-sans">
       
       {/* ── 1. Hero Header & Live Search Bar ── */}
-      <section className="relative bg-gradient-to-br from-[#004E56] via-[#006670] to-[#003B41] text-white pt-44 md:pt-52 lg:pt-60 pb-20 px-4 md:px-12 overflow-hidden shadow-lg">
-        {/* Background Decorative Pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_60%)] pointer-events-none" />
+      <section className="relative bg-[#00343A] text-white pt-44 md:pt-52 lg:pt-60 pb-20 px-4 md:px-12 overflow-hidden shadow-lg">
+        {/* Classy Hero Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/images/support_hero_bg.jpg"
+            alt="FAAZO Support Concierge"
+            className="w-full h-full object-cover object-center scale-105 transform motion-safe:transition-transform motion-safe:duration-1000"
+          />
+          {/* Elegant Multi-layer Gradient & Vignette Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#002428]/95 via-[#003B42]/85 to-[#001D20]/90 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#00282E]/80 via-transparent to-[#00181B]/95" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.5)_100%)]" />
+        </div>
 
         <div className="max-w-4xl mx-auto text-center space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-teal-200 text-xs font-extrabold tracking-wider uppercase backdrop-blur-sm">
-            <Headphones className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-teal-200 text-xs font-extrabold tracking-wider uppercase backdrop-blur-md shadow-sm">
+            <Headphones className="w-3.5 h-3.5 text-teal-300" />
             <span>Tier-1 Customer Support Center</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-display text-white">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-display text-white drop-shadow-md">
             How can we help you today?
           </h1>
 
-          <p className="text-xs md:text-sm text-teal-100/90 font-medium max-w-xl mx-auto leading-relaxed">
+          <p className="text-xs md:text-sm text-teal-100/90 font-medium max-w-xl mx-auto leading-relaxed drop-shadow-sm">
             Search our instant self-service answers or select a topic below. Real-time order tracking, returns, and payment assistance.
           </p>
 
           {/* Live Search Input Bar */}
           <div className="relative max-w-2xl mx-auto mt-6">
-            <div className="relative flex items-center bg-white rounded-2xl shadow-2xl overflow-hidden border border-white/40 p-1.5 transition-all focus-within:ring-4 focus-within:ring-teal-400/30">
+            <div className="relative flex items-center bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/40 p-1.5 transition-all focus-within:ring-4 focus-within:ring-teal-400/30 focus-within:bg-white">
               <Search className="w-5 h-5 text-slate-400 ml-4 shrink-0" />
               <input
                 type="text"
@@ -141,12 +151,12 @@ export const SupportCenterPage: React.FC = () => {
           {/* Card 1: Track Order */}
           <button
             onClick={() => router.push('/orders')}
-            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md hover:shadow-xl hover:border-teal-400 transition-all text-left group cursor-pointer"
+            className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-md hover:shadow-lg hover:border-slate-300 transition-all text-left group cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 mb-3 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0B7C80] mb-3 group-hover:scale-105 transition-transform">
               <Package className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
+            <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#0B7C80] transition-colors">
               Track My Order
             </h4>
             <p className="text-[11px] text-slate-500 font-medium mt-1 leading-tight">
@@ -157,9 +167,9 @@ export const SupportCenterPage: React.FC = () => {
           {/* Card 2: Returns & Refunds */}
           <button
             onClick={() => router.push('/orders')}
-            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md hover:shadow-xl hover:border-teal-400 transition-all text-left group cursor-pointer"
+            className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-md hover:shadow-lg hover:border-slate-300 transition-all text-left group cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 mb-3 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 mb-3 group-hover:scale-105 transition-transform">
               <RotateCcw className="w-5 h-5" />
             </div>
             <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
@@ -175,12 +185,12 @@ export const SupportCenterPage: React.FC = () => {
             href="https://wa.me/919876543210"
             target="_blank"
             rel="noreferrer"
-            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md hover:shadow-xl hover:border-emerald-400 transition-all text-left group cursor-pointer"
+            className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-md hover:shadow-lg hover:border-slate-300 transition-all text-left group cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-xs">
               <MessageCircle className="w-5 h-5 fill-white" />
             </div>
-            <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+            <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
               WhatsApp Support
             </h4>
             <p className="text-[11px] text-slate-500 font-medium mt-1 leading-tight">
@@ -191,12 +201,12 @@ export const SupportCenterPage: React.FC = () => {
           {/* Card 4: Hotline */}
           <a
             href="tel:18003004545"
-            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md hover:shadow-xl hover:border-teal-400 transition-all text-left group cursor-pointer"
+            className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-md hover:shadow-lg hover:border-slate-300 transition-all text-left group cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-3 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700 mb-3 group-hover:scale-105 transition-transform">
               <Phone className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
+            <h4 className="text-xs font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
               24/7 Phone Hotline
             </h4>
             <p className="text-[11px] text-slate-500 font-medium mt-1 leading-tight">

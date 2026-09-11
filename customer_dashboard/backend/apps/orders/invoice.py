@@ -120,7 +120,7 @@ def generate_gst_invoice_pdf(order) -> bytes:
     raw_seller_gstin = getattr(settings, "FAAZO_SELLER_GSTIN", "").strip()
     seller_gstin = raw_seller_gstin if raw_seller_gstin else "UNCONFIGURED (Set FAAZO_SELLER_GSTIN in env)"
     seller_name = "FAAZO Dental Solutions Pvt. Ltd."
-    seller_addr = f"123 Healthcare Tech Park, Medical Hub\nState: {warehouse_state}, India\nGSTIN: {seller_gstin}\nEmail: support@faazo.com | Phone: +91 98765 43210"
+    seller_addr = f"123 Healthcare Tech Park, Medical Hub\nState: {warehouse_state}, India\nGSTIN: {seller_gstin}\nEmail: faazodental@gmail.com | Phone: +91 92891 88852"
 
     inv_num = order.invoice_number or f"INV-{order.order_number}"
     inv_date = order.created_at.strftime('%d-%b-%Y')

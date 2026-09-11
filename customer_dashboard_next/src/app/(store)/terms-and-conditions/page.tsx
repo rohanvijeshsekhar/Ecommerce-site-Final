@@ -141,7 +141,7 @@ export default function TermsAndConditionsPage() {
           <div className="p-4 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Questions about our Commercial Terms?</p>
-              <p className="text-sm font-semibold text-white mt-0.5">support@faazo.com | +91 98765 43210</p>
+              <p className="text-sm font-semibold text-white mt-0.5">faazodental@gmail.com | +91 92891 88852</p>
             </div>
             <Link
               href="/support"
