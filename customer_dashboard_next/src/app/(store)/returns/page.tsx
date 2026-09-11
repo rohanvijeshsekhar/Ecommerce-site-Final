@@ -59,22 +59,22 @@ export default function CustomerReturnsPage() {
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[144px] pb-16 font-sans">
-      <div className="max-w-4xl mx-auto px-4 md:px-6">
+    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[104px] lg:pt-[144px] pb-16 font-sans">
+      <div className="max-w-4xl mx-auto px-3.5 sm:px-6">
 
         {/* Page Header */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-100 shadow-2xs mb-4 sm:mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#006670] uppercase tracking-wider mb-1">
-              <RotateCcw className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-[#006670] uppercase tracking-wider mb-1">
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Customer Care</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Returns & Replacements</h1>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Track return request progress, pickup status & refund records.</p>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Returns & Replacements</h1>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5 sm:mt-1">Track return request progress, pickup status & refund records.</p>
           </div>
           <Link
             href="/profile"
-            className="self-start md:self-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+            className="self-start md:self-auto px-3.5 py-1.5 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition"
           >
             Back to Orders
           </Link>
@@ -82,29 +82,29 @@ export default function CustomerReturnsPage() {
 
         {/* Loading State */}
         {loading && (
-          <div className="bg-white rounded-2xl p-12 border border-slate-100 shadow-sm text-center">
-            <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-bold text-slate-400 mt-4">Loading return history...</p>
+          <div className="bg-white rounded-xl sm:rounded-2xl p-8 sm:p-12 border border-slate-100 shadow-2xs text-center">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 sm:border-4 border-[#006670] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-bold text-slate-400 mt-3 sm:mt-4">Loading return history...</p>
           </div>
         )}
 
         {/* Error State */}
         {!loading && error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center text-rose-700">
-            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-rose-500" />
-            <p className="text-sm font-bold">{error}</p>
+          <div className="bg-rose-50 border border-rose-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center text-rose-700">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-rose-500" />
+            <p className="text-xs sm:text-sm font-bold">{error}</p>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && !error && returns.length === 0 && (
-          <div className="bg-white rounded-2xl p-12 border border-slate-100 shadow-sm text-center">
-            <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-800">No Return Requests Found</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">You have not submitted any return or replacement requests yet.</p>
+          <div className="bg-white rounded-xl sm:rounded-2xl p-8 sm:p-12 border border-slate-100 shadow-2xs text-center">
+            <Package className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-2.5 sm:mb-3" />
+            <h3 className="text-sm sm:text-base font-bold text-slate-800">No Return Requests Found</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5 sm:mt-1">You have not submitted any return or replacement requests yet.</p>
             <Link
               href="/profile"
-              className="inline-block mt-4 px-5 py-2.5 bg-[#006670] hover:bg-[#004d55] text-white rounded-xl text-xs font-bold transition shadow-sm"
+              className="inline-block mt-3.5 sm:mt-4 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#006670] hover:bg-[#004d55] text-white rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition shadow-2xs"
             >
               View Delivered Orders
             </Link>
@@ -113,12 +113,12 @@ export default function CustomerReturnsPage() {
 
         {/* Return Requests List */}
         {!loading && !error && returns.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {returns.map((ret) => (
               <div
                 key={ret.id}
                 onClick={() => router.push(`/returns/${ret.id}`)}
-                className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-slate-100 shadow-2xs hover:shadow-md transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4"
               >
                 <div>
                   <div className="flex items-center gap-3 mb-2">
