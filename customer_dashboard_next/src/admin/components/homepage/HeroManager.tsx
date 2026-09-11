@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image } from 'lucide-react';
+import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
-import type { HeroSlide } from '../../types/admin';
+import type { HeroSlide, HomepagePromoBanner } from '../../types/admin';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
 import ImageUploader from '../ImageUploader';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HeroManager – CRUD for homepage hero slides
+// HeroManager – CRUD for homepage promo banner & hero slides
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BLANK_FORM = {
@@ -32,17 +32,54 @@ const HeroManager: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<HeroSlide | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });
 
+  // Promo Banner state
+  const [promoForm, setPromoForm] = useState({
+    title: 'FAAZO SUPER DEALS ARE LIVE:',
+    subtitle: 'UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS',
+    link_url: '',
+    is_active: true,
+  });
+  const [savingPromo, setSavingPromo] = useState(false);
+
   const load = async () => {
     setLoading(true);
     try {
-      const res = await homepageService.getHeroSlides();
-      if (res.success && res.data) setSlides(res.data);
+      const [heroRes, promoRes] = await Promise.all([
+        homepageService.getHeroSlides(),
+        homepageService.getPromoBanner(),
+      ]);
+      if (heroRes.success && heroRes.data) setSlides(heroRes.data);
+      if (promoRes.success && promoRes.data) {
+        setPromoForm({
+          title: promoRes.data.title || '',
+          subtitle: promoRes.data.subtitle || '',
+          link_url: promoRes.data.link_url || '',
+          is_active: promoRes.data.is_active !== undefined ? promoRes.data.is_active : true,
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleSavePromo = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingPromo(true);
+    try {
+      const res = await homepageService.updatePromoBanner(promoForm);
+      if (res.success) {
+        showToast({ variant: 'success', title: 'Promo banner updated', message: 'Homepage top announcement is now live.' });
+      } else {
+        showToast({ variant: 'error', title: 'Update failed', message: res.message || 'Please try again.' });
+      }
+    } catch {
+      showToast({ variant: 'error', title: 'Update failed', message: 'Failed to save announcement banner.' });
+    } finally {
+      setSavingPromo(false);
+    }
+  };
 
   const openCreate = () => {
     setEditSlide(null);
@@ -120,23 +157,147 @@ const HeroManager: React.FC = () => {
     load();
   };
 
-  if (loading) return <LoadingOverlay message="Loading hero slides…" />;
+  if (loading) return <LoadingOverlay message="Loading hero & banner settings…" />;
 
   return (
-    <div className="space-y-5">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          {slides.length} slide{slides.length !== 1 ? 's' : ''} configured
-        </p>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#006670] text-white text-sm font-semibold rounded-lg hover:bg-[#004e56] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Slide
-        </button>
+    <div className="space-y-8">
+      {/* ── Top Promo / Announcement Banner Section ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#006670]/10 flex items-center justify-center text-[#006670]">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-800">Top Announcement / Promo Strip</h2>
+              <p className="text-xs text-slate-500">The highlighted promotional banner displayed right above the hero carousel on the storefront.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${promoForm.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${promoForm.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              {promoForm.is_active ? 'Live on Storefront' : 'Hidden'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Live Preview */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Live Storefront Preview
+              </span>
+              <span className="text-slate-400 font-normal">Real-time preview of headline & offer</span>
+            </div>
+
+            <div className={`w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-3 px-4 flex flex-col items-center justify-center rounded-xl border border-teal-700 shadow-inner transition-opacity ${!promoForm.is_active ? 'opacity-40 grayscale-[50%]' : ''}`}>
+              <span className="text-[10px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
+                {promoForm.title || '(Enter tagline above)'}
+              </span>
+              <span className="text-[12px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
+                {promoForm.subtitle || '(Enter main promotion text)'}
+              </span>
+            </div>
+            {!promoForm.is_active && (
+              <p className="text-[11px] text-amber-600 italic">Notice: Banner is currently set to hidden and will not be displayed to customers.</p>
+            )}
+          </div>
+
+          {/* Form Fields */}
+          <form onSubmit={handleSavePromo} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Top Tagline / Accent Text
+                </label>
+                <input
+                  type="text"
+                  value={promoForm.title}
+                  onChange={(e) => setPromoForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g. FAAZO SUPER DEALS ARE LIVE:"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">Displayed in light teal small capital letters above the main offer.</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Main Offer / Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={promoForm.subtitle}
+                  onChange={(e) => setPromoForm(prev => ({ ...prev, subtitle: e.target.value }))}
+                  placeholder="e.g. UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all font-medium"
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">Main promotional message in bold capital letters.</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center pt-2 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Click URL / Destination (Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={promoForm.link_url}
+                    onChange={(e) => setPromoForm(prev => ({ ...prev, link_url: e.target.value }))}
+                    placeholder="e.g. /products or /special-offers"
+                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
+                  />
+                  <ExternalLink className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                </div>
+                <span className="text-[11px] text-slate-400 mt-1 block">Optional link: clicking the announcement will redirect users here.</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 md:pt-0">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={promoForm.is_active}
+                    onChange={(e) => setPromoForm(prev => ({ ...prev, is_active: e.target.checked }))}
+                    className="w-4 h-4 text-[#006670] rounded border-slate-300 focus:ring-[#006670]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Enable Promo Banner</span>
+                    <span className="text-[11px] text-slate-500">Uncheck to hide the top strip without deleting the copy</span>
+                  </div>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={savingPromo}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-sm font-semibold rounded-xl hover:bg-[#004e56] transition-colors shadow-sm disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingPromo ? 'Saving…' : 'Save Banner'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
+
+      {/* ── Hero Slides Section ── */}
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Hero Carousel Slides</h2>
+            <p className="text-xs text-slate-500">Manage background slides, typography, and call-to-actions on the main carousel.</p>
+          </div>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-[#006670] text-white text-sm font-semibold rounded-lg hover:bg-[#004e56] transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Slide
+          </button>
+        </div>
 
       {/* Slides List */}
       {slides.length === 0 ? (
@@ -203,6 +364,7 @@ const HeroManager: React.FC = () => {
           ))}
         </div>
       )}
+      </div>
 
       {/* Slide Form Panel */}
       {showForm && (

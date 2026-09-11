@@ -21,6 +21,59 @@ from apps.common.mixins import BaseModel
 
 
 # ============================================================
+# 0. Homepage Announcement / Top Promo Banner
+# ============================================================
+
+class HomepagePromoBanner(BaseModel):
+    """
+    Top Announcement / Promo Strip shown right above the Hero carousel.
+    """
+
+    class Meta:
+        verbose_name = "Homepage Promo Banner"
+        verbose_name_plural = "Homepage Promo Banners"
+
+    title = models.CharField(
+        max_length=150,
+        default="FAAZO SUPER DEALS ARE LIVE:",
+        blank=True,
+        verbose_name="Promo Tag / Prefix",
+    )
+    subtitle = models.CharField(
+        max_length=255,
+        default="UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS",
+        blank=True,
+        verbose_name="Main Announcement Text",
+    )
+    link_url = models.CharField(
+        max_length=300,
+        blank=True,
+        default="/offers",
+        verbose_name="Click Link URL",
+        help_text="Optional link e.g. /offers or /products",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Is Active / Visible",
+    )
+
+    @classmethod
+    def get_instance(cls):
+        instance = cls.objects.first()
+        if not instance:
+            instance = cls.objects.create(
+                title="FAAZO SUPER DEALS ARE LIVE:",
+                subtitle="UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS",
+                link_url="/offers",
+                is_active=True,
+            )
+        return instance
+
+    def __str__(self):
+        return f"{self.title} {self.subtitle}"
+
+
+# ============================================================
 # 1. Hero Slides
 # ============================================================
 

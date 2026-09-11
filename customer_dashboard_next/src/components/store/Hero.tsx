@@ -20,14 +20,42 @@ interface SlideData {
   mobile_image_url: string | null;
 }
 
+interface PromoBannerData {
+  title: string;
+  subtitle: string;
+  link_url?: string;
+  is_active: boolean;
+}
+
 interface HeroProps {
   initialSlides?: SlideData[];
 }
 
 const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
   const [slides, setSlides] = useState<SlideData[]>(initialSlides || []);
+  const [promoBanner, setPromoBanner] = useState<PromoBannerData>({
+    title: 'FAAZO SUPER DEALS ARE LIVE:',
+    subtitle: 'UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS',
+    link_url: '',
+    is_active: true,
+  });
 
   useEffect(() => {
+    // Fetch promo banner
+    api.get('homepage/promo-banner/')
+      .then(res => {
+        const data = res.data?.data ?? res.data;
+        if (data && typeof data === 'object') {
+          setPromoBanner({
+            title: data.title || '',
+            subtitle: data.subtitle || '',
+            link_url: data.link_url || '',
+            is_active: data.is_active !== undefined ? Boolean(data.is_active) : true,
+          });
+        }
+      })
+      .catch(() => {});
+
     if (initialSlides && initialSlides.length > 0) return;
     api.get('homepage/hero/')
       .then(res => {
@@ -61,18 +89,39 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
     }
   ];
 
+  const renderPromoContent = () => (
+    <>
+      {promoBanner.title && (
+        <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
+          {promoBanner.title}
+        </span>
+      )}
+      {promoBanner.subtitle && (
+        <span className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
+          {promoBanner.subtitle}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <div className="relative w-full bg-transparent pt-[108px] lg:pt-[180px] px-0 md:px-8">
       <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
-        <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
-          <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
-            FAAZO SUPER DEALS ARE LIVE:
-          </span>
-          <span className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
-            UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS
-          </span>
-        </div>
+        {promoBanner.is_active && (promoBanner.title || promoBanner.subtitle) && (
+          promoBanner.link_url ? (
+            <a
+              href={promoBanner.link_url}
+              className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10 hover:brightness-105 transition-all group block"
+            >
+              {renderPromoContent()}
+            </a>
+          ) : (
+            <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
+              {renderPromoContent()}
+            </div>
+          )
+        )}
         {/* Swiper Slider */}
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}

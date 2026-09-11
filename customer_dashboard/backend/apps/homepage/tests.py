@@ -314,3 +314,45 @@ class RecommendedProductTestCase(TestCase):
         self.assertEqual(data[1]["product_slug"], "nsk-pana-max-2-m4-high-speed-turbine")
 
 
+class HomepagePromoBannerTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create_superuser(
+            email="promoadmin@faazo.com",
+            phone="9876543210",
+            full_name="Admin User",
+            role="admin",
+            password="adminpassword123",
+        )
+
+    def test_get_promo_banner_public(self):
+        res = self.client.get("/api/v1/homepage/promo-banner/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json().get("data", res.json())
+        self.assertIn("title", data)
+        self.assertIn("subtitle", data)
+        self.assertTrue(data.get("is_active"))
+
+    def test_update_promo_banner_admin(self):
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.patch("/api/v1/homepage/promo-banner/", {
+            "title": "FLASH SALE TODAY:",
+            "subtitle": "FLAT 25% OFF ON ALL DENTAL HANDPIECES",
+            "link_url": "/products?category=handpieces",
+            "is_active": True,
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json().get("data", res.json())
+        self.assertEqual(data["title"], "FLASH SALE TODAY:")
+        self.assertEqual(data["subtitle"], "FLAT 25% OFF ON ALL DENTAL HANDPIECES")
+        self.assertEqual(data["link_url"], "/products?category=handpieces")
+        self.assertTrue(data["is_active"])
+
+    def test_update_promo_banner_unauthenticated_fails(self):
+        res = self.client.patch("/api/v1/homepage/promo-banner/", {
+            "title": "Hacked Title",
+        })
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+

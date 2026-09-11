@@ -665,6 +665,15 @@ export const adminDealersService = {
 };
 
 export const homepageService = {
+  async getPromoBanner(): Promise<ServiceResponse<import('../types/admin').HomepagePromoBanner>> {
+    const res = await api.get('homepage/promo-banner/');
+    return res.data;
+  },
+  async updatePromoBanner(data: Partial<import('../types/admin').HomepagePromoBanner>): Promise<ServiceResponse<import('../types/admin').HomepagePromoBanner>> {
+    const res = await api.patch('homepage/promo-banner/', data);
+    return res.data;
+  },
+
   async getHeroSlides(): Promise<ServiceResponse<import('../types/admin').HeroSlide[]>> {
     const res = await api.get('homepage/hero/');
     return res.data;

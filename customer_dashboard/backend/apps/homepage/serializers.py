@@ -12,6 +12,7 @@ from apps.inventory.serializers import ProductInventoryInlineSerializer
 
 
 from .models import (
+    HomepagePromoBanner,
     HeroSlide,
     HomepageCategory,
     HomepageBrand,
@@ -33,6 +34,24 @@ def abs_image_url(request, field):
     if field and hasattr(field, 'url'):
         return request.build_absolute_uri(field.url) if request else field.url
     return None
+
+
+# ============================================================
+# 0. Homepage Promo / Announcement Banner
+# ============================================================
+
+class HomepagePromoBannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomepagePromoBanner
+        fields = [
+            "id",
+            "title",
+            "subtitle",
+            "link_url",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
 
 
 # ============================================================

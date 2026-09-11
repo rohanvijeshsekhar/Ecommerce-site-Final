@@ -19,6 +19,7 @@ from apps.common.permissions import IsAdmin
 from apps.common.responses import success_response, error_response
 
 from .models import (
+    HomepagePromoBanner,
     HeroSlide,
     HomepageCategory,
     HomepageBrand,
@@ -32,6 +33,7 @@ from .models import (
     SpecialOffersPageContent,
 )
 from .serializers import (
+    HomepagePromoBannerSerializer,
     HeroSlideReadSerializer, HeroSlideWriteSerializer,
     HomepageCategoryReadSerializer, HomepageCategoryWriteSerializer,
     HomepageBrandReadSerializer, HomepageBrandWriteSerializer,
@@ -321,7 +323,7 @@ class TestimonialViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class RecommendedProductViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["-created_at"]
+    ordering = ["sort_order", "-created_at"]
 
     def get_queryset(self):
         qs = RecommendedProduct.objects.select_related(
@@ -372,3 +374,37 @@ class SpecialOffersPageContentView(APIView):
 
     def put(self, request):
         return self.patch(request)
+
+
+# ============================================================
+# 11. Homepage Promo Banner (CMS Singleton)
+# ============================================================
+
+class HomepagePromoBannerView(APIView):
+    """
+    GET: Public (AllowAny) - retrieves the singleton Promo / Announcement Banner copy & status.
+    PUT/PATCH: Admin only (IsAuthenticated, IsAdmin) - updates the banner.
+    """
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get(self, request):
+        banner = HomepagePromoBanner.get_instance()
+        serializer = HomepagePromoBannerSerializer(banner, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def patch(self, request):
+        banner = HomepagePromoBanner.get_instance()
+        serializer = HomepagePromoBannerSerializer(banner, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Homepage promo banner updated successfully.")
+        return error_response(message="Invalid data provided.", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        return self.patch(request)
+
