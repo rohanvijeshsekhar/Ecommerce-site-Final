@@ -13,6 +13,8 @@ class ClinicalSolution(models.Model):
     
     banner_image = OptimizedImageField(upload_to="solutions/banners/", null=True, blank=True, verbose_name="Banner Image")
     banner_image_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Banner Image URL")
+    card_image = OptimizedImageField(upload_to="solutions/cards/", null=True, blank=True, verbose_name="Homepage Card Image")
+    card_image_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Card Image URL")
     thumbnail_image = OptimizedImageField(upload_to="solutions/thumbnails/", null=True, blank=True, verbose_name="Thumbnail Image")
     thumbnail_image_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Thumbnail Image URL")
 

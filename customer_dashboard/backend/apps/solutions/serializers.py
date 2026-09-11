@@ -72,6 +72,8 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
 class ClinicalSolutionListSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
+    card_image = serializers.SerializerMethodField(method_name="get_card_image")
+    card = serializers.SerializerMethodField(method_name="get_card_image")
     product_count = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -81,6 +83,8 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
             "title",
             "slug",
             "short_description",
+            "card_image",
+            "card",
             "banner",
             "thumbnail",
             "display_order",
@@ -90,6 +94,20 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_card_image(self, obj):
+        if obj.card_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.card_image.url) if request else obj.card_image.url
+        if obj.card_image_url:
+            return obj.card_image_url
+        if obj.banner_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.banner_image.url) if request else obj.banner_image.url
+        if obj.thumbnail_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.thumbnail_image.url) if request else obj.thumbnail_image.url
+        return obj.banner_image_url or obj.thumbnail_image_url or "/images/hero1_ecommerce.png"
 
     def get_banner(self, obj):
         if obj.banner_image:
@@ -107,6 +125,8 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
 class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
+    card_image = serializers.SerializerMethodField(method_name="get_card_image")
+    card = serializers.SerializerMethodField(method_name="get_card_image")
     products = ClinicalSolutionProductSerializer(source="solution_products", many=True, read_only=True)
     product_count = serializers.IntegerField(read_only=True)
 
@@ -118,6 +138,8 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "description",
+            "card_image",
+            "card",
             "banner",
             "thumbnail",
             "display_order",
@@ -131,6 +153,20 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_card_image(self, obj):
+        if obj.card_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.card_image.url) if request else obj.card_image.url
+        if obj.card_image_url:
+            return obj.card_image_url
+        if obj.banner_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.banner_image.url) if request else obj.banner_image.url
+        if obj.thumbnail_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.thumbnail_image.url) if request else obj.thumbnail_image.url
+        return obj.banner_image_url or obj.thumbnail_image_url or "/images/hero1_ecommerce.png"
 
     def get_banner(self, obj):
         if obj.banner_image:
@@ -148,8 +184,10 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
 class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
     banner = serializers.CharField(required=False, write_only=True, allow_blank=True)
     thumbnail = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    card = serializers.CharField(required=False, write_only=True, allow_blank=True)
     banner_image = serializers.ImageField(required=False, allow_null=True)
     thumbnail_image = serializers.ImageField(required=False, allow_null=True)
+    card_image = serializers.ImageField(required=False, allow_null=True)
     product_ids = serializers.ListField(
         child=serializers.CharField(),
         write_only=True,
@@ -171,6 +209,9 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "description",
+            "card",
+            "card_image",
+            "card_image_url",
             "banner",
             "banner_image",
             "banner_image_url",
@@ -228,6 +269,8 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             mutable_data.setlist("featured_product_ids", extracted_fpids)
 
             # Handle clearing image if passed as empty string or 'null'
+            if "card_image" in mutable_data and mutable_data["card_image"] in ("", "null", "undefined"):
+                mutable_data["card_image"] = None
             if "banner_image" in mutable_data and mutable_data["banner_image"] in ("", "null", "undefined"):
                 mutable_data["banner_image"] = None
             if "thumbnail_image" in mutable_data and mutable_data["thumbnail_image"] in ("", "null", "undefined"):
@@ -249,8 +292,11 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
+        card = validated_data.pop("card", None)
         banner = validated_data.pop("banner", None)
         thumbnail = validated_data.pop("thumbnail", None)
+        if card is not None:
+            validated_data["card_image_url"] = card
         if banner is not None:
             validated_data["banner_image_url"] = banner
         if thumbnail is not None:
@@ -264,8 +310,11 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         return solution
 
     def update(self, instance, validated_data):
+        card = validated_data.pop("card", None)
         banner = validated_data.pop("banner", None)
         thumbnail = validated_data.pop("thumbnail", None)
+        if card is not None:
+            validated_data["card_image_url"] = card
         if banner is not None:
             validated_data["banner_image_url"] = banner
         if thumbnail is not None:

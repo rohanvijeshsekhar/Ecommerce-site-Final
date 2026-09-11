@@ -10,6 +10,8 @@ export interface ClinicalSolutionData {
   title: string;
   slug: string;
   short_description: string;
+  card?: string;
+  card_image?: string;
   banner: string;
   thumbnail: string;
   product_count: number;
@@ -97,7 +99,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
                 {/* Background Banner Image with Dark Gradient Overlay */}
                 <div className="absolute inset-0 z-0 overflow-hidden">
                   <img
-                    src={getMediaUrl(sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
+                    src={getMediaUrl(sol.card_image || sol.card || sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
                     alt={sol.title}
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 brightness-[0.85] group-hover:brightness-[0.95]"
                   />
@@ -160,7 +162,7 @@ const ExploreSolutions: React.FC<ExploreSolutionsProps> = ({ onSelectSolution, o
             >
               <div className="absolute inset-0 z-0">
                 <img
-                  src={getMediaUrl(sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
+                  src={getMediaUrl(sol.card_image || sol.card || sol.banner || sol.thumbnail || '/images/hero1_ecommerce.png')}
                   alt={sol.title}
                   className="w-full h-full object-cover opacity-60"
                 />

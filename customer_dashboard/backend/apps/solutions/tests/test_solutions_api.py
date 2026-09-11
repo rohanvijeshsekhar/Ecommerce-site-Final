@@ -436,4 +436,33 @@ class ClinicalSolutionsAPITests(APITestCase):
         self.assertEqual(solution_data["banner"], "/images/hero1_ecommerce.png")
         self.assertEqual(solution_data["thumbnail"], "/images/bestseller_curing.png")
 
+    def test_24_card_image_upload_and_homepage_serialization(self):
+        """24. Admin can upload a dedicated card_image specifically for Homepage procedure workflow cards."""
+        card_file = self._generate_test_image(name="homepage_procedure_card.png", color="green")
+
+        data = {
+            "title": "Endodontic Treatment Workflow (Card Update)",
+            "slug": "endodontic-treatment-workflow",
+            "short_description": "Card image updated specifically for homepage card.",
+            "card_image": card_file,
+            "display_order": 1,
+            "is_active": True,
+            "show_on_homepage": True,
+        }
+
+        url = f"/api/v1/solutions/admin/{self.solution_endo.id}/"
+        res = self.client.put(url, data, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        self.solution_endo.refresh_from_db()
+        self.assertTrue(bool(self.solution_endo.card_image))
+
+        # Public homepage API must return card_image
+        public_res = self.client.get("/api/v1/solutions/?homepage=true")
+        self.assertEqual(public_res.status_code, status.HTTP_200_OK)
+        matched = [s for s in public_res.data["data"] if s["slug"] == "endodontic-treatment-workflow"][0]
+        self.assertTrue("/media/solutions/cards/" in matched["card_image"] or matched["card_image"].startswith("http"))
+        self.assertEqual(matched["card"], matched["card_image"])
+
+
 
