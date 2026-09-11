@@ -2067,18 +2067,32 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       </div>
 
       {/* Change Password Form */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+      <form onSubmit={(e) => { e.preventDefault(); savePassword(); }} autoComplete="off" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+        {/* Hidden username field to prevent browser autofill from hijacking global search inputs */}
+        <input
+          type="text"
+          name="username"
+          defaultValue={user?.email || ''}
+          autoComplete="username"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only opacity-0 absolute pointer-events-none w-0 h-0"
+        />
+
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Change Password</h3>
         {([
-          { key: 'old_password', label: 'Current Password', show: showOld, setShow: setShowOld },
-          { key: 'new_password', label: 'New Password', show: showNew, setShow: setShowNew },
-          { key: 'confirm_password', label: 'Confirm New Password', show: showNew, setShow: setShowNew },
+          { key: 'old_password', label: 'Current Password', name: 'current-password', autoComplete: 'current-password', show: showOld, setShow: setShowOld },
+          { key: 'new_password', label: 'New Password', name: 'new-password', autoComplete: 'new-password', show: showNew, setShow: setShowNew },
+          { key: 'confirm_password', label: 'Confirm New Password', name: 'confirm-password', autoComplete: 'new-password', show: showNew, setShow: setShowNew },
         ] as const).map(f => (
           <div key={f.key}>
             <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">{f.label}</label>
             <div className="relative">
               <input
                 type={f.show ? 'text' : 'password'}
+                name={f.name}
+                autoComplete={f.autoComplete}
+                data-lpignore="true"
                 value={(securityForm as any)[f.key]}
                 onChange={e => setSecurityForm(p => ({ ...p, [f.key]: e.target.value }))}
                 className="w-full px-3 sm:px-4 pr-9 sm:pr-11 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] transition-all"
@@ -2089,10 +2103,10 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             </div>
           </div>
         ))}
-        <button onClick={savePassword} disabled={securitySaving} className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white cursor-pointer disabled:opacity-40" style={{ background: TEAL }}>
+        <button type="submit" disabled={securitySaving} className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white cursor-pointer disabled:opacity-40" style={{ background: TEAL }}>
           {securitySaving ? 'Updating...' : 'Change Password'}
         </button>
-      </div>
+      </form>
 
       {/* Device Sessions — Live Enterprise API */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">

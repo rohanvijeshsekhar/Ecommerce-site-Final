@@ -451,7 +451,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Search className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                 
                 <input
-                  type="text"
+                  type="search"
+                  name="site_search"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
+                  spellCheck={false}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -652,7 +658,13 @@ const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               
               <input
-                type="text"
+                type="search"
+                name="mobile_site_search"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
+                spellCheck={false}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
