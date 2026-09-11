@@ -1,3 +1,4 @@
+import json
 import uuid
 from rest_framework import serializers
 from .models import ClinicalSolution, ClinicalSolutionProduct
@@ -191,26 +192,40 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         # Handle QueryDict / multipart data where lists come as getlist or JSON string
-        mutable_data = data.copy() if hasattr(data, "copy") else dict(data)
-
         if hasattr(data, "getlist"):
+            mutable_data = data.copy()
+            
             pids = data.getlist("product_ids")
-            if len(pids) == 1 and (pids[0].startswith("[") or "," in pids[0]):
-                try:
-                    mutable_data["product_ids"] = json.loads(pids[0])
-                except Exception:
-                    mutable_data["product_ids"] = [x.strip() for x in pids[0].split(",") if x.strip()]
-            elif pids:
-                mutable_data["product_ids"] = pids
+            extracted_pids = []
+            for item in pids:
+                if isinstance(item, str) and (item.startswith("[") or "," in item):
+                    try:
+                        parsed = json.loads(item)
+                        if isinstance(parsed, list):
+                            extracted_pids.extend([str(x) for x in parsed if x not in (None, "", "null")])
+                        else:
+                            extracted_pids.append(str(parsed))
+                    except Exception:
+                        extracted_pids.extend([x.strip() for x in item.split(",") if x.strip()])
+                elif item not in (None, "", "null", "undefined"):
+                    extracted_pids.append(str(item))
+            mutable_data.setlist("product_ids", extracted_pids)
 
             fpids = data.getlist("featured_product_ids")
-            if len(fpids) == 1 and (fpids[0].startswith("[") or "," in fpids[0]):
-                try:
-                    mutable_data["featured_product_ids"] = json.loads(fpids[0])
-                except Exception:
-                    mutable_data["featured_product_ids"] = [x.strip() for x in fpids[0].split(",") if x.strip()]
-            elif fpids:
-                mutable_data["featured_product_ids"] = fpids
+            extracted_fpids = []
+            for item in fpids:
+                if isinstance(item, str) and (item.startswith("[") or "," in item):
+                    try:
+                        parsed = json.loads(item)
+                        if isinstance(parsed, list):
+                            extracted_fpids.extend([str(x) for x in parsed if x not in (None, "", "null")])
+                        else:
+                            extracted_fpids.append(str(parsed))
+                    except Exception:
+                        extracted_fpids.extend([x.strip() for x in item.split(",") if x.strip()])
+                elif item not in (None, "", "null", "undefined"):
+                    extracted_fpids.append(str(item))
+            mutable_data.setlist("featured_product_ids", extracted_fpids)
 
             # Handle clearing image if passed as empty string or 'null'
             if "banner_image" in mutable_data and mutable_data["banner_image"] in ("", "null", "undefined"):
@@ -218,7 +233,20 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             if "thumbnail_image" in mutable_data and mutable_data["thumbnail_image"] in ("", "null", "undefined"):
                 mutable_data["thumbnail_image"] = None
 
-        return super().to_internal_value(mutable_data)
+            return super().to_internal_value(mutable_data)
+        elif isinstance(data, dict):
+            mutable_data = dict(data)
+            if "product_ids" in mutable_data:
+                pids = mutable_data["product_ids"]
+                if isinstance(pids, (list, tuple)):
+                    mutable_data["product_ids"] = [str(x) for x in pids if x not in (None, "", "null")]
+            if "featured_product_ids" in mutable_data:
+                fpids = mutable_data["featured_product_ids"]
+                if isinstance(fpids, (list, tuple)):
+                    mutable_data["featured_product_ids"] = [str(x) for x in fpids if x not in (None, "", "null")]
+            return super().to_internal_value(mutable_data)
+
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
         banner = validated_data.pop("banner", None)
