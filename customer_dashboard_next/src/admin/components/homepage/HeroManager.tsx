@@ -40,6 +40,7 @@ const HeroManager: React.FC = () => {
     is_active: true,
   });
   const [savingPromo, setSavingPromo] = useState(false);
+  const [promoSaved, setPromoSaved] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -67,9 +68,12 @@ const HeroManager: React.FC = () => {
   const handleSavePromo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setSavingPromo(true);
+    setPromoSaved(false);
     try {
       const res = await homepageService.updatePromoBanner(promoForm);
       if (res.success) {
+        setPromoSaved(true);
+        setTimeout(() => setPromoSaved(false), 3500);
         showToast({ variant: 'success', title: 'Promo banner updated', message: 'Homepage top announcement is now live.' });
       } else {
         showToast({ variant: 'error', title: 'Update failed', message: res.message || 'Please try again.' });
@@ -215,7 +219,10 @@ const HeroManager: React.FC = () => {
                 <input
                   type="text"
                   value={promoForm.title}
-                  onChange={(e) => setPromoForm(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => {
+                    setPromoSaved(false);
+                    setPromoForm(prev => ({ ...prev, title: e.target.value }));
+                  }}
                   placeholder="e.g. FAAZO SUPER DEALS ARE LIVE:"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
                 />
@@ -229,7 +236,10 @@ const HeroManager: React.FC = () => {
                 <input
                   type="text"
                   value={promoForm.subtitle}
-                  onChange={(e) => setPromoForm(prev => ({ ...prev, subtitle: e.target.value }))}
+                  onChange={(e) => {
+                    setPromoSaved(false);
+                    setPromoForm(prev => ({ ...prev, subtitle: e.target.value }));
+                  }}
                   placeholder="e.g. UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all font-medium"
                 />
@@ -246,7 +256,10 @@ const HeroManager: React.FC = () => {
                   <input
                     type="text"
                     value={promoForm.link_url}
-                    onChange={(e) => setPromoForm(prev => ({ ...prev, link_url: e.target.value }))}
+                    onChange={(e) => {
+                      setPromoSaved(false);
+                      setPromoForm(prev => ({ ...prev, link_url: e.target.value }));
+                    }}
                     placeholder="e.g. /products or /special-offers"
                     className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
                   />
@@ -260,7 +273,10 @@ const HeroManager: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={promoForm.is_active}
-                    onChange={(e) => setPromoForm(prev => ({ ...prev, is_active: e.target.checked }))}
+                    onChange={(e) => {
+                      setPromoSaved(false);
+                      setPromoForm(prev => ({ ...prev, is_active: e.target.checked }));
+                    }}
                     className="w-4 h-4 text-[#006670] rounded border-slate-300 focus:ring-[#006670]"
                   />
                   <div>
@@ -272,10 +288,28 @@ const HeroManager: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingPromo}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-sm font-semibold rounded-xl hover:bg-[#004e56] transition-colors shadow-sm disabled:opacity-50"
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 ${
+                    promoSaved
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/30'
+                      : 'bg-[#006670] hover:bg-[#004e56] text-white'
+                  }`}
                 >
-                  <Save className="w-4 h-4" />
-                  {savingPromo ? 'Saving…' : 'Save Banner'}
+                  {savingPromo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving…</span>
+                    </>
+                  ) : promoSaved ? (
+                    <>
+                      <Check className="w-4 h-4 text-white stroke-[2.5]" />
+                      <span>Saved!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Banner</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
