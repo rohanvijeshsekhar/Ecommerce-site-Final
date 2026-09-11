@@ -5,7 +5,10 @@ admin sync of attached products, active/show_on_homepage rules,
 display order, pricing, and image resolution.
 """
 
+import io
 from decimal import Decimal
+from PIL import Image as PILImage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -361,4 +364,76 @@ class ClinicalSolutionsAPITests(APITestCase):
         self.assertEqual(len(slugs), 12)
         self.assertEqual(slugs[0], "solution-01")
         self.assertNotIn("solution-13", slugs)
+
+    def _generate_test_image(self, name="test.png", color="blue"):
+        img = PILImage.new("RGB", (100, 100), color=color)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return SimpleUploadedFile(name, buf.read(), content_type="image/png")
+
+    def test_21_multipart_image_upload_saves_files_and_updates_urls(self):
+        """21. Admin can upload real banner and thumbnail image files via multipart/form-data."""
+        banner_file = self._generate_test_image(name="panoramic_banner.png", color="teal")
+        thumbnail_file = self._generate_test_image(name="square_thumbnail.png", color="orange")
+
+        data = {
+            "title": "Endodontic Treatment Workflow (Updated)",
+            "slug": "endodontic-treatment-workflow",
+            "short_description": "Updated description with new banners.",
+            "banner_image": banner_file,
+            "thumbnail_image": thumbnail_file,
+            "display_order": 1,
+            "is_active": True,
+            "show_on_homepage": True,
+        }
+
+        url = f"/api/v1/solutions/admin/{self.solution_endo.id}/"
+        res = self.client.put(url, data, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Refresh from database
+        self.solution_endo.refresh_from_db()
+        self.assertTrue(bool(self.solution_endo.banner_image))
+        self.assertTrue(bool(self.solution_endo.thumbnail_image))
+
+        # Check that public API returns the media URL
+        public_res = self.client.get("/api/v1/solutions/endodontic-treatment-workflow/")
+        self.assertEqual(public_res.status_code, status.HTTP_200_OK)
+        solution_data = public_res.data["data"] if "data" in public_res.data else public_res.data
+        self.assertTrue("/media/solutions/banners/" in solution_data["banner"] or solution_data["banner"].startswith("http"))
+        self.assertTrue("/media/solutions/thumbnails/" in solution_data["thumbnail"] or solution_data["thumbnail"].startswith("http"))
+
+    def test_22_updating_solution_a_image_does_not_affect_solution_b(self):
+        """22. Updating Solution A's image file does not alter Solution B's image or fallback."""
+        banner_file = self._generate_test_image(name="solution_a_banner.png", color="purple")
+
+        data = {
+            "title": self.solution_endo.title,
+            "slug": self.solution_endo.slug,
+            "short_description": self.solution_endo.short_description,
+            "banner_image": banner_file,
+            "display_order": self.solution_endo.display_order,
+            "is_active": True,
+            "show_on_homepage": True,
+        }
+
+        url = f"/api/v1/solutions/admin/{self.solution_endo.id}/"
+        res = self.client.put(url, data, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Verify Solution B is unchanged
+        self.solution_resto.refresh_from_db()
+        self.assertEqual(self.solution_resto.banner_image_url, "/images/hero1_ecommerce.png")
+        self.assertEqual(self.solution_resto.thumbnail_image_url, "/images/bestseller_curing.png")
+        self.assertFalse(bool(self.solution_resto.banner_image))
+
+    def test_23_fallback_urls_preserved_when_no_file_uploaded(self):
+        """23. Existing fallback URLs continue to work for solutions with no uploaded file."""
+        public_res = self.client.get("/api/v1/solutions/restorative-composite-workflow/")
+        self.assertEqual(public_res.status_code, status.HTTP_200_OK)
+        solution_data = public_res.data["data"] if "data" in public_res.data else public_res.data
+        self.assertEqual(solution_data["banner"], "/images/hero1_ecommerce.png")
+        self.assertEqual(solution_data["thumbnail"], "/images/bestseller_curing.png")
+
 

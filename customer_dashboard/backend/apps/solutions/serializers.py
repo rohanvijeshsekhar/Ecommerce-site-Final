@@ -147,6 +147,8 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
 class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
     banner = serializers.CharField(required=False, write_only=True, allow_blank=True)
     thumbnail = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    banner_image = serializers.ImageField(required=False, allow_null=True)
+    thumbnail_image = serializers.ImageField(required=False, allow_null=True)
     product_ids = serializers.ListField(
         child=serializers.CharField(),
         write_only=True,
@@ -186,6 +188,37 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True}
         }
+
+    def to_internal_value(self, data):
+        # Handle QueryDict / multipart data where lists come as getlist or JSON string
+        mutable_data = data.copy() if hasattr(data, "copy") else dict(data)
+
+        if hasattr(data, "getlist"):
+            pids = data.getlist("product_ids")
+            if len(pids) == 1 and (pids[0].startswith("[") or "," in pids[0]):
+                try:
+                    mutable_data["product_ids"] = json.loads(pids[0])
+                except Exception:
+                    mutable_data["product_ids"] = [x.strip() for x in pids[0].split(",") if x.strip()]
+            elif pids:
+                mutable_data["product_ids"] = pids
+
+            fpids = data.getlist("featured_product_ids")
+            if len(fpids) == 1 and (fpids[0].startswith("[") or "," in fpids[0]):
+                try:
+                    mutable_data["featured_product_ids"] = json.loads(fpids[0])
+                except Exception:
+                    mutable_data["featured_product_ids"] = [x.strip() for x in fpids[0].split(",") if x.strip()]
+            elif fpids:
+                mutable_data["featured_product_ids"] = fpids
+
+            # Handle clearing image if passed as empty string or 'null'
+            if "banner_image" in mutable_data and mutable_data["banner_image"] in ("", "null", "undefined"):
+                mutable_data["banner_image"] = None
+            if "thumbnail_image" in mutable_data and mutable_data["thumbnail_image"] in ("", "null", "undefined"):
+                mutable_data["thumbnail_image"] = None
+
+        return super().to_internal_value(mutable_data)
 
     def create(self, validated_data):
         banner = validated_data.pop("banner", None)

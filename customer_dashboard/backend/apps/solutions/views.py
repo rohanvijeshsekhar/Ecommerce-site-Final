@@ -1,5 +1,6 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -14,6 +15,7 @@ from .serializers import (
 class ClinicalSolutionViewSet(viewsets.ModelViewSet):
     queryset = ClinicalSolution.objects.all()
     lookup_field = "slug"
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_permissions(self):
         return [AllowAny()]
@@ -78,6 +80,7 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
 # ── Admin-Specific API Endpoints ────────────────────────────
 
 @api_view(["GET", "POST"])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 @permission_classes([AllowAny])
 def admin_solutions_list_create(request):
     if request.method == "GET":
@@ -114,6 +117,7 @@ def admin_solutions_list_create(request):
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 @permission_classes([AllowAny])
 def admin_solution_detail_update_delete(request, pk):
     solution = None
