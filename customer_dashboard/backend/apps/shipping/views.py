@@ -334,16 +334,18 @@ class AdminCreateCourierShipmentView(APIView):
                         inv.reserved_stock = max(0, inv.reserved_stock - item.quantity)
                         inv.save()
 
-            # Post-commit operational action: Auto-schedule pickup if date provided
-            pickup_date_str = request.data.get("pickup_date")
-            if pickup_date_str:
-                from django.utils.dateparse import parse_date
-                pd = parse_date(pickup_date_str)
-                if pd:
-                    try:
-                        svc.schedule_pickup(shipment, pickup_date=pd)
-                    except Exception as exc:
-                        logger.warning("Auto-pickup scheduling post-commit failed: %s", exc)
+            # Post-commit operational action: Auto-schedule pickup.
+            # Shiprocket arranges pickup as part of the standard shipment lifecycle.
+            # If a specific pickup_date is provided, use it; otherwise schedule for next business day.
+            if shipment.pickup_status not in [PackingStatus.READY_FOR_PICKUP, "scheduled"]:
+                pickup_date_str = request.data.get("pickup_date")
+                try:
+                    from django.utils.dateparse import parse_date
+                    pd = parse_date(pickup_date_str) if pickup_date_str else None
+                    svc.schedule_pickup(shipment, pickup_date=pd)
+                    logger.info("Auto-scheduled pickup for shipment %s (AWB: %s)", shipment.shipment_number, shipment.awb_number)
+                except Exception as exc:
+                    logger.warning("Auto-pickup scheduling post-commit failed (non-fatal): %s", exc)
 
         except (ShiprocketValidationError, DelhiveryValidationError) as e:
             return error_response(
@@ -796,8 +798,121 @@ class CustomerShipmentTrackingView(APIView):
     """
     GET /api/v1/shipping/orders/<order_pk>/shipment/
     Returns shipment tracking for the authenticated customer's own order.
+    Includes the full 9-step milestone progress array and current milestone metadata.
     """
     permission_classes = [IsAuthenticated]
+
+    # 9-Step milestone definitions (order_status → shipment_status mapping)
+    MILESTONES = [
+        {
+            "id": "ORDER_PLACED",
+            "label": "Order Placed",
+            "description": "Your order has been received successfully.",
+            "shipment_statuses": [],           # order-level; always active for any order
+            "order_statuses": ["pending_payment", "processing", "packed", "shipped", "delivered"],
+        },
+        {
+            "id": "PROCESSING",
+            "label": "Processing",
+            "description": "Your order is being prepared and packed by our warehouse team.",
+            "shipment_statuses": [],
+            "order_statuses": ["processing", "packed", "shipped", "delivered"],
+        },
+        {
+            "id": "PACKED",
+            "label": "Packed",
+            "description": "Your order has been packed and is ready for handover to the courier.",
+            "shipment_statuses": [],
+            "order_statuses": ["packed", "shipped", "delivered"],
+        },
+        {
+            "id": "SHIPMENT_CREATED",
+            "label": "Shipment Created",
+            "description": "A shipment has been created and a courier has been assigned to your order.",
+            "shipment_statuses": [ShipmentStatus.CREATED],
+            "order_statuses": [],
+        },
+        {
+            "id": "PICKUP_SCHEDULED",
+            "label": "Pickup Scheduled",
+            "description": "Pickup has been arranged with the courier. Your parcel is waiting to be collected.",
+            "shipment_statuses": [ShipmentStatus.PICKUP_SCHEDULED],
+            "order_statuses": [],
+        },
+        {
+            "id": "PICKED_UP",
+            "label": "Picked Up",
+            "description": "The courier has collected your parcel from our warehouse.",
+            "shipment_statuses": [ShipmentStatus.PICKED_UP],
+            "order_statuses": [],
+        },
+        {
+            "id": "IN_TRANSIT",
+            "label": "Shipped / In Transit",
+            "description": "Your parcel has been picked up and is moving through the courier network.",
+            "shipment_statuses": [ShipmentStatus.IN_TRANSIT, ShipmentStatus.REACHED_HUB],
+            "order_statuses": [],
+        },
+        {
+            "id": "OUT_FOR_DELIVERY",
+            "label": "Out for Delivery",
+            "description": "Your parcel is with the delivery executive and will reach you soon.",
+            "shipment_statuses": [ShipmentStatus.OUT_FOR_DELIVERY],
+            "order_statuses": [],
+        },
+        {
+            "id": "DELIVERED",
+            "label": "Delivered",
+            "description": "Your parcel has been successfully delivered. Thank you for choosing FAAZO!",
+            "shipment_statuses": [ShipmentStatus.DELIVERED],
+            "order_statuses": ["delivered"],
+        },
+    ]
+
+    # Rank for determining "how far we are" — highest rank wins for current milestone
+    MILESTONE_RANK = {
+        "ORDER_PLACED":       1,
+        "PROCESSING":         2,
+        "PACKED":             3,
+        "SHIPMENT_CREATED":   4,
+        "PICKUP_SCHEDULED":   5,
+        "PICKED_UP":          6,
+        "IN_TRANSIT":         7,
+        "OUT_FOR_DELIVERY":   8,
+        "DELIVERED":          9,
+    }
+
+    def _compute_current_milestone_rank(self, order, shipment) -> int:
+        """
+        Returns the highest milestone rank that is currently completed.
+        """
+        rank = 1  # ORDER_PLACED is always active
+        order_status = order.status
+
+        if order_status in ["processing", "packed", "shipped", "delivered"]:
+            rank = max(rank, 2)  # PROCESSING
+        if order_status in ["packed", "shipped", "delivered"]:
+            rank = max(rank, 3)  # PACKED
+
+        if shipment:
+            s = shipment.shipment_status
+            if s == ShipmentStatus.CREATED:
+                rank = max(rank, 4)
+            elif s == ShipmentStatus.PICKUP_SCHEDULED:
+                rank = max(rank, 5)
+            elif s == ShipmentStatus.PICKED_UP:
+                rank = max(rank, 6)
+            elif s in [ShipmentStatus.IN_TRANSIT, ShipmentStatus.REACHED_HUB]:
+                rank = max(rank, 7)
+            elif s == ShipmentStatus.OUT_FOR_DELIVERY:
+                rank = max(rank, 8)
+            elif s == ShipmentStatus.DELIVERED:
+                rank = max(rank, 9)
+
+        if order_status == "delivered":
+            rank = 9
+
+        return rank
 
     def get(self, request, order_pk):
         try:
@@ -806,33 +921,71 @@ class CustomerShipmentTrackingView(APIView):
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         shipment = Shipment.objects.filter(order=order, is_deleted=False).prefetch_related("tracking_events").first()
+
+        # Build milestone progress
+        current_rank = self._compute_current_milestone_rank(order, shipment)
+        milestone_progress = []
+        current_milestone_id = "ORDER_PLACED"
+        current_status_description = "Your order has been received."
+
+        for m in self.MILESTONES:
+            m_rank = self.MILESTONE_RANK[m["id"]]
+            is_completed = m_rank <= current_rank
+            is_current = m_rank == current_rank
+
+            milestone_progress.append({
+                "id": m["id"],
+                "label": m["label"],
+                "description": m["description"],
+                "is_completed": is_completed,
+                "is_current": is_current,
+            })
+
+            if is_current:
+                current_milestone_id = m["id"]
+                current_status_description = m["description"]
+
         if not shipment:
-            return success_response(data=None, message="No shipment found for this order.")
+            return success_response(
+                data={
+                    "shipment": None,
+                    "milestone_progress": milestone_progress,
+                    "current_milestone_id": current_milestone_id,
+                    "current_status_description": current_status_description,
+                },
+                message="Shipment not yet created for this order.",
+            )
 
         data = {
-            "id": str(shipment.id),
-            "shipment_number": shipment.shipment_number,
-            "courier_name": shipment.courier_name,
-            "awb_number": shipment.awb_number,
-            "tracking_number": shipment.tracking_number,
-            "shipment_status": shipment.shipment_status,
-            "pickup_status": shipment.pickup_status,
-            "current_location": shipment.current_location,
-            "estimated_delivery_date": str(shipment.estimated_delivery_date) if shipment.estimated_delivery_date else None,
-            "delivered_at": shipment.delivered_at.isoformat() if shipment.delivered_at else None,
-            "last_synced_at": shipment.last_synced_at.isoformat() if shipment.last_synced_at else None,
-            "tracking_events": [
-                {
-                    "id": str(evt.id),
-                    "event_label": evt.event_label,
-                    "status_mapped": evt.status_mapped,
-                    "event_timestamp": evt.event_timestamp.isoformat(),
-                    "location": evt.location,
-                    "description": evt.description,
-                    "is_delivered": evt.is_delivered,
-                }
-                for evt in shipment.tracking_events.order_by("event_timestamp")
-            ],
+            "shipment": {
+                "id": str(shipment.id),
+                "shipment_number": shipment.shipment_number,
+                "courier_name": shipment.courier_name,
+                "awb_number": shipment.awb_number,
+                "tracking_number": shipment.tracking_number,
+                "tracking_url": shipment.tracking_url,
+                "shipment_status": shipment.shipment_status,
+                "pickup_status": shipment.pickup_status,
+                "current_location": shipment.current_location,
+                "estimated_delivery_date": str(shipment.estimated_delivery_date) if shipment.estimated_delivery_date else None,
+                "delivered_at": shipment.delivered_at.isoformat() if shipment.delivered_at else None,
+                "last_synced_at": shipment.last_synced_at.isoformat() if shipment.last_synced_at else None,
+                "tracking_events": [
+                    {
+                        "id": str(evt.id),
+                        "event_label": evt.event_label,
+                        "status_mapped": evt.status_mapped,
+                        "event_timestamp": evt.event_timestamp.isoformat(),
+                        "location": evt.location,
+                        "description": evt.description,
+                        "is_delivered": evt.is_delivered,
+                    }
+                    for evt in shipment.tracking_events.order_by("event_timestamp")
+                ],
+            },
+            "milestone_progress": milestone_progress,
+            "current_milestone_id": current_milestone_id,
+            "current_status_description": current_status_description,
         }
         return success_response(data=data, message="Shipment tracking retrieved.")
 

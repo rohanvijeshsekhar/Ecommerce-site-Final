@@ -21,34 +21,91 @@ def dispatch_shipment_notification(shipment: Shipment, event_type: str = None) -
     """
     Integrates Shipment Module directly with Centralized NotificationService.
     Publishes real-time notifications across In-App, SMS, and Email channels.
+    Each shipment milestone sends a specific, human-readable notification title + body.
     """
     try:
         from apps.notifications.services.notification_service import NotificationService
         from apps.notifications.models import NotificationType
 
-        status_type_map = {
-            ShipmentStatus.CREATED: NotificationType.ORDER_PACKED,
-            ShipmentStatus.PICKUP_SCHEDULED: NotificationType.ORDER_PACKED,
-            ShipmentStatus.PICKED_UP: NotificationType.ORDER_SHIPPED,
-            ShipmentStatus.IN_TRANSIT: NotificationType.ORDER_SHIPPED,
-            ShipmentStatus.OUT_FOR_DELIVERY: NotificationType.OUT_FOR_DELIVERY,
-            ShipmentStatus.DELIVERED: NotificationType.ORDER_DELIVERED,
-            ShipmentStatus.FAILED_DELIVERY: NotificationType.ORDER_SHIPPED,
-            ShipmentStatus.RTO_INITIATED: NotificationType.ORDER_SHIPPED,
-            ShipmentStatus.CANCELLED: NotificationType.ORDER_CANCELLED,
+        order_number = shipment.order.order_number
+        courier = shipment.courier_name or "Courier"
+        awb = shipment.awb_number or "Assigned"
+        location = shipment.current_location or ""
+
+        # Per-milestone notification type, title, and body
+        milestone_map = {
+            ShipmentStatus.CREATED: (
+                NotificationType.ORDER_PACKED,
+                f"Order #{order_number} — Shipment Created",
+                f"Your shipment has been created and assigned to {courier} (AWB: {awb}). "
+                f"Your order is being prepared for pickup.",
+            ),
+            ShipmentStatus.PICKUP_SCHEDULED: (
+                NotificationType.ORDER_PACKED,
+                f"Order #{order_number} — Pickup Scheduled",
+                f"Pickup has been arranged with {courier}. Your parcel is at our warehouse "
+                f"waiting to be collected.",
+            ),
+            ShipmentStatus.PICKED_UP: (
+                NotificationType.ORDER_SHIPPED,
+                f"Order #{order_number} — Picked Up!",
+                f"Your order has been picked up from our warehouse by {courier} "
+                f"and is now on its way." + (f" Location: {location}." if location else ""),
+            ),
+            ShipmentStatus.IN_TRANSIT: (
+                NotificationType.ORDER_SHIPPED,
+                f"Order #{order_number} — In Transit",
+                f"Your order is currently in transit with {courier} (AWB: {awb})."
+                + (f" Current location: {location}." if location else ""),
+            ),
+            ShipmentStatus.REACHED_HUB: (
+                NotificationType.ORDER_SHIPPED,
+                f"Order #{order_number} — Reached Destination Hub",
+                f"Your parcel has reached the destination hub and will be dispatched for delivery soon."
+                + (f" Hub: {location}." if location else ""),
+            ),
+            ShipmentStatus.OUT_FOR_DELIVERY: (
+                NotificationType.OUT_FOR_DELIVERY,
+                f"Order #{order_number} — Out for Delivery 🚚",
+                f"Great news! Your order is out for delivery today with {courier}. "
+                f"Please ensure someone is available to receive it.",
+            ),
+            ShipmentStatus.DELIVERED: (
+                NotificationType.ORDER_DELIVERED,
+                f"Order #{order_number} — Delivered! ✅",
+                f"Your order has been successfully delivered. Thank you for choosing FAAZO!",
+            ),
+            ShipmentStatus.FAILED_DELIVERY: (
+                NotificationType.ORDER_SHIPPED,
+                f"Order #{order_number} — Delivery Attempt Failed",
+                f"{courier} attempted delivery but was unsuccessful. "
+                f"A re-delivery will be attempted. Please ensure someone is available.",
+            ),
+            ShipmentStatus.RTO_INITIATED: (
+                NotificationType.ORDER_SHIPPED,
+                f"Order #{order_number} — Return Initiated",
+                f"Your order is being returned to our warehouse. "
+                f"Our team will reach out to you shortly.",
+            ),
+            ShipmentStatus.CANCELLED: (
+                NotificationType.ORDER_CANCELLED,
+                f"Order #{order_number} — Shipment Cancelled",
+                f"The shipment for your order has been cancelled. "
+                f"Please contact FAAZO support for assistance.",
+            ),
         }
 
-        notif_type = status_type_map.get(shipment.shipment_status, NotificationType.ORDER_SHIPPED)
-        user = shipment.order.user
-
-        title = f"Shipment Update for Order #{shipment.order.order_number}"
-        body = f"Your shipment ({shipment.courier_name} - AWB: {shipment.awb_number or 'Assigned'}) is currently: {shipment.get_shipment_status_display()}."
-
-        if shipment.current_location:
-            body += f" Current location: {shipment.current_location}."
+        notif_type, title, body = milestone_map.get(
+            shipment.shipment_status,
+            (
+                NotificationType.ORDER_SHIPPED,
+                f"Shipment Update — Order #{order_number}",
+                f"Your shipment ({courier} - AWB: {awb}) status: {shipment.get_shipment_status_display()}.",
+            ),
+        )
 
         NotificationService.create(
-            user=user,
+            user=shipment.order.user,
             notification_type=notif_type,
             title=title,
             message=body,
@@ -63,7 +120,10 @@ def dispatch_shipment_notification(shipment: Shipment, event_type: str = None) -
                 "tracking_url": shipment.tracking_url,
             },
         )
-        logger.info("Dispatched notification for shipment %s (Status: %s)", shipment.shipment_number, shipment.shipment_status)
+        logger.info(
+            "Dispatched '%s' notification for shipment %s (Status: %s)",
+            shipment.shipment_status, shipment.shipment_number, shipment.shipment_status
+        )
     except Exception as exc:
         logger.warning("Notification Service dispatch skipped or encountered non-fatal error: %s", exc)
 
