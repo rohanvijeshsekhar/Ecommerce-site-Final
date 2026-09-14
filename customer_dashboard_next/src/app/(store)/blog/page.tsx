@@ -37,7 +37,7 @@ export default async function BlogPage({ searchParams }: Props) {
   const gridPosts = featuredPost ? posts.filter((p) => p.id !== featuredPost.id) : posts;
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[180px] pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[144px] pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-10">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto">

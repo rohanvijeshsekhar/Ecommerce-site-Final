@@ -394,6 +394,15 @@ export interface Product {
 
 // ── Homepage CMS ──────────────────────────────────────────────────────────────
 
+export interface HomepagePromoBanner {
+  id: string;
+  title: string;
+  subtitle: string;
+  link_url: string;
+  is_active: boolean;
+  updated_at?: string;
+}
+
 export interface HeroSlide {
   id: string;
   heading: string;
@@ -453,6 +462,8 @@ export interface FeaturedCollection {
   id: string;
   title: string;
   description: string;
+  image?: string | null;
+  image_url?: string | null;
   sort_order: number;
   is_visible: boolean;
   items: FeaturedCollectionItem[];

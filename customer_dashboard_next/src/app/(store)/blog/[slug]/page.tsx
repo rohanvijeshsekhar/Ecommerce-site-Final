@@ -71,7 +71,7 @@ export default async function BlogArticlePage({ params }: Props) {
   const relatedPosts = res.related || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[180px] pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[144px] pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Main Article Container */}
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-12 shadow-sm space-y-6">

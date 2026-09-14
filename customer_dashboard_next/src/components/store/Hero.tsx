@@ -20,14 +20,42 @@ interface SlideData {
   mobile_image_url: string | null;
 }
 
+interface PromoBannerData {
+  title: string;
+  subtitle: string;
+  link_url?: string;
+  is_active: boolean;
+}
+
 interface HeroProps {
   initialSlides?: SlideData[];
 }
 
 const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
   const [slides, setSlides] = useState<SlideData[]>(initialSlides || []);
+  const [promoBanner, setPromoBanner] = useState<PromoBannerData>({
+    title: 'FAAZO SUPER DEALS ARE LIVE:',
+    subtitle: 'UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS',
+    link_url: '',
+    is_active: true,
+  });
 
   useEffect(() => {
+    // Fetch promo banner
+    api.get('homepage/promo-banner/')
+      .then(res => {
+        const data = res.data?.data ?? res.data;
+        if (data && typeof data === 'object') {
+          setPromoBanner({
+            title: data.title || '',
+            subtitle: data.subtitle || '',
+            link_url: data.link_url || '',
+            is_active: data.is_active !== undefined ? Boolean(data.is_active) : true,
+          });
+        }
+      })
+      .catch(() => {});
+
     if (initialSlides && initialSlides.length > 0) return;
     api.get('homepage/hero/')
       .then(res => {
@@ -61,18 +89,39 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
     }
   ];
 
+  const renderPromoContent = () => (
+    <>
+      {promoBanner.title && (
+        <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
+          {promoBanner.title}
+        </span>
+      )}
+      {promoBanner.subtitle && (
+        <span className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
+          {promoBanner.subtitle}
+        </span>
+      )}
+    </>
+  );
+
   return (
-    <div className="relative w-full bg-transparent pt-[108px] lg:pt-[180px] px-0 md:px-8">
+    <div className="relative w-full bg-transparent pt-[108px] lg:pt-[144px] px-0 md:px-8">
       <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
-        <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
-          <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
-            FAAZO SUPER DEALS ARE LIVE:
-          </span>
-          <span className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
-            UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS
-          </span>
-        </div>
+        {promoBanner.is_active && (promoBanner.title || promoBanner.subtitle) && (
+          promoBanner.link_url ? (
+            <a
+              href={promoBanner.link_url}
+              className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10 hover:brightness-105 transition-all group block"
+            >
+              {renderPromoContent()}
+            </a>
+          ) : (
+            <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
+              {renderPromoContent()}
+            </div>
+          )
+        )}
         {/* Swiper Slider */}
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
@@ -96,7 +145,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
           const isSecondSlide = idx === 1;
           return (
             <SwiperSlide key={slide.id}>
-              <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] flex items-center">
+              <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] overflow-hidden">
                 {/* Background image */}
                 <div className="absolute inset-0 w-full h-full z-0 select-none">
                   {slide.mobile_image_url ? (
@@ -133,10 +182,10 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                 </div>
 
                 {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
-                <div className="relative z-10 max-w-7xl mx-auto w-full px-6 sm:px-8 md:px-14 lg:px-20 flex justify-start items-center h-full pointer-events-none">
-                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px] py-4">
+                <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
+                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
                     {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-[26px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2.5 md:mb-3 flex flex-col font-display text-left">
+                      <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
                         {isSecondSlide ? (
                           <>
                             <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
@@ -166,19 +215,19 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                         {slide.subheading}
                       </p>
                     )}
-
-                    {slide.cta_text && (
-                      <div className="flex justify-start pt-1">
-                        <a
-                          href={slide.cta_link || '#products'}
-                          className="group inline-flex items-center gap-2 sm:gap-2.5 px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[13px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
-                        >
-                          <span>{slide.cta_text}</span>
-                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                        </a>
-                      </div>
-                    )}
                   </div>
+
+                  {slide.cta_text && (
+                    <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
+                      <a
+                        href={slide.cta_link || '#products'}
+                        className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                      >
+                        <span>{slide.cta_text}</span>
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </SwiperSlide>

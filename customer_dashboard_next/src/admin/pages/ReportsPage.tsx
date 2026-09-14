@@ -168,17 +168,27 @@ export const ReportsPage: React.FC = () => {
 
       {/* Error Notice */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-semibold">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{error}</span>
           </div>
-          <button
-            onClick={() => loadTabData(activeTab, period)}
-            className="px-3 py-1 bg-white hover:bg-rose-100 text-rose-900 text-xs font-bold rounded-lg border border-rose-300 transition-colors"
-          >
-            Retry
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {error.toLowerCase().includes('session') && (
+              <a
+                href="/admin/login"
+                className="px-3 py-1.5 bg-[#005F63] hover:bg-[#004e52] text-white text-xs font-bold rounded-lg transition-colors inline-block"
+              >
+                Log In Again
+              </a>
+            )}
+            <button
+              onClick={() => loadTabData(activeTab, period)}
+              className="px-3 py-1.5 bg-white hover:bg-rose-100 text-rose-900 text-xs font-bold rounded-lg border border-rose-300 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 

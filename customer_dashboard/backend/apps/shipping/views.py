@@ -282,6 +282,13 @@ class AdminCreateCourierShipmentView(APIView):
             )
         # ──────────────────────────────────────────────────────────────────
 
+        # Normalize legacy provider name ('sandbox', 'live') to 'shiprocket' so that
+        # provider-based idempotency checks in ShiprocketProvider work correctly.
+        from .providers import SHIPROCKET_PROVIDERS
+        if shipment.provider in SHIPROCKET_PROVIDERS and shipment.provider != "shiprocket":
+            shipment.provider = "shiprocket"
+            shipment.save(update_fields=["provider", "updated_at"])
+
         package_info = {
             "weight":       float(request.data.get("weight") or shipment.weight or 1.0),
             "length":       float(request.data.get("length") or shipment.length or 10.0),
@@ -644,9 +651,18 @@ class AdminShipmentSyncView(APIView):
 
     def post(self, request, pk):
         try:
-            shipment = Shipment.objects.filter(is_deleted=False).select_related("order").prefetch_related("tracking_events").get(pk=pk)
+            shipment = Shipment.objects.filter(is_deleted=False).select_related(
+                "order"
+            ).prefetch_related("tracking_events").get(pk=pk)
         except Shipment.DoesNotExist:
             return error_response("Shipment not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        # Normalize legacy provider name so that ShiprocketProvider._recover_awb() is used
+        # correctly for shipments that were created when SHIPPING_PROVIDER was 'sandbox'.
+        from .providers import SHIPROCKET_PROVIDERS
+        if shipment.provider in SHIPROCKET_PROVIDERS and shipment.provider != "shiprocket":
+            shipment.provider = "shiprocket"
+            shipment.save(update_fields=["provider", "updated_at"])
 
         try:
             with transaction.atomic():
@@ -876,28 +892,59 @@ class ShiprocketWebhookView(APIView):
             with transaction.atomic():
                 shipment = None
                 if awb_code:
-                    shipment = Shipment.objects.filter(awb_number=awb_code, is_deleted=False).first()
+                    shipment = Shipment.objects.filter(awb_number=awb_code, is_deleted=False).select_related("order").first()
                 if not shipment and sr_shipment_id:
-                    shipment = Shipment.objects.filter(delhivery_shipment_id=str(sr_shipment_id), is_deleted=False).first()
+                    shipment = Shipment.objects.filter(delhivery_shipment_id=str(sr_shipment_id), is_deleted=False).select_related("order").first()
 
                 if shipment:
-                    from .providers import SHIPROCKET_STATUS_MAP
-                    mapped_status = SHIPROCKET_STATUS_MAP.get(str(current_status).upper(), shipment.shipment_status)
-                    shipment.shipment_status = mapped_status
-                    if payload.get("location") or payload.get("scans"):
+                    from .providers import map_shiprocket_status, SHIPMENT_STATUS_RANK, sync_order_status_from_shipment
+                    from .services import dispatch_shipment_notification
+
+                    mapped_status = map_shiprocket_status(current_status, shipment.shipment_status)
+
+                    # Status Regression Protection
+                    cur_rank = SHIPMENT_STATUS_RANK.get(shipment.shipment_status, 0)
+                    new_rank = SHIPMENT_STATUS_RANK.get(mapped_status, 0)
+                    is_exception = mapped_status in [
+                        ShipmentStatus.FAILED_DELIVERY,
+                        ShipmentStatus.RTO_INITIATED,
+                        ShipmentStatus.RTO_IN_TRANSIT,
+                        ShipmentStatus.RTO_DELIVERED,
+                        ShipmentStatus.CANCELLED,
+                        ShipmentStatus.LOST,
+                    ]
+
+                    status_changed = False
+                    if new_rank >= cur_rank or is_exception:
+                        if shipment.shipment_status != mapped_status:
+                            shipment.shipment_status = mapped_status
+                            status_changed = True
+                    else:
+                        logger.warning(
+                            "[WEBHOOK_REGRESSION_PREVENTED] Shipment %s: Regressive status '%s' ignored; current status is '%s'.",
+                            shipment.shipment_number, mapped_status, shipment.shipment_status
+                        )
+
+                    # Update Location from webhook payload
+                    loc = payload.get("location") or payload.get("city") or payload.get("destination")
+                    if not loc and payload.get("scans"):
                         scans = payload.get("scans", [])
-                        last_loc = scans[-1].get("location") if scans else payload.get("location")
-                        if last_loc:
-                            shipment.current_location = last_loc
+                        if scans and isinstance(scans, list):
+                            loc = scans[-1].get("location") if isinstance(scans[-1], dict) else None
+                    if loc:
+                        shipment.current_location = str(loc)
 
                     if mapped_status == ShipmentStatus.DELIVERED and not shipment.delivered_at:
                         shipment.delivered_at = timezone.now()
 
-                    shipment.save(update_fields=["shipment_status", "current_location", "delivered_at", "updated_at"])
+                    shipment.last_synced_at = timezone.now()
+                    shipment.save(update_fields=["shipment_status", "current_location", "delivered_at", "last_synced_at", "updated_at"])
 
-                    ShipmentEvent.objects.create(
+                    # Log tracking event
+                    from .models import ShipmentTrackingEvent
+                    ShipmentTrackingEvent.objects.create(
                         shipment=shipment,
-                        event_code=f"WEBHOOK_{current_status.upper()}",
+                        event_code=f"WEBHOOK_{str(current_status).upper()}",
                         event_label=f"Webhook: {current_status}",
                         status_mapped=mapped_status,
                         event_timestamp=timezone.now(),
@@ -905,6 +952,24 @@ class ShiprocketWebhookView(APIView):
                         description=f"Status updated via Shiprocket Webhook: {current_status}",
                         event_source="webhook",
                     )
+
+                    ShipmentEvent.objects.create(
+                        shipment=shipment,
+                        event_code=f"WEBHOOK_{str(current_status).upper()}",
+                        event_label=f"Webhook: {current_status}",
+                        status_mapped=mapped_status,
+                        event_timestamp=timezone.now(),
+                        location=shipment.current_location or "Shiprocket Network",
+                        description=f"Status updated via Shiprocket Webhook: {current_status}",
+                        event_source="webhook",
+                    )
+
+                    # Synchronize order lifecycle
+                    sync_order_status_from_shipment(shipment, shipment.shipment_status)
+
+                    # Dispatch customer notification if status changed
+                    if status_changed:
+                        dispatch_shipment_notification(shipment, event_type="status_changed")
 
                 log_entry.is_processed = True
                 log_entry.processed_at = timezone.now()

@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  User, Building2, MapPin, Package, Heart, Shield, HeadphonesIcon,
+  User, Building2, MapPin, Package, Heart, Shield, HeadphonesIcon, Headphones,
   Lock, LogOut, Camera, Pencil, Trash2, Plus,
   Check, X, ShoppingCart, FileText, Phone, Mail,
   AlertCircle, CheckCircle, RefreshCw, ShoppingBag,
   Ticket, Gift, ChevronDown, Upload, Eye, EyeOff,
   LayoutDashboard, CreditCard, Smartphone,
-  Layers, Globe, ChevronRight, Handshake
+  Layers, Globe, ChevronRight, Handshake, Search, Truck, Star,
+  ArrowLeft, Bell, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usersService } from '../../lib/services/users';
@@ -19,6 +21,9 @@ import OrderDetailPage from './OrderDetailPage';
 import { getStatusLabel } from '@/lib/utils';
 import { ordersService } from '../../lib/services/ordersService';
 import { INDIAN_STATES } from '@/lib/constants/indianStates';
+import { useWishlist } from '@/contexts/WishlistContext';
+import { useStore } from '@/contexts/StoreContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,8 +46,8 @@ interface ProfileDashboardProps {
   setActiveSection: (s: DashboardSection) => void;
   orders: Order[];
   setCartItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
-  wishlistItems: CartItem[];
-  setWishlistItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  wishlistItems?: CartItem[];
+  setWishlistItems?: React.Dispatch<React.SetStateAction<CartItem[]>>;
   setCurrentView: (view: any) => void;
   onProductClick: (id: string) => void;
   showToast: (message: string) => void;
@@ -114,9 +119,9 @@ const statusConfig = new Proxy(
 );
 
 const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
-  <div className="mb-6">
-    <h2 className="text-xl font-black text-slate-800 tracking-tight font-display">{title}</h2>
-    {subtitle && <p className="text-xs text-slate-400 mt-1 font-sans">{subtitle}</p>}
+  <div className="mb-2 sm:mb-6">
+    <h2 className="text-sm sm:text-xl font-bold sm:font-black text-slate-800 tracking-tight font-display">{title}</h2>
+    {subtitle && <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 font-sans leading-snug">{subtitle}</p>}
   </div>
 );
 
@@ -129,18 +134,18 @@ const DashboardStatCard: React.FC<{
 }> = ({ label, value, icon, color, sub, onClick }) => (
   <div 
     onClick={onClick}
-    className={`bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-5 flex flex-col justify-between hover:shadow-[0_8px_30px_rgba(0,91,99,0.06)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group`}
+    className={`bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-4 sm:p-5 flex flex-col justify-between hover:shadow-[0_8px_30px_rgba(0,91,99,0.06)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group`}
   >
-    <div className="flex items-center justify-between mb-4">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} group-hover:scale-105 transition-transform duration-300`}>
+    <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${color} group-hover:scale-105 transition-transform duration-300`}>
         {icon}
       </div>
       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#005B63] group-hover:translate-x-0.5 transition-all" />
     </div>
     <div>
-      <p className="text-2xl font-black text-slate-800 font-display">{value}</p>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
-      {sub && <p className="text-[10px] text-slate-300 mt-1 font-medium">{sub}</p>}
+      <p className="text-xl sm:text-2xl font-black text-slate-800 font-display">{value}</p>
+      <p className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
+      {sub && <p className="text-[9.5px] sm:text-[10px] text-slate-300 mt-0.5 sm:mt-1 font-medium">{sub}</p>}
     </div>
   </div>
 );
@@ -150,21 +155,21 @@ const QuickActionCard: React.FC<{
 }> = ({ label, icon, onClick, color = '#005B63' }) => (
   <button
     onClick={onClick}
-    className="flex flex-col items-center justify-center gap-2.5 p-5 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] hover:border-[#005B63]/25 transition-all duration-300 group cursor-pointer"
+    className="flex flex-col items-center justify-center gap-2 sm:gap-2.5 p-3.5 sm:p-5 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] hover:border-[#005B63]/25 transition-all duration-300 group cursor-pointer"
   >
     <span style={{ color }} className="group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-300">{icon}</span>
-    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">{label}</span>
+    <span className="text-[9.5px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">{label}</span>
   </button>
 );
 
 const EmptyState: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; action?: React.ReactNode }> = ({ icon, title, subtitle, action }) => (
-  <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white rounded-2xl border border-slate-100 shadow-sm">
-    <div className="w-16 h-16 rounded-full bg-[#E6F2F2] flex items-center justify-center text-[#005B63] mb-4">
+  <div className="flex flex-col items-center justify-center py-8 sm:py-16 px-4 text-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#E6F2F2] flex items-center justify-center text-[#005B63] mb-3 sm:mb-4">
       {icon}
     </div>
-    <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">{title}</h3>
-    <p className="text-xs text-slate-400 max-w-xs mt-1 leading-relaxed">{subtitle}</p>
-    {action && <div className="mt-5">{action}</div>}
+    <h3 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">{title}</h3>
+    <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs mt-1 leading-relaxed">{subtitle}</p>
+    {action && <div className="mt-4 sm:mt-5">{action}</div>}
   </div>
 );
 
@@ -174,17 +179,19 @@ const Toast: React.FC<{ message: string | null }> = ({ message }) => {
                     message.toLowerCase().includes('pending') || 
                     message.toLowerCase().includes('rejected');
   return (
-    <div className={`fixed bottom-24 md:bottom-8 left-1/2 z-[200] text-white text-xs font-semibold uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-xl flex items-center gap-2.5 animate-toast-in border ${
-      isWarning 
-        ? 'bg-amber-950 border-amber-500/30' 
-        : 'bg-[#005B63] border-[#005B63]/30'
-    }`}>
-      {isWarning ? (
-        <AlertCircle className="w-4 h-4 text-amber-400 stroke-[2] shrink-0" />
-      ) : (
-        <CheckCircle className="w-4 h-4 text-emerald-300 stroke-[2] shrink-0" />
-      )}
-      <span>{message}</span>
+    <div className="fixed top-24 sm:top-6 inset-x-0 z-[99999] pointer-events-none flex justify-center px-4">
+      <div className={`pointer-events-auto text-white text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-toast-in border max-w-md w-auto ${
+        isWarning 
+          ? 'bg-amber-950 border-amber-500/30' 
+          : 'bg-[#005B63] border-[#005B63]/30'
+      }`}>
+        {isWarning ? (
+          <AlertCircle className="w-4 h-4 text-amber-400 stroke-[2] shrink-0" />
+        ) : (
+          <CheckCircle className="w-4 h-4 text-emerald-300 stroke-[2] shrink-0" />
+        )}
+        <span className="text-center">{message}</span>
+      </div>
     </div>
   );
 };
@@ -202,7 +209,18 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   onProductClick,
   showToast,
 }) => {
+  const router = useRouter();
   const { user, profile, logout, refreshUser, resendVerification, logoutAll, activeSessions, verifyOTP, resendOTP } = useAuth();
+  const { wishlistCount } = useWishlist();
+  const { cartItems } = useStore();
+  const cartTotalQty = cartItems?.reduce((acc, item) => acc + (item.qty || 1), 0) || 0;
+
+  // Redirect wishlist or cart activeSection to canonical pages if navigated via external state
+  useEffect(() => {
+    if (activeSection === 'wishlist') {
+      router.push('/wishlist');
+    }
+  }, [activeSection, router]);
 
   // ── Local state ──
   const [localToast, setLocalToast] = useState<string | null>(null);
@@ -348,6 +366,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     address_type: 'both', is_default: false,
   });
   const [addressSaving, setAddressSaving] = useState(false);
+  const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
 
   // Security
   const [securityForm, setSecurityForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
@@ -565,35 +584,33 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     setAddressForm({ label: 'Primary Clinic', full_name: '', mobile: '', line1: '', line2: '', city: '', state: '', pincode: '', address_type: 'both', is_default: false });
     setEditingAddress(null);
     setShowAddressForm(false);
+    setAddressFormErrors({});
   };
 
   const handleSaveAddress = async () => {
+    const newErrors: Record<string, string> = {};
     if (!addressForm.full_name || addressForm.full_name.trim().length < 3) {
-      fireToast('Recipient name must be at least 3 characters.');
-      return;
+      newErrors.full_name = 'Recipient name must be at least 3 characters.';
     }
     const cleanMobile = (addressForm.mobile || '').replace(/\D/g, '');
     if (cleanMobile.length < 10) {
-      fireToast('Please enter a valid 10-digit mobile number.');
-      return;
+      newErrors.mobile = 'Please enter a valid 10-digit mobile number.';
     }
     if (!addressForm.line1 || addressForm.line1.trim().length < 5) {
-      fireToast('Street address line 1 must be at least 5 characters.');
-      return;
+      newErrors.line1 = 'Street address must be at least 5 characters.';
     }
     if (!addressForm.city || addressForm.city.trim().length < 2) {
-      fireToast('Please enter a valid city name.');
-      return;
+      newErrors.city = 'Please enter a valid city name.';
     }
     if (!addressForm.state || addressForm.state.trim().length < 2) {
-      fireToast('Please select a valid State.');
-      return;
+      newErrors.state = 'Please select a valid State.';
     }
     const pin = (addressForm.pincode || '').trim();
     if (!/^\d{6}$/.test(pin)) {
-      fireToast('Pincode must be exactly 6 digits.');
-      return;
+      newErrors.pincode = 'Pincode must be exactly 6 digits.';
     }
+    setAddressFormErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
     setAddressSaving(true);
     try {
@@ -651,6 +668,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   const startEditAddress = (addr: Address) => {
     setEditingAddress(addr);
     setAddressForm({ ...addr });
+    setAddressFormErrors({});
     setShowAddressForm(true);
   };
 
@@ -783,10 +801,11 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   };
 
   // ── Grouped navigation hierarchy ──
-  const navItems: { id: DashboardSection; label: string; icon: React.ReactNode; group: 'procurement' | 'settings' }[] = [
+  const navItems: { id: DashboardSection | 'cart'; label: string; icon: React.ReactNode; group: 'procurement' | 'settings' }[] = [
     { id: 'dashboard',    label: 'Dashboard',          icon: <LayoutDashboard className="w-4 h-4" />, group: 'procurement' },
     { id: 'orders',       label: 'My Orders',          icon: <Package className="w-4 h-4" />,         group: 'procurement' },
     { id: 'wishlist',     label: 'Wishlist',           icon: <Heart className="w-4 h-4" />,           group: 'procurement' },
+    { id: 'cart',         label: 'Cart',               icon: <ShoppingCart className="w-4 h-4" />,    group: 'procurement' },
     { id: 'addresses',    label: 'Addresses',          icon: <MapPin className="w-4 h-4" />,          group: 'procurement' },
     { id: 'warranty',     label: 'Warranty',           icon: <Shield className="w-4 h-4" />,          group: 'procurement' },
     { id: 'support',      label: 'Support',            icon: <HeadphonesIcon className="w-4 h-4" />,  group: 'procurement' },
@@ -816,7 +835,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
           <DashboardStatCard label="Total Orders" value={orders.length} icon={<Package className="w-5 h-5 text-[#005B63]" />} color="bg-[#E6F2F2]" onClick={() => setActiveSection('orders')} />
           <DashboardStatCard label="Pending Delivery" value={pendingCount} icon={<RefreshCw className="w-5 h-5 text-amber-500" />} color="bg-amber-50" onClick={() => setActiveSection('orders')} />
-          <DashboardStatCard label="Wishlist Items" value={wishlistItems.length} icon={<Heart className="w-5 h-5 text-rose-500" />} color="bg-rose-50" onClick={() => setActiveSection('wishlist')} />
+          <DashboardStatCard label="Wishlist Items" value={wishlistCount} icon={<Heart className="w-5 h-5 text-rose-500" />} color="bg-rose-50" onClick={() => router.push('/wishlist')} />
           <DashboardStatCard label="Active Warranties" value={registeredWarranties.length} icon={<Shield className="w-5 h-5 text-emerald-600" />} color="bg-emerald-50" onClick={() => setActiveSection('warranty')} />
           <DashboardStatCard label="Open Support Tickets" value={supportTickets.filter(t => t.status === 'open' || t.status === 'in-progress').length} icon={<HeadphonesIcon className="w-5 h-5 text-indigo-500" />} color="bg-indigo-50" onClick={() => setActiveSection('support')} />
         </div>
@@ -830,7 +849,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             <QuickActionCard label="Register Warranty" icon={<Shield className="w-5 h-5" />} onClick={() => setActiveSection('warranty')} color={ORANGE} />
             <QuickActionCard label="Contact Support" icon={<HeadphonesIcon className="w-5 h-5" />} onClick={() => { setIsCreatingTicket(true); setActiveSection('support'); }} color="#6366f1" />
             <QuickActionCard label="Manage Addresses" icon={<MapPin className="w-5 h-5" />} onClick={() => setActiveSection('addresses')} color="#10b981" />
-            <QuickActionCard label="View Wishlist" icon={<Heart className="w-5 h-5" />} onClick={() => setActiveSection('wishlist')} color="#f43f5e" />
+            <QuickActionCard label="View Wishlist" icon={<Heart className="w-5 h-5" />} onClick={() => router.push('/wishlist')} color="#f43f5e" />
           </div>
         </div>
 
@@ -930,39 +949,39 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   // My Profile
   const renderProfile = () => {
     return (
-      <div className="space-y-6">
+      <div className="space-y-3 sm:space-y-6">
         <SectionHeader title="My Profile" subtitle="Verify your practitioner registration details." />
 
         {/* Profile Identity Card */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-6 flex flex-col sm:flex-row items-center gap-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
           <div className="relative shrink-0">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={displayName} className="w-20 h-20 rounded-full object-cover border-4 border-[#E6F2F2] shadow-sm" />
+              <img src={profile.avatar_url} alt={displayName} className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-[#E6F2F2] shadow-xs" />
             ) : (
-              <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-black shadow-inner" style={{ background: `linear-gradient(135deg, ${TEAL}, #00a3b0)` }}>
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-black shadow-inner" style={{ background: `linear-gradient(135deg, ${TEAL}, #00a3b0)` }}>
                 {displayInitials}
               </div>
             )}
             <button
               onClick={() => avatarInputRef.current?.click()}
               disabled={avatarUploading}
-              className="absolute -bottom-1 -right-1 w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-[#E6F2F2] transition-colors"
+              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 sm:w-8 sm:h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center shadow-xs cursor-pointer hover:bg-[#E6F2F2] transition-colors"
               style={{ color: TEAL }}
             >
-              {avatarUploading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              {avatarUploading ? <RefreshCw className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 animate-spin" /> : <Camera className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />}
             </button>
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
-          <div className="text-center sm:text-left flex-1">
-            <h3 className="text-base font-black text-slate-800">{displayName}</h3>
-            <p className="text-xs text-[#005B63] font-bold uppercase tracking-wider mt-0.5">{user?.role === 'dealer' ? 'Verified FAAZO Dealer' : 'Dental Practitioner'}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{user?.email}</p>
-            <div className="flex justify-center sm:justify-start gap-3 mt-3">
-              <button onClick={() => avatarInputRef.current?.click()} className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg border border-[#005B63] text-[#005B63] hover:bg-[#E6F2F2] transition-colors cursor-pointer flex items-center gap-1.5">
+          <div className="text-center sm:text-left flex-1 min-w-0">
+            <h3 className="text-xs sm:text-base font-bold text-slate-800 truncate">{displayName}</h3>
+            <p className="text-[10px] sm:text-xs text-[#005B63] font-bold uppercase tracking-wider mt-0.5">{user?.role === 'dealer' ? 'Verified FAAZO Dealer' : 'Dental Practitioner'}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{user?.email}</p>
+            <div className="flex justify-center sm:justify-start gap-2 sm:gap-3 mt-2 sm:mt-3">
+              <button onClick={() => avatarInputRef.current?.click()} className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-[#005B63] text-[#005B63] hover:bg-[#E6F2F2] transition-colors cursor-pointer flex items-center gap-1.5">
                 <Upload className="w-3 h-3" /> Change Photo
               </button>
               {profile?.avatar_url && (
-                <button onClick={handleDeleteAvatar} className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer">
+                <button onClick={handleDeleteAvatar} className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer">
                   Remove
                 </button>
               )}
@@ -971,42 +990,42 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         </div>
 
         {/* Profile Simple Details Form */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 space-y-3 sm:space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-5">
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Full Name</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Full Name</label>
               <input
                 type="text"
                 value={profileForm.full_name}
                 onChange={e => { setProfileForm(f => ({ ...f, full_name: e.target.value })); setProfileFormDirty(true); }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                className="w-full px-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Mobile Number</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Mobile Number</label>
               <input
                 type="tel"
                 value={profileForm.phone_number}
                 onChange={e => { setProfileForm(f => ({ ...f, phone_number: e.target.value })); setProfileFormDirty(true); }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                className="w-full px-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Email Address</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Email Address</label>
               <input
                 type="email"
                 disabled
                 value={user?.email || ''}
-                className="w-full px-4 py-2.5 border border-slate-100 rounded-xl text-xs font-semibold text-slate-400 bg-slate-50 cursor-not-allowed"
+                className="w-full px-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-100 rounded-lg sm:rounded-xl text-xs font-medium text-slate-400 bg-slate-50 cursor-not-allowed"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Profession</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Profession</label>
               <div className="relative">
                 <select
                   value={profileForm.profession}
                   onChange={e => { setProfileForm(f => ({ ...f, profession: e.target.value })); setProfileFormDirty(true); }}
-                  className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                  className="w-full appearance-none px-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all"
                 >
                   <option value="">— Select Profession —</option>
                   <option value="Dentist">General Dentist</option>
@@ -1017,23 +1036,23 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   <option value="Periodontist">Periodontist</option>
                   <option value="Other">Other Practitioner</option>
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-3 border-t border-slate-50">
+          <div className="flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-slate-50">
             <button
               onClick={saveProfile}
               disabled={profileSaving || !profileFormDirty}
-              className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all cursor-pointer disabled:opacity-40"
+              className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white transition-all cursor-pointer disabled:opacity-40"
               style={{ background: profileFormDirty ? TEAL : '#94a3b8' }}
             >
               {profileSaving ? 'Saving...' : 'Save Profile'}
             </button>
             <button
               onClick={() => { setProfileForm({ full_name: profile?.full_name || user?.full_name || '', phone_number: profile?.phone_number || user?.phone_number || '', profession: profile?.profession || '' }); setProfileFormDirty(false); }}
-              className="px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer"
+              className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer"
             >
               Cancel
             </button>
@@ -1046,83 +1065,83 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   // Clinic Information
   const renderClinic = () => {
     return (
-      <div className="space-y-6">
+      <div className="space-y-3 sm:space-y-6">
         <SectionHeader title="Clinic Information" subtitle="Used for GST tax invoices and warranty processing. Delivery addresses are managed in Address Book." />
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 space-y-3 sm:space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-5">
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Clinic / Practice Name</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Clinic / Practice Name</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Building2 className="w-4 h-4" /></span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Building2 className="w-3.5 h-3.5 text-slate-400" /></span>
                 <input
                   type="text"
                   placeholder="e.g. Smile Dental Clinic"
                   value={clinicForm.clinic_name}
                   onChange={e => { setClinicForm(f => ({ ...f, clinic_name: e.target.value })); setClinicFormDirty(true); }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                  className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#005B63] transition-all"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
                 GST Number
-                <span className="text-[9px] font-bold text-slate-300 normal-case tracking-normal">(Optional)</span>
-                {clinicForm.gst_number && <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase"><Check className="w-2.5 h-2.5" /> Saved</span>}
+                <span className="text-[8.5px] font-bold text-slate-300 normal-case tracking-normal">(Optional)</span>
+                {clinicForm.gst_number && <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase"><Check className="w-2.5 h-2.5" /> Saved</span>}
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><FileText className="w-4 h-4" /></span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><FileText className="w-3.5 h-3.5 text-slate-400" /></span>
                 <input
                   type="text"
                   placeholder="22AAAAA0000A1Z5"
                   value={clinicForm.gst_number}
                   onChange={e => { setClinicForm(f => ({ ...f, gst_number: e.target.value.toUpperCase() })); setClinicFormDirty(true); }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                  className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#005B63] transition-all"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Clinic Phone</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Clinic Phone</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Phone className="w-4 h-4" /></span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Phone className="w-3.5 h-3.5 text-slate-400" /></span>
                 <input
                   type="tel"
                   placeholder="+91 98765 43210"
                   value={clinicForm.clinic_phone}
                   onChange={e => { setClinicForm(f => ({ ...f, clinic_phone: e.target.value })); setClinicFormDirty(true); }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                  className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#005B63] transition-all"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Clinic Email</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Clinic Email</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Mail className="w-4 h-4" /></span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Mail className="w-3.5 h-3.5 text-slate-400" /></span>
                 <input
                   type="email"
                   placeholder="clinic@example.com"
                   value={clinicForm.clinic_email}
                   onChange={e => { setClinicForm(f => ({ ...f, clinic_email: e.target.value })); setClinicFormDirty(true); }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                  className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#005B63] transition-all"
                 />
               </div>
             </div>
           </div>
 
           {/* Informational note */}
-          <div className="flex items-start gap-2.5 p-3.5 bg-[#E6F2F2]/50 border border-[#005B63]/10 rounded-xl">
-            <MapPin className="w-4 h-4 text-[#005B63] mt-0.5 shrink-0" />
-            <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-              Delivery and billing addresses are managed in the <button onClick={() => setActiveSection('addresses')} className="font-black text-[#005B63] hover:underline cursor-pointer">Address Book</button>. Add your clinic, branch, or home address there.
+          <div className="flex items-start gap-2 p-2.5 sm:p-3.5 bg-[#E6F2F2]/50 border border-[#005B63]/10 rounded-lg sm:rounded-xl">
+            <MapPin className="w-3.5 h-3.5 text-[#005B63] mt-0.5 shrink-0" />
+            <p className="text-[9px] sm:text-[10px] text-slate-500 leading-relaxed font-medium">
+              Delivery and billing addresses are managed in the <button onClick={() => setActiveSection('addresses')} className="font-bold text-[#005B63] hover:underline cursor-pointer">Address Book</button>. Add your clinic, branch, or home address there.
             </p>
           </div>
 
-          <div className="flex gap-3 pt-3 border-t border-slate-50">
+          <div className="flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-slate-50">
             <button onClick={saveClinic} disabled={profileSaving || !clinicFormDirty}
-              className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all cursor-pointer disabled:opacity-40"
+              className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white transition-all cursor-pointer disabled:opacity-40"
               style={{ background: clinicFormDirty ? TEAL : '#94a3b8' }}>
               {profileSaving ? 'Saving...' : 'Save Clinic Info'}
             </button>
-            <button onClick={() => { setClinicFormDirty(false); setClinicForm({ clinic_name: profile?.clinic_name || '', gst_number: profile?.gst_number || '', clinic_phone: profile?.clinic_phone || '', clinic_email: profile?.clinic_email || '' }); }} className="px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
+            <button onClick={() => { setClinicFormDirty(false); setClinicForm({ clinic_name: profile?.clinic_name || '', gst_number: profile?.gst_number || '', clinic_phone: profile?.clinic_phone || '', clinic_email: profile?.clinic_email || '' }); }} className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
               Cancel
             </button>
           </div>
@@ -1133,13 +1152,13 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // Address Book (Flipkart-style Cards & Spacing)
   const renderAddresses = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
         <SectionHeader title="Address Book" subtitle="Manage your clinical shipping addresses." />
         {!showAddressForm && (
           <button
             onClick={() => { resetAddressForm(); setShowAddressForm(true); }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#004b52] cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[9.5px] sm:text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#004b52] cursor-pointer shrink-0"
             style={{ background: TEAL }}
           >
             <Plus className="w-3.5 h-3.5" /> Add Address
@@ -1149,12 +1168,12 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
       {/* Address Form */}
       {showAddressForm && (
-        <div className="bg-white rounded-2xl border border-[#005B63]/30 shadow-md p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">{editingAddress ? 'Edit Address' : 'Add New Shipping Location'}</h3>
-            <button onClick={resetAddressForm} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-[#005B63]/30 shadow-md p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-100">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">{editingAddress ? 'Edit Address' : 'Add New Shipping Location'}</h3>
+            <button onClick={resetAddressForm} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5 sm:w-5 sm:h-5" /></button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
             {([
               { key: 'label', label: 'Address Label (e.g. Clinic, Lab, Head Office)', placeholder: 'e.g. Primary Clinic' },
               { key: 'full_name', label: 'Dentist / Contact Name', placeholder: 'Dr. Jane Smith' },
@@ -1166,20 +1185,22 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               { key: 'pincode', label: '6-Digit Pincode', placeholder: '400001' },
             ] as const).map(f => (
               <div key={f.key} className={f.key === 'line1' || f.key === 'line2' ? 'md:col-span-2' : ''}>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">{f.label}</label>
+                <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">{f.label}</label>
                 {f.key === 'state' ? (
                   <div className="relative">
                     <select
                       value={addressForm.state || ''}
                       onChange={e => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
-                      className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                      className={`w-full appearance-none px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all ${
+                        addressFormErrors.state ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                      }`}
                     >
                       <option value="">— Select State / UT —</option>
                       {INDIAN_STATES.map(st => (
                         <option key={st} value={st}>{st}</option>
                       ))}
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 ) : (
                   <input
@@ -1192,44 +1213,54 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                         ? e.target.value.replace(/\D/g, '')
                         : e.target.value;
                       setAddressForm(prev => ({ ...prev, [f.key]: val }));
+                      if (addressFormErrors[f.key]) {
+                        setAddressFormErrors(prev => ({ ...prev, [f.key]: '' }));
+                      }
                     }}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] focus:ring-2 focus:ring-[#005B63]/10 transition-all"
+                    className={`w-full px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all ${
+                      (addressFormErrors as any)[f.key] ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                    }`}
                   />
+                )}
+                {(addressFormErrors as any)[f.key] && (
+                  <span className="text-[9.5px] text-rose-500 font-semibold mt-0.5 block">
+                    {(addressFormErrors as any)[f.key]}
+                  </span>
                 )}
               </div>
             ))}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Address Type</label>
+              <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Address Type</label>
               <div className="relative">
                 <select
                   value={addressForm.address_type || 'both'}
                   onChange={e => setAddressForm(prev => ({ ...prev, address_type: e.target.value as any }))}
-                  className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                  className="w-full appearance-none px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] transition-all"
                 >
                   <option value="both">Shipping &amp; Billing Location</option>
                   <option value="shipping">Shipping Only</option>
                   <option value="billing">Billing Only</option>
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4 md:mt-0">
+            <div className="flex items-center gap-2 mt-2 md:mt-0">
               <input
                 type="checkbox" id="is_default"
                 checked={!!addressForm.is_default}
                 onChange={e => setAddressForm(prev => ({ ...prev, is_default: e.target.checked }))}
-                className="w-4 h-4 rounded text-[#005B63] focus:ring-[#005B63] accent-[#005B63]"
+                className="w-3.5 h-3.5 rounded text-[#005B63] focus:ring-[#005B63] accent-[#005B63]"
               />
               <label htmlFor="is_default" className="text-xs font-bold text-slate-600 cursor-pointer select-none">Set as primary default address</label>
             </div>
           </div>
-          <div className="flex gap-3 pt-3 border-t border-slate-50">
+          <div className="flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-slate-50">
             <button onClick={handleSaveAddress} disabled={addressSaving}
-              className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all cursor-pointer"
+              className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white transition-all cursor-pointer"
               style={{ background: TEAL }}>
               {addressSaving ? 'Saving...' : editingAddress ? 'Update Location' : 'Save Address'}
             </button>
-            <button onClick={resetAddressForm} className="px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
+            <button onClick={resetAddressForm} className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">
               Cancel
             </button>
           </div>
@@ -1238,8 +1269,8 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
       {/* Addresses List */}
       {addressLoading ? (
-        <div className="space-y-4">
-          {[1, 2].map(i => <SkeletonBlock key={i} className="h-32" />)}
+        <div className="space-y-3 sm:space-y-4">
+          {[1, 2].map(i => <SkeletonBlock key={i} className="h-28 sm:h-32" />)}
         </div>
       ) : addresses.length === 0 ? (
         <EmptyState
@@ -1247,13 +1278,13 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
           title="No Delivery Locations"
           subtitle="Add your clinical practices to streamline professional checkout."
           action={
-            <button onClick={() => setShowAddressForm(true)} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52]" style={{ background: TEAL }}>
+            <button onClick={() => setShowAddressForm(true)} className="px-5 py-2.5 sm:py-3 rounded-xl text-[9.5px] sm:text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52]" style={{ background: TEAL }}>
               Add Practice Location
             </button>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5">
           {addresses.map(addr => (
             <div 
               key={addr.id} 
@@ -1262,38 +1293,38 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               }`}
             >
               {/* Header card info */}
-              <div className="p-5">
-                <div className="flex items-center justify-between gap-3 mb-3.5">
-                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-[#E6F2F2] text-[#005B63] border border-[#005B63]/10 font-sans">
+              <div className="p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 mb-2.5 sm:mb-3.5">
+                  <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-[#E6F2F2] text-[#005B63] border border-[#005B63]/10 font-sans">
                     {addr.label || 'Clinic'}
                   </span>
                   {addr.is_default && (
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#005B63] text-white font-sans">
+                    <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#005B63] text-white font-sans">
                       Primary Default
                     </span>
                   )}
                 </div>
-                <h4 className="text-sm font-black text-slate-800">{addr.full_name}</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
-                <p className="text-xs text-slate-500">{addr.city}, {addr.state} – {addr.pincode}</p>
-                <p className="text-xs font-semibold text-slate-700 mt-2 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" /> {addr.mobile}</p>
+                <h4 className="text-xs sm:text-sm font-black text-slate-800">{addr.full_name}</h4>
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+                <p className="text-[11px] sm:text-xs text-slate-500">{addr.city}, {addr.state} – {addr.pincode}</p>
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1.5 sm:mt-2 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" /> {addr.mobile}</p>
               </div>
 
               {/* Action buttons footer (Flipkart-style) */}
               <div className="border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 divide-x divide-slate-100">
-                <button onClick={() => startEditAddress(addr)} className="py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#005B63] hover:bg-[#E6F2F2]/40 transition-colors cursor-pointer flex items-center justify-center gap-1">
+                <button onClick={() => startEditAddress(addr)} className="py-2 sm:py-2.5 text-center text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-[#005B63] hover:bg-[#E6F2F2]/40 transition-colors cursor-pointer flex items-center justify-center gap-1">
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
                 {!addr.is_default ? (
-                  <button onClick={() => handleSetDefault(addr.id)} className="py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:bg-[#E6F2F2]/40 transition-colors cursor-pointer flex items-center justify-center gap-1">
+                  <button onClick={() => handleSetDefault(addr.id)} className="py-2 sm:py-2.5 text-center text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:bg-[#E6F2F2]/40 transition-colors cursor-pointer flex items-center justify-center gap-1">
                     <Check className="w-3 h-3" /> Set Default
                   </button>
                 ) : (
-                  <div className="py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-300 select-none flex items-center justify-center gap-1">
+                  <div className="py-2 sm:py-2.5 text-center text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-300 select-none flex items-center justify-center gap-1">
                     <Check className="w-3 h-3 text-[#005B63]" /> Defaulted
                   </div>
                 )}
-                <button onClick={() => handleDeleteAddress(addr.id)} className="py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-rose-500 hover:bg-rose-50/60 transition-colors cursor-pointer flex items-center justify-center gap-1">
+                <button onClick={() => handleDeleteAddress(addr.id)} className="py-2 sm:py-2.5 text-center text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-rose-500 hover:bg-rose-50/60 transition-colors cursor-pointer flex items-center justify-center gap-1">
                   <Trash2 className="w-3 h-3" /> Remove
                 </button>
               </div>
@@ -1310,6 +1341,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       return (
         <OrderDetailPage
           orderId={selectedOrderId}
+          embedded={true}
           onBack={() => {
             setSelectedOrderId(null);
             fetchUserOrders();
@@ -1347,60 +1379,94 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     };
 
     return (
-      <div className="space-y-6 text-left">
-        <SectionHeader title="My Orders" subtitle="Manage, track, and download invoices for clinical products." />
+      <div className="space-y-3 sm:space-y-6 text-left">
+        {/* Responsive Desktop Header */}
+        <div className="hidden sm:flex items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display">My Orders</h2>
+              {ordersTotal > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#005B63]/10 text-[#005B63] border border-[#005B63]/20">
+                  {ordersTotal}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">Track, manage, and download tax invoices for your clinical orders.</p>
+          </div>
+          {orderSearch && (
+            <button
+              onClick={() => { setOrderSearch(''); setOrdersPage(1); }}
+              className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+            >
+              Clear Search
+            </button>
+          )}
+        </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-grow">
+        {/* Search & Status Filter Row */}
+        <div className="space-y-2 sm:space-y-3">
+          {/* Instant Search Bar */}
+          <div className="relative w-full">
+            <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search by Order ID or Product Name..." 
+              placeholder="Search by Order ID or Product..." 
               value={orderSearch}
               onChange={e => {
                 setOrderSearch(e.target.value);
                 setOrdersPage(1);
               }}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  fetchUserOrders();
-                }
-              }}
-              className="w-full pl-4 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.01)]" 
+              className="w-full pl-7 sm:pl-8.5 pr-7 sm:pr-8.5 py-1 sm:py-2 h-7.5 sm:h-9 border border-slate-200 rounded-lg sm:rounded-xl text-[10.5px] sm:text-xs font-medium text-slate-800 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:border-[#005B63] focus:ring-1.5 focus:ring-[#005B63]/10 transition-all shadow-xs placeholder-slate-400" 
             />
-          </div>
-          <div className="relative flex gap-2">
-            <button
-              onClick={() => fetchUserOrders()}
-              className="px-4 py-2.5 bg-[#005B63] text-white rounded-xl text-xs font-bold hover:bg-[#004b52] cursor-pointer"
-            >
-              Search
-            </button>
-            <div className="relative">
-              <select 
-                value={orderFilter} 
-                onChange={e => {
-                  setOrderFilter(e.target.value as any);
+            {orderSearch && (
+              <button
+                onClick={() => {
+                  setOrderSearch('');
                   setOrdersPage(1);
                 }}
-                className="appearance-none px-4 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005B63] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                title="Clear search"
               >
-                <option value="all">Filter: All Statuses</option>
-                <option value="pending_payment">Pending Payment</option>
-                <option value="processing">Processing</option>
-                <option value="packed">Packed</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Chips (Horizontal Scrollable) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+            {[
+              { value: 'all', label: 'All Orders' },
+              { value: 'processing', label: 'Processing' },
+              { value: 'packed', label: 'Packed' },
+              { value: 'shipped', label: 'Shipped' },
+              { value: 'delivered', label: 'Delivered' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ].map(tab => {
+              const isActive = orderFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => {
+                    setOrderFilter(tab.value as any);
+                    setOrdersPage(1);
+                  }}
+                  className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                    isActive
+                      ? 'bg-[#005B63] text-white border-[#005B63] shadow-xs'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {ordersLoading ? (
           <div className="space-y-4">
-            {[1, 2].map(i => <SkeletonBlock key={i} className="h-32" />)}
+            {[1, 2].map(i => <SkeletonBlock key={i} className="h-36 rounded-2xl" />)}
           </div>
         ) : userOrders.length === 0 ? (
           <EmptyState 
@@ -1410,166 +1476,169 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             action={ordersTotal === 0 ? <button onClick={() => setCurrentView('portfolio')} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52] transition-colors" style={{ background: TEAL }}>Explore Catalog</button> : undefined}
           />
         ) : (
-          <div className="space-y-5">
-            {userOrders.map(order => (
-              <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] overflow-hidden transition-all duration-300">
-                <div className="p-4 border-b border-slate-50 bg-slate-50/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Order Reference</span>
-                    <p className="text-xs font-black text-slate-800 hover:text-[#005B63] cursor-pointer hover:underline" onClick={() => setSelectedOrderId(order.id)}>
-                      {order.order_number || `#${order.id}`}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {new Date(order.created_at).toLocaleDateString('en-IN')} · {order.payment_method}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
-                      order.status === 'delivered' ? 'text-emerald-700 bg-emerald-50 border-emerald-25' :
-                      order.status === 'cancelled' ? 'text-rose-700 bg-rose-50 border-rose-25' :
-                      order.status === 'processing' ? 'text-amber-700 bg-amber-50 border-amber-25' :
-                      'text-slate-700 bg-slate-50 border-slate-200'
-                    }`}>
-                      {getStatusLabel(order.status)}
-                    </span>
-                    <span className="text-sm font-black text-slate-800">₹{order.total_amount.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
+          <div className="space-y-2.5 sm:space-y-4">
+            {userOrders.map(order => {
+              const orderDateStr = new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+              
+              const statusCfg: Record<string, { dot: string; textClass: string; headline: string }> = {
+                delivered: { dot: 'bg-emerald-500', textClass: 'text-emerald-700', headline: `Delivered on ${orderDateStr}` },
+                shipped: { dot: 'bg-blue-500', textClass: 'text-blue-700', headline: 'Shipped · On the way' },
+                packed: { dot: 'bg-indigo-500', textClass: 'text-indigo-700', headline: 'Packed · Ready for dispatch' },
+                processing: { dot: 'bg-amber-500', textClass: 'text-amber-700', headline: `Order Confirmed · ${orderDateStr}` },
+                pending_payment: { dot: 'bg-orange-500', textClass: 'text-orange-700', headline: 'Pending Payment' },
+                cancelled: { dot: 'bg-rose-500', textClass: 'text-rose-700', headline: `Cancelled on ${orderDateStr}` },
+                returned: { dot: 'bg-slate-500', textClass: 'text-slate-700', headline: 'Returned' },
+              };
+              const st = statusCfg[order.status] || { dot: 'bg-slate-400', textClass: 'text-slate-700', headline: order.status || 'Order Placed' };
+              const firstItem = order.items?.[0];
 
-                <div className="divide-y divide-slate-50">
-                  {order.items.map((item: any) => {
-                    const isWarrantyEligible = item.product_name.toLowerCase().includes('handpiece') || item.product_name.toLowerCase().includes('scaler') || item.product_name.toLowerCase().includes('light') || item.product_name.toLowerCase().includes('motor');
-                    return (
-                      <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-                        <div className="flex items-center gap-4">
-                          {item.image_url ? (
-                            <img src={`http://localhost:8000${item.image_url}`} alt={item.product_name} className="w-14 h-14 object-contain bg-slate-50 border border-slate-100 rounded-xl p-1.5 shrink-0" />
-                          ) : (
-                            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 text-slate-400">
-                              <Package className="w-6 h-6" />
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-xs font-black text-slate-800 hover:text-[#005B63] transition-colors cursor-pointer" onClick={() => onProductClick(item.product_slug)}>{item.product_name}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Qty: {item.quantity} · Unit Price: ₹{item.price.toLocaleString('en-IN')}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          <button onClick={() => setSelectedOrderId(order.id)} className="text-[10px] font-extrabold uppercase tracking-wider border border-slate-200 hover:border-[#005B63] hover:text-[#005B63] transition-colors px-3 py-1.5 rounded-lg text-slate-500 cursor-pointer">
-                            Track / View
-                          </button>
-                          {isWarrantyEligible && (
-                            <button 
-                              onClick={() => {
-                                setWarrantyOrderId(order.id);
-                                setWarrantyProductId(item.id);
-                                setShowWarrantyForm(true);
-                                setActiveSection('warranty');
-                              }}
-                              className="text-[10px] font-extrabold uppercase tracking-wider bg-[#E6F2F2] text-[#005B63] border border-[#005B63]/10 hover:bg-[#005B63] hover:text-white transition-colors px-3 py-1.5 rounded-lg cursor-pointer"
-                            >
-                              Register Warranty
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="px-4 py-3 flex flex-wrap gap-4 bg-slate-50/20 border-t border-slate-50">
-                  <button onClick={() => handleReorder(order)} className="flex items-center gap-1.5 text-[10px] font-black text-[#005B63] hover:underline uppercase tracking-wide cursor-pointer">
-                    <RefreshCw className="w-3.5 h-3.5" /> Reorder
-                  </button>
-                  <button onClick={() => setSelectedOrderId(order.id)} className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer ml-auto">
-                    <FileText className="w-3.5 h-3.5" /> Tax Invoice
-                  </button>
-                  <button 
-                    onClick={() => { setSupportOrderId(order.id); setIsCreatingTicket(true); setActiveSection('support'); }}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-slate-700 uppercase tracking-wide cursor-pointer"
+              return (
+                <div 
+                  key={order.id} 
+                  className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] hover:border-slate-300 transition-all overflow-hidden"
+                >
+                  {/* Primary Item Row (Flipkart / Amazon Style) */}
+                  <div 
+                    onClick={() => setSelectedOrderId(order.id)}
+                    className="p-3 sm:p-4 flex items-start gap-3 cursor-pointer active:bg-slate-50/80 transition-colors"
                   >
-                    <HeadphonesIcon className="w-3.5 h-3.5" /> Need Help
-                  </button>
+                    {/* Product Thumbnail */}
+                    <div className="relative shrink-0">
+                      {firstItem?.image_url ? (
+                        <img 
+                          src={`http://localhost:8000${firstItem.image_url}`} 
+                          alt={firstItem.product_name || 'Product'} 
+                          className="w-15 h-15 sm:w-18 sm:h-18 object-contain rounded-lg border border-slate-100 bg-slate-50/80 p-1" 
+                        />
+                      ) : (
+                        <div className="w-15 h-15 sm:w-18 sm:h-18 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-400">
+                          <Package className="w-6 h-6" />
+                        </div>
+                      )}
+                      {order.items?.length > 1 && (
+                        <span className="absolute -bottom-1 -right-1 bg-slate-800 text-white text-[8.5px] font-black px-1.5 py-0.2 rounded-md shadow-xs">
+                          +{order.items.length - 1}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Order Details Column */}
+                    <div className="flex-1 min-w-0 pr-1">
+                      {/* Status Headline */}
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${st.dot} ${['processing', 'pending_payment'].includes(order.status) ? 'animate-pulse' : ''}`} />
+                        <span className={`text-[11px] sm:text-xs font-black truncate ${st.textClass}`}>
+                          {st.headline}
+                        </span>
+                      </div>
+
+                      {/* Product Name */}
+                      <p className="text-xs sm:text-[13px] font-semibold text-slate-900 line-clamp-2 leading-snug">
+                        {firstItem?.product_name || `Order Ref #${order.order_number || order.id}`}
+                      </p>
+
+                      {/* Price & Ref info */}
+                      <div className="flex items-center gap-1.5 mt-1 text-[10.5px] sm:text-[11px] text-slate-500 flex-wrap">
+                        <span className="font-extrabold text-slate-900">₹{Number(order.total_amount).toLocaleString('en-IN')}</span>
+                        <span>•</span>
+                        <span className="text-slate-400 font-medium">Ref: {order.order_number || `#${order.id}`}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Chevron */}
+                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 self-center" />
+                  </div>
+
+                  {/* Multi-Item secondary previews (if more than 1 item) */}
+                  {order.items?.length > 1 && (
+                    <div className="px-3 pb-2.5 pt-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                      {order.items.slice(1).map((item: any) => (
+                        <div 
+                          key={item.id}
+                          onClick={() => setSelectedOrderId(order.id)}
+                          className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-md px-2 py-1 shrink-0 cursor-pointer hover:bg-slate-100"
+                        >
+                          {item.image_url ? (
+                            <img src={`http://localhost:8000${item.image_url}`} alt={item.product_name} className="w-5 h-5 object-contain" />
+                          ) : (
+                            <Package className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                          <span className="text-[10px] font-semibold text-slate-700 max-w-[100px] truncate">{item.product_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action & Rating Footer (Flipkart / Amazon style) */}
+                  <div className="border-t border-slate-100 px-3 py-1.5 bg-slate-50/50 flex items-center justify-between text-xs gap-2">
+                    {order.status === 'delivered' ? (
+                      <div 
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="flex items-center gap-1 text-slate-400 hover:text-amber-500 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-0.5 text-slate-300">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} className="w-3 h-3 fill-slate-200 text-slate-300 hover:fill-amber-400 hover:text-amber-400" />
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-500 ml-0.5">Rate Product</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="flex items-center gap-1 text-[10.5px] font-black text-[#005B63] hover:underline cursor-pointer"
+                      >
+                        <Truck className="w-3 h-3" /> Track Order
+                      </button>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => handleReorder(order)} 
+                        className="flex items-center gap-1 text-[10.5px] font-bold text-[#005B63] hover:underline cursor-pointer"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" /> Buy Again
+                      </button>
+                      <button 
+                        onClick={() => setSelectedOrderId(order.id)} 
+                        className="flex items-center gap-1 text-[10.5px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+                      >
+                        <FileText className="w-2.5 h-2.5" /> Invoice
+                      </button>
+                      <button 
+                        onClick={() => { setSupportOrderId(order.id); setIsCreatingTicket(true); setActiveSection('support'); }}
+                        className="flex items-center gap-1 text-[10.5px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+                      >
+                        <HeadphonesIcon className="w-2.5 h-2.5" /> Help
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Pagination Controls */}
             {ordersTotal > ordersPageSize && (
-              <div className="flex justify-between items-center pt-4 font-sans text-xs">
+              <div className="flex justify-between items-center pt-3 font-sans text-xs">
                 <button
                   disabled={ordersPage === 1}
                   onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
-                  className="px-3.5 py-2 border border-slate-200 rounded-lg disabled:opacity-40 hover:border-slate-350 bg-white"
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg disabled:opacity-40 hover:border-slate-300 bg-white font-bold text-slate-700 cursor-pointer"
                 >
                   Previous
                 </button>
-                <span className="text-slate-400 font-bold">
+                <span className="text-slate-500 font-medium">
                   Page {ordersPage} of {Math.ceil(ordersTotal / ordersPageSize)}
                 </span>
                 <button
                   disabled={ordersPage >= Math.ceil(ordersTotal / ordersPageSize)}
                   onClick={() => setOrdersPage(p => p + 1)}
-                  className="px-3.5 py-2 border border-slate-200 rounded-lg disabled:opacity-40 hover:border-slate-350 bg-white"
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg disabled:opacity-40 hover:border-slate-300 bg-white font-bold text-slate-700 cursor-pointer"
                 >
                   Next
                 </button>
               </div>
             )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Wishlist
-  const renderWishlist = () => {
-    const handleRemove = (id: string) => setWishlistItems(prev => prev.filter(i => i.id !== id));
-    const handleAddToCart = (item: CartItem) => {
-      setCartItems(prev => {
-        if (prev.some(c => c.id === item.id)) return prev.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c);
-        return [...prev, { ...item, qty: 1 }];
-      });
-      setWishlistItems(prev => prev.filter(w => w.id !== item.id));
-      fireToast('Moved to Cart!');
-    };
-
-    return (
-      <div className="space-y-6">
-        <SectionHeader title={`Wishlist (${wishlistItems.length})`} subtitle="Dental items saved for quick purchase ordering." />
-        {wishlistItems.length === 0 ? (
-          <EmptyState icon={<Heart className="w-8 h-8 text-rose-400" />} title="Your Wishlist is Empty"
-            subtitle="Save dental supplies or equipment by tapping the heart icon on any product."
-            action={<button onClick={() => setCurrentView('portfolio')} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer hover:bg-[#004b52]" style={{ background: TEAL }}>Browse Products</button>}
-          />
-        ) : (
-          <div className="space-y-4">
-            {wishlistItems.map(item => {
-              const originalPrice = item.originalPrice || Math.round(item.price * 1.25);
-              const disc = Math.round(((originalPrice - item.price) / originalPrice) * 100);
-              return (
-                <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-4 flex flex-col sm:flex-row gap-4 items-center hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 object-contain bg-slate-50 rounded-xl border border-slate-100 p-1.5 shrink-0 cursor-pointer" onClick={() => onProductClick(item.id)} />
-                  <div className="flex-1 min-w-0 text-center sm:text-left">
-                    <p className="text-xs font-black text-slate-800 truncate cursor-pointer hover:text-[#005B63] transition-colors" onClick={() => onProductClick(item.id)}>{item.name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{item.category || 'Clinical Supplies'}</p>
-                    <div className="flex items-baseline justify-center sm:justify-start gap-2 mt-1">
-                      <span className="text-sm font-black text-slate-900">₹{item.price.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] text-slate-300 line-through">₹{originalPrice.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] font-bold text-emerald-600">({disc}% OFF)</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 sm:flex-col shrink-0 w-full sm:w-auto justify-center">
-                    <button onClick={() => handleAddToCart(item)} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-white cursor-pointer" style={{ background: TEAL }}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Order
-                    </button>
-                    <button onClick={() => handleRemove(item.id)} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-rose-500 border border-rose-100 hover:bg-rose-50 transition-colors cursor-pointer">
-                      <Trash2 className="w-3.5 h-3.5" /> Drop
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
       </div>
@@ -1588,23 +1657,23 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     );
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <SectionHeader title="Warranty Book" subtitle="View clinical asset status. Warranties are registered directly from orders." />
 
         {/* Register CTA / Selector Form */}
         {showWarrantyForm ? (
-          <div className="bg-white rounded-2xl border border-[#005B63]/30 shadow-md p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Register Equipment Warranty</h3>
-              <button onClick={() => setShowWarrantyForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-[#005B63]/30 shadow-md p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">Register Equipment Warranty</h3>
+              <button onClick={() => setShowWarrantyForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5 sm:w-5 sm:h-5" /></button>
             </div>
 
             {eligibleProducts.length === 0 ? (
               <p className="text-xs text-slate-400 italic">No warranty-eligible equipment purchases found in your order history.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Select Purchased Product</label>
+                  <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Select Purchased Product</label>
                   <div className="relative">
                     <select
                       value={`${warrantyOrderId}|${warrantyProductId}`}
@@ -1613,7 +1682,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                         setWarrantyOrderId(oid);
                         setWarrantyProductId(pid);
                       }}
-                      className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63]"
+                      className="w-full appearance-none px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63]"
                     >
                       <option value="">— Select Product —</option>
                       {eligibleProducts.map((p, idx) => (
@@ -1622,37 +1691,37 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
                   <div>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Manufacturer Serial Number</label>
+                    <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Manufacturer Serial Number</label>
                     <input
                       type="text"
                       placeholder="e.g. NSK-FX205-XXXXX"
                       value={warrantySerial}
                       onChange={e => setWarrantySerial(e.target.value.toUpperCase())}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#005B63]"
+                      className="w-full px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:border-[#005B63]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Installation Date</label>
+                    <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Installation Date</label>
                     <input
                       type="date"
                       value={warrantyDate}
                       onChange={e => setWarrantyDate(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#005B63]"
+                      className="w-full px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:border-[#005B63]"
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-3 border-t border-slate-100">
-                  <button onClick={handleWarrantyRegister} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer" style={{ background: TEAL }}>
+                <div className="flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-slate-100">
+                  <button onClick={handleWarrantyRegister} className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white cursor-pointer" style={{ background: TEAL }}>
                     Confirm Activation
                   </button>
-                  <button onClick={() => setShowWarrantyForm(false)} className="px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-500 cursor-pointer">
+                  <button onClick={() => setShowWarrantyForm(false)} className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 text-slate-500 cursor-pointer">
                     Cancel
                   </button>
                 </div>
@@ -1660,12 +1729,12 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             )}
           </div>
         ) : (
-          <div className="bg-[#E6F2F2]/40 rounded-2xl border border-[#005B63]/10 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-[#E6F2F2]/40 rounded-xl sm:rounded-2xl border border-[#005B63]/10 p-3.5 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h4 className="text-xs font-black text-[#005B63] uppercase tracking-wider">New Device Warranty Registration</h4>
-              <p className="text-xs text-slate-500 mt-1 max-w-lg leading-relaxed">Purchased clinic handpieces, scalers, or imaging systems require active manufacturer serial numbers to lock warranty timelines.</p>
+              <h4 className="text-xs font-bold text-[#005B63] uppercase tracking-wider">New Device Warranty Registration</h4>
+              <p className="text-[10.5px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 max-w-lg leading-relaxed">Purchased clinic handpieces, scalers, or imaging systems require active manufacturer serial numbers to lock warranty timelines.</p>
             </div>
-            <button onClick={() => setShowWarrantyForm(true)} className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shrink-0 hover:bg-[#004b52] cursor-pointer" style={{ background: TEAL }}>
+            <button onClick={() => setShowWarrantyForm(true)} className="px-3.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white shrink-0 hover:bg-[#004b52] cursor-pointer" style={{ background: TEAL }}>
               Add Warranty
             </button>
           </div>
@@ -1673,7 +1742,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
         {/* Registered Warranties List */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
-          <div className="p-4 border-b border-slate-50">
+          <div className="p-3.5 sm:p-4 border-b border-slate-50">
             <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Active Clinical Assets ({registeredWarranties.length})</h3>
           </div>
           {registeredWarranties.length === 0 ? (
@@ -1681,17 +1750,17 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
           ) : (
             <div className="divide-y divide-slate-50">
               {registeredWarranties.map(item => (
-                <div key={item.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <img src={item.image} alt={item.productName} className="w-12 h-12 object-contain bg-slate-50 border border-slate-100 rounded-lg p-1" />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">{item.productName}</h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">S/N: {item.serialNumber} · Order ID: #{item.orderId}</p>
+                <div key={item.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <img src={item.image} alt={item.productName} className="w-11 h-11 sm:w-12 sm:h-12 object-contain bg-slate-50 border border-slate-100 rounded-lg p-1 shrink-0" />
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-slate-800 truncate">{item.productName}</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">S/N: {item.serialNumber} · Order ID: #{item.orderId}</p>
                       <p className="text-[10px] text-slate-400">Registered on: {item.registrationDate}</p>
                     </div>
                   </div>
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0">
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                       Active Coverage
                     </span>
                     <span className="text-[10px] text-slate-400 font-bold">Expires: {item.expiryDate}</span>
@@ -1710,13 +1779,13 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     const selectedOrderData = orders.find(o => o.id === supportOrderId);
 
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex items-center justify-between gap-2">
           <SectionHeader title="Support Tickets" subtitle="Report issues linked to specific orders, items, or deliveries." />
           {!isCreatingTicket && (
             <button
               onClick={() => { setSupportOrderId(''); setSupportProductId(''); setIsCreatingTicket(true); }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#004b52]"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[9.5px] sm:text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#004b52] shrink-0"
               style={{ background: TEAL }}
             >
               <Plus className="w-3.5 h-3.5" /> File Ticket
@@ -1726,21 +1795,21 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
         {/* Wizard Form */}
         {isCreatingTicket ? (
-          <div className="bg-white rounded-2xl border border-[#005B63]/30 shadow-md p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#005B63]/30 shadow-md p-4 sm:p-6 space-y-3.5 sm:space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Raise Procurement Support Ticket</h3>
-              <button onClick={() => setIsCreatingTicket(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              <h3 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">Raise Procurement Support Ticket</h3>
+              <button onClick={() => setIsCreatingTicket(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4">
               {/* Step 1: Select Order */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">1. Select Reference Order</label>
+                <label className="block text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1 sm:mb-1.5">1. Select Reference Order</label>
                 <div className="relative">
                   <select
                     value={supportOrderId}
                     onChange={e => { setSupportOrderId(e.target.value); setSupportProductId(''); }}
-                    className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63]"
+                    className="w-full appearance-none px-3.5 sm:px-4 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63]"
                   >
                     <option value="">— General / Account Inquiry —</option>
                     {orders.map(o => (
@@ -1754,31 +1823,31 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               {/* Step 2: Select Product (only if order selected) */}
               {supportOrderId && selectedOrderData && (
                 <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">2. Select Reference Product</label>
+                  <label className="block text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1 sm:mb-1.5">2. Select Reference Product</label>
                   <div className="relative">
                     <select
                       value={supportProductId}
                       onChange={e => setSupportProductId(e.target.value)}
-                      className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63]"
+                      className="w-full appearance-none px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63]"
                     >
                       <option value="">— Entire Order Inquiry —</option>
                       {selectedOrderData.items.map(item => (
                         <option key={item.id} value={item.id}>{item.name} (Qty: {item.qty})</option>
                       ))}
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
               )}
 
               {/* Step 3: Category */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">3. Issue Category</label>
+                <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">3. Issue Category</label>
                 <div className="relative">
                   <select
                     value={supportCategory}
                     onChange={e => setSupportCategory(e.target.value)}
-                    className="w-full appearance-none px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63]"
+                    className="w-full appearance-none px-3 sm:px-4 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63]"
                   >
                     <option value="Damaged Item">Damaged Item Received</option>
                     <option value="Wrong Item">Wrong Item Delivered</option>
@@ -1788,37 +1857,37 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                     <option value="Payment Issue">Payment &amp; Refund issue</option>
                     <option value="Other">Other Query</option>
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               {/* Step 4: Describe */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">4. Describe the Issue</label>
+                <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">4. Describe the Issue</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   placeholder="Explain details of the query so our clinical helpdesk team can investigate immediately..."
                   value={supportDescription}
                   onChange={e => setSupportDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] resize-none"
+                  className="w-full px-3 sm:px-4 py-1.5 sm:py-2.5 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] resize-none"
                 />
               </div>
 
               {/* Step 5: Upload image placeholder */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">5. Attachment Photos (Optional)</label>
-                <div className="border-2 border-dashed border-slate-200 hover:border-[#005B63] rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-50/50">
-                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                  <p className="text-xs text-slate-500 font-semibold">Click to upload photos of damaged / incorrect items</p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">PNG, JPG up to 5MB</p>
+                <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">5. Attachment Photos (Optional)</label>
+                <div className="border-2 border-dashed border-slate-200 hover:border-[#005B63] rounded-lg sm:rounded-xl p-3 sm:p-6 text-center cursor-pointer transition-colors bg-slate-50/50">
+                  <Upload className="w-4 h-4 sm:w-6 sm:h-6 text-slate-400 mx-auto mb-1 sm:mb-2" />
+                  <p className="text-[10.5px] sm:text-xs text-slate-500 font-semibold">Click to upload photos of damaged / incorrect items</p>
+                  <p className="text-[8.5px] sm:text-[10px] text-slate-300 mt-0.5">PNG, JPG up to 5MB</p>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
-                <button onClick={handleSupportSubmit} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer" style={{ background: TEAL }}>
+              <div className="flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-slate-100">
+                <button onClick={handleSupportSubmit} className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white cursor-pointer" style={{ background: TEAL }}>
                   Submit Ticket
                 </button>
-                <button onClick={() => setIsCreatingTicket(false)} className="px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-500 cursor-pointer">
+                <button onClick={() => setIsCreatingTicket(false)} className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 text-slate-500 cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -1826,13 +1895,13 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
           </div>
         ) : selectedTicket ? (
           /* Ticket details dialogue modal */
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-6 space-y-3 sm:space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-100">
               <div>
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Ticket Reference</span>
-                <h3 className="text-sm font-black text-slate-800">{selectedTicket.id}</h3>
+                <span className="text-[8px] sm:text-[9px] font-bold uppercase text-slate-400 tracking-wider">Ticket Reference</span>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-800">{selectedTicket.id}</h3>
               </div>
-              <button onClick={() => setSelectedTicket(null)} className="text-[10px] font-bold border border-slate-200 px-3 py-1 rounded-lg text-slate-500 hover:bg-slate-50">Back to List</button>
+              <button onClick={() => setSelectedTicket(null)} className="text-[9px] sm:text-[10px] font-bold border border-slate-200 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-slate-500 hover:bg-slate-50">Back to List</button>
             </div>
             <div>
               <p className="text-xs text-slate-400">Subject: <span className="font-semibold text-slate-700">{selectedTicket.subject}</span></p>
@@ -1841,10 +1910,10 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
             </div>
             
             {/* Conversation Log */}
-            <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 space-y-3 max-h-60 overflow-y-auto">
+            <div className="border border-slate-100 rounded-xl p-3 sm:p-4 bg-slate-50/50 space-y-2.5 sm:space-y-3 max-h-60 overflow-y-auto">
               {selectedTicket.messages.map((m, i) => (
                 <div key={i} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-3 rounded-xl max-w-xs text-xs font-semibold ${m.sender === 'user' ? 'bg-[#005B63] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none'}`}>
+                  <div className={`p-2.5 sm:p-3 rounded-xl max-w-xs text-xs font-semibold ${m.sender === 'user' ? 'bg-[#005B63] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none'}`}>
                     <p>{m.text}</p>
                   </div>
                   <span className="text-[8px] text-slate-400 mt-1">{m.date}</span>
@@ -1855,7 +1924,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         ) : (
           /* Tickets List */
           <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
-            <div className="p-4 border-b border-slate-50">
+            <div className="p-3.5 sm:p-4 border-b border-slate-50">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Ticket History</h3>
             </div>
             {supportTickets.length === 0 ? (
@@ -1866,14 +1935,14 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   <div 
                     key={t.id} 
                     onClick={() => setSelectedTicket(t)}
-                    className="p-5 flex items-center justify-between gap-4 hover:bg-slate-50/40 cursor-pointer transition-colors"
+                    className="p-4 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50/40 cursor-pointer transition-colors"
                   >
                     <div>
                       <h4 className="text-xs font-black text-slate-800">{t.subject}</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">Reference ID: {t.id} · Filed: {t.date}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                      <span className={`text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
                         t.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
                       }`}>
                         {t.status}
@@ -1892,27 +1961,27 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
 
   // Security (Verification statuses, devices session control)
   const renderSecurity = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <SectionHeader title="Security Controls" subtitle="Manage practitioner credentials and active sessions." />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-5">
         {/* Email verification card */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 flex flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${user?.is_email_verified ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
-              {user?.is_email_verified ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${user?.is_email_verified ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'} shrink-0`}>
+              {user?.is_email_verified ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> : <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
-            <div>
-              <h4 className="text-xs font-black text-slate-800">Email Verification</h4>
-              <p className="text-[11px] text-slate-400 truncate max-w-[200px]">{user?.email}</p>
+            <div className="min-w-0">
+              <h4 className="text-xs font-bold text-slate-800">Email Verification</h4>
+              <p className="text-[10.5px] sm:text-[11px] text-slate-400 truncate max-w-[200px]">{user?.email}</p>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${user?.is_email_verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'} font-sans`}>
+          <div className="mt-2.5 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${user?.is_email_verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'} font-sans`}>
               {user?.is_email_verified ? 'Verified' : 'Pending Verification'}
             </span>
             {!user?.is_email_verified && (
-              <button onClick={handleResendVerification} disabled={emailResent} className="text-[10px] font-black uppercase tracking-widest text-[#005B63] hover:underline cursor-pointer font-sans">
+              <button onClick={handleResendVerification} disabled={emailResent} className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#005B63] hover:underline cursor-pointer font-sans">
                 {emailResent ? 'Sent ✓' : 'Send Verification'}
               </button>
             )}
@@ -1920,40 +1989,40 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
         </div>
 
         {/* Phone Verification */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 flex flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
-              <Phone className="w-5 h-5" />
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'} shrink-0`}>
+              <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h4 className="text-xs font-black text-slate-800">OTP Phone Authentication</h4>
-              <p className="text-[11px] text-slate-400">{user?.phone_number || profileForm.phone_number || 'Not Linked'}</p>
+            <div className="min-w-0">
+              <h4 className="text-xs font-bold text-slate-800">OTP Phone Authentication</h4>
+              <p className="text-[10.5px] sm:text-[11px] text-slate-400">{user?.phone_number || profileForm.phone_number || 'Not Linked'}</p>
             </div>
           </div>
 
           {phoneOtpSent ? (
-            <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+            <div className="mt-2.5 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 space-y-2 sm:space-y-3">
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Enter 6-Digit OTP</label>
+                <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Enter 6-Digit OTP</label>
                 <input
                   type="text"
                   maxLength={6}
                   placeholder="000000"
                   value={phoneOtpCode}
                   onChange={e => setPhoneOtpCode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-850 bg-white focus:outline-none focus:border-[#005B63] tracking-widest"
+                  className="w-full text-center px-3 py-1.5 sm:py-2 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] tracking-widest"
                 />
               </div>
 
-              {phoneOtpError && <p className="text-[10px] text-rose-500 font-semibold">{phoneOtpError}</p>}
-              {phoneOtpSuccess && <p className="text-[10px] text-emerald-600 font-semibold">{phoneOtpSuccess}</p>}
+              {phoneOtpError && <p className="text-[9.5px] text-rose-500 font-semibold">{phoneOtpError}</p>}
+              {phoneOtpSuccess && <p className="text-[9.5px] text-emerald-600 font-semibold">{phoneOtpSuccess}</p>}
 
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={handleResendPhoneOtp}
                   disabled={phoneOtpCooldown > 0 || phoneOtpLoading}
-                  className={`text-[9px] font-black uppercase tracking-widest ${phoneOtpCooldown > 0 ? 'text-slate-300' : 'text-[#005B63] hover:underline'} cursor-pointer bg-transparent border-none`}
+                  className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider ${phoneOtpCooldown > 0 ? 'text-slate-300' : 'text-[#005B63] hover:underline'} cursor-pointer bg-transparent border-none`}
                 >
                   {phoneOtpCooldown > 0 ? `Resend in ${phoneOtpCooldown}s` : 'Resend OTP'}
                 </button>
@@ -1961,7 +2030,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => { setPhoneOtpSent(false); setPhoneOtpCode(''); setPhoneOtpError(null); setPhoneOtpSuccess(null); }}
-                    className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none"
+                    className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none"
                   >
                     Cancel
                   </button>
@@ -1969,7 +2038,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                     type="button"
                     onClick={handleVerifyPhoneOtp}
                     disabled={phoneOtpLoading || phoneOtpCode.length !== 6}
-                    className="px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-white cursor-pointer"
+                    className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-white cursor-pointer"
                     style={{ background: TEAL }}
                   >
                     {phoneOtpLoading ? 'Verifying...' : 'Verify'}
@@ -1978,8 +2047,8 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'} font-sans`}>
+            <div className="mt-2.5 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${user?.is_phone_verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'} font-sans`}>
                 {user?.is_phone_verified ? 'Verified' : 'Pending Verification'}
               </span>
               {!user?.is_phone_verified && (user?.phone_number || profileForm.phone_number) && (
@@ -1987,7 +2056,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                   type="button"
                   onClick={handleSendPhoneOtp}
                   disabled={phoneOtpLoading}
-                  className="text-[10px] font-black uppercase tracking-widest text-[#005B63] hover:underline cursor-pointer font-sans bg-transparent border-none"
+                  className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#005B63] hover:underline cursor-pointer font-sans bg-transparent border-none"
                 >
                   {phoneOtpLoading ? 'Sending...' : 'Verify Phone'}
                 </button>
@@ -1998,51 +2067,65 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       </div>
 
       {/* Change Password Form */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-6 space-y-4">
-        <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Change Password</h3>
+      <form onSubmit={(e) => { e.preventDefault(); savePassword(); }} autoComplete="off" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+        {/* Hidden username field to prevent browser autofill from hijacking global search inputs */}
+        <input
+          type="text"
+          name="username"
+          defaultValue={user?.email || ''}
+          autoComplete="username"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only opacity-0 absolute pointer-events-none w-0 h-0"
+        />
+
+        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Change Password</h3>
         {([
-          { key: 'old_password', label: 'Current Password', show: showOld, setShow: setShowOld },
-          { key: 'new_password', label: 'New Password', show: showNew, setShow: setShowNew },
-          { key: 'confirm_password', label: 'Confirm New Password', show: showNew, setShow: setShowNew },
+          { key: 'old_password', label: 'Current Password', name: 'current-password', autoComplete: 'current-password', show: showOld, setShow: setShowOld },
+          { key: 'new_password', label: 'New Password', name: 'new-password', autoComplete: 'new-password', show: showNew, setShow: setShowNew },
+          { key: 'confirm_password', label: 'Confirm New Password', name: 'confirm-password', autoComplete: 'new-password', show: showNew, setShow: setShowNew },
         ] as const).map(f => (
           <div key={f.key}>
-            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">{f.label}</label>
+            <label className="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">{f.label}</label>
             <div className="relative">
               <input
                 type={f.show ? 'text' : 'password'}
+                name={f.name}
+                autoComplete={f.autoComplete}
+                data-lpignore="true"
                 value={(securityForm as any)[f.key]}
                 onChange={e => setSecurityForm(p => ({ ...p, [f.key]: e.target.value }))}
-                className="w-full px-4 pr-11 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:border-[#005B63] transition-all"
+                className="w-full px-3 sm:px-4 pr-9 sm:pr-11 py-1.5 sm:py-2.5 h-8.5 sm:h-10 border border-slate-200 rounded-lg sm:rounded-xl text-xs font-medium text-slate-700 bg-white focus:outline-none focus:border-[#005B63] transition-all"
               />
-              <button type="button" onClick={() => f.setShow(!f.show)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
-                {f.show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button type="button" onClick={() => f.setShow(!f.show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                {f.show ? <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               </button>
             </div>
           </div>
         ))}
-        <button onClick={savePassword} disabled={securitySaving} className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white cursor-pointer disabled:opacity-40" style={{ background: TEAL }}>
+        <button type="submit" disabled={securitySaving} className="px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white cursor-pointer disabled:opacity-40" style={{ background: TEAL }}>
           {securitySaving ? 'Updating...' : 'Change Password'}
         </button>
-      </div>
+      </form>
 
       {/* Device Sessions — Live Enterprise API */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
-        <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 border-b border-slate-50 flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Active Practitioner Sessions</h3>
           <button
             onClick={handleRevokeAllSessions}
-            className="text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
+            className="text-[8.5px] sm:text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
           >
             Logout All Devices
           </button>
         </div>
 
         {sessionsLoading ? (
-          <div className="p-8 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-[#005B63] border-t-transparent rounded-full animate-spin" />
+          <div className="p-6 sm:p-8 flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[#005B63] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : liveDeviceSessions.length === 0 ? (
-          <div className="p-6 text-center">
+          <div className="p-5 sm:p-6 text-center">
             <p className="text-xs text-slate-400 font-medium">No active sessions found.</p>
           </div>
         ) : (
@@ -2054,14 +2137,14 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                 : '—';
 
               return (
-                <div key={session.id} className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div key={session.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     {isMobile
-                      ? <Smartphone className="w-5 h-5 text-slate-400 shrink-0" />
-                      : <Globe className="w-5 h-5 text-slate-400 shrink-0" />
+                      ? <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
+                      : <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
                     }
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate max-w-[240px]">
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-[200px] sm:max-w-[240px]">
                         {session.device_name || 'Unknown Device'}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
@@ -2070,12 +2153,12 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border bg-emerald-50 text-emerald-600 border-emerald-100 font-sans">
+                    <span className="text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border bg-emerald-50 text-emerald-600 border-emerald-100 font-sans">
                       Active
                     </span>
                     <button
                       onClick={() => handleRevokeSession(session.id)}
-                      className="text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
+                      className="text-[8.5px] sm:text-[9px] font-black text-rose-500 uppercase tracking-wider hover:underline cursor-pointer"
                     >
                       Revoke
                     </button>
@@ -2158,7 +2241,6 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
       case 'clinic':       return renderClinic();
       case 'addresses':    return renderAddresses();
       case 'orders':       return renderOrders();
-      case 'wishlist':     return renderWishlist();
       case 'warranty':     return renderWarranty();
       case 'support':      return renderSupport();
       case 'security':     return renderSecurity();
@@ -2299,6 +2381,21 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     const procurementItems = navItems.filter(n => n.group === 'procurement');
     const settingsItems = navItems.filter(n => n.group === 'settings');
 
+    const handleNavClick = (id: DashboardSection | 'cart') => {
+      if (id === 'wishlist') {
+        router.push('/wishlist');
+        if (closeMobile) closeMobile();
+        return;
+      }
+      if (id === 'cart') {
+        router.push('/cart');
+        if (closeMobile) closeMobile();
+        return;
+      }
+      setActiveSection(id as DashboardSection);
+      if (closeMobile) closeMobile();
+    };
+
     return (
       <div className="space-y-5 font-sans">
         {/* Profile Card Summary */}
@@ -2331,7 +2428,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               {procurementItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => { setActiveSection(item.id); if (closeMobile) closeMobile(); }}
+                  onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer text-left ${
                     activeSection === item.id
                       ? 'bg-[#E6F2F2]/60 text-[#005B63] border-l-4 border-[#005B63] pl-3'
@@ -2354,7 +2451,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
               {settingsItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => { setActiveSection(item.id); if (closeMobile) closeMobile(); }}
+                  onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer text-left ${
                     activeSection === item.id
                       ? 'bg-[#E6F2F2]/60 text-[#005B63] border-l-4 border-[#005B63] pl-3'
@@ -2383,45 +2480,349 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
     );
   };
 
-  // ─── Main layout ─────────────────────────────────────────────────────────────
-  return (
-    <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[180px] pb-24 font-sans select-none text-left">
-      <Toast message={localToast} />
-
-      {/* Mobile header bar */}
-      <div className="lg:hidden fixed top-[100px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between shadow-sm">
-        <span className="text-xs font-black uppercase tracking-widest text-[#005B63]">
-          {navItems.find(n => n.id === activeSection)?.label || 'Dashboard'}
-        </span>
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="flex items-center gap-1.5 text-xs font-bold border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 cursor-pointer hover:bg-slate-50 transition-all"
+  // ─── Mobile Landing Page (Matches reference design) ───
+  const renderMobileLanding = () => {
+    return (
+      <div className="space-y-4 pb-12 font-sans">
+        {/* Profile Summary Card */}
+        <div
+          onClick={() => setActiveSection('profile')}
+          className="bg-white rounded-2xl p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform"
         >
-          <User className="w-3.5 h-3.5" /> Options
-        </button>
-      </div>
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-14 h-14 rounded-full bg-[#E6F2F2] border border-teal-100 flex items-center justify-center text-[#005B63] text-lg font-black shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={displayName} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span>{displayInitials || 'U'}</span>
+              )}
+            </div>
+            <div className="min-w-0 text-left">
+              <h3 className="text-base font-bold text-slate-900 truncate">
+                {displayName || 'Customer'}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5 mt-0.5">
+                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{user?.email || profile?.clinic_email || 'No email attached'}</span>
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+        </div>
 
-      {/* Mobile sidebar overlay */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 z-[90] flex">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-          <div className="relative w-72 max-w-[85vw] bg-[#f7fafa] h-full overflow-y-auto p-4 shadow-2xl">
-            <button onClick={() => setIsSidebarOpen(false)} className="mb-4 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-5 h-5" /></button>
-            {renderSidebar(() => setIsSidebarOpen(false))}
+        {/* Quick Action Card (3 Columns: My Orders | Wishlist | Bag) */}
+        <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] grid grid-cols-3 divide-x divide-slate-100 p-2 text-center">
+          {/* My Orders */}
+          <button
+            onClick={() => setActiveSection('orders')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-700 mb-1.5 border border-slate-100/80">
+              <Package className="w-4 h-4 text-slate-600" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">My Orders</span>
+          </button>
+
+          {/* Wishlist */}
+          <button
+            onClick={() => router.push('/wishlist')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 mb-1.5 border border-rose-100/60">
+              <Heart className="w-4 h-4 text-rose-500" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">
+              Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ''}
+            </span>
+          </button>
+
+          {/* Bag */}
+          <button
+            onClick={() => router.push('/cart')}
+            className="flex flex-col items-center justify-center py-2.5 px-1 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-1.5 border border-amber-100/60">
+              <ShoppingBag className="w-4 h-4 text-amber-600" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">
+              Bag {cartTotalQty > 0 ? `(${cartTotalQty})` : ''}
+            </span>
+          </button>
+        </div>
+
+        {/* Section 1: ORDERS & PROCUREMENT */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Orders & Procurement
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => setActiveSection('orders')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-700 shrink-0 border border-sky-100/60">
+                  <Package className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">All Orders & Tracking</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/returns')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0 border border-emerald-100/60">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Returns & Replacement Requests</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
           </div>
         </div>
-      )}
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 mt-14 lg:mt-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Section 2: ACCOUNT & PRACTICE */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Account & Practice
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => setActiveSection('profile')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <User className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Profile Information</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('clinic')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Edit Clinic Details & GSTIN</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('addresses')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Saved Delivery Addresses</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/notifications')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Notifications</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveSection('security')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0 border border-slate-100">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Security & Change Password</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Section 3: SHOPPING LISTS */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Shopping Lists
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <button
+              onClick={() => router.push('/wishlist')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 shrink-0 border border-rose-100/60">
+                  <Heart className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Wishlist</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            <button
+              onClick={() => router.push('/cart')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 border border-amber-100/60">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Shopping Bag</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {cartTotalQty > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-[#F58220] text-white text-[11px] font-bold flex items-center justify-center">
+                    {cartTotalQty}
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Section 4: CLINICAL SUPPORT & LOGISTICS */}
+        <div>
+          <span className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1 mb-2 font-sans">
+            Clinical Support & Logistics
+          </span>
+          <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-slate-100 overflow-hidden">
+            <a
+              href="mailto:faazodental@gmail.com"
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer block"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0 border border-teal-100/60">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Email Support</span>
+                  <span className="text-xs text-slate-500 font-medium">faazodental@gmail.com</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </a>
+
+            <a
+              href="tel:+919289188852"
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left cursor-pointer block"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0 border border-teal-100/60">
+                  <Headphones className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-slate-800 block">Logistics Desk Hotline</span>
+                  <span className="text-xs text-slate-500 font-medium">+91 92891 88852</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </a>
+          </div>
+        </div>
+
+        {/* Sign Out Button */}
+        <div className="pt-2">
+          <button
+            onClick={async () => {
+              await logout();
+              router.push('/');
+            }}
+            className="w-full py-3.5 px-4 rounded-2xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100/70 text-rose-600 font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+
+        {/* Footer Version */}
+        <div className="text-center py-4">
+          <p className="text-[11px] text-slate-400 font-normal">
+            FAAZO · Dental Supply & Equipment Platform · v1.0.0
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const sectionTitles: Record<string, string> = {
+    dashboard: 'My Account',
+    orders: 'My Orders',
+    profile: 'Profile Information',
+    clinic: 'Edit Clinic Details & GSTIN',
+    addresses: 'Saved Delivery Addresses',
+    security: 'Security & Change Password',
+    warranty: 'Warranty Assets',
+    support: 'Clinical Support',
+    'dealer-status': 'Dealer Application Status',
+  };
+
+  // ─── Main layout ─────────────────────────────────────────────────────────────
+  return (
+    <div className="w-full bg-[#f7fafa] min-h-screen pt-[100px] lg:pt-[168px] pb-24 font-sans select-none text-left">
+      <Toast message={localToast} />
+
+      {/* ─── MOBILE VIEW (lg:hidden) ─── */}
+      <div className="block lg:hidden">
+        {/* Mobile Header Bar */}
+        {activeSection !== 'dashboard' && (
+          <div className="fixed top-[100px] left-0 right-0 z-30 bg-white border-b border-slate-100 px-4 h-[48px] flex items-center justify-between shadow-2xs">
+            <button
+              onClick={() => setActiveSection('dashboard')}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-4.5 h-4.5" />
+            </button>
+
+            <h1 className="text-xs sm:text-sm font-bold text-slate-900 font-sans tracking-tight">
+              {sectionTitles[activeSection] || 'My Account'}
+            </h1>
+
+            <div className="w-8" />
+          </div>
+        )}
+
+        {/* Mobile Content Container */}
+        <div className={`px-3 sm:px-5 ${activeSection === 'dashboard' ? 'pt-2 pb-8' : 'pt-[60px] pb-8'}`}>
+          {activeSection === 'dashboard' ? (
+            renderMobileLanding()
+          ) : (
+            <div className="bg-transparent p-0 border-0 shadow-none">
+              {renderSection()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (hidden lg:block) ─── */}
+      <div className="hidden lg:block max-w-6xl mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-12 gap-6 items-start">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 sticky top-[140px]">
+          <div className="col-span-3 sticky top-[168px]">
             {renderSidebar()}
           </div>
 
-          {/* Main content pane */}
-          <div className="lg:col-span-9">
-            <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.015)]">
+          {/* Desktop Main Content Pane */}
+          <div className="col-span-9">
+            <div className={`${activeSection === 'orders' ? 'bg-transparent sm:bg-white border-0 sm:border border-slate-100 p-0 sm:p-6 md:p-8 shadow-none sm:shadow-[0_4px_30px_rgba(0,0,0,0.015)]' : 'bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-3.5 sm:p-6 md:p-8 shadow-[0_4px_30px_rgba(0,0,0,0.015)]'}`}>
               {renderSection()}
               
               {/* Show future placeholders on the dashboard only */}

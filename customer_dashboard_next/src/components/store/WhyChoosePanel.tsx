@@ -49,7 +49,9 @@ const WhyChoosePanel: React.FC = () => {
               Trusted by Dentists. Built for Excellence.
             </h2>
             <a 
-              href="#about"
+              href="https://fazo.in"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold shadow transition-all cursor-pointer"
             >
               Learn More
@@ -58,17 +60,17 @@ const WhyChoosePanel: React.FC = () => {
           </div>
 
           {/* Center Column: Interactive Stats points */}
-          <div className="col-span-4 p-6 lg:p-8 grid grid-cols-1 gap-4.5 text-left relative z-10 flex flex-col justify-center">
+          <div className="col-span-3 p-5 lg:p-6 grid grid-cols-1 gap-4 text-left relative z-10 flex flex-col justify-center">
             {points.map((pt, i) => (
-              <div key={i} className="flex items-center gap-3.5">
-                <div className="w-9.5 h-9.5 rounded-xl bg-white/80 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-xs border border-white/90">
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/80 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-xs border border-white/90">
                   {pt.icon}
                 </div>
                 <div>
-                  <h4 className="text-[13.5px] font-bold text-slate-800 leading-none">
+                  <h4 className="text-[13px] font-bold text-slate-800 leading-tight">
                     {pt.title}
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[11.5px] text-slate-500 mt-0.5 leading-snug">
                     {pt.desc}
                   </p>
                 </div>
@@ -76,18 +78,18 @@ const WhyChoosePanel: React.FC = () => {
             ))}
           </div>
 
-          {/* Right Column: Real Dental Operatory Equipment - Seamless Feathered Left Blend */}
-          <div className="col-span-4 h-full w-full relative p-0 overflow-hidden self-stretch flex items-center justify-center z-10">
+          {/* Right Column: Real Dental Operatory Equipment - Extended to Left */}
+          <div className="col-span-5 h-full w-full relative p-0 overflow-hidden self-stretch flex items-center justify-center z-10">
             <img 
               src="/images/why_choose_dental_equipment.jpg" 
               alt="Clinical Dental Operatory Equipment & Chair" 
               style={{
-                maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 2%, rgba(0,0,0,0.85) 6%, black 10%, black 100%)',
-                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 2%, rgba(0,0,0,0.85) 6%, black 10%, black 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.12) 3%, rgba(0,0,0,0.85) 10%, black 18%, black 100%)',
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.12) 3%, rgba(0,0,0,0.85) 10%, black 18%, black 100%)',
               }}
               className="w-full h-full min-h-[360px] object-cover object-left block"
             />
-            {/* Soft gradient blend on the seam */}
+            {/* Soft subtle mist overlay at the expanded left seam */}
             <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#EAF8F8]/90 via-[#EAF8F8]/40 to-transparent pointer-events-none z-20" />
           </div>
 
@@ -110,7 +112,9 @@ const WhyChoosePanel: React.FC = () => {
               Trusted by Dentists. Built for Excellence.
             </h2>
             <a 
-              href="#about"
+              href="https://fazo.in"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-full bg-[#005F63] hover:bg-[#0B7C80] text-white text-xs font-bold shadow transition-all cursor-pointer"
             >
               Learn More

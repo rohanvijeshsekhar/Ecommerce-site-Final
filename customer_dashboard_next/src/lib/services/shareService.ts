@@ -10,6 +10,8 @@ export interface ShareableProduct {
   short_description?: string;
   image_url?: string;
   image?: string;
+  primary_image?: string;
+  images?: any[];
 }
 
 export const shareService = {

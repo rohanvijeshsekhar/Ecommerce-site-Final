@@ -9,14 +9,17 @@ Pattern:
 
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.common.viewsets import BaseModelViewSet
 from apps.common.permissions import IsAdmin
 from apps.common.responses import success_response, error_response
 
 from .models import (
+    HomepagePromoBanner,
     HeroSlide,
     HomepageCategory,
     HomepageBrand,
@@ -27,8 +30,10 @@ from .models import (
     ExploreSolution,
     Testimonial,
     RecommendedProduct,
+    SpecialOffersPageContent,
 )
 from .serializers import (
+    HomepagePromoBannerSerializer,
     HeroSlideReadSerializer, HeroSlideWriteSerializer,
     HomepageCategoryReadSerializer, HomepageCategoryWriteSerializer,
     HomepageBrandReadSerializer, HomepageBrandWriteSerializer,
@@ -40,6 +45,7 @@ from .serializers import (
     TestimonialReadSerializer, TestimonialWriteSerializer,
     RecommendedProductReadSerializer, RecommendedProductWriteSerializer,
     ReorderSerializer,
+    SpecialOffersPageContentSerializer,
 )
 
 
@@ -123,7 +129,7 @@ class HomepageCategoryViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class HomepageBrandViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["-updated_at"]
 
     def get_queryset(self):
         qs = HomepageBrand.objects.select_related("brand")
@@ -175,7 +181,8 @@ class BestSellerViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["sort_order", "-updated_at"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         qs = FeaturedCollection.objects.prefetch_related(
@@ -195,6 +202,16 @@ class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return FeaturedCollectionWriteSerializer
         return FeaturedCollectionReadSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_visible:
+            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.is_visible:
+            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
 
 
 class FeaturedCollectionItemViewSet(BaseModelViewSet):
@@ -220,7 +237,7 @@ class FeaturedCollectionItemViewSet(BaseModelViewSet):
 # ============================================================
 
 class LimitedTimeOfferViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["sort_order", "-created_at"]
 
     def get_queryset(self):
         qs = LimitedTimeOffer.objects.all()
@@ -238,6 +255,17 @@ class LimitedTimeOfferViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return LimitedTimeOfferWriteSerializer
         return LimitedTimeOfferReadSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_featured:
+            LimitedTimeOffer.objects.exclude(id=instance.id).update(is_featured=False)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.is_featured:
+            LimitedTimeOffer.objects.exclude(id=instance.id).update(is_featured=False)
+
 
 
 # ============================================================
@@ -295,11 +323,11 @@ class TestimonialViewSet(ReorderMixin, BaseModelViewSet):
 # ============================================================
 
 class RecommendedProductViewSet(ReorderMixin, BaseModelViewSet):
-    ordering = ["sort_order", "created_at"]
+    ordering = ["sort_order", "-created_at"]
 
     def get_queryset(self):
         qs = RecommendedProduct.objects.select_related(
-            "product", "product__brand", "product__category"
+            "product", "product__brand", "product__category", "product__pricing", "product__inventory"
         ).prefetch_related("product__images")
         if not (self.request.user.is_authenticated and
                 getattr(self.request.user, "role", None) == "admin"):
@@ -315,3 +343,68 @@ class RecommendedProductViewSet(ReorderMixin, BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return RecommendedProductWriteSerializer
         return RecommendedProductReadSerializer
+
+
+# ============================================================
+# 10. Special Offers Page Content (CMS Singleton)
+# ============================================================
+
+class SpecialOffersPageContentView(APIView):
+    """
+    GET: Public (AllowAny) - retrieves the singleton Special Offers page hero copy.
+    PUT/PATCH: Admin only (IsAuthenticated, IsAdmin) - updates the page hero copy.
+    """
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get(self, request):
+        content = SpecialOffersPageContent.get_instance()
+        serializer = SpecialOffersPageContentSerializer(content, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def patch(self, request):
+        content = SpecialOffersPageContent.get_instance()
+        serializer = SpecialOffersPageContentSerializer(content, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Special offers page content updated successfully.")
+        return error_response(message="Invalid data provided.", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        return self.patch(request)
+
+
+# ============================================================
+# 11. Homepage Promo Banner (CMS Singleton)
+# ============================================================
+
+class HomepagePromoBannerView(APIView):
+    """
+    GET: Public (AllowAny) - retrieves the singleton Promo / Announcement Banner copy & status.
+    PUT/PATCH: Admin only (IsAuthenticated, IsAdmin) - updates the banner.
+    """
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get(self, request):
+        banner = HomepagePromoBanner.get_instance()
+        serializer = HomepagePromoBannerSerializer(banner, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def patch(self, request):
+        banner = HomepagePromoBanner.get_instance()
+        serializer = HomepagePromoBannerSerializer(banner, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(data=serializer.data, message="Homepage promo banner updated successfully.")
+        return error_response(message="Invalid data provided.", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        return self.patch(request)
+

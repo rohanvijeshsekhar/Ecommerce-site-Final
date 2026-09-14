@@ -120,7 +120,7 @@ def generate_gst_invoice_pdf(order) -> bytes:
     raw_seller_gstin = getattr(settings, "FAAZO_SELLER_GSTIN", "").strip()
     seller_gstin = raw_seller_gstin if raw_seller_gstin else "UNCONFIGURED (Set FAAZO_SELLER_GSTIN in env)"
     seller_name = "FAAZO Dental Solutions Pvt. Ltd."
-    seller_addr = f"123 Healthcare Tech Park, Medical Hub\nState: {warehouse_state}, India\nGSTIN: {seller_gstin}\nEmail: support@faazo.com | Phone: +91 98765 43210"
+    seller_addr = f"123 Healthcare Tech Park, Medical Hub\nState: {warehouse_state}, India\nGSTIN: {seller_gstin}\nEmail: faazodental@gmail.com | Phone: +91 92891 88852"
 
     inv_num = order.invoice_number or f"INV-{order.order_number}"
     inv_date = order.created_at.strftime('%d-%b-%Y')
@@ -128,7 +128,15 @@ def generate_gst_invoice_pdf(order) -> bytes:
     logo_path = os.path.join(settings.BASE_DIR, "static", "images", "logo.png")
     header_left = []
     if os.path.exists(logo_path):
-        header_left.append(Image(logo_path, width=42 * mm, height=14 * mm))
+        try:
+            from PIL import Image as PILImage
+            with PILImage.open(logo_path) as pil_img:
+                orig_w, orig_h = pil_img.size
+                target_w = 42 * mm
+                target_h = target_w * (orig_h / orig_w)
+                header_left.append(Image(logo_path, width=target_w, height=target_h, kind='proportional'))
+        except Exception:
+            header_left.append(Image(logo_path, width=42 * mm, height=10 * mm, kind='proportional'))
         header_left.append(Spacer(1, 2 * mm))
     header_left.extend([
         Paragraph(f"<b>{seller_name}</b>", bold_label),

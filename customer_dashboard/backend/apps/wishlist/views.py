@@ -1,4 +1,5 @@
-from django.db import transaction
+import uuid
+from django.db import transaction, models
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +9,14 @@ from apps.products.models import Product
 from apps.cart.models import Cart, CartItem
 from apps.wishlist.models import Wishlist, WishlistItem
 from apps.wishlist.serializers import WishlistSerializer, WishlistItemSerializer
+
+
+def is_valid_uuid(val):
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
 
 
 def get_or_create_wishlist(user):
@@ -31,8 +40,9 @@ class WishlistDetailView(APIView):
 class WishlistToggleView(APIView):
     """
     POST /api/v1/wishlist/toggle/
-    Body: { "product_id": "<uuid>" }
+    Body: { "product_id": "<uuid_or_slug>" }
     Idempotent toggle product in wishlist. Returns { "is_wishlisted": boolean, "wishlist": data }.
+    Safely supports both Product UUID and slug identifiers.
     """
     permission_classes = [IsAuthenticated]
 
@@ -41,9 +51,12 @@ class WishlistToggleView(APIView):
         if not product_id:
             return error_response(message="Product ID is required.", status_code=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            product = Product.objects.get(id=product_id, is_deleted=False)
-        except Product.DoesNotExist:
+        if is_valid_uuid(product_id):
+            product = Product.objects.filter(id=product_id, is_deleted=False).first()
+        else:
+            product = Product.objects.filter(slug=product_id, is_deleted=False).first()
+
+        if not product:
             return error_response(message="Product not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         wishlist = get_or_create_wishlist(request.user)
@@ -73,17 +86,19 @@ class WishlistToggleView(APIView):
 class WishlistItemDetailView(APIView):
     """
     DELETE /api/v1/wishlist/items/<product_id>/
-    Remove product from wishlist.
+    Remove product from wishlist by UUID or slug.
     """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, product_id):
         wishlist = get_or_create_wishlist(request.user)
-        try:
-            item = WishlistItem.objects.get(wishlist=wishlist, product_id=product_id)
+        if is_valid_uuid(product_id):
+            item = WishlistItem.objects.filter(wishlist=wishlist, product__id=product_id).first()
+        else:
+            item = WishlistItem.objects.filter(wishlist=wishlist, product__slug=product_id).first()
+
+        if item:
             item.delete()
-        except WishlistItem.DoesNotExist:
-            pass
 
         serializer = WishlistSerializer(wishlist, context={"request": request})
         return success_response(data=serializer.data, message="Item removed from wishlist.")
@@ -92,14 +107,17 @@ class WishlistItemDetailView(APIView):
 class WishlistMoveToCartView(APIView):
     """
     POST /api/v1/wishlist/items/<product_id>/move-to-cart/
-    Atomically moves product from wishlist to active cart.
+    Atomically moves product from wishlist to active cart by UUID or slug.
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, product_id):
-        try:
-            product = Product.objects.get(id=product_id, is_deleted=False)
-        except Product.DoesNotExist:
+        if is_valid_uuid(product_id):
+            product = Product.objects.filter(id=product_id, is_deleted=False).first()
+        else:
+            product = Product.objects.filter(slug=product_id, is_deleted=False).first()
+
+        if not product:
             return error_response(message="Product not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         wishlist = get_or_create_wishlist(request.user)
@@ -130,8 +148,8 @@ class WishlistMoveToCartView(APIView):
 class WishlistSyncGuestView(APIView):
     """
     POST /api/v1/wishlist/sync/
-    Body: { "product_ids": ["uuid1", "uuid2"] }
-    Merges guest local storage wishlist product IDs to database wishlist upon user login.
+    Body: { "product_ids": ["uuid1", "slug2"] }
+    Merges guest local storage wishlist product IDs (UUID or slug) to database wishlist upon user login.
     """
     permission_classes = [IsAuthenticated]
 
@@ -141,7 +159,13 @@ class WishlistSyncGuestView(APIView):
             return error_response(message="product_ids must be a list.", status_code=status.HTTP_400_BAD_REQUEST)
 
         wishlist = get_or_create_wishlist(request.user)
-        valid_products = Product.objects.filter(id__in=product_ids, is_deleted=False)
+        uuid_ids = [pid for pid in product_ids if is_valid_uuid(pid)]
+        slug_ids = [pid for pid in product_ids if not is_valid_uuid(pid)]
+
+        valid_products = Product.objects.filter(
+            models.Q(id__in=uuid_ids) | models.Q(slug__in=slug_ids),
+            is_deleted=False
+        )
 
         with transaction.atomic():
             for product in valid_products:

@@ -83,6 +83,10 @@ export default function SearchClient({
   const [isBrandOpen, setIsBrandOpen] = useState(false);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
+  const [isMobileBrandOpen, setIsMobileBrandOpen] = useState(false);
+  const [mobileCategorySearchQuery, setMobileCategorySearchQuery] = useState('');
+  const [mobileBrandSearchQuery, setMobileBrandSearchQuery] = useState('');
 
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const brandDropdownRef = useRef<HTMLDivElement>(null);
@@ -252,8 +256,10 @@ export default function SearchClient({
   const pricePresets = [
     { label: 'Under ₹1k', min: '', max: '1000' },
     { label: '₹1k - ₹5k', min: '1000', max: '5000' },
-    { label: '₹5k - ₹20k', min: '5000', max: '20000' },
-    { label: 'Above ₹20k', min: '20000', max: '' },
+    { label: '₹5k - ₹15k', min: '5000', max: '15000' },
+    { label: '₹15k - ₹50k', min: '15000', max: '50000' },
+    { label: '₹50k - ₹100k', min: '50000', max: '100000' },
+    { label: 'Above ₹100k', min: '100000', max: '' },
   ];
 
   const activeCategoryObj = categories.find((c) => c.slug === selectedCategory);
@@ -261,12 +267,12 @@ export default function SearchClient({
   const hasActiveFilters = Boolean(selectedBrand || selectedCategory || minPrice || maxPrice || inStockOnly);
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-[108px] lg:pt-[180px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#F8FAFC] min-h-screen pt-[115px] sm:pt-[125px] lg:pt-[144px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header Breadcrumb & Search Title Banner */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs mb-8">
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold mb-3">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-8 border border-slate-200/80 shadow-xs mb-4 sm:mb-8">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-400 font-semibold mb-1.5 sm:mb-3">
             <button onClick={() => router.push('/')} className="hover:text-[#006670] transition-colors flex items-center gap-1">
               Home
             </button>
@@ -274,10 +280,10 @@ export default function SearchClient({
             <span className="text-[#006670] font-bold">Search Catalogue</span>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-6">
             <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
                   {q ? (
                     <>
                       Search Results for <span className="text-[#006670]">"{q}"</span>
@@ -287,19 +293,19 @@ export default function SearchClient({
                   )}
                 </h1>
                 {!isLoading && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#006670]/10 text-[#006670] font-bold text-xs rounded-full border border-[#006670]/20">
-                    <Sparkles className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 bg-[#006670]/10 text-[#006670] font-bold text-[10px] sm:text-xs rounded-full border border-[#006670]/20">
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     {meta.count} {meta.count === 1 ? 'item found' : 'items found'}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 sm:mt-1">
                 Explore premium dental & clinical products with guaranteed authenticity.
               </p>
             </div>
 
             {/* Controls: Grid/List View & Sort Dropdown */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 mt-1 sm:mt-0">
               {/* Layout Switcher */}
               <div className="hidden sm:flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
                 <button
@@ -329,9 +335,9 @@ export default function SearchClient({
               {/* Mobile Filter Toggle Button */}
               <button
                 onClick={() => setIsMobileFilterOpen(true)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-700 shadow-xs hover:border-[#006670] transition-colors"
+                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-full text-[11px] sm:text-xs font-bold text-slate-700 shadow-xs hover:border-[#006670] transition-colors"
               >
-                <Filter className="w-4 h-4 text-[#006670]" />
+                <Filter className="w-3.5 h-3.5 text-[#006670]" />
                 <span>Filters</span>
                 {hasActiveFilters && (
                   <span className="w-2 h-2 rounded-full bg-[#006670] animate-pulse" />
@@ -343,20 +349,20 @@ export default function SearchClient({
                 <button
                   type="button"
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-700 shadow-xs hover:border-[#006670] transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-full text-[11px] sm:text-xs font-bold text-slate-700 shadow-xs hover:border-[#006670] transition-all cursor-pointer"
                 >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#006670]" />
+                  <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#006670]" />
                   <span>
                     Sort: <strong className="text-slate-900">{sortOptions.find((s) => s.value === ordering)?.label || 'Relevance'}</strong>
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform text-slate-400 ${isSortOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform text-slate-400 ${isSortOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isSortOpen && (
                   <div
-                    className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl border border-slate-200/80 shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150"
+                    className="absolute right-0 top-full mt-1.5 w-48 sm:w-52 bg-white rounded-2xl border border-slate-200/80 shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150"
                   >
-                    <div className="px-3 py-1.5 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                    <div className="px-3 py-1.5 text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
                       Sort Products By
                     </div>
                     {sortOptions.map((opt) => (
@@ -367,7 +373,7 @@ export default function SearchClient({
                           updateUrl({ ordering: opt.value });
                           setIsSortOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold transition-colors cursor-pointer ${
                           ordering === opt.value
                             ? 'bg-[#006670]/10 text-[#006670]'
                             : 'text-slate-600 hover:bg-slate-50'
@@ -717,108 +723,334 @@ export default function SearchClient({
             </div>
           </aside>
 
-          {/* Mobile Filter Drawer */}
+          {/* Mobile Filter Drawer (Wider to the Left) */}
           {isMobileFilterOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end">
-              <div className="w-full max-w-xs bg-white h-full p-6 space-y-6 overflow-y-auto shadow-2xl flex flex-col justify-between">
-                <div className="space-y-6">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
+              {/* Clickable Backdrop on Left */}
+              <div
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="flex-1 h-full cursor-pointer"
+                title="Close Filters"
+              />
+
+              {/* Right Side Panel extending to the Left */}
+              <div className="w-[82vw] sm:w-[72vw] max-w-md bg-white h-full pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] px-5 sm:px-6 space-y-5 overflow-y-auto shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 border-l border-slate-100 text-left">
+                <div className="space-y-5">
+                  {/* Drawer Header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-[#006670]" /> Filter Catalogue
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2 truncate">
+                      <Filter className="w-5 h-5 text-[#006670] shrink-0" /> Filter Catalogue
                     </h3>
-                    <button onClick={() => setIsMobileFilterOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
-                      <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {hasActiveFilters && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-xs sm:text-sm font-extrabold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsMobileFilterOpen(false)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Category Filter */}
                   {categories.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase">Category</label>
+                    <div className="space-y-2 relative">
+                      <label className="text-xs sm:text-[13px] font-black text-slate-800 uppercase tracking-wider block">
+                        Category
+                      </label>
                       <div className="relative">
-                        <select
-                          value={selectedCategory}
-                          onChange={(e) => updateUrl({ category: e.target.value || null })}
-                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileCategoryOpen(!isMobileCategoryOpen);
+                            setIsMobileBrandOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${
+                            isMobileCategoryOpen
+                              ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
                         >
-                          <option value="">All Categories ({categories.length})</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.slug}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                          <span className="truncate pr-1">
+                            {selectedCategory
+                              ? activeCategoryObj?.name || selectedCategory
+                              : `All (${categories.length})`}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                              isMobileCategoryOpen ? 'rotate-180 text-[#006670]' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {isMobileCategoryOpen && (
+                          <div className="mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                            {categories.length > 6 && (
+                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1.5">
+                                <input
+                                  type="text"
+                                  placeholder="Search..."
+                                  value={mobileCategorySearchQuery}
+                                  onChange={(e) => setMobileCategorySearchQuery(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                />
+                              </div>
+                            )}
+                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ category: null });
+                                  setIsMobileCategoryOpen(false);
+                                  setMobileCategorySearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
+                                  !selectedCategory
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="truncate">All Categories</span>
+                                {!selectedCategory && (
+                                  <Check className="w-4 h-4 text-[#006670] shrink-0 ml-1" />
+                                )}
+                              </button>
+                              {categories
+                                .filter(
+                                  (c) =>
+                                    !mobileCategorySearchQuery ||
+                                    c.name.toLowerCase().includes(mobileCategorySearchQuery.toLowerCase())
+                                )
+                                .map((c) => {
+                                  const isSelected = selectedCategory === c.slug;
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateUrl({ category: c.slug });
+                                        setIsMobileCategoryOpen(false);
+                                        setMobileCategorySearchQuery('');
+                                      }}
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
+                                        isSelected
+                                          ? 'bg-[#006670]/10 text-[#006670]'
+                                          : 'text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <span className="truncate pr-1">{c.name}</span>
+                                      {isSelected && (
+                                        <Check className="w-4 h-4 text-[#006670] shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
+                  {/* Brand Filter */}
                   {brands.length > 0 && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-extrabold text-slate-700 uppercase">Brand</label>
+                    <div className="space-y-2 relative">
+                      <label className="text-xs sm:text-[13px] font-black text-slate-800 uppercase tracking-wider block">
+                        Brand
+                      </label>
                       <div className="relative">
-                        <select
-                          value={selectedBrand}
-                          onChange={(e) => updateUrl({ brand: e.target.value || null })}
-                          className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileBrandOpen(!isMobileBrandOpen);
+                            setIsMobileCategoryOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${
+                            isMobileBrandOpen
+                              ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
                         >
-                          <option value="">All Brands ({brands.length})</option>
-                          {brands.map((b) => (
-                            <option key={b.id} value={b.slug}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                          <span className="truncate pr-1">
+                            {selectedBrand
+                              ? activeBrandObj?.name || selectedBrand
+                              : `All (${brands.length})`}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                              isMobileBrandOpen ? 'rotate-180 text-[#006670]' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {isMobileBrandOpen && (
+                          <div className="mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-40 animate-in fade-in zoom-in-95 duration-150">
+                            {brands.length > 6 && (
+                              <div className="px-2.5 pb-2 border-b border-slate-100 mb-1.5">
+                                <input
+                                  type="text"
+                                  placeholder="Search..."
+                                  value={mobileBrandSearchQuery}
+                                  onChange={(e) => setMobileBrandSearchQuery(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#006670] focus:bg-white"
+                                />
+                              </div>
+                            )}
+                            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateUrl({ brand: null });
+                                  setIsMobileBrandOpen(false);
+                                  setMobileBrandSearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
+                                  !selectedBrand
+                                    ? 'bg-[#006670]/10 text-[#006670]'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="truncate">All Brands</span>
+                                {!selectedBrand && (
+                                  <Check className="w-4 h-4 text-[#006670] shrink-0 ml-1" />
+                                )}
+                              </button>
+                              {brands
+                                .filter(
+                                  (b) =>
+                                    !mobileBrandSearchQuery ||
+                                    b.name.toLowerCase().includes(mobileBrandSearchQuery.toLowerCase())
+                                )
+                                .map((b) => {
+                                  const isSelected = selectedBrand === b.slug;
+                                  return (
+                                    <button
+                                      key={b.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateUrl({ brand: b.slug });
+                                        setIsMobileBrandOpen(false);
+                                        setMobileBrandSearchQuery('');
+                                      }}
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
+                                        isSelected
+                                          ? 'bg-[#006670]/10 text-[#006670]'
+                                          : 'text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <span className="truncate pr-1">{b.name}</span>
+                                      {isSelected && (
+                                        <Check className="w-4 h-4 text-[#006670] shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
+                  {/* Price Filter & Presets */}
                   <div className="space-y-2">
-                    <label className="text-xs font-extrabold text-slate-700 uppercase">Price Range (₹)</label>
+                    <label className="text-xs sm:text-[13px] font-black text-slate-800 uppercase tracking-wider block">
+                      Price Range (₹)
+                    </label>
+
+                    {/* Price Preset Chips */}
                     <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={inputMinPrice}
-                        onChange={(e) => setInputMinPrice(e.target.value)}
-                        onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={inputMaxPrice}
-                        onChange={(e) => setInputMaxPrice(e.target.value)}
-                        onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
+                      {pricePresets.map((preset) => {
+                        const isActive = minPrice === preset.min && maxPrice === preset.max;
+                        return (
+                          <button
+                            key={preset.label}
+                            onClick={() => {
+                              setInputMinPrice(preset.min);
+                              setInputMaxPrice(preset.max);
+                              updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
+                            }}
+                            className={`px-3 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border truncate ${
+                              isActive
+                                ? 'bg-[#006670] text-white border-[#006670]'
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Manual Inputs with Rupee Icon */}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={inputMinPrice}
+                          onChange={(e) => setInputMinPrice(e.target.value)}
+                          onBlur={() => updateUrl({ min_price: inputMinPrice || null })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2.5 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={inputMaxPrice}
+                          onChange={(e) => setInputMaxPrice(e.target.value)}
+                          onBlur={() => updateUrl({ max_price: inputMaxPrice || null })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2 py-2.5 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-[#006670] focus:bg-white transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-xs font-bold text-slate-700">In-Stock Only</span>
-                      <input
-                        type="checkbox"
-                        checked={inStockOnly}
-                        onChange={(e) => updateUrl({ in_stock: e.target.checked ? 'true' : null })}
-                        className="w-4 h-4 accent-[#006670] rounded"
-                      />
+                  {/* Availability Filter Toggle Switch */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <label className="flex items-center justify-between cursor-pointer select-none py-1">
+                      <span className="text-xs sm:text-sm font-bold text-slate-800">In-Stock Only</span>
+                      <button
+                        type="button"
+                        onClick={() => updateUrl({ in_stock: inStockOnly ? null : 'true' })}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            inStockOnly ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
                     </label>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 space-y-3">
+                {/* Bottom CTA */}
+                <div className="pt-3 border-t border-slate-100 space-y-2 shrink-0 bg-white">
                   <button
                     onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full py-3 bg-[#006670] hover:bg-[#004d54] text-white font-extrabold text-xs rounded-full transition-all shadow-md"
+                    className="w-full py-3 sm:py-3.5 bg-[#006670] hover:bg-[#004d54] text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-md active:scale-98 cursor-pointer"
                   >
                     Apply Filters
                   </button>
                   {hasActiveFilters && (
                     <button
                       onClick={handleClearAll}
-                      className="w-full py-2.5 text-center text-xs font-bold text-rose-500 hover:underline"
+                      className="w-full py-1 text-center text-xs sm:text-sm font-bold text-rose-500 hover:underline cursor-pointer"
                     >
                       Clear All Filters
                     </button>
@@ -832,13 +1064,13 @@ export default function SearchClient({
           <div className="lg:col-span-3">
             {isLoading ? (
               /* Loading Skeletons */
-              <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+              <div className={viewMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6" : "space-y-4"}>
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs animate-pulse">
-                    <div className="w-full h-48 bg-slate-100 rounded-2xl mb-4" />
-                    <div className="h-4 bg-slate-100 rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
-                    <div className="h-8 bg-slate-100 rounded-full w-full" />
+                  <div key={n} className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-100 shadow-xs animate-pulse">
+                    <div className="w-full h-36 sm:h-48 bg-slate-100 rounded-xl sm:rounded-2xl mb-3 sm:mb-4" />
+                    <div className="h-3.5 sm:h-4 bg-slate-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2 mb-3 sm:mb-4" />
+                    <div className="h-7 sm:h-8 bg-slate-100 rounded-full w-full" />
                   </div>
                 ))}
               </div>
@@ -846,7 +1078,7 @@ export default function SearchClient({
               <>
                 {/* GRID VIEW */}
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                     {products.map((p) => {
                       const rawImage = p.primary_image || (p.images && p.images[0]?.image);
                       const image = getAbsoluteImageUrl(rawImage) || '/images/nsk_handpiece_portrait.png';
@@ -864,11 +1096,11 @@ export default function SearchClient({
                         <div
                           key={p.id}
                           onClick={() => router.push(`/products/${p.slug || p.id}`)}
-                          className="bg-white rounded-3xl p-4 border border-slate-200/80 hover:border-[#006670]/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer group relative overflow-hidden text-left"
+                          className="bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 border border-slate-200/80 hover:border-[#006670]/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer group relative overflow-hidden text-left"
                         >
                           <div>
                             {/* Image Box Container */}
-                            <div className="relative w-full h-64 rounded-2xl bg-[#EBEBEB] flex items-center justify-center p-4 overflow-hidden mb-4">
+                            <div className="relative w-full h-36 sm:h-56 md:h-64 rounded-xl sm:rounded-2xl bg-[#EBEBEB] flex items-center justify-center p-2 sm:p-4 overflow-hidden mb-2.5 sm:mb-4">
                               <img
                                 src={image}
                                 alt={p.name}
@@ -878,77 +1110,91 @@ export default function SearchClient({
                               {/* Wishlist Heart Icon on Top Right */}
                               <button
                                 onClick={(e) => handleWishlistToggle(e, p)}
-                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-slate-400 hover:text-rose-500 shadow-md flex items-center justify-center transition-all z-10 cursor-pointer"
+                                className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white text-slate-400 hover:text-rose-500 shadow-md flex items-center justify-center transition-all z-10 cursor-pointer"
                                 title={isStarred ? 'Remove from Wishlist' : 'Add to Wishlist'}
                               >
-                                <Heart className={`w-4.5 h-4.5 ${isStarred ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                                <Heart className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 ${isStarred ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
                               </button>
                             </div>
 
                             {/* Brand Label */}
-                            <span className="text-xs font-black uppercase tracking-wider text-[#006670] mb-1 block">
+                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#006670] mb-0.5 sm:mb-1 block truncate">
                               {p.brand_name || (typeof p.brand === 'string' ? p.brand : 'FAAZO')}
                             </span>
 
                             {/* Product Title */}
-                            <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#006670] transition-colors leading-snug line-clamp-2 mb-2">
+                            <h3 className="text-xs sm:text-base font-extrabold text-slate-900 group-hover:text-[#006670] transition-colors leading-tight sm:leading-snug line-clamp-2 mb-1.5 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
                               {p.name}
                             </h3>
 
                             {/* Rating Stars & Count */}
-                            <div className="flex items-center gap-1.5 mb-3">
-                              <div className="flex items-center text-amber-400 gap-0.5">
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-                                <Star className="w-3.5 h-3.5 text-slate-300 stroke-slate-300" />
-                              </div>
-                              <span className="text-xs font-extrabold text-slate-800 ml-1">4.8</span>
-                              <span className="text-xs font-medium text-slate-400 ml-0.5">(48)</span>
-                            </div>
+                            {(() => {
+                              const ratingVal = p.average_rating ? parseFloat(p.average_rating) : 0;
+                              const reviewCount = p.total_reviews ? parseInt(p.total_reviews) : 0;
+                              if (reviewCount > 0 && ratingVal > 0) {
+                                return (
+                                  <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3">
+                                    <div className="flex items-center text-amber-400 gap-0.5">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
+                                            i < Math.floor(ratingVal)
+                                              ? 'fill-amber-400 stroke-amber-400'
+                                              : 'text-slate-300 stroke-slate-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 ml-0.5">{ratingVal.toFixed(1)}</span>
+                                    <span className="text-[10px] sm:text-xs font-medium text-slate-400 ml-0.5">({reviewCount})</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             {/* Divider Line */}
-                            <div className="border-b border-slate-100 mb-3" />
+                            <div className="border-b border-slate-100 mb-2 sm:mb-3" />
                           </div>
 
                           {/* Price & Action Section */}
                           <div>
                             {/* Price Row with Discount Tag Floated Right */}
-                            <div className="flex items-center justify-between gap-2 mb-4">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-xl font-black text-slate-900">
+                            <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2.5 sm:mb-4 flex-wrap sm:flex-nowrap">
+                              <div className="flex items-baseline gap-1 sm:gap-2">
+                                <span className="text-sm sm:text-xl font-black text-slate-900">
                                   ₹{price.toLocaleString('en-IN')}
                                 </span>
                                 {originalPrice && originalPrice > price && (
-                                  <span className="text-xs text-slate-400 line-through font-semibold">
+                                  <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
                                     ₹{originalPrice.toLocaleString('en-IN')}
                                   </span>
                                 )}
                               </div>
 
                               {discountPct > 0 && (
-                                <span className="bg-[#E6F7F5] border border-[#A5E8DF] text-[#006670] font-black text-xs px-2.5 py-1 rounded-lg">
+                                <span className="bg-[#E6F7F5] border border-[#A5E8DF] text-[#006670] font-black text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg">
                                   {discountPct}% OFF
                                 </span>
                               )}
                             </div>
 
                             {/* Equal Width Buttons */}
-                            <div className="grid grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5">
                               <button
                                 onClick={(e) => handleAddToCart(e, p)}
-                                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#006670] hover:bg-[#004d54] text-white text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-2 bg-[#006670] hover:bg-[#004d54] text-white text-[10px] sm:text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
                               >
-                                <ShoppingCart className="w-4 h-4 text-white stroke-[2.5]" />
-                                <span>Add</span>
+                                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 text-white stroke-[2.5]" />
+                                <span className="truncate">Add</span>
                               </button>
                               <button
                                 onClick={(e) => handleBuyNow(e, p)}
-                                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-2 bg-[#0F172A] hover:bg-slate-800 text-white text-[10px] sm:text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
                               >
-                                <Zap className="w-4 h-4 text-[#FFB800] fill-[#FFB800]" />
-                                <span>Buy Now</span>
+                                <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-[#FFB800] fill-[#FFB800]" />
+                                <span className="truncate">Buy Now</span>
                               </button>
                             </div>
                           </div>
@@ -1005,14 +1251,30 @@ export default function SearchClient({
                               {p.name}
                             </h3>
 
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <div className="flex items-center text-amber-400">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star key={star} className="w-3 h-3 fill-current" />
-                                ))}
-                              </div>
-                              <span className="font-bold text-slate-700">4.8 (24 reviews)</span>
-                            </div>
+                            {(() => {
+                              const ratingVal = p.average_rating ? parseFloat(p.average_rating) : 0;
+                              const reviewCount = p.total_reviews ? parseInt(p.total_reviews) : 0;
+                              if (reviewCount > 0 && ratingVal > 0) {
+                                return (
+                                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <div className="flex items-center text-amber-400">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 ${
+                                            i < Math.floor(ratingVal)
+                                              ? 'fill-amber-400 stroke-amber-400'
+                                              : 'text-slate-300 stroke-slate-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="font-bold text-slate-700">{ratingVal.toFixed(1)} ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             <p className="text-xs text-slate-500 line-clamp-2 font-medium">
                               {p.description || 'High quality professional clinical equipment designed for durability and optimal performance.'}

@@ -31,12 +31,13 @@ class ProductFilterSet(django_filters.FilterSet):
     category = django_filters.CharFilter(method="filter_category", label="Category (slug, name, or ID)")
     min_price = django_filters.NumberFilter(field_name="pricing__selling_price", lookup_expr="gte", label="Min Price")
     max_price = django_filters.NumberFilter(field_name="pricing__selling_price", lookup_expr="lte", label="Max Price")
+    min_rating = django_filters.NumberFilter(field_name="average_rating", lookup_expr="gte", label="Min Rating")
     in_stock = django_filters.BooleanFilter(method="filter_in_stock", label="In Stock Only")
     is_featured = django_filters.BooleanFilter(field_name="is_featured", label="Featured")
 
     class Meta:
         model = Product
-        fields = ["q", "brand", "category", "min_price", "max_price", "in_stock", "is_featured"]
+        fields = ["q", "brand", "category", "min_price", "max_price", "min_rating", "in_stock", "is_featured"]
 
     def filter_q(self, queryset, name, value):
         if not value or not value.strip():
@@ -116,24 +117,37 @@ class ProductFilterSet(django_filters.FilterSet):
     def filter_brand(self, queryset, name, value):
         if not value or not value.strip():
             return queryset
-        val = value.strip()
-        return queryset.filter(
-            Q(brand__slug__iexact=val)
-            | Q(brand__name__iexact=val)
-            | Q(brand__id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
-        )
+        raw_val = value.strip()
+        brand_tokens = [t.strip() for t in raw_val.split(",") if t.strip()]
+        if not brand_tokens:
+            return queryset
+
+        brand_q = Q()
+        for val in brand_tokens:
+            brand_q |= (
+                Q(brand__slug__iexact=val)
+                | Q(brand__name__iexact=val)
+                | Q(brand__id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
+            )
+        return queryset.filter(brand_q)
 
     def filter_category(self, queryset, name, value):
         if not value or not value.strip():
             return queryset
-        val = value.strip()
+        raw_val = value.strip()
+        cat_tokens = [t.strip() for t in raw_val.split(",") if t.strip()]
+        if not cat_tokens:
+            return queryset
 
-        categories = Category.objects.filter(
-            Q(slug__iexact=val)
-            | Q(name__iexact=val)
-            | Q(id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
-        )
+        cat_q = Q()
+        for val in cat_tokens:
+            cat_q |= (
+                Q(slug__iexact=val)
+                | Q(name__iexact=val)
+                | Q(id__iexact=val if len(val) == 36 else "00000000-0000-0000-0000-000000000000")
+            )
 
+        categories = Category.objects.filter(cat_q)
         if not categories.exists():
             return queryset.none()
 

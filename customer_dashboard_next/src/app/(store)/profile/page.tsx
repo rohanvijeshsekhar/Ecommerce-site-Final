@@ -20,6 +20,14 @@ export default function ProfileRoute() {
     }
   }, [isAuthenticated, isLoading, router, store]);
 
+  // Wishlist Section Guard: Redirect to canonical /wishlist page
+  useEffect(() => {
+    if (store.dashboardSection === 'wishlist') {
+      store.setDashboardSection('dashboard');
+      router.push('/wishlist');
+    }
+  }, [store.dashboardSection, router, store]);
+
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
@@ -46,17 +54,6 @@ export default function ProfileRoute() {
     else if (view === 'dealer-portal') router.push('/dealer');
   };
 
-  // Convert wishlist MockCartItem[] to the format expected by ProfileDashboard/FlipkartWishlist
-  const mappedWishlistItems = store.wishlistItems.map(item => ({
-    id: item.id,
-    name: item.name,
-    category: item.category,
-    price: item.price,
-    qty: item.qty,
-    image: item.image,
-    originalPrice: item.originalPrice
-  }));
-
   // Convert cart MockCartItem[] to the format expected
   const mappedCartItems = store.cartItems.map(item => ({
     id: item.id,
@@ -74,8 +71,6 @@ export default function ProfileRoute() {
       setActiveSection={store.setDashboardSection}
       orders={store.orders}
       setCartItems={store.setCartItems as any}
-      wishlistItems={mappedWishlistItems}
-      setWishlistItems={store.setWishlistItems as any}
       setCurrentView={handleViewChange}
       onProductClick={handleProductClick}
       showToast={store.showToast}

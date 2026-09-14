@@ -34,6 +34,7 @@ export default function CartPage() {
       onProductClick={handleProductClick}
       showToast={store.showToast}
       onOpenLoginModal={store.openLoginModal}
+      loading={store.cartLoading}
     />
   );
 }

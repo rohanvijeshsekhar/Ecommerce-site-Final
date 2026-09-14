@@ -357,6 +357,71 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
+      {/* Account dropdown & global Navbar CSS styles */}
+      <style>{`
+        .nav-account-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 10px 14px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: #334155 !important;
+          background-color: transparent !important;
+          border: 1.5px solid transparent !important;
+          transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          text-decoration: none !important;
+        }
+        .nav-account-item:hover, 
+        .nav-account-item:active, 
+        .nav-account-item:focus {
+          background-color: #E6F4F6 !important;
+          border-color: rgba(0, 102, 112, 0.35) !important;
+          color: #006670 !important;
+          transform: translateX(4px) !important;
+          box-shadow: 0 4px 12px rgba(0, 102, 112, 0.08) !important;
+        }
+        .nav-account-item:hover svg, 
+        .nav-account-item:active svg,
+        .nav-account-item:focus svg {
+          color: #006670 !important;
+          transform: scale(1.15) !important;
+        }
+        .nav-account-signout {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 10px 14px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: #EF4444 !important;
+          background-color: transparent !important;
+          border: 1.5px solid transparent !important;
+          transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          text-align: left !important;
+        }
+        .nav-account-signout:hover, 
+        .nav-account-signout:active, 
+        .nav-account-signout:focus {
+          background-color: #FFF1F2 !important;
+          border-color: rgba(239, 68, 68, 0.35) !important;
+          color: #DC2626 !important;
+          transform: translateX(4px) !important;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08) !important;
+        }
+        .nav-account-signout:hover svg, 
+        .nav-account-signout:active svg,
+        .nav-account-signout:focus svg {
+          color: #DC2626 !important;
+          transform: scale(1.15) !important;
+        }
+      `}</style>
       {/* Background Overlay for categories mega menu, cart drawer, or mobile menu */}
       {(activeMenu === 'categories' || isCartOpen || isMobileMenuOpen) && (
         <div
@@ -369,47 +434,8 @@ const Navbar: React.FC<NavbarProps> = ({
       <header
         suppressHydrationWarning
         className={`fixed top-0 left-0 right-0 z-50 w-full flex flex-col transition-all duration-300 ease-in-out select-none
-          h-[100px] ${scrolled ? 'lg:h-[124px] bg-white/95 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_2px_20px_rgba(0,0,0,0.03)]' : 'lg:h-[160px] bg-white border-b border-slate-200/40'}`}
+          h-[100px] lg:h-[124px] ${scrolled ? 'bg-white/95 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_2px_20px_rgba(0,0,0,0.03)]' : 'bg-white border-b border-slate-200/40'}`}
       >
-        {/* Top Bar (Dark Teal Green) */}
-        <div
-          className={`w-full bg-[#004d54] text-[#f8f9fa] text-[11px] font-sans hidden lg:flex items-center justify-between px-6 md:px-12 transition-all duration-300 overflow-hidden top-bar-container ${
-            scrolled ? 'h-0 opacity-0' : 'h-9 py-2 border-b border-[#002b2e]'
-          }`}
-        >
-          {/* Left Side Links */}
-          <div className="flex items-center gap-4.5">
-            <a href="#about" onClick={(e) => { e.preventDefault(); setCurrentView('home'); }} className="hover:text-[#F58734] transition-colors font-semibold">About Us</a>
-            <a href="#contact" className="hover:text-[#F58734] transition-colors font-semibold">Contact Us</a>
-            <a href="#blogs" className="hover:text-[#F58734] transition-colors font-semibold">Blogs</a>
-            <a href="#faqs" className="hover:text-[#F58734] transition-colors font-semibold">FAQ's</a>
-          </div>
-
-          {/* Right Side: Whatsapp, Social icons */}
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1.5 font-semibold">
-              <svg className="w-3.5 h-3.5 fill-current text-white hover:text-emerald-400 cursor-pointer" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.588 1.974 14.12 .95 11.5 1.01 6.064 1.01 1.64 5.38 1.636 10.81c-.001 1.63.452 3.224 1.31 4.646L1.93 20.89l5.525-1.444l-.808-.292zm11.758-6.196c-.29-.145-1.716-.848-1.98-.942-.266-.096-.46-.145-.654.145-.19.29-.74.943-.907 1.137-.166.19-.333.213-.623.068-1.51-.75-2.6-1.3-3.633-3.085-.27-.464.27-.43.774-1.436.082-.164.041-.31-.02-.455-.06-.145-.654-1.576-.897-2.155-.236-.57-.477-.493-.654-.502-.17-.008-.364-.01-.56-.01-.194 0-.51.073-.777.363-.268.29-1.02.997-1.02 2.431 0 1.434 1.042 2.82 1.188 3.012.145.19 2.053 3.134 4.975 4.397.694.3 1.237.48 1.66.615.698.223 1.332.19 1.834.116.56-.083 1.717-.702 1.96-1.38.242-.676.242-1.256.17-1.38-.073-.12-.267-.193-.56-.338z" />
-              </svg>
-              <span>+91 92891 88852</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <a href="#" className="hover:text-[#F58734] transition-colors" aria-label="Facebook">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-              </a>
-              <a href="#" className="hover:text-[#F58734] transition-colors" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-              </a>
-              <a href="#" className="hover:text-[#F58734] transition-colors" aria-label="Youtube">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17Z"/><path d="m10 15 5-3-5-3z"/></svg>
-              </a>
-              <a href="#" className="hover:text-[#F58734] transition-colors" aria-label="Linkedin">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
-              </a>
-            </div>
-          </div>
-        </div>
-
         {/* Row 1 (White): Logo, Search, Utilities */}
         <div className="hidden lg:block w-full bg-white border-b border-slate-100">
           <div className="max-w-7xl mx-auto w-full px-6 md:px-12 h-[76px] flex items-center justify-between gap-6">
@@ -425,7 +451,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Search className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                 
                 <input
-                  type="text"
+                  type="search"
+                  name="site_search"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
+                  spellCheck={false}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -489,7 +521,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 {/* Authenticated Dropdown */}
                 {isAuthenticated && isAccountOpen && user && (
                   <div
-                    className="absolute right-0 top-[56px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.06)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 top-[56px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.08)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
                     onMouseLeave={() => setIsAccountOpen(false)}
                   >
                     <div className="border-b border-slate-100 pb-3 mb-3">
@@ -504,52 +536,58 @@ const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       )}
                     </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {/* Dealer Portal link — only visible to dealer accounts */}
                       {user.role === 'dealer' && (
                         <li>
                           <a href="#dealer-portal" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('dealer-portal'); window.scrollTo(0, 0); }}
-                            className="flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-[#005B63] bg-[#005B63]/5 hover:bg-[#005B63]/10 transition-colors border border-[#005B63]/10 mb-2">
-                            <div className="flex items-center gap-2">
-                              <Handshake className="w-4 h-4 opacity-80" />
+                            className="group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-2 shadow-2xs cursor-pointer">
+                            <div className="flex items-center gap-2.5">
+                              <Handshake className="w-4 h-4 text-[#005B63] group-hover:scale-110 transition-transform duration-150" />
                               Dealer Portal
                             </div>
-                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                              user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                              user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-700' :
-                              'bg-amber-100 text-amber-700'
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                              user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                              user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                              'bg-amber-100 text-amber-800'
                             }`}>{user.dealer_status ?? 'pending'}</span>
                           </a>
                         </li>
                       )}
                       <li>
                         <a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('dashboard'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Compass className="w-4 h-4 opacity-70" /> Clinical Dashboard
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Clinical Dashboard
                         </a>
                       </li>
                       <li>
                         <a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('orders'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Package className="w-4 h-4 opacity-70" /> My Orders
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> My Orders
                         </a>
                       </li>
                       <li>
-                        <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('wishlist'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Heart className="w-4 h-4 opacity-70" /> Wishlist
+                        <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:scale-110 transition-all duration-150" /> Wishlist
+                        </a>
+                      </li>
+                      <li>
+                        <a href="#cart" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('cart'); window.scrollTo(0, 0); }}
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Cart
                         </a>
                       </li>
                       <li>
                         <a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('warranty'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors">
-                          <Shield className="w-4 h-4 opacity-70" /> Warranty
+                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
+                          <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Warranty
                         </a>
                       </li>
-                      <li className="border-t border-slate-100 pt-2.5 mt-2.5">
+                      <li className="border-t border-slate-100 pt-2 mt-2">
                         <button onClick={() => { setIsAccountOpen(false); logout(); }}
-                          className="flex items-center w-full gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer text-left">
-                          <LogOut className="w-4 h-4 opacity-80" /> Sign Out
+                          className="group flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-200/60 border border-transparent active:bg-rose-100 hover:translate-x-1 transition-all duration-150 cursor-pointer text-left">
+                          <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-150" /> Sign Out
                         </button>
                       </li>
                     </ul>
@@ -569,7 +607,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <div className="relative">
                   <Heart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
+                  <span suppressHydrationWarning className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
                     {wishlistCount}
                   </span>
                 </div>
@@ -593,7 +631,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <div className="relative">
                   <ShoppingCart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
+                  <span suppressHydrationWarning className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
                     {cartItems.length}
                   </span>
                 </div>
@@ -620,7 +658,13 @@ const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               
               <input
-                type="text"
+                type="search"
+                name="mobile_site_search"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
+                spellCheck={false}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -658,14 +702,17 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1 sm:gap-1.5 relative shrink-0">
 
             {/* Account Icon — Mobile */}
-            <div
-              className="relative block"
-              onClick={() => setIsAccountOpen(!isAccountOpen)}
-            >
+            <div className="relative block">
               {isAuthenticated && user ? (
                 <>
                   {/* Avatar icon for small mobile (<640px) */}
                   <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeAllMenus();
+                      setDashboardSection?.('dashboard');
+                      router.push('/profile');
+                    }}
                     className="p-1 sm:hidden rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-[#006670] flex items-center justify-center"
                     aria-label="My Account"
                   >
@@ -676,50 +723,20 @@ const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Avatar chip for mobile tablet (>=640px) */}
                   <button
-                    className={`hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border transition-all duration-200 cursor-pointer select-none
-                      ${isAccountOpen
-                        ? 'border-[#006670] bg-[#e6f3f5] text-[#006670]'
-                        : 'border-slate-200 bg-white text-slate-700'
-                      }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeAllMenus();
+                      setDashboardSection?.('dashboard');
+                      router.push('/profile');
+                    }}
+                    className="hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-[#006670] hover:text-[#006670] transition-all duration-200 cursor-pointer select-none"
                     aria-label="My Account"
                   >
                     <span className="w-6 h-6 rounded-full bg-[#006670] text-white text-[10px] font-black flex items-center justify-center shrink-0">
                       {avatarInitials}
                     </span>
-                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isAccountOpen ? 'rotate-180' : ''}`} />
+                    <span className="text-[10px] font-bold tracking-wider uppercase">{displayFirstName}</span>
                   </button>
-
-                  {/* Mobile authenticated dropdown */}
-                  {isAccountOpen && (
-                    <div
-                      className="absolute right-0 top-[48px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.06)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
-                      onMouseLeave={() => setIsAccountOpen(false)}
-                    >
-                      <div className="border-b border-slate-100 pb-3 mb-3">
-                        <span className="text-[10px] font-extrabold tracking-widest text-[#006670] uppercase block mb-1">
-                          {user.role === 'dealer' ? 'Dealer Portal' : 'Clinic Portal'}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-800">{user.full_name}</h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{user.email}</p>
-                        {user.role === 'dealer' && (
-                          <span className="inline-block bg-orange-100 text-orange-800 text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5">
-                            B2B Dealer
-                          </span>
-                        )}
-                      </div>
-                      <ul className="space-y-1.5">
-                        <li><a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Compass className="w-4 h-4 opacity-70" /> Clinical Dashboard</a></li>
-                        <li><a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Package className="w-4 h-4 opacity-70" /> My Orders</a></li>
-                        <li><a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Heart className="w-4 h-4 opacity-70" /> Wishlist</a></li>
-                        <li><a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('my-orders'); window.scrollTo(0, 0); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#006670] transition-colors"><Shield className="w-4 h-4 opacity-70" /> Warranty</a></li>
-                        <li className="border-t border-slate-100 pt-2.5 mt-2.5">
-                          <button onClick={() => { setIsAccountOpen(false); logout(); }} className="flex items-center w-full gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer text-left">
-                            <LogOut className="w-4 h-4 opacity-80" /> Sign Out
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
                 </>
               ) : (
                 <>
@@ -752,9 +769,9 @@ const Navbar: React.FC<NavbarProps> = ({
               aria-label="Wishlist"
             >
               <Heart className="w-[18px] h-[18px] stroke-[1.8]" />
-              {wishlistItems.length > 0 && (
-                <span className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
-                  {wishlistItems.length}
+              {wishlistCount > 0 && (
+                <span suppressHydrationWarning className="absolute rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center border border-white w-[14px] h-[14px] top-[1px] right-[1px]">
+                  {wishlistCount}
                 </span>
               )}
             </button>
@@ -990,7 +1007,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {/* 9. Slide-down Search Suggestion Overlay */}
       {isSearchOpen && (
         <div
-          className={`fixed left-0 right-0 z-48 bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-[0_20px_40px_rgba(0,0,0,0.06)] animate-in slide-in-from-top duration-300 ease-out text-left select-none top-[96px] lg:top-[160px] ${scrolled ? 'lg:top-[124px]' : 'lg:top-[160px]'} search-overlay-container`}
+          className="fixed left-0 right-0 z-48 bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-[0_20px_40px_rgba(0,0,0,0.06)] animate-in slide-in-from-top duration-300 ease-out text-left select-none top-[96px] lg:top-[124px] search-overlay-container"
           style={{ height: '360px' }}
         >
           <div className="max-w-3xl mx-auto px-6 pt-8 pb-10 flex flex-col justify-start h-full">

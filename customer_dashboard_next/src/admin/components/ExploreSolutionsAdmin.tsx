@@ -1,12 +1,11 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Search, Edit3, Trash2, Eye, ArrowUp, ArrowDown,
   CheckCircle, XCircle, Sparkles, Package, Layers, Image as ImageIcon,
   Save, X, Star, Move, Globe, Shield, RefreshCw
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, getMediaUrl } from '@/lib/api';
+import ImageUploader from './ImageUploader';
 
 export interface AdminSolutionItem {
   id: string | number;
@@ -14,6 +13,8 @@ export interface AdminSolutionItem {
   slug: string;
   short_description: string;
   description: string;
+  card?: string;
+  card_image?: string;
   banner: string;
   thumbnail: string;
   display_order: number;
@@ -46,6 +47,9 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'products' | 'seo'>('basic');
+  const [cardFile, setCardFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   // Form Fields
   const [formData, setFormData] = useState({
@@ -53,6 +57,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
     slug: '',
     short_description: '',
     description: '',
+    card: '',
     banner: '',
     thumbnail: '',
     display_order: 0,
@@ -125,14 +130,18 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
   const handleOpenCreateModal = () => {
     setEditingId(null);
+    setCardFile(null);
+    setBannerFile(null);
+    setThumbnailFile(null);
     setFormData({
       title: '',
       slug: '',
       short_description: '',
       description: '',
-      banner: '/images/hero1_ecommerce.png',
-      thumbnail: '/images/category_equipment.png',
-      display_order: solutions.length + 1,
+      card: '',
+      banner: '',
+      thumbnail: '',
+      display_order: 0,
       is_active: true,
       show_on_homepage: true,
       seo_title: '',
@@ -146,11 +155,15 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
   const handleOpenEditModal = (sol: AdminSolutionItem) => {
     setEditingId(sol.id);
+    setCardFile(null);
+    setBannerFile(null);
+    setThumbnailFile(null);
     setFormData({
       title: sol.title,
       slug: sol.slug,
       short_description: sol.short_description,
       description: sol.description || '',
+      card: sol.card || sol.card_image || '',
       banner: sol.banner || '',
       thumbnail: sol.thumbnail || '',
       display_order: sol.display_order || 0,
@@ -235,14 +248,51 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
   const handleSaveSolution = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      ...formData,
-      product_ids: selectedProducts.map((p) => p.id),
-      featured_product_ids: selectedProducts.filter((p) => p.is_featured).map((p) => p.id),
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('slug', formData.slug);
+    data.append('short_description', formData.short_description);
+    data.append('description', formData.description || '');
+    data.append('display_order', String(formData.display_order || 0));
+    data.append('is_active', String(formData.is_active));
+    data.append('show_on_homepage', String(formData.show_on_homepage));
+    data.append('seo_title', formData.seo_title || '');
+    data.append('seo_description', formData.seo_description || '');
+    data.append('seo_keywords', formData.seo_keywords || '');
+
+    selectedProducts.forEach((p) => {
+      data.append('product_ids', String(p.id));
+      if (p.is_featured) {
+        data.append('featured_product_ids', String(p.id));
+      }
+    });
+
+    if (cardFile) {
+      data.append('card_image', cardFile);
+    } else if (!formData.card) {
+      data.append('card_image', '');
+    }
+
+    if (bannerFile) {
+      data.append('banner_image', bannerFile);
+    } else if (!formData.banner) {
+      data.append('banner_image', '');
+    }
+
+    if (thumbnailFile) {
+      data.append('thumbnail_image', thumbnailFile);
+    } else if (!formData.thumbnail) {
+      data.append('thumbnail_image', '');
+    }
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     };
 
     if (editingId) {
-      api.put(`solutions/admin/${editingId}/`, payload)
+      api.put(`solutions/admin/${editingId}/`, data, config)
         .then(() => {
           setIsModalOpen(false);
           fetchSolutions();
@@ -251,7 +301,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
           alert('Error saving solution: ' + JSON.stringify(err.response?.data || err.message));
         });
     } else {
-      api.post('solutions/admin/list/', payload)
+      api.post('solutions/admin/list/', data, config)
         .then(() => {
           setIsModalOpen(false);
           fetchSolutions();
@@ -261,6 +311,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
         });
     }
   };
+
 
   // Filter Solutions
   const filteredSolutions = solutions.filter((sol) => {
@@ -374,7 +425,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
                   </td>
                   <td className="py-3 px-4">
                     <img
-                      src={sol.thumbnail || sol.banner || '/images/category_equipment.png'}
+                      src={getMediaUrl(sol.card || sol.card_image || sol.thumbnail || sol.banner || '/images/category_equipment.png')}
                       alt={sol.title}
                       className="w-10 h-10 rounded-lg object-cover border border-slate-200"
                     />
@@ -797,45 +848,89 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
 
               {/* TAB 3: BANNERS & IMAGES */}
               {activeTab === 'images' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Banner Image URL / Asset Path
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="/images/hero1_ecommerce.png"
-                      value={formData.banner}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, banner: e.target.value }))}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:border-[#005F63]"
+                <div className="space-y-6">
+                  {/* Field 1: Homepage Card Background (Screenshot field) */}
+                  <div className="p-4 bg-teal-50/40 rounded-2xl border border-teal-200/80 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-[#005F63] text-white text-[10px] font-black uppercase tracking-wider">
+                        Storefront Homepage
+                      </span>
+                      <span className="text-xs font-bold text-slate-800">
+                        Explore by Solutions Card Image (Homepage)
+                      </span>
+                    </div>
+                    <ImageUploader
+                      label="Homepage Procedure Card Image (280:360 / Storefront Card Background)"
+                      aspectRatio={280 / 360}
+                      currentUrl={cardFile ? URL.createObjectURL(cardFile) : (formData.card ? getMediaUrl(formData.card) : null)}
+                      onUpload={(file) => {
+                        setCardFile(file);
+                        setFormData((prev) => ({ ...prev, card: URL.createObjectURL(file) }));
+                      }}
+                      onRemove={() => {
+                        setCardFile(null);
+                        setFormData((prev) => ({ ...prev, card: '' }));
+                      }}
                     />
-                    {formData.banner && (
-                      <img
-                        src={formData.banner}
-                        alt="Banner Preview"
-                        className="mt-2 h-32 w-full object-cover rounded-xl border border-slate-200"
-                      />
-                    )}
+                    <p className="text-[11px] font-semibold text-[#005F63]/90">
+                      ⚡ This image is displayed directly as the background on the &quot;Explore by Solutions&quot; procedure cards on the customer homepage (as shown in the storefront screenshot).
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Thumbnail Image URL / Asset Path
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="/images/category_equipment.png"
-                      value={formData.thumbnail}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, thumbnail: e.target.value }))}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:border-[#005F63]"
+                  {/* Field 2: Detail Page Header Banner */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-700 text-white text-[10px] font-black uppercase tracking-wider">
+                        Detail Page
+                      </span>
+                      <span className="text-xs font-bold text-slate-800">
+                        Panoramic Header Banner
+                      </span>
+                    </div>
+                    <ImageUploader
+                      label="Banner Image (16:5 / Panoramic Banner)"
+                      aspectRatio={16 / 5}
+                      currentUrl={bannerFile ? URL.createObjectURL(bannerFile) : (formData.banner ? getMediaUrl(formData.banner) : null)}
+                      onUpload={(file) => {
+                        setBannerFile(file);
+                        setFormData((prev) => ({ ...prev, banner: URL.createObjectURL(file) }));
+                      }}
+                      onRemove={() => {
+                        setBannerFile(null);
+                        setFormData((prev) => ({ ...prev, banner: '' }));
+                      }}
                     />
-                    {formData.thumbnail && (
-                      <img
-                        src={formData.thumbnail}
-                        alt="Thumbnail Preview"
-                        className="mt-2 h-24 w-24 object-cover rounded-xl border border-slate-200"
-                      />
-                    )}
+                    <p className="text-[11px] font-medium text-slate-500">
+                      High-resolution panoramic banner displayed across the top of the clinical solution detail page (/solutions/[slug]).
+                    </p>
+                  </div>
+
+                  {/* Field 3: Thumbnail Icon */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-600 text-white text-[10px] font-black uppercase tracking-wider">
+                        Catalog / Icon
+                      </span>
+                      <span className="text-xs font-bold text-slate-800">
+                        Square Thumbnail Icon
+                      </span>
+                    </div>
+                    <ImageUploader
+                      label="Thumbnail Image (1:1 / Square Icon)"
+                      aspectRatio={1}
+                      currentUrl={thumbnailFile ? URL.createObjectURL(thumbnailFile) : (formData.thumbnail ? getMediaUrl(formData.thumbnail) : null)}
+                      onUpload={(file) => {
+                        setThumbnailFile(file);
+                        setFormData((prev) => ({ ...prev, thumbnail: URL.createObjectURL(file) }));
+                      }}
+                      onRemove={() => {
+                        setThumbnailFile(null);
+                        setFormData((prev) => ({ ...prev, thumbnail: '' }));
+                      }}
+                    />
+                    <p className="text-[11px] font-medium text-slate-500">
+                      Square icon / cover image shown in catalog overview grids and CMS tables.
+                    </p>
                   </div>
                 </div>
               )}

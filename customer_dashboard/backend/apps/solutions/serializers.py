@@ -1,3 +1,4 @@
+import json
 import uuid
 from rest_framework import serializers
 from .models import ClinicalSolution, ClinicalSolutionProduct
@@ -7,12 +8,15 @@ from apps.products.models import Product
 class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
     product_id = serializers.ReadOnlyField(source="product.id")
     product_name = serializers.ReadOnlyField(source="product.name")
+    product_slug = serializers.ReadOnlyField(source="product.slug")
     product_sku = serializers.ReadOnlyField(source="product.sku")
-    product_price = serializers.ReadOnlyField(source="product.price")
+    product_price = serializers.SerializerMethodField(method_name="get_product_price")
     product_image = serializers.SerializerMethodField(method_name="get_product_image")
     product_brand = serializers.ReadOnlyField(source="product.brand.name", default="")
     product_category = serializers.ReadOnlyField(source="product.category.name", default="")
-    product_rating = serializers.ReadOnlyField(source="product.rating", default=4.8)
+    product_rating = serializers.SerializerMethodField(method_name="get_product_rating")
+    product_mrp = serializers.SerializerMethodField(method_name="get_product_mrp")
+    in_stock = serializers.SerializerMethodField(method_name="get_in_stock")
 
     class Meta:
         model = ClinicalSolutionProduct
@@ -20,29 +24,56 @@ class ClinicalSolutionProductSerializer(serializers.ModelSerializer):
             "id",
             "product_id",
             "product_name",
+            "product_slug",
             "product_sku",
             "product_price",
+            "product_mrp",
             "product_image",
             "product_brand",
             "product_category",
             "product_rating",
+            "in_stock",
             "display_order",
             "is_featured",
             "created_at",
         ]
 
+    def get_product_rating(self, obj):
+        if obj.product and hasattr(obj.product, 'average_rating') and obj.product.average_rating is not None:
+            return float(obj.product.average_rating)
+        return 0.0
+
+    def get_product_mrp(self, obj):
+        if obj.product and hasattr(obj.product, 'pricing') and obj.product.pricing:
+            return float(obj.product.pricing.mrp or 0)
+        return 0.0
+
+    def get_product_price(self, obj):
+        if obj.product:
+            if hasattr(obj.product, 'pricing') and obj.product.pricing:
+                return float(obj.product.pricing.effective_price or obj.product.pricing.selling_price or 0)
+        return 0.0
+
+    def get_in_stock(self, obj):
+        if obj.product and hasattr(obj.product, 'inventory') and obj.product.inventory:
+            inv = obj.product.inventory
+            return bool(getattr(inv, 'allow_backorders', False) or getattr(inv, 'available_stock', 0) > 0)
+        return True
+
     def get_product_image(self, obj):
         if obj.product:
-            if hasattr(obj.product, 'primary_image_url') and obj.product.primary_image_url:
-                return obj.product.primary_image_url
-            if hasattr(obj.product, 'images') and obj.product.images.exists():
-                return obj.product.images.first().image.url
-        return "/images/bestseller_handpiece.png"
+            img = obj.product.primary_image
+            if img and img.image:
+                request = self.context.get("request")
+                return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return ""
 
 
 class ClinicalSolutionListSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
+    card_image = serializers.SerializerMethodField(method_name="get_card_image")
+    card = serializers.SerializerMethodField(method_name="get_card_image")
     product_count = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -52,6 +83,8 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
             "title",
             "slug",
             "short_description",
+            "card_image",
+            "card",
             "banner",
             "thumbnail",
             "display_order",
@@ -61,6 +94,20 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_card_image(self, obj):
+        if obj.card_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.card_image.url) if request else obj.card_image.url
+        if obj.card_image_url:
+            return obj.card_image_url
+        if obj.banner_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.banner_image.url) if request else obj.banner_image.url
+        if obj.thumbnail_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.thumbnail_image.url) if request else obj.thumbnail_image.url
+        return obj.banner_image_url or obj.thumbnail_image_url or "/images/hero1_ecommerce.png"
 
     def get_banner(self, obj):
         if obj.banner_image:
@@ -78,6 +125,8 @@ class ClinicalSolutionListSerializer(serializers.ModelSerializer):
 class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField(method_name="get_banner")
     thumbnail = serializers.SerializerMethodField(method_name="get_thumbnail")
+    card_image = serializers.SerializerMethodField(method_name="get_card_image")
+    card = serializers.SerializerMethodField(method_name="get_card_image")
     products = ClinicalSolutionProductSerializer(source="solution_products", many=True, read_only=True)
     product_count = serializers.IntegerField(read_only=True)
 
@@ -89,6 +138,8 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "description",
+            "card_image",
+            "card",
             "banner",
             "thumbnail",
             "display_order",
@@ -102,6 +153,20 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_card_image(self, obj):
+        if obj.card_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.card_image.url) if request else obj.card_image.url
+        if obj.card_image_url:
+            return obj.card_image_url
+        if obj.banner_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.banner_image.url) if request else obj.banner_image.url
+        if obj.thumbnail_image:
+            request = self.context.get("request")
+            return request.build_absolute_uri(obj.thumbnail_image.url) if request else obj.thumbnail_image.url
+        return obj.banner_image_url or obj.thumbnail_image_url or "/images/hero1_ecommerce.png"
 
     def get_banner(self, obj):
         if obj.banner_image:
@@ -117,6 +182,12 @@ class ClinicalSolutionDetailSerializer(serializers.ModelSerializer):
 
 
 class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
+    banner = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    thumbnail = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    card = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    banner_image = serializers.ImageField(required=False, allow_null=True)
+    thumbnail_image = serializers.ImageField(required=False, allow_null=True)
+    card_image = serializers.ImageField(required=False, allow_null=True)
     product_ids = serializers.ListField(
         child=serializers.CharField(),
         write_only=True,
@@ -138,8 +209,13 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             "slug",
             "short_description",
             "description",
+            "card",
+            "card_image",
+            "card_image_url",
+            "banner",
             "banner_image",
             "banner_image_url",
+            "thumbnail",
             "thumbnail_image",
             "thumbnail_image_url",
             "display_order",
@@ -155,7 +231,77 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
             "slug": {"required": False, "allow_blank": True}
         }
 
+    def to_internal_value(self, data):
+        # Handle QueryDict / multipart data where lists come as getlist or JSON string
+        if hasattr(data, "getlist"):
+            mutable_data = data.copy()
+            
+            pids = data.getlist("product_ids")
+            extracted_pids = []
+            for item in pids:
+                if isinstance(item, str) and (item.startswith("[") or "," in item):
+                    try:
+                        parsed = json.loads(item)
+                        if isinstance(parsed, list):
+                            extracted_pids.extend([str(x) for x in parsed if x not in (None, "", "null")])
+                        else:
+                            extracted_pids.append(str(parsed))
+                    except Exception:
+                        extracted_pids.extend([x.strip() for x in item.split(",") if x.strip()])
+                elif item not in (None, "", "null", "undefined"):
+                    extracted_pids.append(str(item))
+            mutable_data.setlist("product_ids", extracted_pids)
+
+            fpids = data.getlist("featured_product_ids")
+            extracted_fpids = []
+            for item in fpids:
+                if isinstance(item, str) and (item.startswith("[") or "," in item):
+                    try:
+                        parsed = json.loads(item)
+                        if isinstance(parsed, list):
+                            extracted_fpids.extend([str(x) for x in parsed if x not in (None, "", "null")])
+                        else:
+                            extracted_fpids.append(str(parsed))
+                    except Exception:
+                        extracted_fpids.extend([x.strip() for x in item.split(",") if x.strip()])
+                elif item not in (None, "", "null", "undefined"):
+                    extracted_fpids.append(str(item))
+            mutable_data.setlist("featured_product_ids", extracted_fpids)
+
+            # Handle clearing image if passed as empty string or 'null'
+            if "card_image" in mutable_data and mutable_data["card_image"] in ("", "null", "undefined"):
+                mutable_data["card_image"] = None
+            if "banner_image" in mutable_data and mutable_data["banner_image"] in ("", "null", "undefined"):
+                mutable_data["banner_image"] = None
+            if "thumbnail_image" in mutable_data and mutable_data["thumbnail_image"] in ("", "null", "undefined"):
+                mutable_data["thumbnail_image"] = None
+
+            return super().to_internal_value(mutable_data)
+        elif isinstance(data, dict):
+            mutable_data = dict(data)
+            if "product_ids" in mutable_data:
+                pids = mutable_data["product_ids"]
+                if isinstance(pids, (list, tuple)):
+                    mutable_data["product_ids"] = [str(x) for x in pids if x not in (None, "", "null")]
+            if "featured_product_ids" in mutable_data:
+                fpids = mutable_data["featured_product_ids"]
+                if isinstance(fpids, (list, tuple)):
+                    mutable_data["featured_product_ids"] = [str(x) for x in fpids if x not in (None, "", "null")]
+            return super().to_internal_value(mutable_data)
+
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
+        card = validated_data.pop("card", None)
+        banner = validated_data.pop("banner", None)
+        thumbnail = validated_data.pop("thumbnail", None)
+        if card is not None:
+            validated_data["card_image_url"] = card
+        if banner is not None:
+            validated_data["banner_image_url"] = banner
+        if thumbnail is not None:
+            validated_data["thumbnail_image_url"] = thumbnail
+
         product_ids = validated_data.pop("product_ids", [])
         featured_product_ids = set(str(pid) for pid in validated_data.pop("featured_product_ids", []))
         
@@ -164,6 +310,16 @@ class ClinicalSolutionCreateUpdateSerializer(serializers.ModelSerializer):
         return solution
 
     def update(self, instance, validated_data):
+        card = validated_data.pop("card", None)
+        banner = validated_data.pop("banner", None)
+        thumbnail = validated_data.pop("thumbnail", None)
+        if card is not None:
+            validated_data["card_image_url"] = card
+        if banner is not None:
+            validated_data["banner_image_url"] = banner
+        if thumbnail is not None:
+            validated_data["thumbnail_image_url"] = thumbnail
+
         has_products = "product_ids" in validated_data
         product_ids = validated_data.pop("product_ids", [])
         featured_product_ids = set(str(pid) for pid in validated_data.pop("featured_product_ids", []))

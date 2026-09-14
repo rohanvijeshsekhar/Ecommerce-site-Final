@@ -208,7 +208,7 @@ class Order(BaseModel):
             self.estimated_delivery_date = (timezone.now() + timezone.timedelta(days=4)).date()
 
         # Auto-populate immutable snapshot from shipping_address if snapshot fields are empty
-        if self.shipping_address and not self.shipping_line1:
+        if getattr(self, "shipping_address_id", None) and not self.shipping_line1:
             addr = self.shipping_address
             self.shipping_full_name = self.shipping_full_name or getattr(addr, "full_name", "") or ""
             self.shipping_mobile = self.shipping_mobile or getattr(addr, "mobile", "") or ""

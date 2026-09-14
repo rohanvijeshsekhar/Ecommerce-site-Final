@@ -220,6 +220,18 @@ export interface FullReportsOverviewPayload {
   business_insights: BusinessInsightItem[];
 }
 
+const getErrorMessage = (err: any, fallback: string): string => {
+  if (err?.response?.status === 401) {
+    return 'Your session has expired. Please log in again to view Reports & Analytics.';
+  }
+  return (
+    err?.response?.data?.error?.message ||
+    err?.response?.data?.message ||
+    err?.message ||
+    fallback
+  );
+};
+
 export const reportsService = {
   getOverview: async (period = '30d', startDate?: string, endDate?: string): Promise<ServiceResponse<FullReportsOverviewPayload>> => {
     try {
@@ -233,7 +245,7 @@ export const reportsService = {
     } catch (err: any) {
       return {
         success: false,
-        message: err?.response?.data?.message || 'Failed to fetch enterprise reports overview'
+        message: getErrorMessage(err, 'Failed to fetch enterprise reports overview')
       };
     }
   },
@@ -243,7 +255,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/kpis/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch KPIs' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch KPIs') };
     }
   },
 
@@ -252,7 +264,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/revenue/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch revenue analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch revenue analytics') };
     }
   },
 
@@ -261,7 +273,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/products/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch product intelligence' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch product intelligence') };
     }
   },
 
@@ -270,7 +282,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/categories/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch category analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch category analytics') };
     }
   },
 
@@ -279,7 +291,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/dealers/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch dealer analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch dealer analytics') };
     }
   },
 
@@ -288,7 +300,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/customers/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch customer analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch customer analytics') };
     }
   },
 
@@ -297,7 +309,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/inventory/');
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch inventory intelligence' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch inventory intelligence') };
     }
   },
 
@@ -306,7 +318,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/payments/', { params: { period } });
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch payment analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch payment analytics') };
     }
   },
 
@@ -315,7 +327,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/warranty/');
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch warranty analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch warranty analytics') };
     }
   },
 
@@ -324,7 +336,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/support/');
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch support analytics' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch support analytics') };
     }
   },
 
@@ -333,7 +345,7 @@ export const reportsService = {
       const response = await api.get('/admin/reports/recent-activities/');
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      return { success: false, message: 'Failed to fetch recent activities' };
+      return { success: false, message: getErrorMessage(err, 'Failed to fetch recent activities') };
     }
   }
 };

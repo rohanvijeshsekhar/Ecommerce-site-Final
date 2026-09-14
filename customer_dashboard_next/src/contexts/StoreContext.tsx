@@ -60,7 +60,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(null);
   const [completedOrderData, setCompletedOrderDataState] = useState<any | null>(null);
 
-  // Hydrate session storage state safely on client mount to prevent SSR hydration mismatches
+  // Hydrate session storage & cached auth cart safely on client mount to prevent SSR hydration mismatches
   useEffect(() => {
     try {
       const savedSource = sessionStorage.getItem('faazo_checkout_source');
@@ -74,6 +74,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const savedCompleted = sessionStorage.getItem('faazo_completed_order');
       if (savedCompleted) {
         setCompletedOrderDataState(JSON.parse(savedCompleted));
+      }
+      const cachedAuthCart = localStorage.getItem('faazo_auth_cart_cache');
+      if (cachedAuthCart) {
+        const parsed = JSON.parse(cachedAuthCart);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCartItemsState(parsed);
+        }
       }
     } catch {
       // ignore
@@ -156,6 +163,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }));
   };
 
+  const updateAuthCartCache = (items: CartItem[]) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('faazo_auth_cart_cache', JSON.stringify(items));
+      } catch {}
+    }
+  };
+
   // Sync cart from backend or local storage
   useEffect(() => {
     if (isAuthenticated) {
@@ -165,7 +180,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           const { cartService } = await import('../lib/services/cart');
           const res = await cartService.get();
           if (res.success && res.data) {
-            setCartItemsState(mapBackendCartToFrontend(res.data));
+            const mapped = mapBackendCartToFrontend(res.data);
+            setCartItemsState(mapped);
+            try {
+              localStorage.setItem('faazo_auth_cart_cache', JSON.stringify(mapped));
+            } catch {}
             setSavedForLaterItems(mapBackendSavedToFrontend(res.data));
           }
         } catch (e: any) {
@@ -178,6 +197,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       };
       loadCart();
     } else {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('faazo_auth_cart_cache');
+      }
       setCartItemsState(localCart);
     }
   }, [isAuthenticated, localCart]);
@@ -228,7 +250,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const { cartService } = await import('../lib/services/cart');
         const res = await cartService.clear();
         if (res.success && res.data) {
-          setCartItemsState(mapBackendCartToFrontend(res.data));
+          const mapped = mapBackendCartToFrontend(res.data);
+          setCartItemsState(mapped);
+          updateAuthCartCache(mapped);
         }
       } catch (e) {
         console.error(e);
@@ -246,7 +270,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           try {
             const res = await cartService.removeItem(cartItemId);
             if (res.success && res.data) {
-              setCartItemsState(mapBackendCartToFrontend(res.data));
+              const mapped = mapBackendCartToFrontend(res.data);
+              setCartItemsState(mapped);
+              updateAuthCartCache(mapped);
             }
           } catch (err: any) {
             showToast(err.response?.data?.message || 'Failed to remove item.');
@@ -262,7 +288,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           const res = await cartService.add(newItem.id, newItem.qty);
           if (res.success && res.data) {
-            setCartItemsState(mapBackendCartToFrontend(res.data));
+            const mapped = mapBackendCartToFrontend(res.data);
+            setCartItemsState(mapped);
+            updateAuthCartCache(mapped);
           }
         } catch (err: any) {
           showToast(err.response?.data?.message || 'Failed to add item.');
@@ -273,13 +301,17 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           try {
             const res = await cartService.updateItem(cartItemId, newItem.qty);
             if (res.success && res.data) {
-              setCartItemsState(mapBackendCartToFrontend(res.data));
+              const mapped = mapBackendCartToFrontend(res.data);
+              setCartItemsState(mapped);
+              updateAuthCartCache(mapped);
             }
           } catch (err: any) {
             showToast(err.response?.data?.message || 'Failed to update quantity.');
             const res = await cartService.get();
             if (res.success && res.data) {
-              setCartItemsState(mapBackendCartToFrontend(res.data));
+              const mapped = mapBackendCartToFrontend(res.data);
+              setCartItemsState(mapped);
+              updateAuthCartCache(mapped);
             }
           }
         }

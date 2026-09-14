@@ -31,6 +31,7 @@ interface OrderDetailPageProps {
   onBack: () => void;
   onProductClick: (slug: string) => void;
   showToast?: (msg: string) => void;
+  embedded?: boolean;
 }
 
 const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
@@ -38,6 +39,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   onBack,
   onProductClick,
   showToast,
+  embedded = false,
 }) => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,10 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 flex flex-col items-center justify-center space-y-4">
+      <div className={embedded 
+        ? "py-12 flex flex-col items-center justify-center space-y-4" 
+        : "w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[175px] pb-16 flex flex-col items-center justify-center space-y-4"
+      }>
         <div className="w-8 h-8 border-4 border-[#006670] border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-bold text-slate-400">Loading order records...</p>
       </div>
@@ -164,39 +169,42 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[180px] pb-16 font-sans select-none text-left animate-in fade-in duration-300">
-      <div className="max-w-4xl mx-auto px-4 md:px-6">
+    <div className={embedded 
+      ? "w-full font-sans select-none text-left animate-in fade-in duration-300" 
+      : "w-full bg-[#f4f7f7] min-h-screen pt-[112px] lg:pt-[175px] pb-16 font-sans select-none text-left animate-in fade-in duration-300"
+    }>
+      <div className={embedded ? "w-full" : "max-w-4xl mx-auto px-4 md:px-6"}>
 
-        {/* Back and Page Actions */}
-        <div className="flex items-center justify-between gap-4 mb-6">
+        {/* Top actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:text-[#006670] transition-colors cursor-pointer"
+            className="self-start flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-slate-600 hover:text-[#006670] transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4.5 h-4.5" />
+            <ArrowLeft className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
             Back to Orders
           </button>
 
-          <div className="flex gap-2.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
             <button
               onClick={handleDownloadPDF}
               disabled={downloadingPDF}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#006670] hover:bg-[#00555e] text-white rounded-xl text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#006670] hover:bg-[#00555e] text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all disabled:opacity-50"
             >
-              <Printer className="w-4.5 h-4.5" />
+              <Printer className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               {downloadingPDF ? 'Downloading...' : 'Download Invoice (PDF)'}
             </button>
             <button
               onClick={() => setShowInvoiceModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#e6f3f5] border border-[#006670]/10 hover:border-[#006670]/25 text-[#006670] rounded-xl text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all"
+              className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#e6f3f5] border border-[#006670]/10 hover:border-[#006670]/25 text-[#006670] rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all"
             >
-              <FileText className="w-4.5 h-4.5" />
+              <FileText className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               Preview Invoice
             </button>
             {isCancellable && (
               <button
                 onClick={() => setShowCancelModal(true)}
-                className="px-4 py-2 bg-rose-50 hover:bg-rose-100/70 border border-rose-200/55 hover:border-rose-200 text-rose-600 rounded-xl text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-rose-50 hover:bg-rose-100/70 border border-rose-200/55 hover:border-rose-200 text-rose-600 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold uppercase tracking-wide cursor-pointer transition-all"
               >
                 Cancel Order
               </button>
@@ -205,16 +213,16 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
         </div>
 
         {/* Order Info Card Header */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-5 space-y-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5 space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
             <div>
-              <span className="text-[10px] font-black tracking-widest text-[#006670] uppercase">FAAZO LOGISTICS ID</span>
-              <h2 className="text-xl font-black text-slate-800 tracking-tight mt-0.5 uppercase">
+              <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-[#006670] uppercase">FAAZO LOGISTICS ID</span>
+              <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight mt-0.5 uppercase">
                 {order.order_number}
               </h2>
             </div>
             <div>
-              <span className={`text-[10px] font-black uppercase tracking-widest px-3.5 py-1 rounded-full border block w-fit
+              <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full border block w-fit
                 ${order.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
                   order.status === 'cancelled' ? 'bg-rose-50 border-rose-100 text-rose-600' :
                     order.status === 'processing' ? 'bg-amber-50 border-amber-100 text-amber-500' :
@@ -254,26 +262,26 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
         {/* Timelines block */}
         {order.status !== 'cancelled' ? (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-5 mb-6 text-center">
-            <span className="text-[10px] font-black tracking-widest text-[#006670] uppercase block mb-6 text-left">Fulfillment Milestones</span>
-            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 max-w-2xl mx-auto py-2">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5 mb-4 sm:mb-6 text-center">
+            <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-[#006670] uppercase block mb-3.5 sm:mb-6 text-left">Fulfillment Milestones</span>
+            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4 max-w-2xl mx-auto py-1 sm:py-2">
               <div className="hidden md:block absolute left-4 right-4 h-0.5 bg-slate-150 top-1/2 -translate-y-1/2 z-0" />
               {steps.map((step, idx) => {
                 const isActive = getStepActive(step.key);
                 return (
-                  <div key={step.key} className="flex md:flex-col items-center gap-3 md:gap-2.5 relative z-10 text-left md:text-center flex-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border font-black text-xs transition-colors
+                  <div key={step.key} className="flex md:flex-col items-center gap-2.5 md:gap-2.5 relative z-10 text-left md:text-center flex-1">
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border font-black text-[11px] sm:text-xs transition-colors shrink-0
                       ${isActive
-                        ? 'bg-[#006670] border-[#006670] text-white shadow-sm'
+                        ? 'bg-[#006670] border-[#006670] text-white shadow-xs'
                         : 'bg-white border-slate-200 text-slate-400'}`}>
-                      {isActive ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+                      {isActive ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : idx + 1}
                     </div>
                     <div>
-                      <span className={`text-[10.5px] font-extrabold uppercase tracking-wide block
+                      <span className={`text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wide block
                         ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>
                         {step.label}
                       </span>
-                      <span className="text-[9px] text-slate-400 font-sans block mt-0.5">{step.desc}</span>
+                      <span className="text-[8.5px] sm:text-[9px] text-slate-400 font-sans block mt-0.5">{step.desc}</span>
                     </div>
                   </div>
                 );
@@ -281,13 +289,13 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             </div>
           </div>
         ) : (
-          <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-5 mb-6 flex gap-3 text-left">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+          <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 flex gap-3 text-left">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 shrink-0 mt-0.5" />
             <div className="text-xs">
-              <h4 className="font-extrabold text-rose-800 uppercase tracking-wide">Fulfillment Cancelled</h4>
-              <p className="text-rose-700 mt-1">This procurement order was cancelled. Reserved inventory holds have been safely restored.</p>
+              <h4 className="font-extrabold text-rose-800 uppercase tracking-wide text-[11px] sm:text-xs">Fulfillment Cancelled</h4>
+              <p className="text-rose-700 mt-0.5 text-[11px] sm:text-xs">This procurement order was cancelled. Reserved inventory holds have been safely restored.</p>
               {order.cancellation_reason && (
-                <p className="text-[11px] text-rose-500 mt-2 bg-white/70 border border-rose-100 p-2.5 rounded-lg leading-relaxed">
+                <p className="text-[10px] sm:text-[11px] text-rose-500 mt-2 bg-white/70 border border-rose-100 p-2 sm:p-2.5 rounded-lg leading-relaxed">
                   <strong>Cancellation Reason:</strong> {order.cancellation_reason}
                 </p>
               )}
@@ -297,16 +305,16 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
         {/* Shipping details (if shipped) */}
         {order.tracking_number && (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-5 mb-6 flex gap-4 text-left">
-            <div className="p-3 bg-[#e6f3f5] rounded-xl text-[#006670]">
-              <Truck className="w-6 h-6" />
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5 mb-4 sm:mb-6 flex gap-3 sm:gap-4 text-left">
+            <div className="p-2.5 sm:p-3 bg-[#e6f3f5] rounded-xl text-[#006670] shrink-0">
+              <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="text-xs space-y-1">
-              <h4 className="font-black text-slate-800 uppercase tracking-wider">Shipment Dispatch Details</h4>
-              <p className="text-slate-600 font-medium font-sans">
+            <div className="text-xs space-y-0.5 sm:space-y-1 min-w-0">
+              <h4 className="font-black text-slate-800 uppercase tracking-wider text-[11px] sm:text-xs">Shipment Dispatch Details</h4>
+              <p className="text-slate-600 font-medium font-sans text-[11px] sm:text-xs">
                 Shipped via <strong className="text-slate-800">{order.shipping_carrier || 'Logistics Partner'}</strong>
               </p>
-              <p className="text-[11px] text-slate-400 font-mono">
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate">
                 Tracking Number: <strong className="text-slate-700">{order.tracking_number}</strong>
               </p>
             </div>
@@ -314,47 +322,47 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
         )}
 
         {/* Detailed Grid: Products List & Breakdown Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-start">
           {/* List of items */}
-          <div className="md:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-5">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4">
+          <div className="md:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5">
+            <h3 className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2.5 sm:pb-3 mb-3 sm:mb-4">
               Items Purchased
             </h3>
             <div className="divide-y divide-slate-100">
               {order.items.map((item) => (
-                <div key={item.id} className="py-3.5 flex items-center justify-between gap-4 text-xs font-bold">
-                  <div className="flex items-center gap-3">
+                <div key={item.id} className="py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-4 text-xs font-bold">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     {item.image_url ? (
                       <img
                         src={`http://localhost:8000${item.image_url}`}
                         alt={item.product_name}
-                        className="w-11 h-11 object-contain bg-slate-50 border border-slate-100 p-1 rounded-xl shrink-0"
+                        className="w-10 h-10 sm:w-11 sm:h-11 object-contain bg-slate-50 border border-slate-100 p-1 rounded-lg sm:rounded-xl shrink-0"
                       />
                     ) : (
-                      <div className="w-11 h-11 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 text-slate-400">
-                        <Package className="w-5 h-5" />
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 text-slate-400">
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                     )}
-                    <div>
-                      <p className="text-slate-800 hover:text-[#006670] cursor-pointer" onClick={() => onProductClick(item.product_slug)}>
+                    <div className="min-w-0">
+                      <p className="text-[11px] sm:text-xs text-slate-800 hover:text-[#006670] cursor-pointer truncate" onClick={() => onProductClick(item.product_slug)}>
                         {item.product_name}
                       </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-[9.5px] sm:text-[10px] text-slate-400 mt-0.5">
                         Qty: {item.quantity} • ₹{item.price.toLocaleString('en-IN')}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-700 shrink-0 font-sans">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <span className="text-[11px] sm:text-xs text-slate-700 shrink-0 font-sans">
                       ₹{(item.quantity * item.price).toLocaleString('en-IN')}
                     </span>
                     {['delivered', 'DELIVERED'].includes(order.status) && (
                       <button
                         onClick={() => setActiveReviewProduct({ id: (item as any).product_id || (item as any).product || item.id, name: item.product_name })}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-xl border border-teal-200 transition-colors shadow-2xs"
+                        className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-teal-200 transition-colors shadow-2xs"
                       >
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 stroke-none" />
-                        <span>Write Review</span>
+                        <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400 stroke-none" />
+                        <span>Review</span>
                       </button>
                     )}
                   </div>
@@ -364,10 +372,10 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
           </div>
 
           {/* Pricing detail matrix and location details */}
-          <div className="md:col-span-4 space-y-6">
+          <div className="md:col-span-4 space-y-4 sm:space-y-6">
             {/* Price Calculations */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 text-left font-sans text-xs">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 text-left font-sans text-xs">
+              <h3 className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2.5 sm:pb-3 mb-3 sm:mb-4">
                 Cost Breakdown
               </h3>
               <div className="space-y-2.5 text-slate-600">
@@ -459,33 +467,35 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
       {/* Professionally styled HTML Invoice Print Modal (Option A) */}
       {showInvoiceModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] h-[92vh] sm:h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
             {/* Header controls */}
-            <div className="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 print:hidden">
-              <span className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-4.5 h-4.5" />
-                FAAZO Official Procurement Invoice
+            <div className="bg-slate-50 px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-slate-200 flex items-center justify-between shrink-0 print:hidden gap-2">
+              <span className="text-[11px] sm:text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <FileText className="w-4 h-4 text-[#006670] shrink-0" />
+                <span className="truncate">Tax Invoice #{order.invoice_number || order.order_number}</span>
               </span>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   onClick={handleDownloadPDF}
                   disabled={downloadingPDF}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-[10.5px] sm:text-xs font-black uppercase transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
                 >
-                  <Download className="w-4 h-4" />
-                  {downloadingPDF ? 'Downloading...' : 'Download PDF'}
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{downloadingPDF ? 'Downloading...' : 'Download PDF'}</span>
+                  <span className="sm:hidden">{downloadingPDF ? '...' : 'PDF'}</span>
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-extrabold uppercase transition-colors cursor-pointer border border-slate-200"
+                  className="hidden sm:flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase transition-colors cursor-pointer border border-slate-200 shrink-0"
                 >
-                  <Printer className="w-4 h-4" />
-                  Print
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
                 </button>
                 <button
                   onClick={() => setShowInvoiceModal(false)}
-                  className="p-1.5 border border-slate-200 hover:border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="p-1.5 border border-slate-200 hover:border-slate-300 rounded-lg bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 cursor-pointer shrink-0 transition-colors"
+                  title="Close Invoice"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -493,7 +503,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             </div>
 
             {/* Invoice print sheet */}
-            <div className="flex-grow p-8 overflow-y-auto bg-white print:p-0" id="print-invoice-sheet">
+            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto bg-white print:p-0 overscroll-contain" id="print-invoice-sheet">
               {/* Styling specifically for printing layout */}
               <style dangerouslySetInnerHTML={{
                 __html: `
@@ -519,28 +529,28 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
               `}} />
 
               {/* Invoice Layout */}
-              <div className="space-y-6 text-xs text-slate-800 text-left">
+              <div className="space-y-4 sm:space-y-6 text-xs text-slate-800 text-left pb-4">
                 {/* Logo and billing header */}
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 pb-2 border-b border-slate-100 sm:border-0">
                   <div>
-                    <img src="/images/faazo-logo.png" alt="FAAZO Logo" className="h-10 w-auto object-contain" />
-                    <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-1">ENGINEERING CLINICAL EXCELLENCE</p>
+                    <img src="/images/faazo-logo.png" alt="FAAZO Logo" className="h-8 sm:h-10 w-auto object-contain" />
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest mt-0.5 sm:mt-1">ENGINEERING CLINICAL EXCELLENCE</p>
                   </div>
-                  <div className="text-right">
-                    <h1 className="text-lg font-black text-slate-900 tracking-tight">TAX INVOICE</h1>
-                    <p className="text-slate-500 font-mono mt-0.5">Invoice #: {order.invoice_number}</p>
-                    <p className="text-slate-500 font-mono mt-0.5">Order #: {order.order_number}</p>
-                    <p className="text-slate-500 font-mono mt-0.5">Date: {new Date(order.created_at).toLocaleDateString('en-IN')}</p>
+                  <div className="text-left sm:text-right w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
+                    <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">TAX INVOICE</h1>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Invoice #: {order.invoice_number}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Order #: {order.order_number}</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">Date: {new Date(order.created_at).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
 
-                <hr className="border-slate-200" />
+                <hr className="hidden sm:block border-slate-200" />
 
                 {/* Sender/Receiver grid info */}
-                <div className="grid grid-cols-2 gap-8 text-[11px] leading-relaxed">
-                  <div>
-                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-                      <Building className="w-3.5 h-3.5 text-slate-400" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-8 text-[11px] leading-relaxed">
+                  <div className="bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-100">
+                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1 text-[10px]">
+                      <Building className="w-3 h-3 text-slate-400" />
                       Sold By
                     </h4>
                     <p className="font-extrabold text-slate-900">FAAZO Dental Solutions Pvt. Ltd.</p>
@@ -548,9 +558,9 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                     <p className="text-slate-600">Mumbai, Maharashtra - 400051</p>
                     <p className="text-slate-500">GSTIN: 27AAFCD1024D1ZS</p>
                   </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-100">
+                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1 text-[10px]">
+                      <MapPin className="w-3 h-3 text-slate-400" />
                       Shipped To
                     </h4>
                     <p className="font-extrabold text-slate-900">{order.shipping_address_detail?.full_name}</p>
@@ -567,30 +577,32 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                 </div>
 
                 {/* Items detailed table */}
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-slate-800 font-extrabold uppercase text-slate-400 text-[10px]">
-                      <th className="py-2.5">Product Description</th>
-                      <th className="py-2.5 text-right">Unit Price</th>
-                      <th className="py-2.5 text-center w-16">Qty</th>
-                      <th className="py-2.5 text-right w-24">Total (INR)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {order.items.map((item, idx) => (
-                      <tr key={idx} className="font-sans font-medium text-slate-700">
-                        <td className="py-3 font-bold text-slate-800">{item.product_name}</td>
-                        <td className="py-3 text-right">₹{item.price.toLocaleString('en-IN')}</td>
-                        <td className="py-3 text-center">{item.quantity}</td>
-                        <td className="py-3 text-right font-bold text-slate-900">₹{(item.quantity * item.price).toLocaleString('en-IN')}</td>
+                <div className="overflow-x-auto -mx-1 px-1">
+                  <table className="w-full text-xs text-left border-collapse min-w-[320px]">
+                    <thead>
+                      <tr className="border-b-2 border-slate-800 font-extrabold uppercase text-slate-400 text-[9.5px] sm:text-[10px]">
+                        <th className="py-2">Product Description</th>
+                        <th className="py-2 text-right">Unit Price</th>
+                        <th className="py-2 text-center w-12 sm:w-16">Qty</th>
+                        <th className="py-2 text-right w-20 sm:w-24">Total (INR)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {order.items.map((item, idx) => (
+                        <tr key={idx} className="font-sans font-medium text-slate-700">
+                          <td className="py-2.5 font-bold text-slate-800 text-[11px] sm:text-xs">{item.product_name}</td>
+                          <td className="py-2.5 text-right text-[11px] sm:text-xs">₹{item.price.toLocaleString('en-IN')}</td>
+                          <td className="py-2.5 text-center text-[11px] sm:text-xs">{item.quantity}</td>
+                          <td className="py-2.5 text-right font-bold text-slate-900 text-[11px] sm:text-xs">₹{(item.quantity * item.price).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
                 {/* Pricing Summary */}
-                <div className="flex justify-end pt-4">
-                  <div className="w-72 space-y-2 text-slate-600 font-sans text-xs">
+                <div className="flex justify-end pt-2 sm:pt-4">
+                  <div className="w-full sm:w-72 space-y-1.5 sm:space-y-2 text-slate-600 font-sans text-xs bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none">
                     <div className="flex justify-between">
                       <span>Total Net Price</span>
                       <span className="font-bold text-slate-800">₹{order.selling_subtotal.toLocaleString('en-IN')}</span>
@@ -603,7 +615,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                       <span>Shipping Fees</span>
                       <span className="font-bold text-slate-800">{order.shipping_fee === 0 ? 'FREE' : `₹${order.shipping_fee.toLocaleString('en-IN')}`}</span>
                     </div>
-                    <div className="border-t-2 border-slate-800 pt-2 flex justify-between font-display text-sm font-black text-slate-900">
+                    <div className="border-t-2 border-slate-800 pt-2 flex justify-between font-display text-xs sm:text-sm font-black text-slate-900">
                       <span>Total Cost Paid</span>
                       <span className="text-[#006670]">₹{order.total_amount.toLocaleString('en-IN')}</span>
                     </div>

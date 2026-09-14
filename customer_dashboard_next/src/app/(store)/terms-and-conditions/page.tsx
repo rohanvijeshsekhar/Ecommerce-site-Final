@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function TermsAndConditionsPage() {
   return (
-    <div className="min-h-screen bg-slate-50/50 pt-[112px] lg:pt-[180px] pb-16 md:pb-24 text-slate-800 font-sans select-none">
+    <div className="min-h-screen bg-slate-50/50 pt-[112px] lg:pt-[144px] pb-16 md:pb-24 text-slate-800 font-sans select-none">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         
         {/* Breadcrumb Navigation */}
@@ -141,7 +141,7 @@ export default function TermsAndConditionsPage() {
           <div className="p-4 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Questions about our Commercial Terms?</p>
-              <p className="text-sm font-semibold text-white mt-0.5">support@faazo.com | +91 98765 43210</p>
+              <p className="text-sm font-semibold text-white mt-0.5">faazodental@gmail.com | +91 92891 88852</p>
             </div>
             <Link
               href="/support"

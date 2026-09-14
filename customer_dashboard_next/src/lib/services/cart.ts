@@ -157,7 +157,7 @@ export const cartService = {
    */
   async checkoutPreview(
     addressId: string,
-    deliveryMethod: string,
+    deliveryMethod: string = 'standard',
     items?: Array<{ product_id: string; quantity: number }>
   ): Promise<ApiResponse<CheckoutPreview>> {
     const res = await api.post('checkout/preview/', { address_id: addressId, delivery_method: deliveryMethod, items });
@@ -170,8 +170,8 @@ export const cartService = {
    */
   async placeOrder(
     addressId: string,
-    deliveryMethod: string,
-    paymentMethod: string,
+    deliveryMethod: string = 'standard',
+    paymentMethod: string = 'razorpay',
     gstNumber?: string,
     items?: Array<{ product_id: string; quantity: number }>
   ): Promise<ApiResponse<OrderSuccessData>> {

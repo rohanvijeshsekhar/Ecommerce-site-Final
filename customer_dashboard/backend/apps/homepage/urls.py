@@ -34,6 +34,8 @@ from .views import (
     ExploreSolutionViewSet,
     TestimonialViewSet,
     RecommendedProductViewSet,
+    SpecialOffersPageContentView,
+    HomepagePromoBannerView,
 )
 
 router = DefaultRouter()
@@ -49,5 +51,7 @@ router.register(r"homepage/testimonials",         TestimonialViewSet,           
 router.register(r"homepage/recommended",          RecommendedProductViewSet,     basename="homepage-recommended")
 
 urlpatterns = [
+    path("homepage/promo-banner/", HomepagePromoBannerView.as_view(), name="homepage-promo-banner"),
+    path("homepage/offers-page-content/", SpecialOffersPageContentView.as_view(), name="homepage-offers-page-content"),
     path("", include(router.urls)),
 ]

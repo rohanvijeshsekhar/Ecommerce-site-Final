@@ -12,6 +12,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { shareService, ShareableProduct } from '@/lib/services/shareService';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import { showToast } from './Toast';
 
 interface ShareModalProps {
@@ -26,7 +27,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, product
   if (!isOpen || !product) return null;
 
   const canonicalUrl = shareService.getCanonicalUrl(product.slug || product.id);
-  const prodImg = product.image_url || product.image || '/images/bestseller_handpiece.png';
+  const rawImg =
+    product.primary_image ||
+    product.image_url ||
+    product.image ||
+    (product.images && product.images[0]?.image) ||
+    (product.images && product.images[0]?.src);
+  const prodImg = getAbsoluteImageUrl(typeof rawImg === 'object' ? (rawImg?.image || rawImg?.src || '') : rawImg) || '/images/bestseller_handpiece.png';
 
   const handlePlatformShare = (platform: string) => {
     // Log analytics event

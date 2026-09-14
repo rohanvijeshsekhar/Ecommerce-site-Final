@@ -6,6 +6,7 @@ import type { FeaturedCollection, FeaturedCollectionItem } from '../../types/adm
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
+import ImageUploader from '../ImageUploader';
 
 const FeaturedCollectionsManager: React.FC = () => {
   const { showToast } = useAdmin();
@@ -20,7 +21,12 @@ const FeaturedCollectionsManager: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<FeaturedCollectionItem | null>(null);
   const [addingProductTo, setAddingProductTo] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState('');
-  const [collForm, setCollForm] = useState({ title: '', description: '', is_visible: true });
+  const [collForm, setCollForm] = useState<{
+    title: string;
+    description: string;
+    is_visible: boolean;
+    image: File | string | null;
+  }>({ title: '', description: '', is_visible: true, image: null });
 
   const load = async () => {
     setLoading(true);
@@ -36,19 +42,49 @@ const FeaturedCollectionsManager: React.FC = () => {
 
   useEffect(() => { load(); }, []);
 
-  const openCreateColl = () => { setEditColl(null); setCollForm({ title: '', description: '', is_visible: true }); setShowCollForm(true); };
-  const openEditColl = (c: FeaturedCollection) => { setEditColl(c); setCollForm({ title: c.title, description: c.description, is_visible: c.is_visible }); setShowCollForm(true); };
+  const openCreateColl = () => {
+    setEditColl(null);
+    setCollForm({ title: '', description: '', is_visible: true, image: null });
+    setShowCollForm(true);
+  };
+  
+  const openEditColl = (c: FeaturedCollection) => {
+    setEditColl(c);
+    setCollForm({
+      title: c.title,
+      description: c.description,
+      is_visible: c.is_visible,
+      image: c.image_url || c.image || null,
+    });
+    setShowCollForm(true);
+  };
 
   const saveColl = async () => {
     if (!collForm.title.trim()) { showToast({ variant: 'error', title: 'Title is required' }); return; }
     setSaving(true);
     try {
+      const fd = new FormData();
+      fd.append('title', collForm.title.trim());
+      fd.append('description', collForm.description);
+      fd.append('is_visible', String(collForm.is_visible));
+      if (collForm.image instanceof File) {
+        fd.append('image', collForm.image);
+      } else if (collForm.image === null) {
+        fd.append('image', ''); // Explicitly clear image in backend
+      }
       const res = editColl
-        ? await homepageService.updateFeaturedCollection(editColl.id, collForm)
-        : await homepageService.createFeaturedCollection(collForm);
-      if (res.success) { showToast({ variant: 'success', title: editColl ? 'Updated' : 'Collection created' }); setShowCollForm(false); load(); }
-    } catch { showToast({ variant: 'error', title: 'Save failed' }); }
-    finally { setSaving(false); }
+        ? await homepageService.updateFeaturedCollection(editColl.id, fd)
+        : await homepageService.createFeaturedCollection(fd);
+      if (res.success) {
+        showToast({ variant: 'success', title: editColl ? 'Updated' : 'Collection created' });
+        setShowCollForm(false);
+        load();
+      }
+    } catch {
+      showToast({ variant: 'error', title: 'Save failed' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteColl = async () => {
@@ -100,18 +136,40 @@ const FeaturedCollectionsManager: React.FC = () => {
           {collections.map((coll) => (
             <div key={coll.id} className="border border-slate-200 rounded-xl overflow-hidden">
               {/* Collection Header */}
-              <div className="flex items-center gap-3 p-4 bg-slate-50 cursor-pointer" onClick={() => setExpanded(expanded === coll.id ? null : coll.id)}>
+              <div className="flex items-center gap-3 p-4 bg-slate-50 cursor-pointer hover:bg-slate-100/70 transition-colors" onClick={() => setExpanded(expanded === coll.id ? null : coll.id)}>
+                {/* Thumbnail */}
+                <div className="w-12 h-12 bg-white rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  {coll.image_url || coll.image ? (
+                    <img src={coll.image_url || coll.image || ''} className="w-full h-full object-cover" alt={coll.title} />
+                  ) : (
+                    <Layers className="w-5 h-5 text-slate-400" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 text-sm">{coll.title}</p>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <p className="font-semibold text-slate-800 text-sm truncate">{coll.title}</p>
+                    {coll.is_visible ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Active on Homepage
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-200/70 text-slate-500">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500">{coll.items.length} product{coll.items.length !== 1 ? 's' : ''}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={e => { e.stopPropagation(); toggleVisible(coll); }}
-                    className={`p-1.5 rounded-lg ${coll.is_visible ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleVisible(coll); }}
+                    title={coll.is_visible ? "Active on homepage (click to deactivate)" : "Set as Active on Homepage"}
+                    className={`p-2 rounded-lg transition-all ${coll.is_visible ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300' : 'text-slate-400 hover:bg-slate-200/70'}`}
+                  >
                     {coll.is_visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </button>
-                  <button onClick={e => { e.stopPropagation(); openEditColl(coll); }} className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={e => { e.stopPropagation(); setDeleteColl(coll); }} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={e => { e.stopPropagation(); openEditColl(coll); }} title="Edit collection" className="p-2 rounded-lg text-slate-600 hover:bg-slate-200/70"><Edit2 className="w-4 h-4" /></button>
+                  <button onClick={e => { e.stopPropagation(); setDeleteColl(coll); }} title="Delete collection" className="p-2 rounded-lg text-rose-500 hover:bg-rose-50"><Trash2 className="w-4 h-4" /></button>
                   {expanded === coll.id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                 </div>
               </div>
@@ -163,12 +221,12 @@ const FeaturedCollectionsManager: React.FC = () => {
       {/* Collection Form */}
       {showCollForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200 flex-shrink-0">
               <h3 className="text-base font-bold">{editColl ? 'Edit Collection' : 'New Collection'}</h3>
               <button onClick={() => setShowCollForm(false)} className="p-2 rounded-lg hover:bg-slate-100"><X className="w-4 h-4" /></button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Title *</label>
                 <input type="text" value={collForm.title} onChange={e => setCollForm(f => ({ ...f, title: e.target.value }))}
@@ -181,15 +239,30 @@ const FeaturedCollectionsManager: React.FC = () => {
                   rows={2} placeholder="Optional description"
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 resize-none" />
               </div>
-              <label className="flex items-center gap-3 cursor-pointer">
+
+              {/* Collection Image */}
+              <div>
+                <ImageUploader
+                  label="Collection Image"
+                  aspectRatio={4 / 3}
+                  currentUrl={collForm.image instanceof File ? URL.createObjectURL(collForm.image) : collForm.image}
+                  onUpload={(file) => setCollForm(f => ({ ...f, image: file }))}
+                  onRemove={() => setCollForm(f => ({ ...f, image: null }))}
+                />
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100/60 transition-colors">
                 <div onClick={() => setCollForm(f => ({ ...f, is_visible: !f.is_visible }))}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${collForm.is_visible ? 'bg-[#006670]' : 'bg-slate-300'}`}>
+                  className={`relative w-10 h-5 rounded-full transition-colors mt-0.5 flex-shrink-0 ${collForm.is_visible ? 'bg-[#006670]' : 'bg-slate-300'}`}>
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${collForm.is_visible ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </div>
-                <span className="text-sm font-medium text-slate-700">Visible on homepage</span>
+                <div>
+                  <span className="text-sm font-semibold text-slate-800 block">Featured on Homepage</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">Showcase this collection in the homepage Featured Collection section.</span>
+                </div>
               </label>
             </div>
-            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200">
+            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200 flex-shrink-0">
               <button onClick={() => setShowCollForm(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
               <button onClick={saveColl} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-[#006670] text-white text-sm font-semibold rounded-lg hover:bg-[#004e56] disabled:opacity-50">
                 <Save className="w-4 h-4" />{saving ? 'Saving…' : 'Save'}
