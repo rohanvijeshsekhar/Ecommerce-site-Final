@@ -145,7 +145,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
           const isSecondSlide = idx === 1;
           return (
             <SwiperSlide key={slide.id}>
-              <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] flex items-center">
+              <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] overflow-hidden">
                 {/* Background image */}
                 <div className="absolute inset-0 w-full h-full z-0 select-none">
                   {slide.mobile_image_url ? (
@@ -182,10 +182,10 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                 </div>
 
                 {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
-                <div className="relative z-10 max-w-7xl mx-auto w-full px-6 sm:px-8 md:px-14 lg:px-20 flex justify-start items-center h-full pointer-events-none">
-                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px] py-4">
+                <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
+                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
                     {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-[26px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2.5 md:mb-3 flex flex-col font-display text-left">
+                      <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
                         {isSecondSlide ? (
                           <>
                             <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
@@ -215,19 +215,19 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                         {slide.subheading}
                       </p>
                     )}
-
-                    {slide.cta_text && (
-                      <div className="flex justify-start pt-1">
-                        <a
-                          href={slide.cta_link || '#products'}
-                          className="group inline-flex items-center gap-2 sm:gap-2.5 px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[13px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
-                        >
-                          <span>{slide.cta_text}</span>
-                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                        </a>
-                      </div>
-                    )}
                   </div>
+
+                  {slide.cta_text && (
+                    <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
+                      <a
+                        href={slide.cta_link || '#products'}
+                        className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                      >
+                        <span>{slide.cta_text}</span>
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </SwiperSlide>
