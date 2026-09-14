@@ -40,6 +40,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`scroll-smooth ${inter.variable} ${interDisplay.variable}`}
+      data-scroll-behavior="smooth"
     >
       <body className="bg-white text-[#0B1D26] font-sans antialiased selection:bg-[#005F63]/20 selection:text-[#005F63] min-h-screen relative overflow-x-clip">
         <Providers>

@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Percent, 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit3, 
-  Trash2, 
-  CheckCircle2, 
-  XCircle, 
-  Sparkles, 
-  Clock, 
-  Tag, 
-  Building2, 
+import {
+  Percent,
+  Plus,
+  Search,
+  Filter,
+  Edit3,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Sparkles,
+  Clock,
+  Tag,
+  Building2,
   AlertCircle,
   Eye,
   Check,
@@ -558,7 +558,7 @@ const SpecialOffersAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6 text-left select-none pb-12 font-sans">
-      
+
       {/* ── HEADER BAR ────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
@@ -604,11 +604,10 @@ const SpecialOffersAdmin: React.FC = () => {
             type="button"
             onClick={handleSavePageContent}
             disabled={savingPageContent || loadingPageContent}
-            className={`px-5 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 cursor-pointer shrink-0 shadow-md ${
-              pageContentSavedSuccess
+            className={`px-5 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 cursor-pointer shrink-0 shadow-md ${pageContentSavedSuccess
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                 : 'bg-[#006670] hover:bg-[#004e56] text-white'
-            }`}
+              }`}
           >
             {savingPageContent ? (
               <>
@@ -843,7 +842,7 @@ const SpecialOffersAdmin: React.FC = () => {
       {/* ── FILTER & SEARCH BAR ────────────────────────────────────────────── */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          
+
           {/* Search */}
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -908,11 +907,11 @@ const SpecialOffersAdmin: React.FC = () => {
               ) : filteredOffers.length > 0 ? (
                 filteredOffers.map((offer) => (
                   <tr key={offer.id} className="hover:bg-slate-50/80 transition-colors">
-                    
+
                     {/* Title & Image */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3.5 min-w-[240px]">
-                        <label 
+                        <label
                           className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 p-1 shrink-0 flex items-center justify-center overflow-hidden relative group/thumb cursor-pointer hover:border-[#006670] transition-colors"
                           title="Click to upload / change image"
                         >
@@ -980,11 +979,10 @@ const SpecialOffersAdmin: React.FC = () => {
                     <td className="px-5 py-4">
                       <button
                         onClick={() => handleToggleActive(offer.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                          offer.isActive 
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider transition-colors cursor-pointer ${offer.isActive
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                             : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                        }`}
+                          }`}
                       >
                         {offer.isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                         <span>{offer.isActive ? 'Active' : 'Inactive'}</span>
@@ -994,7 +992,7 @@ const SpecialOffersAdmin: React.FC = () => {
                     {/* Actions */}
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <label 
+                        <label
                           className="p-2 rounded-lg bg-slate-100 hover:bg-[#006670] text-slate-600 hover:text-white transition-colors cursor-pointer"
                           title="Upload / Change Image"
                         >
@@ -1044,7 +1042,7 @@ const SpecialOffersAdmin: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-left animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2 text-[#006670] font-black text-sm">
@@ -1061,7 +1059,7 @@ const SpecialOffersAdmin: React.FC = () => {
 
             {/* Modal Form */}
             <form onSubmit={handleSaveOffer} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              
+
               {/* Product Selector Option with Real-Time Search */}
               <div className="relative" ref={productDropdownRef}>
                 <div className="flex items-center justify-between mb-1">
@@ -1082,11 +1080,10 @@ const SpecialOffersAdmin: React.FC = () => {
                 {/* Trigger Button */}
                 <div
                   onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
-                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                    isProductDropdownOpen
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${isProductDropdownOpen
                       ? 'border-[#006670] ring-2 ring-[#006670]/10 bg-white'
                       : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
                     <Package className={`w-4 h-4 shrink-0 ${formProductId ? 'text-[#006670]' : 'text-slate-400'}`} />
@@ -1150,9 +1147,8 @@ const SpecialOffersAdmin: React.FC = () => {
                           handleProductSelect('');
                           setIsProductDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between hover:bg-slate-50 cursor-pointer ${
-                          !formProductId ? 'bg-[#006670]/5 text-[#006670] font-bold' : 'text-slate-600'
-                        }`}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between hover:bg-slate-50 cursor-pointer ${!formProductId ? 'bg-[#006670]/5 text-[#006670] font-bold' : 'text-slate-600'
+                          }`}
                       >
                         <span className="italic text-slate-500">-- Standalone Promotion (No Direct Product Link) --</span>
                         {!formProductId && <Check className="w-3.5 h-3.5 text-[#006670]" />}
@@ -1198,9 +1194,8 @@ const SpecialOffersAdmin: React.FC = () => {
                                 handleProductSelect(p.id);
                                 setIsProductDropdownOpen(false);
                               }}
-                              className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 hover:bg-slate-50 cursor-pointer ${
-                                isSelected ? 'bg-[#006670]/5 text-[#006670] font-bold' : 'text-slate-700'
-                              }`}
+                              className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 hover:bg-slate-50 cursor-pointer ${isSelected ? 'bg-[#006670]/5 text-[#006670] font-bold' : 'text-slate-700'
+                                }`}
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
@@ -1278,13 +1273,12 @@ const SpecialOffersAdmin: React.FC = () => {
                 </div>
 
                 {/* Visual Image Card */}
-                <div 
+                <div
                   onClick={() => {
                     if (!formImage) fileInputRef.current?.click();
                   }}
-                  className={`bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3.5 transition-all ${
-                    !formImage ? 'hover:border-[#006670] hover:bg-slate-50/80 cursor-pointer' : ''
-                  }`}
+                  className={`bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3.5 transition-all ${!formImage ? 'hover:border-[#006670] hover:bg-slate-50/80 cursor-pointer' : ''
+                    }`}
                 >
                   <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
                     {formImage ? (

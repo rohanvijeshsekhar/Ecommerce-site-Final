@@ -739,7 +739,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                       theme="outline"
                       shape="pill"
                       size="medium"
-                      width="100%"
+                      width="320"
                       text="continue_with"
                     />
                   ) : (
@@ -854,7 +854,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                       theme="outline"
                       shape="pill"
                       size="medium"
-                      width="100%"
+                      width="320"
                       text="signup_with"
                     />
                   ) : (

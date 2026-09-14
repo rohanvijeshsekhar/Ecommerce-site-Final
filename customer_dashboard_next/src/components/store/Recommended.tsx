@@ -186,7 +186,7 @@ const Recommended: React.FC<RecommendedProps> = ({
             delay: 4000,
             disableOnInteraction: false,
           }}
-          loop={displayProducts.length > 5}
+          loop={displayProducts.length >= 10}
           spaceBetween={20}
           breakpoints={{
             0: { slidesPerView: 1.2, spaceBetween: 14 },
@@ -197,8 +197,8 @@ const Recommended: React.FC<RecommendedProps> = ({
           }}
           className="pb-14"
         >
-          {displayProducts.map((prod) => (
-            <SwiperSlide key={prod.id} className="h-auto">
+          {displayProducts.map((prod, idx) => (
+            <SwiperSlide key={`${prod.id}-${idx}`} className="h-auto">
               <div 
                 onClick={() => onProductClick(prod.id)}
                 className="group relative bg-white rounded-[28px] p-3.5 border border-slate-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_rgba(0,95,99,0.12)] hover:border-[#006670]/30 transition-all duration-300 cursor-pointer flex flex-col justify-between h-full select-none"

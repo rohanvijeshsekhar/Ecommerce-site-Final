@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Tag, Award, TrendingUp, Layers, Zap, Compass, MessageSquare, Sparkles } from 'lucide-react';
+import { Image, Tag, Award, TrendingUp, Layers, Compass, MessageSquare, Sparkles } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import HeroManager from '../components/homepage/HeroManager';
 import CategoryShowcaseManager from '../components/homepage/CategoryShowcaseManager';
 import BrandShowcaseManager from '../components/homepage/BrandShowcaseManager';
 import BestSellersManager from '../components/homepage/BestSellersManager';
 import FeaturedCollectionsManager from '../components/homepage/FeaturedCollectionsManager';
-import LimitedOffersManager from '../components/homepage/LimitedOffersManager';
 import ExploreSolutionsAdmin from '../components/ExploreSolutionsAdmin';
 import TestimonialsManager from '../components/homepage/TestimonialsManager';
 import RecommendedManager from '../components/homepage/RecommendedManager';
@@ -23,7 +22,6 @@ type TabId =
   | 'brands'
   | 'bestsellers'
   | 'collections'
-  | 'offers'
   | 'solutions'
   | 'testimonials'
   | 'recommended';
@@ -40,7 +38,6 @@ const TABS: Tab[] = [
   { id: 'brands',      label: 'Brand Logos',        icon: <Award className="w-4 h-4" /> },
   { id: 'bestsellers', label: 'Best Sellers',        icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'collections', label: 'Collections',         icon: <Layers className="w-4 h-4" /> },
-  { id: 'offers',      label: 'Limited Offers',      icon: <Zap className="w-4 h-4" /> },
   { id: 'solutions',   label: 'Explore Solutions',   icon: <Compass className="w-4 h-4" /> },
   { id: 'testimonials',label: 'Testimonials',        icon: <MessageSquare className="w-4 h-4" /> },
   { id: 'recommended', label: 'Recommended',         icon: <Sparkles className="w-4 h-4" /> },
@@ -60,7 +57,6 @@ const HomepagePage: React.FC = () => {
       case 'brands':       return <BrandShowcaseManager />;
       case 'bestsellers':  return <BestSellersManager />;
       case 'collections':  return <FeaturedCollectionsManager />;
-      case 'offers':       return <LimitedOffersManager />;
       case 'solutions':    return <ExploreSolutionsAdmin />;
       case 'testimonials': return <TestimonialsManager />;
       case 'recommended':  return <RecommendedManager />;

@@ -215,7 +215,7 @@ const BestSellers: React.FC<BestSellersProps> = ({
                   delay: 3000,
                   disableOnInteraction: false,
                 }}
-                loop={displayProducts.length > 3}
+                loop={displayProducts.length >= 6}
                 centeredSlides={true}
                 slidesPerView={1}
                 spaceBetween={20}
@@ -231,8 +231,8 @@ const BestSellers: React.FC<BestSellersProps> = ({
                 }}
                 className="bestseller-swiper pb-8"
               >
-                {displayProducts.map((prod) => (
-                  <SwiperSlide key={prod.id}>
+                {displayProducts.map((prod, idx) => (
+                  <SwiperSlide key={`${prod.id}-${idx}`}>
                     <div className="flex flex-col items-center cursor-pointer group" onClick={() => onProductClick?.(prod.id)}>
 
                       {/* Glass 3D Image Panel */}
@@ -350,7 +350,7 @@ const BestSellers: React.FC<BestSellersProps> = ({
                   delay: 3000,
                   disableOnInteraction: false,
                 }}
-                loop={displayProducts.length > 3}
+                loop={displayProducts.length >= 4}
                 centeredSlides={true}
                 slidesPerView={1.2}
                 spaceBetween={16}
@@ -358,8 +358,8 @@ const BestSellers: React.FC<BestSellersProps> = ({
                 grabCursor={true}
                 className="bestseller-swiper pb-6"
               >
-                {displayProducts.map((prod) => (
-                  <SwiperSlide key={prod.id}>
+                {displayProducts.map((prod, idx) => (
+                  <SwiperSlide key={`mob-${prod.id}-${idx}`}>
                     <div className="flex flex-col items-center cursor-pointer group text-center" onClick={() => onProductClick?.(prod.id)}>
                       {/* Glass Image Panel */}
                       <div className="w-full aspect-square bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] transition-all duration-500 group-hover:shadow-[0_12px_28px_rgba(0,95,99,0.1)] flex items-center justify-center relative">
