@@ -58,3 +58,46 @@ def process_return_pickup_async(self, *, return_request_id: str) -> dict:
     except Exception as exc:
         logger.error(f"[RETURN_TASK] Return pickup task failed task_id={self.request.id}: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=30 * (4 ** self.request.retries))
+
+
+@shared_task(
+    base=FAAZOBaseTask,
+    name="faazo.returns.reconcile_active_return_shipments",
+    bind=True,
+    max_retries=2,
+)
+def reconcile_active_return_shipments(self) -> dict:
+    """
+    Periodic task to reconcile active, non-terminal reverse shipments with Shiprocket.
+    """
+    from apps.returns.models import ReturnShipment, ReturnStatus
+    from apps.returns.services.logistics import ShiprocketReturnService
+
+    terminal_statuses = [
+        ReturnStatus.COMPLETED,
+        ReturnStatus.REFUNDED,
+        ReturnStatus.REJECTED,
+        ReturnStatus.CANCELLED,
+        ReturnStatus.VERIFICATION_FAILED,
+        ReturnStatus.RETURN_LOST,
+    ]
+
+    active_shipments = (
+        ReturnShipment.objects.filter(awb_number__isnull=False)
+        .exclude(return_request__status__in=terminal_statuses)
+        .select_related("return_request")
+    )
+
+    logger.info(f"[RECONCILE_RETURNS] Found {active_shipments.count()} active return shipments to reconcile.")
+    synced_count = 0
+    service = ShiprocketReturnService()
+
+    for shipment in active_shipments[:50]:  # batch up to 50 per execution
+        try:
+            service.sync_return_tracking(shipment)
+            synced_count += 1
+        except Exception as e:
+            logger.warning(f"[RECONCILE_RETURNS] Error syncing shipment AWB {shipment.awb_number}: {e}")
+
+    return {"synced_count": synced_count}
+

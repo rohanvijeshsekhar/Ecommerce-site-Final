@@ -311,6 +311,11 @@ class ShiprocketAPIClient:
         """POST /v1/external/orders/create/adhoc"""
         return self._execute_request("POST", "/v1/external/orders/create/adhoc", json_data=payload)
 
+    def create_return_order(self, payload: dict) -> tuple[dict, int, float]:
+        """POST /v1/external/orders/create/return"""
+        return self._execute_request("POST", "/v1/external/orders/create/return", json_data=payload)
+
+
     def assign_courier(self, shipment_id: int, courier_id: int = None) -> tuple[dict, int, float]:
         """POST /v1/external/courier/assign/awb"""
         payload = {"shipment_id": str(shipment_id)}

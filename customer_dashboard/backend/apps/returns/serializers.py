@@ -14,6 +14,8 @@ from apps.returns.models import (
     ReturnEvent,
     Refund,
     ReturnShipment,
+    ReturnShipmentTrackingEvent,
+    ReturnVerification,
     ReturnRequestType,
     ReturnReason,
     EvidenceType,
@@ -91,19 +93,62 @@ class RefundSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "amount", "status", "razorpay_refund_id", "attempts", "failure_reason", "created_at"]
 
 
+class ReturnShipmentTrackingEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReturnShipmentTrackingEvent
+        fields = [
+            "id",
+            "event_code",
+            "event_label",
+            "status_mapped",
+            "event_timestamp",
+            "location",
+            "description",
+            "event_source",
+        ]
+
+
 class ReturnShipmentSerializer(serializers.ModelSerializer):
+    tracking_events = ReturnShipmentTrackingEventSerializer(many=True, read_only=True)
+
     class Meta:
         model = ReturnShipment
         fields = [
             "id",
             "courier_name",
             "awb_number",
+            "shiprocket_order_id",
+            "shiprocket_shipment_id",
+            "shiprocket_status",
             "pickup_status",
+            "current_location",
             "pickup_scheduled_date",
             "tracking_url",
+            "last_synced_at",
+            "tracking_events",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+
+class ReturnVerificationSerializer(serializers.ModelSerializer):
+    verified_by_name = serializers.CharField(source="verified_by.full_name", read_only=True)
+
+    class Meta:
+        model = ReturnVerification
+        fields = [
+            "id",
+            "status",
+            "verified_at",
+            "verifier_name",
+            "failure_reason",
+            "notes",
+            "evidence_file",
+            "verified_by",
+            "verified_by_name",
+            "created_at",
+        ]
+        read_only_fields = ["id", "verified_at", "verified_by", "created_at"]
 
 
 class ReturnRequestSerializer(serializers.ModelSerializer):
@@ -115,6 +160,7 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
     events = ReturnEventSerializer(many=True, read_only=True)
     refund = RefundSerializer(read_only=True)
     shipment = ReturnShipmentSerializer(read_only=True)
+    verification = ReturnVerificationSerializer(read_only=True)
     replacement_order_number = serializers.CharField(source="replacement_order.order_number", read_only=True)
 
     class Meta:
@@ -141,6 +187,7 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
             "events",
             "refund",
             "shipment",
+            "verification",
             "created_at",
             "updated_at",
         ]
@@ -156,6 +203,7 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
 
 
 class CreateReturnItemInputSerializer(serializers.Serializer):

@@ -105,7 +105,7 @@ export type AdminSection =
   | 'homepage'
   | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews' | 'blog'
   | 'inventory' | 'pricing'
-  | 'orders' | 'fulfillment'
+  | 'orders' | 'returns' | 'fulfillment'
   | 'customers' | 'dealers'
   | 'warranty' | 'support'
   | 'reports' | 'notifications' | 'analytics'

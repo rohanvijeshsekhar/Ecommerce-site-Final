@@ -27,18 +27,32 @@ class ReturnStatus(models.TextChoices):
     UNDER_REVIEW = "under_review", "Under Review"
     APPROVED = "approved", "Approved"
     REJECTED = "rejected", "Rejected"
+    REVERSE_SHIPMENT_CREATED = "reverse_shipment_created", "Reverse Shipment Created"
     PICKUP_PENDING = "pickup_pending", "Pickup Pending"
     PICKUP_SCHEDULED = "pickup_scheduled", "Pickup Scheduled"
+    PICKUP_ATTEMPTED = "pickup_attempted", "Pickup Attempted"
+    PICKED_UP = "picked_up", "Picked Up"
+    RETURN_IN_TRANSIT = "return_in_transit", "Return in Transit"
+    RETURN_DELIVERED = "return_delivered", "Return Delivered"
     ITEM_RECEIVED = "item_received", "Item Received"
     QC_PENDING = "qc_pending", "QC Pending"
     QC_PASSED = "qc_passed", "QC Passed"
     QC_FAILED = "qc_failed", "QC Failed"
+    VERIFICATION_PENDING = "verification_pending", "Verification Pending"
+    VERIFICATION_PASSED = "verification_passed", "Verification Passed"
+    VERIFICATION_FAILED = "verification_failed", "Verification Failed"
+    PICKUP_FAILED = "pickup_failed", "Pickup Failed"
+    RETURN_LOST = "return_lost", "Return Lost"
     REFUND_PENDING = "refund_pending", "Refund Pending"
     REFUND_PROCESSING = "refund_processing", "Refund Processing"
     REFUNDED = "refunded", "Refunded"
     REPLACEMENT_PENDING = "replacement_pending", "Replacement Pending"
+    REPLACEMENT_APPROVED = "replacement_approved", "Replacement Approved"
     REPLACEMENT_PROCESSING = "replacement_processing", "Replacement Processing"
+    NEW_SHIPMENT_CREATED = "new_shipment_created", "New Shipment Created"
+    NEW_SHIPMENT_IN_TRANSIT = "new_shipment_in_transit", "New Shipment in Transit"
     REPLACEMENT_SHIPPED = "replacement_shipped", "Replacement Shipped"
+    DELIVERED = "delivered", "Delivered"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
 
@@ -75,6 +89,12 @@ class ReturnPickupStatus(models.TextChoices):
     PICKED_UP = "picked_up", "Picked Up"
     FAILED = "failed", "Failed"
     CANCELLED = "cancelled", "Cancelled"
+
+
+class VerificationStatus(models.TextChoices):
+    PENDING = "pending", "Pending Verification"
+    PASSED = "passed", "Verification Passed"
+    FAILED = "failed", "Verification Failed"
 
 
 class ReturnRequest(BaseModel):
@@ -370,20 +390,46 @@ class ReturnShipment(BaseModel):
     )
     courier_name = models.CharField(
         max_length=100,
-        default="Delhivery Return",
+        default="Shiprocket Return",
         verbose_name="Courier Name",
     )
     awb_number = models.CharField(
         max_length=100,
         null=True,
         blank=True,
+        db_index=True,
         verbose_name="AWB Number",
+    )
+    shiprocket_order_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name="Shiprocket Return Order ID",
+    )
+    shiprocket_shipment_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Shiprocket Return Shipment ID",
     )
     pickup_status = models.CharField(
         max_length=30,
         choices=ReturnPickupStatus.choices,
         default=ReturnPickupStatus.PENDING,
         verbose_name="Pickup Status",
+    )
+    current_location = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Current Location",
+    )
+    shiprocket_status = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Shiprocket Status",
     )
     pickup_scheduled_date = models.DateTimeField(
         null=True,
@@ -394,6 +440,11 @@ class ReturnShipment(BaseModel):
         null=True,
         blank=True,
         verbose_name="Tracking URL",
+    )
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Last Synced At",
     )
     provider_response = models.JSONField(
         default=dict,
@@ -407,3 +458,91 @@ class ReturnShipment(BaseModel):
 
     def __str__(self):
         return f"Return Shipment (AWB: {self.awb_number or 'Pending'}) for Return {str(self.return_request.id)[:8]}"
+
+
+class ReturnShipmentTrackingEvent(BaseModel):
+    """
+    Append-only tracking events stream for reverse logistics.
+    """
+    shipment = models.ForeignKey(
+        ReturnShipment,
+        on_delete=models.CASCADE,
+        related_name="tracking_events",
+        verbose_name="Return Shipment",
+    )
+    event_code = models.CharField(max_length=50, verbose_name="Event Code")
+    event_label = models.CharField(max_length=150, verbose_name="Event Label")
+    status_mapped = models.CharField(max_length=50, blank=True, default="", verbose_name="Status Mapped")
+    event_timestamp = models.DateTimeField(verbose_name="Event Timestamp")
+    location = models.CharField(max_length=255, blank=True, default="", verbose_name="Location")
+    description = models.TextField(blank=True, default="", verbose_name="Description")
+    event_source = models.CharField(max_length=30, default="webhook", verbose_name="Event Source")
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Return Shipment Tracking Event"
+        verbose_name_plural = "Return Shipment Tracking Events"
+        ordering = ["-event_timestamp"]
+
+    def __str__(self):
+        return f"Event {self.event_code} on AWB {self.shipment.awb_number}"
+
+
+class ReturnVerification(BaseModel):
+    """
+    Authoritative doorstep / warehouse verification record.
+    """
+    return_request = models.OneToOneField(
+        ReturnRequest,
+        on_delete=models.CASCADE,
+        related_name="verification",
+        verbose_name="Return Request",
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.PENDING,
+        db_index=True,
+        verbose_name="Verification Status",
+    )
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Verified At",
+    )
+    verifier_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        verbose_name="Verifier / Courier Executive Name",
+    )
+    failure_reason = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Failure Reason",
+    )
+    notes = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Verification Notes",
+    )
+    evidence_file = models.FileField(
+        upload_to="returns/verification/%Y/%m/",
+        null=True,
+        blank=True,
+        verbose_name="Verification Photo Evidence",
+    )
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Verified By (Admin / Staff)",
+    )
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Return Verification"
+        verbose_name_plural = "Return Verifications"
+
+    def __str__(self):
+        return f"Verification ({self.get_status_display()}) for Return {str(self.return_request.id)[:8]}"
+

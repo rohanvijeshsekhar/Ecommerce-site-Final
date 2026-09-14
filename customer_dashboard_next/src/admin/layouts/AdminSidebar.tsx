@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
   BarChart3, Bell, UserCog, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen, Activity
+  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,6 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'inventory',    label: 'Inventory',     icon: 'Layers',      path: '/admin/inventory'    },
       { id: 'pricing',      label: 'Pricing',        icon: 'DollarSign',  path: '/admin/pricing'      },
       { id: 'orders',       label: 'Orders',         icon: 'ShoppingCart',path: '/admin/orders',       badgeVariant: 'danger'  },
+      { id: 'returns',      label: 'Returns / Replacement', icon: 'RotateCcw', path: '/admin/returns' },
       { id: 'fulfillment',  label: 'Fulfillment',    icon: 'Truck',       path: '/admin/fulfillment'  },
     ],
   },
@@ -78,8 +79,9 @@ const NAV_GROUPS: NavGroup[] = [
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
-  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen, Activity
+  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw
 };
+
 
 const AdminSidebar: React.FC = () => {
   const { isSidebarCollapsed, toggleSidebar, isMobileSidebarOpen, setMobileSidebarOpen, adminRole } = useAdmin();
