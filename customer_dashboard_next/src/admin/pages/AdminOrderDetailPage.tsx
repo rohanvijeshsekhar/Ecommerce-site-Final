@@ -89,23 +89,27 @@ const NEXT_STATUSES: Partial<Record<string, string[]>> = {
   cancelled: [],
 };
 
-// Order Progress Steps
+// Order Progress Steps — 9-Step Shiprocket Milestone Model
 const PROGRESS_STEPS = [
-  { id: 'placed', label: 'Order Placed' },
-  { id: 'processing', label: 'Processing' },
-  { id: 'packed', label: 'Packed' },
-  { id: 'shipment_created', label: 'Shipment Created' },
-  { id: 'picked_up', label: 'Picked Up' },
-  { id: 'in_transit', label: 'In Transit' },
-  { id: 'delivered', label: 'Delivered' },
+  { id: 'placed',            label: 'Order Placed' },
+  { id: 'processing',        label: 'Processing' },
+  { id: 'packed',            label: 'Packed' },
+  { id: 'shipment_created',  label: 'Shipment Created' },
+  { id: 'pickup_scheduled',  label: 'Pickup Scheduled' },
+  { id: 'picked_up',         label: 'Picked Up' },
+  { id: 'in_transit',        label: 'In Transit' },
+  { id: 'out_for_delivery',  label: 'Out for Delivery' },
+  { id: 'delivered',         label: 'Delivered' },
 ];
 
 const getProgressStepIndex = (orderStatus: string, shipmentStatus?: string): number => {
   if (orderStatus === 'cancelled') return -1;
-  if (orderStatus === 'delivered' || shipmentStatus === 'delivered') return 6;
-  if (shipmentStatus === 'in_transit' || shipmentStatus === 'out_for_delivery' || shipmentStatus === 'reached_hub') return 5;
-  if (shipmentStatus === 'picked_up') return 4;
-  if (shipmentStatus === 'created' || shipmentStatus === 'pickup_scheduled' || orderStatus === 'shipped') return 3;
+  if (orderStatus === 'delivered' || shipmentStatus === 'delivered') return 8;
+  if (shipmentStatus === 'out_for_delivery') return 7;
+  if (shipmentStatus === 'in_transit' || shipmentStatus === 'reached_hub') return 6;
+  if (shipmentStatus === 'picked_up') return 5;
+  if (shipmentStatus === 'pickup_scheduled') return 4;
+  if (shipmentStatus === 'created' || orderStatus === 'shipped') return 3;
   if (orderStatus === 'packed') return 2;
   if (orderStatus === 'processing') return 1;
   return 0; // pending_payment or newly placed
@@ -351,6 +355,11 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
               <p className="font-bold text-slate-800 mt-1 capitalize">
                 {PICKUP_STATUS_LABELS[shipment.pickup_status] || shipment.pickup_status}
               </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Courier</p>
+              <p className="font-bold text-slate-800 mt-1 truncate">{shipment.courier_name || '—'}</p>
             </div>
 
             {shipment.estimated_delivery_date && (

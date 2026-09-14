@@ -25,6 +25,8 @@ import { ordersService } from '../../lib/services/ordersService';
 import type { OrderDetail } from '../../lib/services/ordersService';
 import { api } from '../../lib/api';
 import { ReviewModal } from './ReviewModal';
+import OrderTrackingTimeline from './OrderTrackingTimeline';
+
 
 interface OrderDetailPageProps {
   orderId: string;
@@ -138,7 +140,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
   const isCancellable = ['pending_payment', 'processing', 'packed'].includes(order.status);
 
-  // Status mapping
+  // Build the status hierarchy label
   const getStatusLabel = (status: OrderDetail['status']) => {
     switch (status) {
       case 'pending_payment': return 'Pending Payment';
@@ -151,22 +153,6 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
     }
   };
 
-  // Build the status history array
-  const steps = [
-    { label: 'Placed', key: 'pending_payment', desc: 'Order logged' },
-    { label: 'Processing', key: 'processing', desc: 'Calibrating unit' },
-    { label: 'Packed', key: 'packed', desc: 'Calibrated & ready' },
-    { label: 'Shipped', key: 'shipped', desc: 'In transit' },
-    { label: 'Delivered', key: 'delivered', desc: 'Installed' }
-  ];
-
-  const getStepActive = (stepKey: string) => {
-    if (order.status === 'cancelled') return false;
-    const hierarchy = ['pending_payment', 'processing', 'packed', 'shipped', 'delivered'];
-    const currentIdx = hierarchy.indexOf(order.status);
-    const stepIdx = hierarchy.indexOf(stepKey);
-    return stepIdx <= currentIdx;
-  };
 
   return (
     <div className={embedded 
@@ -260,34 +246,9 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
           </div>
         </div>
 
-        {/* Timelines block */}
+        {/* Shiprocket 9-Step Milestone Timeline */}
         {order.status !== 'cancelled' ? (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5 mb-4 sm:mb-6 text-center">
-            <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-[#006670] uppercase block mb-3.5 sm:mb-6 text-left">Fulfillment Milestones</span>
-            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4 max-w-2xl mx-auto py-1 sm:py-2">
-              <div className="hidden md:block absolute left-4 right-4 h-0.5 bg-slate-150 top-1/2 -translate-y-1/2 z-0" />
-              {steps.map((step, idx) => {
-                const isActive = getStepActive(step.key);
-                return (
-                  <div key={step.key} className="flex md:flex-col items-center gap-2.5 md:gap-2.5 relative z-10 text-left md:text-center flex-1">
-                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border font-black text-[11px] sm:text-xs transition-colors shrink-0
-                      ${isActive
-                        ? 'bg-[#006670] border-[#006670] text-white shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-400'}`}>
-                      {isActive ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : idx + 1}
-                    </div>
-                    <div>
-                      <span className={`text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wide block
-                        ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>
-                        {step.label}
-                      </span>
-                      <span className="text-[8.5px] sm:text-[9px] text-slate-400 font-sans block mt-0.5">{step.desc}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <OrderTrackingTimeline orderId={orderId} orderStatus={order.status} />
         ) : (
           <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 flex gap-3 text-left">
             <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 shrink-0 mt-0.5" />
@@ -303,19 +264,19 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
           </div>
         )}
 
-        {/* Shipping details (if shipped) */}
+        {/* Shipping / carrier details (shown when tracking_number exists) */}
         {order.tracking_number && (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-3.5 sm:p-5 mb-4 sm:mb-6 flex gap-3 sm:gap-4 text-left">
             <div className="p-2.5 sm:p-3 bg-[#e6f3f5] rounded-xl text-[#006670] shrink-0">
               <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="text-xs space-y-0.5 sm:space-y-1 min-w-0">
+            <div className="text-xs space-y-0.5 sm:space-y-1 min-w-0 flex-1">
               <h4 className="font-black text-slate-800 uppercase tracking-wider text-[11px] sm:text-xs">Shipment Dispatch Details</h4>
               <p className="text-slate-600 font-medium font-sans text-[11px] sm:text-xs">
                 Shipped via <strong className="text-slate-800">{order.shipping_carrier || 'Logistics Partner'}</strong>
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate">
-                Tracking Number: <strong className="text-slate-700">{order.tracking_number}</strong>
+                AWB / Tracking: <strong className="text-slate-700">{order.tracking_number}</strong>
               </p>
             </div>
           </div>
