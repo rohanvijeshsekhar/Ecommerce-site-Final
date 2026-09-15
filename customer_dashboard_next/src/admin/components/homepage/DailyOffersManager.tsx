@@ -13,41 +13,6 @@ import { homepageService, adminService } from '../../services/adminService';
 import { useToast } from '../Toast';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Preset High-Resolution Clinical Artwork Library
-// ─────────────────────────────────────────────────────────────────────────────
-const ARTWORK_PRESETS = [
-  {
-    id: 'imaging_suite',
-    name: 'Digital Imaging & Sensors',
-    subtitle: 'Sensors & Imaging Systems',
-    url: '/images/category_imaging.png',
-  },
-  {
-    id: 'handpiece_pro',
-    name: 'Clinical Handpieces',
-    subtitle: 'High-Speed Handpieces & Motors',
-    url: '/images/nsk_handpiece_portrait.png',
-  },
-  {
-    id: 'treatment_center',
-    name: 'Treatment Center',
-    subtitle: 'Clinical Surgical Units',
-    url: '/images/hero_equipment.png',
-  },
-  {
-    id: 'scaler_pro',
-    name: 'Ultrasonic Scalers',
-    subtitle: 'Precision Prophy & Scaling',
-    url: '/images/woodpecker_scaler_studio.png',
-  },
-  {
-    id: 'clinic_setup',
-    name: 'Full Practice Setup',
-    subtitle: 'Comprehensive Equipment Package',
-    url: '/images/featured_digital_equipment.jpg',
-  },
-];
 
 const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   title: 'Big Savings Today',
@@ -294,14 +259,28 @@ export const DailyOffersManager: React.FC = () => {
     }
   };
 
-  const handleSelectPresetArtwork = (preset: typeof ARTWORK_PRESETS[0]) => {
+  const handleRemoveDesktopImage = () => {
     setDesktopImageFile(null);
     setForm((prev) => ({
       ...prev,
-      desktop_image_url: preset.url,
-      desktop_image: preset.url,
+      desktop_image_url: '',
+      desktop_image: '',
     }));
-    toast.success(`Selected artwork: ${preset.name}`);
+    if (desktopFileInputRef.current) {
+      desktopFileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveMobileImage = () => {
+    setMobileImageFile(null);
+    setForm((prev) => ({
+      ...prev,
+      mobile_image_url: '',
+      mobile_image: '',
+    }));
+    if (mobileFileInputRef.current) {
+      mobileFileInputRef.current.value = '';
+    }
   };
 
   // Save / Publish
@@ -765,53 +744,12 @@ export const DailyOffersManager: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Quick Preset Clinical Artwork */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Quick Preset Clinical Artwork
-                      </label>
-                      <p className="text-[11px] text-slate-500 mb-3">
-                        Choose from high-resolution clinical equipment artwork with 1 click:
-                      </p>
-                      <div className="grid grid-cols-1 gap-2">
-                        {ARTWORK_PRESETS.map((preset) => {
-                          const isSelected = form.desktop_image_url === preset.url;
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => handleSelectPresetArtwork(preset)}
-                              className={`flex items-center gap-3 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                                isSelected
-                                  ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20'
-                                  : 'border-slate-200 hover:border-slate-300 bg-white'
-                              }`}
-                            >
-                              <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-200">
-                                <Image src={preset.url} alt={preset.name} fill className="object-cover" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <span className="font-bold text-xs text-slate-800 block truncate">{preset.name}</span>
-                                <span className="text-[10px] text-slate-500 block truncate">{preset.subtitle}</span>
-                              </div>
-                              {isSelected && <CheckCircle2 className="w-4 h-4 text-[#006670] shrink-0" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Custom Image Upload */}
-                    <div className="pt-2 border-t border-slate-200 space-y-3">
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Custom Image Upload (Optional)
-                      </label>
-
-                      {/* Desktop Image File */}
+                    {/* Image File Uploadation Section */}
+                    <div className="space-y-4">
                       <div>
-                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Desktop Artwork File
-                        </span>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                          Banner Artwork Image File
+                        </label>
                         <input
                           type="file"
                           ref={desktopFileInputRef}
@@ -819,39 +757,132 @@ export const DailyOffersManager: React.FC = () => {
                           onChange={handleDesktopImageChange}
                           className="hidden"
                         />
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
+
+                        {form.desktop_image_url ? (
+                          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={form.desktop_image_url}
+                                alt="Banner Artwork"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-bold text-xs text-slate-800 block truncate">
+                                {desktopImageFile ? desktopImageFile.name : 'Current Banner Image'}
+                              </span>
+                              <span className="text-[11px] text-emerald-600 font-medium block">
+                                {desktopImageFile
+                                  ? `${(desktopImageFile.size / 1024).toFixed(1)} KB • Ready to save`
+                                  : 'Active image set'}
+                              </span>
+                              <div className="flex items-center gap-2 mt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => desktopFileInputRef.current?.click()}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 cursor-pointer"
+                                >
+                                  <Upload className="w-3 h-3 text-[#006670]" />
+                                  Change Image
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleRemoveDesktopImage}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-bold text-rose-600 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
                             onClick={() => desktopFileInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
+                            className="border-2 border-dashed border-teal-600/30 hover:border-[#006670] bg-teal-50/20 hover:bg-teal-50/40 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 group"
                           >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>{desktopImageFile ? 'Change File' : 'Upload Image'}</span>
-                          </button>
-                          {desktopImageFile && (
-                            <span className="text-xs text-emerald-700 font-semibold truncate max-w-xs">
-                              {desktopImageFile.name}
+                            <div className="w-12 h-12 rounded-xl bg-teal-100/80 text-[#006670] flex items-center justify-center group-hover:scale-105 transition-transform">
+                              <Upload className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">
+                                Click to upload Banner Image
+                              </span>
+                              <span className="text-[11px] text-slate-500 block mt-0.5">
+                                Supports PNG, JPG, WEBP or SVG
+                              </span>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-[#006670] text-white text-[10px] font-bold shadow-xs">
+                              Select Image File
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Image URL Direct Input */}
-                      <div>
-                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Or Direct Image URL
-                        </span>
+                      {/* Optional Mobile Image File */}
+                      <div className="pt-3 border-t border-slate-200">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                          Mobile Artwork File (Optional)
+                        </label>
                         <input
-                          type="text"
-                          value={form.desktop_image_url || ''}
-                          onChange={(e) => setForm({ ...form, desktop_image_url: e.target.value })}
-                          placeholder="/images/hero_equipment.png or https://..."
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono"
+                          type="file"
+                          ref={mobileFileInputRef}
+                          accept="image/*"
+                          onChange={handleMobileImageChange}
+                          className="hidden"
                         />
+
+                        {form.mobile_image_url ? (
+                          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={form.mobile_image_url}
+                                alt="Mobile Banner Artwork"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-bold text-xs text-slate-800 block truncate">
+                                {mobileImageFile ? mobileImageFile.name : 'Mobile Banner Image'}
+                              </span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => mobileFileInputRef.current?.click()}
+                                  className="text-[11px] font-bold text-[#006670] hover:underline cursor-pointer"
+                                >
+                                  Change
+                                </button>
+                                <span className="text-slate-300">•</span>
+                                <button
+                                  type="button"
+                                  onClick={handleRemoveMobileImage}
+                                  className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => mobileFileInputRef.current?.click()}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Upload Mobile Artwork</span>
+                            </button>
+                            <span className="text-[11px] text-slate-400">Used for smaller screens</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Image Fit */}
-                      <div>
+                      <div className="pt-3 border-t border-slate-200">
                         <span className="block text-[11px] font-semibold text-slate-600 mb-1">Image Fit</span>
                         <div className="grid grid-cols-2 gap-2">
                           {['cover', 'contain'].map((fit) => (
