@@ -360,10 +360,12 @@ class FeaturedCollection(BaseModel):
         max_length=20,
         default="medium",
         choices=[
-            ("small", "Small (420px)"),
-            ("medium", "Medium (580px)"),
-            ("large", "Large (760px)"),
+            ("narrow", "Narrow"),
+            ("medium", "Medium"),
+            ("wide", "Wide"),
             ("full", "Full Width"),
+            ("small", "Small"),
+            ("large", "Large"),
         ],
         verbose_name="Content Max Width",
     )
@@ -442,12 +444,17 @@ class FeaturedCollection(BaseModel):
     # ── Visual Styling & Typography ──
     heading_size = models.CharField(
         max_length=20,
-        default="large",
+        default="lg",
         choices=[
-            ("medium", "Medium (32px)"),
-            ("large", "Large (40px)"),
-            ("xlarge", "Extra Large (48px)"),
-            ("jumbo", "Jumbo (56px)"),
+            ("sm", "Small"),
+            ("md", "Medium"),
+            ("lg", "Large"),
+            ("xl", "Extra Large"),
+            ("2xl", "2XL / Jumbo"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+            ("xlarge", "Extra Large"),
+            ("jumbo", "Jumbo"),
         ],
         verbose_name="Heading Size",
     )
@@ -456,6 +463,7 @@ class FeaturedCollection(BaseModel):
         default="black",
         choices=[
             ("normal", "Normal (400)"),
+            ("medium", "Medium (500)"),
             ("semibold", "Semi-Bold (600)"),
             ("bold", "Bold (700)"),
             ("extrabold", "Extra-Bold (800)"),
@@ -528,11 +536,16 @@ class FeaturedCollection(BaseModel):
     )
     overlay_gradient = models.CharField(
         max_length=30,
-        default="dark",
+        default="left",
         choices=[
             ("none", "None"),
-            ("dark", "Dark Contrast (for bright images)"),
-            ("light", "Light Subtle (for dark images)"),
+            ("left", "Left to Right"),
+            ("right", "Right to Left"),
+            ("top", "Top to Bottom"),
+            ("bottom", "Bottom to Top"),
+            ("radial", "Radial Glow"),
+            ("dark", "Dark Contrast"),
+            ("light", "Light Subtle"),
             ("teal", "Teal Brand Gradient"),
         ],
         verbose_name="Overlay Gradient Type",

@@ -98,6 +98,40 @@ const PRESET_BG_COLORS = [
   { name: 'Dark Obsidian', hex: '#18181B' },
 ];
 
+const normalizeWidth = (w?: string): 'narrow' | 'medium' | 'wide' | 'full' => {
+  if (w === 'small' || w === 'narrow') return 'narrow';
+  if (w === 'large' || w === 'wide') return 'wide';
+  if (w === 'full') return 'full';
+  return 'medium';
+};
+
+const normalizeHeadingSize = (s?: string): 'sm' | 'md' | 'lg' | 'xl' | '2xl' => {
+  if (s === 'sm') return 'sm';
+  if (s === 'medium' || s === 'md') return 'md';
+  if (s === 'large' || s === 'lg') return 'lg';
+  if (s === 'xlarge' || s === 'xl') return 'xl';
+  if (s === 'jumbo' || s === '2xl') return '2xl';
+  return 'lg';
+};
+
+const normalizeHeadingWeight = (w?: string): 'normal' | 'medium' | 'semibold' | 'bold' | 'black' => {
+  if (w === 'normal') return 'normal';
+  if (w === 'medium') return 'medium';
+  if (w === 'semibold') return 'semibold';
+  if (w === 'bold') return 'bold';
+  return 'black';
+};
+
+const normalizeImagePosition = (p?: string): 'left' | 'right' => {
+  return p === 'left' ? 'left' : 'right';
+};
+
+const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top' | 'bottom' | 'radial' | 'dark' => {
+  if (g === 'teal' || g === 'light') return 'left';
+  if (g === 'none' || g === 'left' || g === 'right' || g === 'top' || g === 'bottom' || g === 'radial' || g === 'dark') return g;
+  return 'left';
+};
+
 const FeaturedCollectionsManager: React.FC = () => {
   const { showToast } = useAdmin();
   const [collections, setCollections] = useState<FeaturedCollection[]>([]);
@@ -149,38 +183,6 @@ const FeaturedCollectionsManager: React.FC = () => {
     setShowStudio(true);
   };
 
-const normalizeWidth = (w?: string): 'narrow' | 'medium' | 'wide' | 'full' => {
-  if (w === 'small') return 'narrow';
-  if (w === 'large') return 'wide';
-  if (w === 'narrow' || w === 'wide' || w === 'full') return w;
-  return 'medium';
-};
-
-const normalizeHeadingSize = (s?: string): 'sm' | 'md' | 'lg' | 'xl' | '2xl' => {
-  if (s === 'medium') return 'md';
-  if (s === 'large') return 'lg';
-  if (s === 'xlarge') return 'xl';
-  if (s === 'jumbo') return '2xl';
-  if (s === 'sm' || s === 'md' || s === 'lg' || s === 'xl' || s === '2xl') return s;
-  return 'lg';
-};
-
-const normalizeHeadingWeight = (w?: string): 'normal' | 'medium' | 'semibold' | 'bold' | 'black' => {
-  if (w === 'extrabold') return 'black';
-  if (w === 'normal' || w === 'medium' || w === 'semibold' || w === 'bold' || w === 'black') return w;
-  return 'black';
-};
-
-const normalizeImagePosition = (p?: string): 'left' | 'right' => {
-  return p === 'left' ? 'left' : 'right';
-};
-
-const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top' | 'bottom' | 'radial' | 'dark' => {
-  if (g === 'teal' || g === 'light') return 'left';
-  if (g === 'none' || g === 'left' || g === 'right' || g === 'top' || g === 'bottom' || g === 'radial' || g === 'dark') return g;
-  return 'left';
-};
-
   const openEditBanner = (c: FeaturedCollection) => {
     setEditColl(c);
     setForm({
@@ -191,9 +193,9 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
       mobile_image: c.mobile_image_url || c.mobile_image || null,
       banner_layout: c.banner_layout || 'split',
       content_width: normalizeWidth(c.content_width),
-      horizontal_alignment: c.horizontal_alignment || 'left',
-      vertical_alignment: c.vertical_alignment || 'center',
-      badge_text: c.badge_text || '',
+      horizontal_alignment: (c.horizontal_alignment === 'center' || c.horizontal_alignment === 'right') ? c.horizontal_alignment : 'left',
+      vertical_alignment: (c.vertical_alignment === 'top' || c.vertical_alignment === 'bottom') ? c.vertical_alignment : 'center',
+      badge_text: c.badge_text !== undefined ? c.badge_text : 'FEATURED COLLECTION',
       offer_text: c.offer_text || '',
       secondary_text: c.secondary_text || '',
       cta_text: c.cta_text || 'Explore Collection',
@@ -244,7 +246,6 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
     const [moved] = newOrder.splice(index, 1);
     newOrder.splice(targetIdx, 0, moved);
 
-    // Optimistic UI update
     setCollections(newOrder);
 
     try {
@@ -268,44 +269,54 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
     try {
       const fd = new FormData();
       fd.append('title', form.title.trim());
-      fd.append('description', form.description);
+      fd.append('description', form.description || '');
       fd.append('is_visible', String(form.is_visible));
       fd.append('banner_layout', form.banner_layout);
       fd.append('content_width', form.content_width);
       fd.append('horizontal_alignment', form.horizontal_alignment);
       fd.append('vertical_alignment', form.vertical_alignment);
-      fd.append('badge_text', form.badge_text);
-      fd.append('offer_text', form.offer_text);
-      fd.append('secondary_text', form.secondary_text);
-      fd.append('cta_text', form.cta_text);
-      fd.append('cta_action_type', form.cta_action_type);
-      fd.append('cta_target_id', form.cta_target_id);
-      fd.append('cta_url', form.cta_url);
-      fd.append('cta_style', form.cta_style);
+      fd.append('badge_text', form.badge_text || '');
+      fd.append('offer_text', form.offer_text || '');
+      fd.append('secondary_text', form.secondary_text || '');
+      fd.append('cta_text', form.cta_text || 'Explore Collection');
+      fd.append('cta_action_type', form.cta_action_type || 'url');
+      fd.append('cta_target_id', form.cta_target_id || '');
+      fd.append('cta_url', form.cta_url || '/offers');
+      fd.append('cta_style', form.cta_style || 'filled');
       fd.append('cta_open_in_new_tab', String(form.cta_open_in_new_tab));
       fd.append('heading_size', form.heading_size);
       fd.append('heading_weight', form.heading_weight);
-      fd.append('heading_color', form.heading_color);
-      fd.append('description_color', form.description_color);
-      fd.append('badge_color', form.badge_color);
-      fd.append('badge_bg_color', form.badge_bg_color);
-      fd.append('cta_bg_color', form.cta_bg_color);
-      fd.append('cta_text_color', form.cta_text_color);
-      fd.append('cta_border_color', form.cta_border_color);
-      fd.append('bg_color', form.bg_color);
-      fd.append('image_position', form.image_position);
-      fd.append('image_fit', form.image_fit);
-      fd.append('overlay_gradient', form.overlay_gradient);
-      fd.append('overlay_opacity', String(form.overlay_opacity));
+      fd.append('heading_color', form.heading_color || '#0F172A');
+      fd.append('description_color', form.description_color || '#334155');
+      fd.append('badge_color', form.badge_color || '#006670');
+      fd.append('badge_bg_color', form.badge_bg_color || 'rgba(0, 102, 112, 0.12)');
+      fd.append('cta_bg_color', form.cta_bg_color || '#006670');
+      fd.append('cta_text_color', form.cta_text_color || '#FFFFFF');
+      fd.append('cta_border_color', form.cta_border_color || '#006670');
+      fd.append('bg_color', form.bg_color || '#E8F5F4');
+      fd.append('image_position', form.image_position || 'right');
+      fd.append('image_fit', form.image_fit || 'contain');
+      fd.append('overlay_gradient', form.overlay_gradient || 'left');
+      fd.append('overlay_opacity', String(form.overlay_opacity ?? 40));
 
-      if (form.start_date) {
-        fd.append('start_date', new Date(form.start_date).toISOString());
+      if (form.start_date && form.start_date.trim()) {
+        const d = new Date(form.start_date);
+        if (!isNaN(d.getTime())) {
+          fd.append('start_date', d.toISOString());
+        } else {
+          fd.append('start_date', '');
+        }
       } else {
         fd.append('start_date', '');
       }
 
-      if (form.end_date) {
-        fd.append('end_date', new Date(form.end_date).toISOString());
+      if (form.end_date && form.end_date.trim()) {
+        const d = new Date(form.end_date);
+        if (!isNaN(d.getTime())) {
+          fd.append('end_date', d.toISOString());
+        } else {
+          fd.append('end_date', '');
+        }
       } else {
         fd.append('end_date', '');
       }
@@ -331,15 +342,35 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
       if (res.success) {
         showToast({
           variant: 'success',
-          title: editColl ? 'Promotional banner updated' : 'Promotional banner created',
+          title: editColl ? 'Promotional banner updated successfully' : 'Promotional banner created successfully',
         });
         setShowStudio(false);
+        // Dispatch window event so storefront components refresh immediately
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('featured-collections-updated'));
+        }
         load();
       } else {
         showToast({ variant: 'error', title: res.message || 'Save failed' });
       }
-    } catch {
-      showToast({ variant: 'error', title: 'Save failed' });
+    } catch (err: any) {
+      console.error('Failed to save promotional banner:', err);
+      let errorMsg = 'Save failed';
+      const responseData = err.response?.data;
+      if (responseData) {
+        if (responseData.error?.message) {
+          errorMsg = responseData.error.message;
+        } else if (responseData.message) {
+          errorMsg = responseData.message;
+        } else if (typeof responseData === 'object') {
+          const firstKey = Object.keys(responseData)[0];
+          const val = responseData[firstKey];
+          errorMsg = `${firstKey}: ${Array.isArray(val) ? val[0] : val}`;
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      showToast({ variant: 'error', title: errorMsg });
     } finally {
       setSaving(false);
     }
@@ -350,6 +381,9 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
     await homepageService.deleteFeaturedCollection(deleteColl.id);
     showToast({ variant: 'success', title: 'Banner deleted' });
     setDeleteColl(null);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('featured-collections-updated'));
+    }
     load();
   };
 
@@ -376,6 +410,9 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
 
   const toggleVisible = async (c: FeaturedCollection) => {
     await homepageService.updateFeaturedCollection(c.id, { ...c, is_visible: !c.is_visible });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('featured-collections-updated'));
+    }
     load();
   };
 
@@ -416,6 +453,22 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
     bold: 'font-bold',
     black: 'font-black',
   }[form.heading_weight];
+
+  const canvasHAlign = form.horizontal_alignment;
+  const canvasVAlign = form.vertical_alignment;
+
+  const canvasWidthClass = {
+    narrow: 'max-w-md',
+    medium: 'max-w-xl',
+    wide: 'max-w-3xl',
+    full: 'max-w-full',
+  }[form.content_width] || 'max-w-xl';
+
+  const canvasVAlignClass = {
+    top: 'justify-start pt-6 sm:pt-8 pb-14',
+    center: 'justify-center py-10 sm:py-12',
+    bottom: 'justify-end pt-14 pb-6 sm:pb-8',
+  }[canvasVAlign];
 
   const getOverlayStyle = () => {
     const opacity = form.overlay_opacity / 100;
@@ -624,7 +677,7 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                       Associated Curated Products ({coll.items?.length || 0})
                     </h4>
-                    <span className="text-[11px] text-slate-400">Products linked to this collection collection</span>
+                    <span className="text-[11px] text-slate-400">Products linked to this collection</span>
                   </div>
 
                   {!coll.items || coll.items.length === 0 ? (
@@ -974,11 +1027,11 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           Horizontal Text Alignment
                         </label>
                         <div className="grid grid-cols-3 gap-2">
-                          {['left', 'center', 'right'].map(align => (
+                          {(['left', 'center', 'right'] as const).map(align => (
                             <button
                               key={align}
                               type="button"
-                              onClick={() => setForm(f => ({ ...f, horizontal_alignment: align as any }))}
+                              onClick={() => setForm(f => ({ ...f, horizontal_alignment: align }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${
                                 form.horizontal_alignment === align
                                   ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
@@ -996,11 +1049,11 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           Vertical Alignment
                         </label>
                         <div className="grid grid-cols-3 gap-2">
-                          {['top', 'center', 'bottom'].map(vAlign => (
+                          {(['top', 'center', 'bottom'] as const).map(vAlign => (
                             <button
                               key={vAlign}
                               type="button"
-                              onClick={() => setForm(f => ({ ...f, vertical_alignment: vAlign as any }))}
+                              onClick={() => setForm(f => ({ ...f, vertical_alignment: vAlign }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${
                                 form.vertical_alignment === vAlign
                                   ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
@@ -1154,11 +1207,11 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                             Contrast Overlay Gradient
                           </label>
                           <div className="grid grid-cols-4 gap-1.5">
-                            {['left', 'right', 'top', 'bottom', 'radial', 'dark', 'none'].map(grad => (
+                            {(['left', 'right', 'top', 'bottom', 'radial', 'dark', 'none'] as const).map(grad => (
                               <button
                                 key={grad}
                                 type="button"
-                                onClick={() => setForm(f => ({ ...f, overlay_gradient: grad as any }))}
+                                onClick={() => setForm(f => ({ ...f, overlay_gradient: grad }))}
                                 className={`py-1.5 px-2 rounded-lg border text-[11px] font-semibold capitalize text-center cursor-pointer ${
                                   form.overlay_gradient === grad
                                     ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
@@ -1199,11 +1252,11 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           Heading Size
                         </label>
                         <div className="grid grid-cols-5 gap-2">
-                          {['sm', 'md', 'lg', 'xl', '2xl'].map(size => (
+                          {(['sm', 'md', 'lg', 'xl', '2xl'] as const).map(size => (
                             <button
                               key={size}
                               type="button"
-                              onClick={() => setForm(f => ({ ...f, heading_size: size as any }))}
+                              onClick={() => setForm(f => ({ ...f, heading_size: size }))}
                               className={`py-2 rounded-xl border text-xs font-semibold uppercase text-center cursor-pointer ${
                                 form.heading_size === size
                                   ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
@@ -1221,11 +1274,11 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           Heading Weight
                         </label>
                         <div className="grid grid-cols-5 gap-2">
-                          {['normal', 'medium', 'semibold', 'bold', 'black'].map(weight => (
+                          {(['normal', 'medium', 'semibold', 'bold', 'black'] as const).map(weight => (
                             <button
                               key={weight}
                               type="button"
-                              onClick={() => setForm(f => ({ ...f, heading_weight: weight as any }))}
+                              onClick={() => setForm(f => ({ ...f, heading_weight: weight }))}
                               className={`py-2 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${
                                 form.heading_weight === weight
                                   ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
@@ -1619,79 +1672,89 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           <div
                             className={`flex flex-col ${
                               previewDevice === 'desktop'
-                                ? `col-span-6 px-10 py-12 ${
+                                ? `col-span-6 px-10 ${canvasVAlignClass} ${
                                     form.image_position === 'left' ? 'order-2' : 'order-1'
-                                  } ${
-                                    form.horizontal_alignment === 'center'
-                                      ? 'text-center items-center'
-                                      : form.horizontal_alignment === 'right'
-                                      ? 'text-right items-end'
-                                      : 'text-left items-start'
-                                  } ${
-                                    form.vertical_alignment === 'top'
-                                      ? 'justify-start'
-                                      : form.vertical_alignment === 'bottom'
-                                      ? 'justify-end'
-                                      : 'justify-center'
                                   }`
                                 : 'order-1 items-start text-left mb-6'
                             }`}
                           >
-                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                              {form.badge_text && (
+                            <div
+                              className={`w-full flex flex-col ${canvasWidthClass} ${
+                                canvasHAlign === 'center'
+                                  ? 'text-center items-center mx-auto'
+                                  : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
+                              }`}
+                            >
+                              <div
+                                className={`flex flex-wrap items-center gap-2 mb-3 ${
+                                  canvasHAlign === 'center' ? 'justify-center' : canvasHAlign === 'right' ? 'justify-end' : 'justify-start'
+                                }`}
+                              >
+                                {form.badge_text && (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase"
+                                    style={{
+                                      backgroundColor: form.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
+                                      color: form.badge_color || '#006670',
+                                    }}
+                                  >
+                                    <Sparkles className="w-3 h-3" />
+                                    <span>{form.badge_text}</span>
+                                  </div>
+                                )}
+                                {form.offer_text && (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase shadow-xs">
+                                    {form.offer_text}
+                                  </span>
+                                )}
+                              </div>
+
+                              <h2
+                                className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words ${
+                                  canvasHAlign === 'center' ? 'text-center' : canvasHAlign === 'right' ? 'text-right' : 'text-left'
+                                }`}
+                                style={{ color: form.heading_color || '#0F172A' }}
+                              >
+                                {form.title}
+                              </h2>
+
+                              {form.description && (
+                                <p
+                                  className={`text-sm mb-6 leading-relaxed opacity-90 ${
+                                    canvasHAlign === 'center' ? 'text-center mx-auto' : canvasHAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                                  }`}
+                                  style={{ color: form.description_color || '#334155' }}
+                                >
+                                  {form.description}
+                                </p>
+                              )}
+
+                              <div
+                                className={`flex flex-col gap-1.5 ${
+                                  canvasHAlign === 'center' ? 'items-center' : canvasHAlign === 'right' ? 'items-end' : 'items-start'
+                                }`}
+                              >
                                 <div
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase"
+                                  className={`inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-bold shadow-md cursor-pointer ${
+                                    form.cta_style === 'outline' ? 'border-2' : ''
+                                  }`}
                                   style={{
-                                    backgroundColor: form.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
-                                    color: form.badge_color || '#006670',
+                                    backgroundColor: form.cta_style === 'filled' ? form.cta_bg_color || '#006670' : 'transparent',
+                                    color: form.cta_style === 'filled' ? form.cta_text_color || '#FFFFFF' : form.cta_bg_color || '#006670',
+                                    borderColor: form.cta_border_color || '#006670',
                                   }}
                                 >
-                                  <Sparkles className="w-3 h-3" />
-                                  <span>{form.badge_text}</span>
+                                  <span>{form.cta_text || 'Explore Collection'}</span>
+                                  <ArrowRight className="w-4 h-4" />
                                 </div>
-                              )}
-                              {form.offer_text && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase shadow-xs">
-                                  {form.offer_text}
-                                </span>
-                              )}
-                            </div>
-
-                            <h2
-                              className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words`}
-                              style={{ color: form.heading_color || '#0F172A' }}
-                            >
-                              {form.title}
-                            </h2>
-
-                            {form.description && (
-                              <p
-                                className="text-sm mb-6 leading-relaxed opacity-90 max-w-lg"
-                                style={{ color: form.description_color || '#334155' }}
-                              >
-                                {form.description}
-                              </p>
-                            )}
-
-                            <div className="flex flex-col items-start gap-1.5">
-                              <div
-                                className={`inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-bold shadow-md cursor-pointer ${
-                                  form.cta_style === 'outline' ? 'border-2' : ''
-                                }`}
-                                style={{
-                                  backgroundColor: form.cta_style === 'filled' ? form.cta_bg_color || '#006670' : 'transparent',
-                                  color: form.cta_style === 'filled' ? form.cta_text_color || '#FFFFFF' : form.cta_bg_color || '#006670',
-                                  borderColor: form.cta_border_color || '#006670',
-                                }}
-                              >
-                                <span>{form.cta_text || 'Explore Collection'}</span>
-                                <ArrowRight className="w-4 h-4" />
+                                {form.secondary_text && (
+                                  <span className="text-[11px] text-slate-500 font-medium pl-1 mt-1">
+                                    {form.secondary_text}
+                                  </span>
+                                )}
                               </div>
-                              {form.secondary_text && (
-                                <span className="text-[11px] text-slate-500 font-medium pl-1 mt-1">
-                                  {form.secondary_text}
-                                </span>
-                              )}
                             </div>
                           </div>
 
@@ -1723,7 +1786,7 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
 
                       {/* BACKGROUND IMAGE LAYOUT PREVIEW */}
                       {form.banner_layout === 'background' && (
-                        <div className="w-full min-h-[460px] relative flex items-center">
+                        <div className="w-full min-h-[460px] relative flex flex-col justify-stretch">
                           {desktopImgUrl ? (
                             <img
                               src={previewDevice === 'mobile' ? mobileImgUrl || desktopImgUrl : desktopImgUrl}
@@ -1738,9 +1801,22 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                           <div className="absolute inset-0" style={{ background: getOverlayStyle() }} />
 
                           {/* Content */}
-                          <div className="w-full relative z-10 px-8 py-12">
-                            <div className="max-w-xl">
-                              <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <div className={`w-full h-full min-h-[460px] relative z-10 px-8 flex flex-col ${canvasVAlignClass}`}>
+                            <div
+                              className={`w-full flex flex-col ${canvasWidthClass} ${
+                                canvasHAlign === 'center'
+                                  ? 'text-center items-center mx-auto'
+                                  : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
+                              }`}
+                            >
+                              {/* Badge & Offer Pill */}
+                              <div
+                                className={`flex flex-wrap items-center gap-2 mb-3 ${
+                                  canvasHAlign === 'center' ? 'justify-center' : canvasHAlign === 'right' ? 'justify-end' : 'justify-start'
+                                }`}
+                              >
                                 {form.badge_text && (
                                   <div
                                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase backdrop-blur-sm"
@@ -1761,7 +1837,9 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
                               </div>
 
                               <h2
-                                className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words drop-shadow-sm`}
+                                className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words drop-shadow-sm ${
+                                  canvasHAlign === 'center' ? 'text-center' : canvasHAlign === 'right' ? 'text-right' : 'text-left'
+                                }`}
                                 style={{ color: form.heading_color || '#FFFFFF' }}
                               >
                                 {form.title}
@@ -1769,14 +1847,20 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
 
                               {form.description && (
                                 <p
-                                  className="text-sm mb-6 leading-relaxed opacity-95 max-w-md drop-shadow-sm"
+                                  className={`text-sm mb-6 leading-relaxed opacity-95 drop-shadow-sm ${
+                                    canvasHAlign === 'center' ? 'text-center mx-auto' : canvasHAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                                  }`}
                                   style={{ color: form.description_color || '#F1F5F9' }}
                                 >
                                   {form.description}
                                 </p>
                               )}
 
-                              <div className="flex flex-col items-start gap-1.5">
+                              <div
+                                className={`flex flex-col gap-1.5 ${
+                                  canvasHAlign === 'center' ? 'items-center' : canvasHAlign === 'right' ? 'items-end' : 'items-start'
+                                }`}
+                              >
                                 <div
                                   className={`inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-bold shadow-md cursor-pointer ${
                                     form.cta_style === 'outline' ? 'border-2' : ''
@@ -1803,53 +1887,80 @@ const normalizeOverlayGradient = (g?: string): 'none' | 'left' | 'right' | 'top'
 
                       {/* SOLID / MINIMAL LAYOUT PREVIEW */}
                       {form.banner_layout === 'solid' && (
-                        <div className="w-full min-h-[380px] flex items-center justify-center p-8 sm:p-12 text-center">
-                          <div className="max-w-xl flex flex-col items-center">
-                            <div className="flex items-center gap-2 mb-3">
-                              {form.badge_text && (
+                        <div className="w-full min-h-[380px] relative flex flex-col justify-stretch p-8 sm:p-12">
+                          <div className={`w-full h-full min-h-[380px] flex flex-col ${canvasVAlignClass} z-10`}>
+                            <div
+                              className={`w-full flex flex-col ${canvasWidthClass} ${
+                                canvasHAlign === 'center'
+                                  ? 'text-center items-center mx-auto'
+                                  : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
+                              }`}
+                            >
+                              <div
+                                className={`flex flex-wrap items-center gap-2 mb-3 ${
+                                  canvasHAlign === 'center' ? 'justify-center' : canvasHAlign === 'right' ? 'justify-end' : 'justify-start'
+                                }`}
+                              >
+                                {form.badge_text && (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase"
+                                    style={{
+                                      backgroundColor: form.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
+                                      color: form.badge_color || '#006670',
+                                    }}
+                                  >
+                                    <Sparkles className="w-3 h-3" />
+                                    <span>{form.badge_text}</span>
+                                  </div>
+                                )}
+                                {form.offer_text && (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase shadow-sm">
+                                    {form.offer_text}
+                                  </span>
+                                )}
+                              </div>
+
+                              <h2
+                                className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words ${
+                                  canvasHAlign === 'center' ? 'text-center' : canvasHAlign === 'right' ? 'text-right' : 'text-left'
+                                }`}
+                                style={{ color: form.heading_color || '#0F172A' }}
+                              >
+                                {form.title}
+                              </h2>
+
+                              {form.description && (
+                                <p
+                                  className={`text-sm mb-6 leading-relaxed opacity-90 ${
+                                    canvasHAlign === 'center' ? 'text-center mx-auto' : canvasHAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                                  }`}
+                                  style={{ color: form.description_color || '#334155' }}
+                                >
+                                  {form.description}
+                                </p>
+                              )}
+
+                              <div
+                                className={`flex flex-col gap-1.5 ${
+                                  canvasHAlign === 'center' ? 'items-center' : canvasHAlign === 'right' ? 'items-end' : 'items-start'
+                                }`}
+                              >
                                 <div
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase"
+                                  className={`inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-bold shadow-md cursor-pointer ${
+                                    form.cta_style === 'outline' ? 'border-2' : ''
+                                  }`}
                                   style={{
-                                    backgroundColor: form.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
-                                    color: form.badge_color || '#006670',
+                                    backgroundColor: form.cta_style === 'filled' ? form.cta_bg_color || '#006670' : 'transparent',
+                                    color: form.cta_style === 'filled' ? form.cta_text_color || '#FFFFFF' : form.cta_bg_color || '#006670',
+                                    borderColor: form.cta_border_color || '#006670',
                                   }}
                                 >
-                                  <Sparkles className="w-3 h-3" />
-                                  <span>{form.badge_text}</span>
+                                  <span>{form.cta_text || 'Explore Collection'}</span>
+                                  <ArrowRight className="w-4 h-4" />
                                 </div>
-                              )}
-                              {form.offer_text && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase shadow-sm">
-                                  {form.offer_text}
-                                </span>
-                              )}
-                            </div>
-
-                            <h2
-                              className={`${previewHeadingClass} ${previewWeightClass} tracking-tight font-display mb-3 leading-tight break-words`}
-                              style={{ color: form.heading_color || '#0F172A' }}
-                            >
-                              {form.title}
-                            </h2>
-
-                            {form.description && (
-                              <p
-                                className="text-sm mb-6 leading-relaxed opacity-90 max-w-md"
-                                style={{ color: form.description_color || '#334155' }}
-                              >
-                                {form.description}
-                              </p>
-                            )}
-
-                            <div
-                              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-bold shadow-md cursor-pointer"
-                              style={{
-                                backgroundColor: form.cta_bg_color || '#006670',
-                                color: form.cta_text_color || '#FFFFFF',
-                              }}
-                            >
-                              <span>{form.cta_text || 'Explore Collection'}</span>
-                              <ArrowRight className="w-4 h-4" />
+                              </div>
                             </div>
                           </div>
                         </div>

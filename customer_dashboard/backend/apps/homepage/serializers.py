@@ -293,6 +293,9 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField(read_only=True)
     mobile_image = serializers.ImageField(required=False, allow_null=True)
     mobile_image_url = serializers.SerializerMethodField(read_only=True)
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    end_date = serializers.DateTimeField(required=False, allow_null=True)
+    cta_target_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model  = FeaturedCollection
@@ -316,17 +319,16 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
         return abs_image_url(self.context.get("request"), obj.mobile_image)
 
     def to_internal_value(self, data):
-        # Handle clear instruction: if image or mobile_image is passed as empty string or 'null'
-        # in multipart/form-data or JSON, convert it to None so the field is cleared.
         if hasattr(data, 'copy'):
             data = data.copy()
         elif isinstance(data, dict):
             data = dict(data)
         
-        if "image" in data and (data["image"] == "" or data["image"] == "null" or data["image"] is False):
-            data["image"] = None
-        if "mobile_image" in data and (data["mobile_image"] == "" or data["mobile_image"] == "null" or data["mobile_image"] is False):
-            data["mobile_image"] = None
+        for field in ("image", "mobile_image", "start_date", "end_date"):
+            if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
+                data[field] = None
+        if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
+            data["cta_target_id"] = ""
         return super().to_internal_value(data)
 
 

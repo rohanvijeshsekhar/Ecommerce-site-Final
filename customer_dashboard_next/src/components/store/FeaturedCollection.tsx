@@ -14,7 +14,7 @@ export interface FeaturedCollectionData {
   mobile_image?: string | null;
   mobile_image_url?: string | null;
   banner_layout?: 'split' | 'background' | 'solid';
-  content_width?: 'narrow' | 'medium' | 'wide' | 'full';
+  content_width?: 'small' | 'medium' | 'large' | 'full' | 'narrow' | 'wide';
   horizontal_alignment?: 'left' | 'center' | 'right';
   vertical_alignment?: 'top' | 'center' | 'bottom';
   badge_text?: string;
@@ -26,8 +26,8 @@ export interface FeaturedCollectionData {
   cta_url?: string;
   cta_style?: 'filled' | 'outline' | 'ghost';
   cta_open_in_new_tab?: boolean;
-  heading_size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  heading_weight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
+  heading_size?: 'medium' | 'large' | 'xlarge' | 'jumbo' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  heading_weight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold' | 'black';
   heading_color?: string;
   description_color?: string;
   badge_color?: string;
@@ -36,9 +36,9 @@ export interface FeaturedCollectionData {
   cta_text_color?: string;
   cta_border_color?: string;
   bg_color?: string;
-  image_position?: 'left' | 'right';
+  image_position?: 'left' | 'right' | 'center';
   image_fit?: 'cover' | 'contain';
-  overlay_gradient?: 'none' | 'left' | 'right' | 'top' | 'bottom' | 'radial' | 'dark';
+  overlay_gradient?: 'none' | 'left' | 'right' | 'top' | 'bottom' | 'radial' | 'dark' | 'light' | 'teal';
   overlay_opacity?: number;
   is_visible?: boolean;
   sort_order?: number;
@@ -63,7 +63,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
   const [hasLoaded, setHasLoaded] = useState<boolean>(initialCollections !== undefined);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
+  const fetchCollections = () => {
     api.get('homepage/featured-collections/')
       .then(res => {
         const data = res.data?.data ?? res.data?.results ?? res.data ?? [];
@@ -74,6 +74,13 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
       .catch(() => {
         setHasLoaded(true);
       });
+  };
+
+  useEffect(() => {
+    fetchCollections();
+    const handleUpdate = () => fetchCollections();
+    window.addEventListener('featured-collections-updated', handleUpdate);
+    return () => window.removeEventListener('featured-collections-updated', handleUpdate);
   }, []);
 
   // Carousel auto-play timer (cycles every 6s if more than 1 banner and not paused)
@@ -110,47 +117,54 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
     setActiveIndex(prev => (prev + 1) % collections.length);
   };
 
-  // Helper resolvers for styles
+  // Layout & Alignment resolution
   const layout = activeCollection.banner_layout || 'split';
-  const imgPos = activeCollection.image_position || 'right';
+  const imgPos = activeCollection.image_position === 'left' ? 'left' : 'right';
   const imgFit = activeCollection.image_fit || 'contain';
-  const hAlign = activeCollection.horizontal_alignment || 'left';
-  const vAlign = activeCollection.vertical_alignment || 'center';
-  const contentWidth = activeCollection.content_width || 'medium';
+  const hAlign = (activeCollection.horizontal_alignment === 'center' || activeCollection.horizontal_alignment === 'right')
+    ? activeCollection.horizontal_alignment
+    : 'left';
+  const vAlign = (activeCollection.vertical_alignment === 'top' || activeCollection.vertical_alignment === 'bottom')
+    ? activeCollection.vertical_alignment
+    : 'center';
 
+  const headingSizeKey = activeCollection.heading_size;
   const headingSizeClass = {
     sm: 'text-2xl sm:text-3xl lg:text-4xl',
     md: 'text-3xl sm:text-4xl lg:text-5xl',
+    medium: 'text-3xl sm:text-4xl lg:text-5xl',
     lg: 'text-4xl sm:text-5xl lg:text-6xl',
+    large: 'text-4xl sm:text-5xl lg:text-6xl',
     xl: 'text-5xl sm:text-6xl lg:text-7xl',
+    xlarge: 'text-5xl sm:text-6xl lg:text-7xl',
     '2xl': 'text-6xl sm:text-7xl lg:text-8xl',
-  }[activeCollection.heading_size || 'lg'];
+    jumbo: 'text-6xl sm:text-7xl lg:text-8xl',
+  }[headingSizeKey || 'lg'] || 'text-4xl sm:text-5xl lg:text-6xl';
 
+  const headingWeightKey = activeCollection.heading_weight;
   const headingWeightClass = {
     normal: 'font-normal',
     medium: 'font-medium',
     semibold: 'font-semibold',
     bold: 'font-bold',
+    extrabold: 'font-black',
     black: 'font-black',
-  }[activeCollection.heading_weight || 'black'];
+  }[headingWeightKey || 'black'] || 'font-black';
 
+  const rawWidth = activeCollection.content_width;
   const contentWidthClass = {
     narrow: 'max-w-xl',
+    small: 'max-w-xl',
     medium: 'max-w-2xl',
     wide: 'max-w-4xl',
+    large: 'max-w-4xl',
     full: 'max-w-full',
-  }[contentWidth];
-
-  const textAlignClass = {
-    left: 'text-left items-start',
-    center: 'text-center items-center',
-    right: 'text-right items-end',
-  }[hAlign];
+  }[rawWidth || 'medium'] || 'max-w-2xl';
 
   const verticalAlignClass = {
-    top: 'justify-start pt-12 lg:pt-16',
-    center: 'justify-center py-10 lg:py-16',
-    bottom: 'justify-end pb-12 lg:pb-16',
+    top: 'justify-start pt-10 sm:pt-14 pb-20',
+    center: 'justify-center py-12 sm:py-16',
+    bottom: 'justify-end pt-20 pb-10 sm:pb-14',
   }[vAlign];
 
   const desktopImage = activeCollection.image_url || activeCollection.image || '/images/hero_equipment.png';
@@ -173,6 +187,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
         return `rgba(0,0,0,${opacity})`;
       case 'radial':
         return `radial-gradient(circle at center, rgba(0,0,0,${opacity * 0.4}) 0%, rgba(0,0,0,${Math.min(0.95, opacity * 1.4)}) 100%)`;
+      case 'teal':
+        return `linear-gradient(135deg, rgba(0,102,112,${opacity}) 0%, rgba(15,23,42,${Math.min(0.95, opacity * 1.4)}) 100%)`;
       case 'none':
       default:
         return 'transparent';
@@ -245,8 +261,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           LAYOUT OPTION A: SPLIT IMAGE + CONTENT
       ───────────────────────────────────────────────────────────── */}
       {layout === 'split' && (
-        <div className="w-full min-h-[460px] lg:min-h-[520px] grid grid-cols-1 lg:grid-cols-12 items-stretch relative">
-          {/* Subtle Ambient Background Mesh */}
+        <div className="w-full min-h-[460px] lg:min-h-[540px] grid grid-cols-1 lg:grid-cols-12 items-stretch relative">
+          {/* Ambient Background Mesh */}
           <div
             className="absolute inset-0 pointer-events-none opacity-40 mix-blend-multiply"
             style={{
@@ -256,13 +272,23 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
           {/* Content Column */}
           <div
-            className={`w-full flex flex-col ${verticalAlignClass} ${textAlignClass} px-6 sm:px-12 lg:px-16 xl:px-20 z-10 lg:col-span-6 ${
+            className={`w-full flex flex-col ${verticalAlignClass} ${
+              hAlign === 'center' ? 'text-center items-center' : hAlign === 'right' ? 'text-right items-end' : 'text-left items-start'
+            } px-6 sm:px-12 lg:px-16 xl:px-20 z-10 lg:col-span-6 ${
               imgPos === 'left' ? 'order-1 lg:order-2' : 'order-1 lg:order-1'
             }`}
           >
-            <div className={`w-full flex flex-col ${textAlignClass} ${contentWidthClass}`}>
+            <div
+              className={`w-full flex flex-col ${contentWidthClass} ${
+                hAlign === 'center' ? 'items-center text-center mx-auto' : hAlign === 'right' ? 'items-end text-right ml-auto' : 'items-start text-left mr-auto'
+              }`}
+            >
               {/* Badge & Offer Pill row */}
-              <div className="flex flex-wrap items-center gap-2.5 mb-4">
+              <div
+                className={`flex flex-wrap items-center gap-2.5 mb-4 ${
+                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                }`}
+              >
                 {activeCollection.badge_text ? (
                   <div
                     className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black tracking-wider uppercase"
@@ -290,7 +316,9 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
               {/* Main Headline */}
               <h2
-                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words`}
+                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
+                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                }`}
                 style={{ color: activeCollection.heading_color || '#0F172A' }}
               >
                 {activeCollection.title}
@@ -299,7 +327,9 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Description */}
               {activeCollection.description && (
                 <p
-                  className="text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 max-w-xl"
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${
+                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                  }`}
                   style={{ color: activeCollection.description_color || '#334155' }}
                 >
                   {activeCollection.description}
@@ -307,7 +337,11 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               )}
 
               {/* Call to Action */}
-              <div className="flex flex-col items-start gap-2">
+              <div
+                className={`flex flex-col gap-2 ${
+                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                }`}
+              >
                 {renderCtaButton()}
                 {activeCollection.secondary_text && (
                   <span className="text-xs text-slate-500 font-medium pl-1 mt-1">
@@ -355,7 +389,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           LAYOUT OPTION B: FULL BACKGROUND IMAGE
       ───────────────────────────────────────────────────────────── */}
       {layout === 'background' && (
-        <div className="w-full min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] relative flex items-center">
+        <div className="w-full min-h-[480px] sm:min-h-[540px] lg:min-h-[600px] relative flex flex-col justify-stretch">
           {/* Full bleed background picture */}
           <picture className="absolute inset-0 w-full h-full">
             <source media="(max-width: 768px)" srcSet={mobileImage} />
@@ -373,63 +407,77 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           />
 
           {/* Content Wrapper */}
-          <div className="w-full relative z-10 px-6 sm:px-12 lg:px-20 py-12 lg:py-16">
-            <div className={`w-full flex flex-col ${verticalAlignClass} ${textAlignClass}`}>
-              <div className={`w-full flex flex-col ${textAlignClass} ${contentWidthClass}`}>
-                {/* Badge & Offer Pill */}
-                <div className="flex flex-wrap items-center gap-2.5 mb-4">
-                  {activeCollection.badge_text ? (
-                    <div
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black tracking-wider uppercase backdrop-blur-md"
-                      style={{
-                        backgroundColor: activeCollection.badge_bg_color || 'rgba(255, 255, 255, 0.2)',
-                        color: activeCollection.badge_color || '#FFFFFF',
-                      }}
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{activeCollection.badge_text}</span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur-md text-white text-xs font-black tracking-wider uppercase">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>FEATURED COLLECTION</span>
-                    </div>
-                  )}
-
-                  {activeCollection.offer_text && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-md">
-                      {activeCollection.offer_text}
-                    </span>
-                  )}
-                </div>
-
-                {/* Main Headline */}
-                <h2
-                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm`}
-                  style={{ color: activeCollection.heading_color || '#FFFFFF' }}
-                >
-                  {activeCollection.title}
-                </h2>
-
-                {/* Description */}
-                {activeCollection.description && (
-                  <p
-                    className="text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-95 max-w-xl drop-shadow-sm"
-                    style={{ color: activeCollection.description_color || '#F1F5F9' }}
+          <div className={`w-full h-full min-h-[480px] sm:min-h-[540px] lg:min-h-[600px] relative z-10 px-6 sm:px-12 lg:px-20 flex flex-col ${verticalAlignClass}`}>
+            <div
+              className={`w-full flex flex-col ${contentWidthClass} ${
+                hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
+              }`}
+            >
+              {/* Badge & Offer Pill */}
+              <div
+                className={`flex flex-wrap items-center gap-2.5 mb-4 ${
+                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {activeCollection.badge_text ? (
+                  <div
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black tracking-wider uppercase backdrop-blur-md"
+                    style={{
+                      backgroundColor: activeCollection.badge_bg_color || 'rgba(255, 255, 255, 0.2)',
+                      color: activeCollection.badge_color || '#FFFFFF',
+                    }}
                   >
-                    {activeCollection.description}
-                  </p>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{activeCollection.badge_text}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur-md text-white text-xs font-black tracking-wider uppercase">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>FEATURED COLLECTION</span>
+                  </div>
                 )}
 
-                {/* CTA */}
-                <div className="flex flex-col items-start gap-2">
-                  {renderCtaButton()}
-                  {activeCollection.secondary_text && (
-                    <span className="text-xs text-white/80 font-medium pl-1 mt-1 drop-shadow-sm">
-                      {activeCollection.secondary_text}
-                    </span>
-                  )}
-                </div>
+                {activeCollection.offer_text && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-md">
+                    {activeCollection.offer_text}
+                  </span>
+                )}
+              </div>
+
+              {/* Main Headline */}
+              <h2
+                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm ${
+                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                }`}
+                style={{ color: activeCollection.heading_color || '#FFFFFF' }}
+              >
+                {activeCollection.title}
+              </h2>
+
+              {/* Description */}
+              {activeCollection.description && (
+                <p
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-95 drop-shadow-sm ${
+                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                  }`}
+                  style={{ color: activeCollection.description_color || '#F1F5F9' }}
+                >
+                  {activeCollection.description}
+                </p>
+              )}
+
+              {/* CTA */}
+              <div
+                className={`flex flex-col gap-2 ${
+                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                }`}
+              >
+                {renderCtaButton()}
+                {activeCollection.secondary_text && (
+                  <span className="text-xs text-white/80 font-medium pl-1 mt-1 drop-shadow-sm">
+                    {activeCollection.secondary_text}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -440,55 +488,73 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           LAYOUT OPTION C: SOLID / GRADIENT MINIMAL
       ───────────────────────────────────────────────────────────── */}
       {layout === 'solid' && (
-        <div className="w-full min-h-[420px] sm:min-h-[480px] relative flex items-center justify-center px-6 sm:px-12 lg:px-20 py-14 lg:py-20">
-          <div className={`w-full flex flex-col ${verticalAlignClass} ${textAlignClass} ${contentWidthClass} z-10`}>
-            {/* Badges */}
-            <div className="flex flex-wrap items-center gap-2.5 mb-5">
-              {activeCollection.badge_text && (
-                <div
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase"
-                  style={{
-                    backgroundColor: activeCollection.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
-                    color: activeCollection.badge_color || '#006670',
-                  }}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{activeCollection.badge_text}</span>
-                </div>
-              )}
-              {activeCollection.offer_text && (
-                <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-amber-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-sm">
-                  {activeCollection.offer_text}
-                </span>
-              )}
-            </div>
-
-            {/* Headline */}
-            <h2
-              className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words`}
-              style={{ color: activeCollection.heading_color || '#0F172A' }}
+        <div className="w-full min-h-[420px] sm:min-h-[480px] relative flex flex-col justify-stretch px-6 sm:px-12 lg:px-20">
+          <div className={`w-full h-full min-h-[420px] sm:min-h-[480px] flex flex-col ${verticalAlignClass} z-10`}>
+            <div
+              className={`w-full flex flex-col ${contentWidthClass} ${
+                hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
+              }`}
             >
-              {activeCollection.title}
-            </h2>
-
-            {/* Description */}
-            {activeCollection.description && (
-              <p
-                className="text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 max-w-2xl"
-                style={{ color: activeCollection.description_color || '#334155' }}
+              {/* Badges */}
+              <div
+                className={`flex flex-wrap items-center gap-2.5 mb-5 ${
+                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                }`}
               >
-                {activeCollection.description}
-              </p>
-            )}
+                {activeCollection.badge_text && (
+                  <div
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase"
+                    style={{
+                      backgroundColor: activeCollection.badge_bg_color || 'rgba(0, 102, 112, 0.12)',
+                      color: activeCollection.badge_color || '#006670',
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{activeCollection.badge_text}</span>
+                  </div>
+                )}
+                {activeCollection.offer_text && (
+                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-amber-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-sm">
+                    {activeCollection.offer_text}
+                  </span>
+                )}
+              </div>
 
-            {/* CTA */}
-            <div className="flex flex-col items-start gap-2">
-              {renderCtaButton()}
-              {activeCollection.secondary_text && (
-                <span className="text-xs text-slate-500 font-medium pl-1 mt-1">
-                  {activeCollection.secondary_text}
-                </span>
+              {/* Headline */}
+              <h2
+                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
+                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                }`}
+                style={{ color: activeCollection.heading_color || '#0F172A' }}
+              >
+                {activeCollection.title}
+              </h2>
+
+              {/* Description */}
+              {activeCollection.description && (
+                <p
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${
+                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                  }`}
+                  style={{ color: activeCollection.description_color || '#334155' }}
+                >
+                  {activeCollection.description}
+                </p>
               )}
+
+              {/* CTA */}
+              <div
+                className={`flex flex-col gap-2 ${
+                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                }`}
+              >
+                {renderCtaButton()}
+                {activeCollection.secondary_text && (
+                  <span className="text-xs text-slate-500 font-medium pl-1 mt-1">
+                    {activeCollection.secondary_text}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
