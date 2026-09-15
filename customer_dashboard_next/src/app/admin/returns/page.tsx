@@ -25,6 +25,7 @@ import {
   X,
   Layers,
 } from 'lucide-react';
+import { useBreadcrumbSync } from '@/admin/contexts/BreadcrumbContext';
 import {
   returnsService,
   ReturnRequestDetail,
@@ -32,6 +33,11 @@ import {
 } from '@/services/returnsService';
 
 export default function AdminReturnsPage() {
+  useBreadcrumbSync([
+    { label: 'Operations', path: '/admin/orders' },
+    { label: 'Returns / Replacement', path: '/admin/returns' },
+  ]);
+
   const [returns, setReturns] = useState<ReturnRequestDetail[]>([]);
   const [counts, setCounts] = useState<ReturnCounts>({
     all: 0,

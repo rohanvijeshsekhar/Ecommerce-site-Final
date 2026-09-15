@@ -8,7 +8,7 @@ import {
   IndianRupee, Package, Users, Layers,
   Calendar, Activity,
   Handshake, Tag, Award, Sparkles, PlusCircle,
-  CheckCircle2, AlertTriangle, XCircle
+  CheckCircle2, AlertTriangle, XCircle, RotateCcw
 } from 'lucide-react';
 import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -388,6 +388,7 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {[
                 { title: 'Add product', path: '/admin/products', icon: PlusCircle, bg: 'from-emerald-500/10 via-teal-500/5 to-white/60', text: 'text-teal-700', border: 'border-teal-500/25 shadow-[0_8px_32px_0_rgba(20,184,166,0.08)]' },
+                { title: 'Returns & Replacement', path: '/admin/returns', icon: RotateCcw, bg: 'from-teal-600/12 via-emerald-500/5 to-white/70', text: 'text-[#005F63]', border: 'border-[#005F63]/30 shadow-[0_8px_32px_0_rgba(0,95,99,0.1)]' },
                 { title: 'Create brand', path: '/admin/brands', icon: Award, bg: 'from-blue-500/10 via-indigo-500/5 to-white/60', text: 'text-blue-700', border: 'border-blue-500/25 shadow-[0_8px_32px_0_rgba(59,130,246,0.08)]' },
                 { title: 'Import inventory', path: '/admin/inventory', icon: Layers, bg: 'from-purple-500/10 via-pink-500/5 to-white/60', text: 'text-purple-700', border: 'border-purple-500/25 shadow-[0_8px_32px_0_rgba(168,85,247,0.08)]' },
                 { title: 'Manage categories', path: '/admin/categories', icon: Tag, bg: 'from-amber-500/10 via-orange-500/5 to-white/60', text: 'text-amber-700', border: 'border-amber-500/25 shadow-[0_8px_32px_0_rgba(245,158,11,0.08)]' },
