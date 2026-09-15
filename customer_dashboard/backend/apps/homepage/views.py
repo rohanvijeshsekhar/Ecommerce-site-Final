@@ -495,6 +495,11 @@ class DailyOfferViewSet(ReorderMixin, BaseModelViewSet):
             return DailyOfferWriteSerializer
         return DailyOfferReadSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return success_response(data=serializer.data)
+
     def create(self, request, *args, **kwargs):
         write_serializer = self.get_serializer(data=request.data)
         write_serializer.is_valid(raise_exception=True)

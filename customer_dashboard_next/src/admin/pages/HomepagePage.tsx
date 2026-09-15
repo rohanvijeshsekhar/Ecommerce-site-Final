@@ -35,15 +35,15 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'hero',         label: 'Hero',              icon: <Image className="w-4 h-4" /> },
-  { id: 'categories',  label: 'Shop By Category',   icon: <Tag className="w-4 h-4" /> },
+  { id: 'hero', label: 'Hero', icon: <Image className="w-4 h-4" /> },
+  { id: 'categories', label: 'Shop By Category', icon: <Tag className="w-4 h-4" /> },
   { id: 'daily-offers', label: '🔥 Daily Offers / Deals', icon: <Flame className="w-4 h-4 text-red-500 fill-current" /> },
-  { id: 'brands',      label: 'Brand Logos',        icon: <Award className="w-4 h-4" /> },
-  { id: 'bestsellers', label: 'Best Sellers',        icon: <TrendingUp className="w-4 h-4" /> },
-  { id: 'collections', label: 'Collections',         icon: <Layers className="w-4 h-4" /> },
-  { id: 'solutions',   label: 'Explore Solutions',   icon: <Compass className="w-4 h-4" /> },
-  { id: 'testimonials',label: 'Testimonials',        icon: <MessageSquare className="w-4 h-4" /> },
-  { id: 'recommended', label: 'Recommended',         icon: <Sparkles className="w-4 h-4" /> },
+  { id: 'brands', label: 'Brand Logos', icon: <Award className="w-4 h-4" /> },
+  { id: 'bestsellers', label: 'Best Sellers', icon: <TrendingUp className="w-4 h-4" /> },
+  { id: 'collections', label: 'Collections', icon: <Layers className="w-4 h-4" /> },
+  { id: 'solutions', label: 'Explore Solutions', icon: <Compass className="w-4 h-4" /> },
+  { id: 'testimonials', label: 'Testimonials', icon: <MessageSquare className="w-4 h-4" /> },
+  { id: 'recommended', label: 'Recommended', icon: <Sparkles className="w-4 h-4" /> },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,16 +55,16 @@ const HomepagePage: React.FC = () => {
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'hero':         return <HeroManager />;
-      case 'categories':   return <CategoryShowcaseManager />;
+      case 'hero': return <HeroManager />;
+      case 'categories': return <CategoryShowcaseManager />;
       case 'daily-offers': return <DailyOffersManager />;
-      case 'brands':       return <BrandShowcaseManager />;
-      case 'bestsellers':  return <BestSellersManager />;
-      case 'collections':  return <FeaturedCollectionsManager />;
-      case 'solutions':    return <ExploreSolutionsAdmin />;
+      case 'brands': return <BrandShowcaseManager />;
+      case 'bestsellers': return <BestSellersManager />;
+      case 'collections': return <FeaturedCollectionsManager />;
+      case 'solutions': return <ExploreSolutionsAdmin />;
       case 'testimonials': return <TestimonialsManager />;
-      case 'recommended':  return <RecommendedManager />;
-      default:             return null;
+      case 'recommended': return <RecommendedManager />;
+      default: return null;
     }
   };
 

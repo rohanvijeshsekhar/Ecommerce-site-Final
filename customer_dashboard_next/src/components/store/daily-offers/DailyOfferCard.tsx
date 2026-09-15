@@ -202,11 +202,10 @@ export const DailyOfferCard: React.FC<DailyOfferCardProps> = ({
         {/* Add to Cart Action */}
         <button
           onClick={handleCartClick}
-          className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-sm active:scale-98 ${
-            isAdded
+          className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-sm active:scale-98 ${isAdded
               ? 'bg-emerald-600 text-white'
               : 'bg-slate-900 hover:bg-[#006670] text-white hover:shadow-md'
-          }`}
+            }`}
         >
           {isAdded ? (
             <>

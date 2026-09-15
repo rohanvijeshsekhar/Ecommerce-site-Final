@@ -38,12 +38,15 @@ def run():
             'end_date': timezone.now() + timedelta(days=7, hours=8, minutes=24),
             'cta_text': "Shop Today's Deals →",
             'cta_action_type': 'url',
-            'cta_url': '/offers',
+            'cta_url': '/daily-offers',
             'status': 'live',
             'is_active': True,
             'sort_order': 0,
         }
     )
+    offer.cta_url = '/daily-offers'
+    offer.cta_text = "Shop Today's Deals →"
+    offer.save()
     print('DailyOffer id:', offer.id, 'created:', created)
 
     real_prods = list(Product.objects.filter(is_deleted=False, pricing__isnull=False)[:6])
