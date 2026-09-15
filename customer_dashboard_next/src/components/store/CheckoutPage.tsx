@@ -32,6 +32,7 @@ import { shippingService, type CourierServiceabilityResult } from '../../lib/ser
 import { getAbsoluteImageUrl } from '../../lib/api';
 import { paymentService } from '../../lib/services/payment';
 import { INDIAN_STATES, isPincodeMatchingState } from '@/lib/constants/indianStates';
+import { detectCurrentLocationAddress, type DetectedAddressResult } from '../../lib/services/locationService';
 
 interface MockCartItem {
   id: string;
@@ -161,6 +162,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     checking: boolean;
     result?: CourierServiceabilityResult;
   }>({ checking: false });
+
+  // Location Detection State (GPS + Google Maps Geocoder)
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationDetectError, setLocationDetectError] = useState<string | null>(null);
+  const [detectedLocationData, setDetectedLocationData] = useState<DetectedAddressResult | null>(null);
 
   // Delete Address Modal State
   const [deletingAddress, setDeletingAddress] = useState<AddressItem | null>(null);
@@ -353,8 +359,58 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   }, [selectedAddressId, cartItems, checkoutSource]);
 
   // --- ADDRESS MODAL HANDLERS ---
+  const handleUseCurrentLocation = async () => {
+    if (isDetectingLocation) return;
+    setIsDetectingLocation(true);
+    setLocationDetectError(null);
+
+    try {
+      const detected = await detectCurrentLocationAddress();
+      setDetectedLocationData(detected);
+
+      // Populate or prefill address modal form, preserving contact details & clinic name
+      setEditingAddress(null);
+      setModalForm((prev) => ({
+        ...prev,
+        label_type: prev.label_type || 'Primary Clinic',
+        full_name: prev.full_name || dentistName || user?.full_name || '',
+        mobile: prev.mobile || phone || user?.phone_number || '',
+        clinic_name: prev.clinic_name || clinicName || profile?.clinic_name || '',
+        street_address: detected.street_address || prev.street_address || '',
+        city: detected.city || prev.city || '',
+        state: detected.state || prev.state || '',
+        pincode: detected.pincode || prev.pincode || '',
+        is_default: addresses.length === 0,
+      }));
+
+      setModalErrors({});
+      setModalServerError(null);
+      setIsAddressModalOpen(true);
+
+      // Check Shiprocket courier serviceability immediately for the detected pincode
+      if (detected.pincode && /^\d{6}$/.test(detected.pincode)) {
+        setModalPincodeStatus({ checking: true });
+        shippingService.checkServiceability(detected.pincode).then((res) => {
+          setModalPincodeStatus({ checking: false, result: res });
+        });
+      } else {
+        setModalPincodeStatus({ checking: false });
+      }
+
+      showToast?.('Current location detected successfully! Please verify your clinic details.');
+    } catch (err: any) {
+      const errMsg =
+        err?.message || 'Unable to retrieve your current location. Please enter your address manually.';
+      setLocationDetectError(errMsg);
+      showToast?.(errMsg);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
   const handleOpenAddModal = () => {
     setEditingAddress(null);
+    setDetectedLocationData(null);
     setModalForm({
       label_type: 'Primary Clinic',
       custom_label: '',
@@ -376,6 +432,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const handleOpenEditModal = (addr: AddressItem, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingAddress(addr);
+    setDetectedLocationData(null);
     const isStandardLabel = ADDRESS_LABEL_OPTIONS.includes(addr.label);
     setModalForm({
       label_type: isStandardLabel ? addr.label : 'Other',
@@ -1046,7 +1103,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             {/* STEP 2: SHIPPING & PRACTICE ADDRESS                          */}
             {/* ============================================================ */}
             <div className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] text-left">
-              <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 mb-5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-xl bg-[#006670] text-white text-xs font-black flex items-center justify-center shadow-xs">
                     2
@@ -1059,15 +1116,59 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenAddModal}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#006670]/10 hover:bg-[#006670] text-[#006670] hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add New Address</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isDetectingLocation}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200/80 hover:border-emerald-600 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Detect your current practice location via GPS"
+                  >
+                    {isDetectingLocation ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                        <span>Detecting your location...</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>Use Current Location</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenAddModal}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#006670]/10 hover:bg-[#006670] text-[#006670] hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Address</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Geolocation Detection Error Banner */}
+              {locationDetectError && (
+                <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start justify-between gap-3 text-amber-900 text-xs animate-in fade-in">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">{locationDetectError}</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        You can manually enter your clinic address using &ldquo;Add New Address&rdquo;.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLocationDetectError(null)}
+                    className="text-amber-500 hover:text-amber-800 p-1 cursor-pointer transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Saved Address Cards Grid (Flipkart / Myntra Style) */}
               {addrLoading ? (
@@ -1082,13 +1183,33 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                     Please add your clinic, hospital, or practice delivery address to proceed with secure checkout.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenAddModal}
-                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-black tracking-wider uppercase rounded-xl hover:bg-[#004e56] transition-colors cursor-pointer shadow-sm"
-                  >
-                    <Plus className="w-4 h-4" /> Add Clinic Delivery Address
-                  </button>
+                  <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={isDetectingLocation}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-black tracking-wider uppercase rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isDetectingLocation ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Detecting your location...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-4 h-4" />
+                          <span>Use Current Location</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddModal}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-black tracking-wider uppercase rounded-xl hover:bg-[#004e56] transition-colors cursor-pointer shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" /> Add Clinic Delivery Address
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1474,7 +1595,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       {isAddressModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 md:p-7 max-w-xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 text-left">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5 gap-3">
               <div>
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
                   {editingAddress ? 'Edit Practice Address' : 'Add New Practice Address'}
@@ -1483,14 +1604,55 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   Enter complete clinic delivery location details for courier dispatch.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  disabled={isDetectingLocation}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60"
+                  title="Auto-fill form using current GPS location"
+                >
+                  {isDetectingLocation ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                  ) : (
+                    <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                  )}
+                  <span className="hidden sm:inline">{isDetectingLocation ? 'Detecting...' : 'Use GPS Location'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            {/* Current Location Detected Banner */}
+            {detectedLocationData && (
+              <div className="mb-4 p-3.5 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl flex items-start gap-3 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-emerald-950 uppercase tracking-wide">
+                      Current Location Detected
+                    </span>
+                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      GPS Verified
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-900 font-medium mt-1 leading-snug">
+                    {detectedLocationData.formatted_address}
+                  </p>
+                  <p className="text-[10px] text-emerald-700 mt-1.5 font-semibold">
+                    ✓ Street, city, state & PIN code auto-filled. Please verify your clinic name & suite/unit details below.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSaveModalAddress} className="space-y-4">
               {/* GROUP 1: Contact Person */}
