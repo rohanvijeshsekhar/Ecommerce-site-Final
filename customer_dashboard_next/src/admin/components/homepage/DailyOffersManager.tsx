@@ -452,11 +452,29 @@ export const DailyOffersManager: React.FC = () => {
       let msg = 'Failed to save daily offer';
       if (err?.response?.data) {
         const d = err.response.data;
-        if (typeof d === 'string') msg = d;
-        else if (d.message) msg = d.message;
-        else if (typeof d === 'object') {
-          const firstKey = Object.keys(d)[0];
-          msg = `${firstKey}: ${Array.isArray(d[firstKey]) ? d[firstKey][0] : d[firstKey]}`;
+        if (typeof d === 'string') {
+          msg = d;
+        } else if (d.message && d.message !== 'An error occurred.') {
+          msg = d.message;
+        } else if (d.error?.message) {
+          msg = d.error.message;
+          if (Array.isArray(d.error.details) && d.error.details.length > 0) {
+            const firstDetail = d.error.details[0];
+            const issueText =
+              firstDetail?.issue || firstDetail?.message || firstDetail?.field || JSON.stringify(firstDetail);
+            msg = `${msg}: ${issueText}`;
+          }
+        } else if (d.detail) {
+          msg = d.detail;
+        } else if (d.message) {
+          msg = d.message;
+        } else if (typeof d === 'object') {
+          const meaningfulKeys = Object.keys(d).filter((k) => k !== 'success' && k !== 'data');
+          if (meaningfulKeys.length > 0) {
+            const firstKey = meaningfulKeys[0];
+            const val = d[firstKey];
+            msg = `${firstKey}: ${Array.isArray(val) ? val[0] : typeof val === 'object' ? JSON.stringify(val) : val}`;
+          }
         }
       }
       toast.error(msg);
@@ -669,7 +687,7 @@ export const DailyOffersManager: React.FC = () => {
               <div>
                 <h3 className="text-sm font-black text-white">Daily Offers Builder Studio</h3>
                 <span className="text-[11px] text-slate-400">
-                  {editOffer ? `Editing: ${form.title}` : 'New Daily Offers Campaign'}
+                  {editOffer ? `Editing: ${form.title || editOffer.title || 'Untitled Offer'}` : 'New Daily Offers Campaign'}
                 </span>
               </div>
             </div>

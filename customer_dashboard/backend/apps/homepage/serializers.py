@@ -896,12 +896,18 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
             data["cta_target_id"] = ""
 
-        if "items_data" in data and isinstance(data["items_data"], str):
-            import json
-            try:
-                data["items_data"] = json.loads(data["items_data"])
-            except Exception:
-                data["items_data"] = []
+        if "items_data" in data:
+            val = data["items_data"]
+            if isinstance(val, str):
+                import json
+                try:
+                    val = json.loads(val)
+                except Exception:
+                    val = []
+            if hasattr(data, "setlist") and isinstance(val, list):
+                data.setlist("items_data", val)
+            else:
+                data["items_data"] = val
 
         return super().to_internal_value(data)
 
@@ -935,11 +941,14 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
                 continue
             try:
                 product = Product.objects.get(id=prod_id)
+                dp = item.get("deal_price")
+                if dp in ("", "null", None):
+                    dp = None
                 DailyOfferProduct.objects.create(
                     daily_offer=instance,
                     product=product,
-                    deal_price=item.get("deal_price") or None,
-                    badge_override=item.get("badge_override", ""),
+                    deal_price=dp,
+                    badge_override=item.get("badge_override", "") or "",
                     sort_order=item.get("sort_order", idx),
                 )
             except Product.DoesNotExist:
