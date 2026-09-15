@@ -16,6 +16,7 @@ import WhyChoosePanel from '@/components/store/WhyChoosePanel';
 const Testimonials = dynamic(() => import('@/components/store/Testimonials'), { ssr: true });
 const Recommended = dynamic(() => import('@/components/store/Recommended'), { ssr: true });
 import ProfessionalsChoice from '@/components/store/ProfessionalsChoice';
+import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 
 interface HomeClientProps {
   initialSlides: any[];
@@ -25,6 +26,7 @@ interface HomeClientProps {
   initialCombos: any[];
   initialCollections?: any[];
   initialSolutions?: any[];
+  initialDailyOffers?: any[];
 }
 
 export default function HomeClient({
@@ -34,7 +36,8 @@ export default function HomeClient({
   initialRecommended,
   initialCombos,
   initialCollections,
-  initialSolutions
+  initialSolutions,
+  initialDailyOffers,
 }: HomeClientProps) {
   const router = useRouter();
   const store = useStore();
@@ -121,6 +124,7 @@ export default function HomeClient({
     <>
       <Hero initialSlides={initialSlides} />
       <CategoryList onCategoryClick={handleCategoryClick} initialCategories={mappedCategories} />
+      <DailyOffersSection initialOffers={initialDailyOffers} />
       <BestSellers
         onProductClick={handleProductClick}
         onOpenLoginModal={store.openLoginModal}

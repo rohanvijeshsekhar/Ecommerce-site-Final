@@ -954,3 +954,345 @@ class SpecialOffersPageContent(BaseModel):
     def __str__(self):
         return f"Special Offers Page Content: {self.hero_title}"
 
+
+# ============================================================
+# 12. Daily Offers / Hot Deals
+# ============================================================
+
+class DailyOffer(BaseModel):
+    """
+    Dedicated promotional section for high-conversion Daily Offers and Hot Deals.
+    Independent from Featured Collections with its own promotional hierarchy,
+    countdown timer, discount callouts, and deal product row.
+    """
+
+    class Meta:
+        verbose_name = "Daily Offer / Hot Deal"
+        verbose_name_plural = "Daily Offers / Hot Deals"
+        ordering = ["sort_order", "-created_at"]
+
+    # ── Promotional Messaging & Content ──
+    badge_text = models.CharField(
+        max_length=100,
+        default="🔥 DAILY DEALS",
+        blank=True,
+        verbose_name="Badge / Label",
+    )
+    title = models.CharField(
+        max_length=200,
+        default="Big Savings Today",
+        verbose_name="Section Heading",
+    )
+    subheading = models.TextField(
+        blank=True,
+        default="Limited-time deals on selected products.",
+        verbose_name="Subheading / Description",
+    )
+    offer_text = models.CharField(
+        max_length=100,
+        default="UP TO 40% OFF",
+        blank=True,
+        verbose_name="Offer Text / Discount Tag",
+    )
+    secondary_text = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Secondary Text / Microcopy",
+    )
+
+    # ── Offer Type ──
+    offer_type = models.CharField(
+        max_length=30,
+        default="percentage",
+        choices=[
+            ("percentage", "Percentage Discount"),
+            ("flat", "Flat Discount"),
+            ("bogo", "Buy One Get One"),
+            ("limited", "Limited Time Deal"),
+            ("new_arrival", "New Arrival Deal"),
+            ("clearance", "Clearance"),
+            ("custom", "Custom Promotion"),
+        ],
+        verbose_name="Offer Type",
+    )
+
+    # ── Media & Artwork (Optional) ──
+    desktop_image = OptimizedImageField(
+        upload_to="homepage/daily_offers/",
+        null=True,
+        blank=True,
+        verbose_name="Desktop Banner Image",
+        help_text="Optional promotional banner artwork for desktop.",
+    )
+    mobile_image = OptimizedImageField(
+        upload_to="homepage/daily_offers/mobile/",
+        null=True,
+        blank=True,
+        verbose_name="Mobile Banner Image",
+        help_text="Optional mobile artwork.",
+    )
+    image_position = models.CharField(
+        max_length=20,
+        default="center",
+        choices=[
+            ("center", "Center"),
+            ("left", "Left"),
+            ("right", "Right"),
+            ("top", "Top"),
+            ("bottom", "Bottom"),
+        ],
+        verbose_name="Image Position",
+    )
+    image_fit = models.CharField(
+        max_length=20,
+        default="cover",
+        choices=[("cover", "Cover"), ("contain", "Contain"), ("auto", "Auto")],
+        verbose_name="Image Fit",
+    )
+    overlay_gradient = models.CharField(
+        max_length=50,
+        default="none",
+        choices=[
+            ("none", "None"),
+            ("dark", "Dark Shadow"),
+            ("light", "Light Glow"),
+            ("fade-right", "Fade Right"),
+            ("fade-bottom", "Fade Bottom"),
+        ],
+        verbose_name="Overlay Style",
+    )
+    overlay_opacity = models.PositiveSmallIntegerField(
+        default=40,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name="Overlay Opacity %",
+    )
+
+    # ── Layout & Alignment ──
+    horizontal_alignment = models.CharField(
+        max_length=20,
+        default="center",
+        choices=[("left", "Left"), ("center", "Center"), ("right", "Right")],
+        verbose_name="Horizontal Text Alignment",
+    )
+    vertical_alignment = models.CharField(
+        max_length=20,
+        default="center",
+        choices=[("top", "Top"), ("center", "Center"), ("bottom", "Bottom")],
+        verbose_name="Vertical Text Alignment",
+    )
+    content_width = models.CharField(
+        max_length=20,
+        default="large",
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+            ("full", "Full Width"),
+        ],
+        verbose_name="Content Width",
+    )
+
+    # ── Themes & Color Customization ──
+    theme = models.CharField(
+        max_length=30,
+        default="red_hot",
+        choices=[
+            ("dark_premium", "Dark Premium"),
+            ("red_hot", "Red Hot Deal"),
+            ("orange_sale", "Orange Sale"),
+            ("teal_premium", "Teal Premium"),
+            ("minimal_light", "Minimal Light"),
+            ("custom", "Custom"),
+        ],
+        verbose_name="Visual Theme Preset",
+    )
+    bg_color = models.CharField(
+        max_length=50,
+        default="#991B1B",
+        verbose_name="Background Color",
+    )
+    bg_gradient = models.CharField(
+        max_length=255,
+        blank=True,
+        default="linear-gradient(135deg, #7F1D1D 0%, #DC2626 50%, #991B1B 100%)",
+        verbose_name="Background Gradient",
+    )
+    heading_color = models.CharField(
+        max_length=50,
+        default="#FFFFFF",
+        verbose_name="Heading Color",
+    )
+    description_color = models.CharField(
+        max_length=50,
+        default="#FEE2E2",
+        verbose_name="Description Color",
+    )
+    badge_bg_color = models.CharField(
+        max_length=50,
+        default="#FEF3C7",
+        verbose_name="Badge Background Color",
+    )
+    badge_text_color = models.CharField(
+        max_length=50,
+        default="#B45309",
+        verbose_name="Badge Text Color",
+    )
+    offer_color = models.CharField(
+        max_length=50,
+        default="#FDE047",
+        verbose_name="Offer / Highlight Text Color",
+    )
+    cta_bg_color = models.CharField(
+        max_length=50,
+        default="#FBBF24",
+        verbose_name="CTA Background Color",
+    )
+    cta_text_color = models.CharField(
+        max_length=50,
+        default="#78350F",
+        verbose_name="CTA Text Color",
+    )
+    cta_border_color = models.CharField(
+        max_length=50,
+        default="#F59E0B",
+        blank=True,
+        verbose_name="CTA Border Color",
+    )
+    countdown_bg_color = models.CharField(
+        max_length=50,
+        default="#000000",
+        verbose_name="Countdown Box Background",
+    )
+    countdown_text_color = models.CharField(
+        max_length=50,
+        default="#FFFFFF",
+        verbose_name="Countdown Text Color",
+    )
+    product_badge_color = models.CharField(
+        max_length=50,
+        default="#DC2626",
+        verbose_name="Product Discount Badge Color",
+    )
+
+    # ── Countdown Timer ──
+    countdown_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Enable Countdown Timer",
+    )
+    start_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Start Date & Time",
+    )
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="End Date & Time",
+    )
+
+    # ── Call To Action (CTA) ──
+    cta_text = models.CharField(
+        max_length=100,
+        default="Shop Today's Deals →",
+        verbose_name="CTA Button Text",
+    )
+    cta_action_type = models.CharField(
+        max_length=30,
+        default="url",
+        choices=[
+            ("product", "Specific Product"),
+            ("category", "Product Category"),
+            ("brand", "Brand"),
+            ("collection", "Product Collection"),
+            ("url", "Custom URL"),
+        ],
+        verbose_name="CTA Destination Type",
+    )
+    cta_target_id = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="CTA Target Identifier",
+        help_text="Selected Product SKU/ID, Category slug, or Brand slug.",
+    )
+    cta_url = models.CharField(
+        max_length=500,
+        default="/offers",
+        blank=True,
+        verbose_name="CTA URL",
+    )
+
+    # ── Status & Scheduling ──
+    status = models.CharField(
+        max_length=20,
+        default="live",
+        choices=[
+            ("draft", "Draft"),
+            ("scheduled", "Scheduled"),
+            ("live", "Live"),
+            ("expired", "Expired"),
+            ("disabled", "Disabled"),
+        ],
+        verbose_name="Publication Status",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Is Active / Visible",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Sort Order",
+    )
+
+    def __str__(self):
+        return f"Daily Offer: {self.title} ({self.status})"
+
+
+class DailyOfferProduct(BaseModel):
+    """
+    A curated deal product item within a Daily Offer section.
+    Allows reordering and optional custom promotional badge/price overrides.
+    """
+
+    class Meta:
+        verbose_name = "Daily Offer Product"
+        verbose_name_plural = "Daily Offer Products"
+        ordering = ["sort_order", "created_at"]
+
+    daily_offer = models.ForeignKey(
+        DailyOffer,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Daily Offer Section",
+    )
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="daily_offer_entries",
+        verbose_name="Product",
+    )
+    deal_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Custom Deal Price (Optional)",
+        help_text="Override regular selling price specifically for this daily deal.",
+    )
+    badge_override = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Badge Override",
+        help_text="e.g. 'HOT DEAL', 'LIMITED DEAL', '50% OFF'.",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Sort Order",
+    )
+
+    def __str__(self):
+        return f"{self.product.name} in {self.daily_offer.title}"
+
+

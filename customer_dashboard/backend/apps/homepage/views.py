@@ -32,6 +32,8 @@ from .models import (
     Testimonial,
     RecommendedProduct,
     SpecialOffersPageContent,
+    DailyOffer,
+    DailyOfferProduct,
 )
 from .serializers import (
     HomepagePromoBannerSerializer,
@@ -47,6 +49,8 @@ from .serializers import (
     RecommendedProductReadSerializer, RecommendedProductWriteSerializer,
     ReorderSerializer,
     SpecialOffersPageContentSerializer,
+    DailyOfferReadSerializer, DailyOfferWriteSerializer,
+    DailyOfferProductReadSerializer, DailyOfferProductWriteSerializer,
 )
 
 
@@ -446,4 +450,120 @@ class HomepagePromoBannerView(APIView):
 
     def put(self, request):
         return self.patch(request)
+
+
+# ============================================================
+# 12. Daily Offers / Hot Deals
+# ============================================================
+
+class DailyOfferViewSet(ReorderMixin, BaseModelViewSet):
+    """
+    ViewSet for Daily Offers / Hot Deals.
+    Public GET list/retrieve filters for active, scheduled/live offers.
+    Admin CRUD allows creating, editing, reordering, and duplicating offers.
+    """
+    ordering = ["sort_order", "-updated_at"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        qs = DailyOffer.objects.prefetch_related(
+            "items__product__images",
+            "items__product__pricing",
+            "items__product__brand",
+            "items__product__category",
+        )
+        if not (self.request.user.is_authenticated and
+                getattr(self.request.user, "role", None) == "admin"):
+            from django.utils import timezone
+            now = timezone.now()
+            qs = qs.filter(
+                is_active=True,
+                status="live",
+            ).filter(
+                models.Q(start_date__isnull=True) | models.Q(start_date__lte=now),
+                models.Q(end_date__isnull=True) | models.Q(end_date__gte=now),
+            )
+        return qs
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return DailyOfferWriteSerializer
+        return DailyOfferReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        write_serializer = self.get_serializer(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+        instance = write_serializer.save()
+        read_serializer = DailyOfferReadSerializer(instance, context={"request": request})
+        return success_response(data=read_serializer.data, message="Daily offer created successfully.", status_code=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        write_serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        write_serializer.is_valid(raise_exception=True)
+        instance = write_serializer.save()
+        read_serializer = DailyOfferReadSerializer(instance, context={"request": request})
+        return success_response(data=read_serializer.data, message="Daily offer updated successfully.")
+
+    @action(detail=True, methods=["post"], url_path="duplicate")
+    def duplicate(self, request, pk=None):
+        original = self.get_object()
+        cloned = DailyOffer.objects.create(
+            title=f"{original.title} (Copy)",
+            badge_text=original.badge_text,
+            subheading=original.subheading,
+            offer_text=original.offer_text,
+            secondary_text=original.secondary_text,
+            offer_type=original.offer_type,
+            desktop_image=original.desktop_image,
+            mobile_image=original.mobile_image,
+            image_position=original.image_position,
+            image_fit=original.image_fit,
+            overlay_gradient=original.overlay_gradient,
+            overlay_opacity=original.overlay_opacity,
+            horizontal_alignment=original.horizontal_alignment,
+            vertical_alignment=original.vertical_alignment,
+            content_width=original.content_width,
+            theme=original.theme,
+            bg_color=original.bg_color,
+            bg_gradient=original.bg_gradient,
+            heading_color=original.heading_color,
+            description_color=original.description_color,
+            badge_bg_color=original.badge_bg_color,
+            badge_text_color=original.badge_text_color,
+            offer_color=original.offer_color,
+            cta_bg_color=original.cta_bg_color,
+            cta_text_color=original.cta_text_color,
+            cta_border_color=original.cta_border_color,
+            countdown_bg_color=original.countdown_bg_color,
+            countdown_text_color=original.countdown_text_color,
+            product_badge_color=original.product_badge_color,
+            countdown_enabled=original.countdown_enabled,
+            start_date=original.start_date,
+            end_date=original.end_date,
+            cta_text=original.cta_text,
+            cta_action_type=original.cta_action_type,
+            cta_target_id=original.cta_target_id,
+            cta_url=original.cta_url,
+            status="draft",
+            is_active=False,
+            sort_order=original.sort_order + 1,
+        )
+        for item in original.items.all():
+            DailyOfferProduct.objects.create(
+                daily_offer=cloned,
+                product=item.product,
+                deal_price=item.deal_price,
+                badge_override=item.badge_override,
+                sort_order=item.sort_order,
+            )
+        serializer = DailyOfferReadSerializer(cloned, context={"request": request})
+        return success_response(data=serializer.data, message="Daily offer duplicated successfully.")
+
 

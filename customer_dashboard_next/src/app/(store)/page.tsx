@@ -22,7 +22,8 @@ export default async function HomePage() {
     recommendedRes,
     combosRes,
     collectionsRes,
-    solutionsRes
+    solutionsRes,
+    dailyOffersRes,
   ] = await Promise.all([
     serverFetch<any[]>('homepage/hero/', { revalidate }),
     serverFetch<any[]>('homepage/categories/', { revalidate }),
@@ -31,6 +32,7 @@ export default async function HomePage() {
     serverFetch<any[]>('combos/', { revalidate, params: { is_featured: true } }),
     serverFetch<any[]>('homepage/featured-collections/', { revalidate }),
     serverFetch<any[]>('solutions/', { revalidate, params: { homepage: 'true', limit: 12 } }),
+    serverFetch<any[]>('homepage/daily-offers/', { revalidate }),
   ]);
 
   const initialSlides = heroRes.data || [];
@@ -40,6 +42,7 @@ export default async function HomePage() {
   const initialCombos = combosRes.data || [];
   const initialCollections = collectionsRes.data || [];
   const initialSolutions = solutionsRes.data || [];
+  const initialDailyOffers = dailyOffersRes.data || [];
 
   return (
     <HomeClient
@@ -50,6 +53,7 @@ export default async function HomePage() {
       initialCombos={initialCombos}
       initialCollections={initialCollections}
       initialSolutions={initialSolutions}
+      initialDailyOffers={initialDailyOffers}
     />
   );
 }

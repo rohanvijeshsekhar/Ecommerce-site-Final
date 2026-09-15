@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Tag, Award, TrendingUp, Layers, Compass, MessageSquare, Sparkles } from 'lucide-react';
+import { Image, Tag, Award, TrendingUp, Layers, Compass, MessageSquare, Sparkles, Flame } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import HeroManager from '../components/homepage/HeroManager';
 import CategoryShowcaseManager from '../components/homepage/CategoryShowcaseManager';
 import BrandShowcaseManager from '../components/homepage/BrandShowcaseManager';
 import BestSellersManager from '../components/homepage/BestSellersManager';
 import FeaturedCollectionsManager from '../components/homepage/FeaturedCollectionsManager';
+import DailyOffersManager from '../components/homepage/DailyOffersManager';
 import ExploreSolutionsAdmin from '../components/ExploreSolutionsAdmin';
 import TestimonialsManager from '../components/homepage/TestimonialsManager';
 import RecommendedManager from '../components/homepage/RecommendedManager';
@@ -19,6 +20,7 @@ import RecommendedManager from '../components/homepage/RecommendedManager';
 type TabId =
   | 'hero'
   | 'categories'
+  | 'daily-offers'
   | 'brands'
   | 'bestsellers'
   | 'collections'
@@ -35,6 +37,7 @@ interface Tab {
 const TABS: Tab[] = [
   { id: 'hero',         label: 'Hero',              icon: <Image className="w-4 h-4" /> },
   { id: 'categories',  label: 'Shop By Category',   icon: <Tag className="w-4 h-4" /> },
+  { id: 'daily-offers', label: '🔥 Daily Offers / Deals', icon: <Flame className="w-4 h-4 text-red-500 fill-current" /> },
   { id: 'brands',      label: 'Brand Logos',        icon: <Award className="w-4 h-4" /> },
   { id: 'bestsellers', label: 'Best Sellers',        icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'collections', label: 'Collections',         icon: <Layers className="w-4 h-4" /> },
@@ -54,6 +57,7 @@ const HomepagePage: React.FC = () => {
     switch (activeTab) {
       case 'hero':         return <HeroManager />;
       case 'categories':   return <CategoryShowcaseManager />;
+      case 'daily-offers': return <DailyOffersManager />;
       case 'brands':       return <BrandShowcaseManager />;
       case 'bestsellers':  return <BestSellersManager />;
       case 'collections':  return <FeaturedCollectionsManager />;

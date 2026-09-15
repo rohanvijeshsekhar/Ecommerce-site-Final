@@ -18,6 +18,8 @@ from .models import (
     ExploreSolution,
     Testimonial,
     RecommendedProduct,
+    DailyOffer,
+    DailyOfferProduct,
 )
 
 
@@ -94,3 +96,18 @@ class RecommendedProductAdmin(admin.ModelAdmin):
     list_editable = ["sort_order", "is_visible"]
     list_select_related = ["product"]
     ordering      = ["sort_order"]
+
+
+class DailyOfferProductInline(admin.TabularInline):
+    model = DailyOfferProduct
+    extra = 1
+    autocomplete_fields = ["product"]
+
+
+@admin.register(DailyOffer)
+class DailyOfferAdmin(admin.ModelAdmin):
+    list_display = ["title", "badge_text", "status", "is_active", "countdown_enabled", "start_date", "end_date", "sort_order"]
+    list_editable = ["status", "is_active", "sort_order"]
+    inlines = [DailyOfferProductInline]
+    ordering = ["sort_order"]
+

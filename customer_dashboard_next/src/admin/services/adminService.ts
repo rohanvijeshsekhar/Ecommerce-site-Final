@@ -793,6 +793,38 @@ export const homepageService = {
     return res.data;
   },
 
+  // Daily Offers / Hot Deals
+  async getDailyOffers(): Promise<ServiceResponse<import('../types/admin').DailyOffer[]>> {
+    const res = await api.get('homepage/daily-offers/');
+    return res.data;
+  },
+  async getDailyOffer(id: string): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
+    const res = await api.get(`homepage/daily-offers/${id}/`);
+    return res.data;
+  },
+  async createDailyOffer(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
+    const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
+    const res = await api.post('homepage/daily-offers/', data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return res.data;
+  },
+  async updateDailyOffer(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
+    const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
+    const res = await api.patch(`homepage/daily-offers/${id}/`, data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return res.data;
+  },
+  async deleteDailyOffer(id: string): Promise<ServiceResponse<void>> {
+    const res = await api.delete(`homepage/daily-offers/${id}/`);
+    return res.data;
+  },
+  async duplicateDailyOffer(id: string): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
+    const res = await api.post(`homepage/daily-offers/${id}/duplicate/`);
+    return res.data;
+  },
+  async reorderDailyOffers(order: { id: string; sort_order: number }[]): Promise<ServiceResponse<void>> {
+    const res = await api.patch('homepage/daily-offers/reorder/', order);
+    return res.data;
+  },
+
   async getOffers(): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer[]>> {
     const res = await api.get('homepage/offers/');
     return res.data;

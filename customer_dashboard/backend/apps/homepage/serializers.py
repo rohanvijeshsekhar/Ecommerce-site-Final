@@ -24,6 +24,8 @@ from .models import (
     Testimonial,
     RecommendedProduct,
     SpecialOffersPageContent,
+    DailyOffer,
+    DailyOfferProduct,
 )
 
 
@@ -743,3 +745,181 @@ class SpecialOffersPageContentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "updated_at"]
+
+
+# ============================================================
+# 12. Daily Offers / Hot Deals Serializers
+# ============================================================
+
+class DailyOfferProductReadSerializer(serializers.ModelSerializer):
+    product_id = serializers.UUIDField(source="product.id", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_image = serializers.SerializerMethodField()
+    brand_name = serializers.CharField(source="product.brand.name", read_only=True, default="")
+    category_name = serializers.CharField(source="product.category.name", read_only=True, default="")
+    pricing = ProductPricingInlineSerializer(source="product.pricing", read_only=True, allow_null=True)
+    inventory = ProductInventoryInlineSerializer(source="product.inventory", read_only=True, allow_null=True)
+    average_rating = serializers.DecimalField(source="product.average_rating", max_digits=3, decimal_places=2, read_only=True)
+    total_reviews = serializers.IntegerField(source="product.total_reviews", read_only=True)
+    effective_deal_price = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyOfferProduct
+        fields = [
+            "id", "product", "product_id", "product_name", "product_slug", "product_sku",
+            "product_image", "brand_name", "category_name", "deal_price", "effective_deal_price",
+            "badge_override", "discount_percentage", "sort_order", "pricing", "inventory",
+            "average_rating", "total_reviews",
+        ]
+
+    def get_product_image(self, obj):
+        request = self.context.get("request")
+        primary = obj.product.primary_image
+        if primary and primary.image:
+            return abs_image_url(request, primary.image)
+        first_img = obj.product.images.first()
+        if first_img and first_img.image:
+            return abs_image_url(request, first_img.image)
+        return None
+
+    def get_effective_deal_price(self, obj):
+        if obj.deal_price is not None:
+            return float(obj.deal_price)
+        if hasattr(obj.product, 'pricing') and obj.product.pricing:
+            return float(obj.product.pricing.effective_price or obj.product.pricing.selling_price or 0)
+        return 0
+
+    def get_discount_percentage(self, obj):
+        deal_price = self.get_effective_deal_price(obj)
+        if hasattr(obj.product, 'pricing') and obj.product.pricing and obj.product.pricing.mrp:
+            mrp = float(obj.product.pricing.mrp)
+            if mrp > deal_price and mrp > 0:
+                return round(((mrp - deal_price) / mrp) * 100)
+        return None
+
+
+class DailyOfferProductWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyOfferProduct
+        fields = ["id", "daily_offer", "product", "deal_price", "badge_override", "sort_order"]
+        read_only_fields = ["id"]
+
+
+class DailyOfferReadSerializer(serializers.ModelSerializer):
+    desktop_image_url = serializers.SerializerMethodField()
+    mobile_image_url = serializers.SerializerMethodField()
+    items = DailyOfferProductReadSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DailyOffer
+        fields = [
+            "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
+            "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
+            "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
+            "horizontal_alignment", "vertical_alignment", "content_width",
+            "theme", "bg_color", "bg_gradient", "heading_color", "description_color",
+            "badge_bg_color", "badge_text_color", "offer_color",
+            "cta_bg_color", "cta_text_color", "cta_border_color",
+            "countdown_bg_color", "countdown_text_color", "product_badge_color",
+            "countdown_enabled", "start_date", "end_date",
+            "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "status", "is_active", "sort_order", "created_at", "updated_at",
+            "items",
+        ]
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
+
+class DailyOfferWriteSerializer(serializers.ModelSerializer):
+    desktop_image = serializers.ImageField(required=False, allow_null=True)
+    desktop_image_url = serializers.SerializerMethodField(read_only=True)
+    mobile_image = serializers.ImageField(required=False, allow_null=True)
+    mobile_image_url = serializers.SerializerMethodField(read_only=True)
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    end_date = serializers.DateTimeField(required=False, allow_null=True)
+    cta_target_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    items_data = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
+
+    class Meta:
+        model = DailyOffer
+        fields = [
+            "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
+            "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
+            "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
+            "horizontal_alignment", "vertical_alignment", "content_width",
+            "theme", "bg_color", "bg_gradient", "heading_color", "description_color",
+            "badge_bg_color", "badge_text_color", "offer_color",
+            "cta_bg_color", "cta_text_color", "cta_border_color",
+            "countdown_bg_color", "countdown_text_color", "product_badge_color",
+            "countdown_enabled", "start_date", "end_date",
+            "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "status", "is_active", "sort_order", "items_data",
+        ]
+        read_only_fields = ["id", "desktop_image_url", "mobile_image_url"]
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
+    def to_internal_value(self, data):
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = dict(data)
+        
+        for field in ("desktop_image", "mobile_image", "start_date", "end_date"):
+            if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
+                data[field] = None
+        if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
+            data["cta_target_id"] = ""
+        return super().to_internal_value(data)
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("items_data", None)
+        instance = super().create(validated_data)
+        if items_data is not None:
+            self._sync_items(instance, items_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items_data", None)
+        instance = super().update(instance, validated_data)
+        if items_data is not None:
+            self._sync_items(instance, items_data)
+        return instance
+
+    def _sync_items(self, instance, items_data):
+        import json
+        from apps.products.models import Product
+        if isinstance(items_data, str):
+            try:
+                items_data = json.loads(items_data)
+            except Exception:
+                items_data = []
+
+        instance.items.all().delete()
+        for idx, item in enumerate(items_data):
+            prod_id = item.get("product_id") or item.get("product")
+            if not prod_id:
+                continue
+            try:
+                product = Product.objects.get(id=prod_id)
+                DailyOfferProduct.objects.create(
+                    daily_offer=instance,
+                    product=product,
+                    deal_price=item.get("deal_price") or None,
+                    badge_override=item.get("badge_override", ""),
+                    sort_order=item.get("sort_order", idx),
+                )
+            except Product.DoesNotExist:
+                continue
+

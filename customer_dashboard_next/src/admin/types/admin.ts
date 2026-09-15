@@ -102,7 +102,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 
 export type AdminSection =
   | 'dashboard'
-  | 'homepage'
+  | 'homepage' | 'daily-offers'
   | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews' | 'blog'
   | 'inventory' | 'pricing'
   | 'orders' | 'returns' | 'fulfillment'
@@ -499,6 +499,85 @@ export interface FeaturedCollection {
   is_visible: boolean;
   items?: FeaturedCollectionItem[];
 }
+
+export interface DailyOfferProduct {
+  id: string;
+  product: string;
+  product_id?: string;
+  product_name: string;
+  product_slug: string;
+  product_sku?: string;
+  product_image: string | null;
+  brand_name?: string;
+  category_name?: string;
+  deal_price?: number | string | null;
+  effective_deal_price?: number;
+  badge_override?: string;
+  discount_percentage?: number | null;
+  sort_order: number;
+  pricing?: {
+    mrp: number;
+    selling_price: number;
+    offer_price?: number | null;
+    effective_price: number;
+    discount_percentage?: number | null;
+  };
+  inventory?: {
+    quantity: number;
+    is_in_stock: boolean;
+  };
+  average_rating?: number;
+  total_reviews?: number;
+}
+
+export interface DailyOffer {
+  id: string;
+  badge_text: string;
+  title: string;
+  subheading: string;
+  offer_text: string;
+  secondary_text?: string;
+  offer_type: 'percentage' | 'flat' | 'bogo' | 'limited' | 'new_arrival' | 'clearance' | 'custom';
+  desktop_image?: string | null;
+  desktop_image_url?: string | null;
+  mobile_image?: string | null;
+  mobile_image_url?: string | null;
+  image_position?: 'center' | 'left' | 'right' | 'top' | 'bottom';
+  image_fit?: 'cover' | 'contain' | 'auto';
+  overlay_gradient?: 'none' | 'dark' | 'light' | 'fade-right' | 'fade-bottom';
+  overlay_opacity?: number;
+  horizontal_alignment?: 'left' | 'center' | 'right';
+  vertical_alignment?: 'top' | 'center' | 'bottom';
+  content_width?: 'small' | 'medium' | 'large' | 'full';
+  theme?: 'dark_premium' | 'red_hot' | 'orange_sale' | 'teal_premium' | 'minimal_light' | 'custom';
+  bg_color?: string;
+  bg_gradient?: string;
+  heading_color?: string;
+  description_color?: string;
+  badge_bg_color?: string;
+  badge_text_color?: string;
+  offer_color?: string;
+  cta_bg_color?: string;
+  cta_text_color?: string;
+  cta_border_color?: string;
+  countdown_bg_color?: string;
+  countdown_text_color?: string;
+  product_badge_color?: string;
+  countdown_enabled?: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+  cta_text?: string;
+  cta_action_type?: 'product' | 'category' | 'brand' | 'collection' | 'url';
+  cta_target_id?: string;
+  cta_url?: string;
+  status: 'draft' | 'scheduled' | 'live' | 'expired' | 'disabled';
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  items?: DailyOfferProduct[];
+}
+
 
 export interface LimitedTimeOffer {
   id: string;

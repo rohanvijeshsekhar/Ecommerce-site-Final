@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
   BarChart3, Bell, UserCog, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw
+  ChevronLeft, ChevronRight, X, LayoutTemplate, Sparkles, LogOut, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw, Flame
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +25,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Catalogue',
     items: [
       { id: 'homepage',   label: 'Homepage',      icon: 'LayoutTemplate',   path: '/admin/homepage'   },
+      { id: 'daily-offers', label: 'Daily Offers & Deals', icon: 'Flame',   path: '/admin/daily-offers' },
       { id: 'products',   label: 'Products',      icon: 'Package',          path: '/admin/products'   },
       { id: 'categories', label: 'Categories',    icon: 'Tag',              path: '/admin/categories' },
       { id: 'brands',     label: 'Brands',        icon: 'Award',            path: '/admin/brands'     },
@@ -79,7 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
-  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw
+  BarChart3, Bell, UserCog, ClipboardList, Settings, LayoutTemplate, Sparkles, Truck, Percent, Star, MessageSquare, BookOpen, Activity, RotateCcw, Flame
 };
 
 
