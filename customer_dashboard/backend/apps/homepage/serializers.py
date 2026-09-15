@@ -881,6 +881,14 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
                 data[field] = None
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
             data["cta_target_id"] = ""
+
+        if "items_data" in data and isinstance(data["items_data"], str):
+            import json
+            try:
+                data["items_data"] = json.loads(data["items_data"])
+            except Exception:
+                data["items_data"] = []
+
         return super().to_internal_value(data)
 
     def create(self, validated_data):

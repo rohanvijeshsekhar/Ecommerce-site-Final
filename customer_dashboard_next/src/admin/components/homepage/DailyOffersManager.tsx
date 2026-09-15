@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import {
   Flame, Plus, Trash2, Edit, Copy, ChevronUp, ChevronDown, Check,
   Eye, Monitor, Smartphone, Sparkles, Clock, Calendar, ArrowRight,
-  Palette, Layout, Type, ShoppingCart, Image as ImageIcon, Save,
-  Search, X, ExternalLink, Zap, RefreshCw, AlertCircle
+  Layout, Type, ShoppingCart, Image as ImageIcon, Save,
+  Search, X, ExternalLink, Zap, RefreshCw, AlertCircle, Upload, CheckCircle2
 } from 'lucide-react';
 import type { DailyOffer, DailyOfferProduct } from '../../types/admin';
 import { homepageService, adminService } from '../../services/adminService';
@@ -13,138 +14,69 @@ import { useToast } from '../Toast';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Theme Presets Definition
+// Preset High-Resolution Clinical Artwork Library
 // ─────────────────────────────────────────────────────────────────────────────
-interface ThemePreset {
-  id: string;
-  name: string;
-  bg_color: string;
-  bg_gradient: string;
-  heading_color: string;
-  description_color: string;
-  badge_bg_color: string;
-  badge_text_color: string;
-  offer_color: string;
-  cta_bg_color: string;
-  cta_text_color: string;
-  cta_border_color: string;
-  countdown_bg_color: string;
-  countdown_text_color: string;
-  product_badge_color: string;
-}
-
-const THEME_PRESETS: ThemePreset[] = [
+const ARTWORK_PRESETS = [
   {
-    id: 'red_hot',
-    name: 'Red Hot Deal (Urgent)',
-    bg_color: '#991B1B',
-    bg_gradient: 'linear-gradient(135deg, #7F1D1D 0%, #DC2626 50%, #991B1B 100%)',
-    heading_color: '#FFFFFF',
-    description_color: '#FEE2E2',
-    badge_bg_color: '#FEF3C7',
-    badge_text_color: '#B45309',
-    offer_color: '#FDE047',
-    cta_bg_color: '#FBBF24',
-    cta_text_color: '#78350F',
-    cta_border_color: '#F59E0B',
-    countdown_bg_color: '#111827',
-    countdown_text_color: '#FFFFFF',
-    product_badge_color: '#DC2626',
+    id: 'imaging_suite',
+    name: 'Digital Imaging & Sensors',
+    subtitle: 'Sensors & Imaging Systems',
+    url: '/images/category_imaging.png',
   },
   {
-    id: 'dark_premium',
-    name: 'Dark Premium (Luxury)',
-    bg_color: '#0F172A',
-    bg_gradient: 'linear-gradient(135deg, #090D16 0%, #0F172A 60%, #1E293B 100%)',
-    heading_color: '#FFFFFF',
-    description_color: '#94A3B8',
-    badge_bg_color: 'rgba(245, 158, 11, 0.2)',
-    badge_text_color: '#FBBF24',
-    offer_color: '#F59E0B',
-    cta_bg_color: '#F59E0B',
-    cta_text_color: '#090D16',
-    cta_border_color: '#D97706',
-    countdown_bg_color: '#1E293B',
-    countdown_text_color: '#F8FAFC',
-    product_badge_color: '#F59E0B',
+    id: 'handpiece_pro',
+    name: 'Clinical Handpieces',
+    subtitle: 'High-Speed Handpieces & Motors',
+    url: '/images/nsk_handpiece_portrait.png',
   },
   {
-    id: 'orange_sale',
-    name: 'Orange Sale (Energetic)',
-    bg_color: '#EA580C',
-    bg_gradient: 'linear-gradient(135deg, #C2410C 0%, #EA580C 50%, #FB923C 100%)',
-    heading_color: '#FFFFFF',
-    description_color: '#FFEDD5',
-    badge_bg_color: '#FEF08A',
-    badge_text_color: '#854D0E',
-    offer_color: '#FEF08A',
-    cta_bg_color: '#FFFFFF',
-    cta_text_color: '#C2410C',
-    cta_border_color: '#FED7AA',
-    countdown_bg_color: '#431407',
-    countdown_text_color: '#FFFFFF',
-    product_badge_color: '#EA580C',
+    id: 'treatment_center',
+    name: 'Treatment Center',
+    subtitle: 'Clinical Surgical Units',
+    url: '/images/hero_equipment.png',
   },
   {
-    id: 'teal_premium',
-    name: 'FAAZO Teal (Clinical Trust)',
-    bg_color: '#005963',
-    bg_gradient: 'linear-gradient(135deg, #003B42 0%, #005963 50%, #007D8A 100%)',
-    heading_color: '#FFFFFF',
-    description_color: '#CCECEE',
-    badge_bg_color: '#E6FFFA',
-    badge_text_color: '#005963',
-    offer_color: '#2DD4BF',
-    cta_bg_color: '#2DD4BF',
-    cta_text_color: '#003B42',
-    cta_border_color: '#14B8A6',
-    countdown_bg_color: '#002B30',
-    countdown_text_color: '#FFFFFF',
-    product_badge_color: '#005963',
+    id: 'scaler_pro',
+    name: 'Ultrasonic Scalers',
+    subtitle: 'Precision Prophy & Scaling',
+    url: '/images/woodpecker_scaler_studio.png',
   },
   {
-    id: 'minimal_light',
-    name: 'Minimal Light (Crisp Clean)',
-    bg_color: '#F8FAFC',
-    bg_gradient: 'linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 50%, #E2E8F0 100%)',
-    heading_color: '#0F172A',
-    description_color: '#475569',
-    badge_bg_color: '#FEE2E2',
-    badge_text_color: '#DC2626',
-    offer_color: '#DC2626',
-    cta_bg_color: '#0F172A',
-    cta_text_color: '#FFFFFF',
-    cta_border_color: '#1E293B',
-    countdown_bg_color: '#0F172A',
-    countdown_text_color: '#FFFFFF',
-    product_badge_color: '#DC2626',
+    id: 'clinic_setup',
+    name: 'Full Practice Setup',
+    subtitle: 'Comprehensive Equipment Package',
+    url: '/images/featured_digital_equipment.jpg',
   },
 ];
 
 const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   title: 'Big Savings Today',
   badge_text: '🔥 DAILY DEALS',
-  subheading: 'Limited-time deals on selected products.',
+  subheading: 'Limited-time deals on selected clinical products.',
   offer_text: 'UP TO 40% OFF',
   secondary_text: 'Special clinical pricing while stocks last',
   offer_type: 'percentage',
-  theme: 'red_hot',
-  bg_color: '#991B1B',
-  bg_gradient: 'linear-gradient(135deg, #7F1D1D 0%, #DC2626 50%, #991B1B 100%)',
+  theme: 'teal_premium',
+  bg_color: '#004D54',
+  bg_gradient: 'linear-gradient(135deg, #002B30 0%, #004D54 45%, #006670 100%)',
   heading_color: '#FFFFFF',
-  description_color: '#FEE2E2',
-  badge_bg_color: '#FEF3C7',
-  badge_text_color: '#B45309',
-  offer_color: '#FDE047',
-  cta_bg_color: '#FBBF24',
-  cta_text_color: '#78350F',
-  cta_border_color: '#F59E0B',
-  countdown_bg_color: '#111827',
+  description_color: '#CCECEE',
+  badge_bg_color: '#E6FFFA',
+  badge_text_color: '#004D54',
+  offer_color: '#2DD4BF',
+  cta_bg_color: '#2DD4BF',
+  cta_text_color: '#002B30',
+  cta_border_color: '#14B8A6',
+  countdown_bg_color: '#002B30',
   countdown_text_color: '#FFFFFF',
-  product_badge_color: '#DC2626',
-  horizontal_alignment: 'center',
+  product_badge_color: '#006670',
+  horizontal_alignment: 'left',
   vertical_alignment: 'center',
   content_width: 'large',
+  image_position: 'right', // 'right' | 'left' = Split Layout; 'center' = Full Background
+  image_fit: 'cover',
+  overlay_opacity: 60,
+  desktop_image_url: '/images/featured_digital_equipment.jpg',
   countdown_enabled: true,
   start_date: new Date().toISOString().substring(0, 16),
   end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16),
@@ -156,7 +88,7 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   items: [],
 };
 
-type StudioTab = 'content' | 'layout' | 'styling' | 'products' | 'countdown' | 'cta' | 'media' | 'scheduling';
+type StudioTab = 'content' | 'artwork' | 'countdown' | 'cta' | 'products' | 'scheduling';
 
 export const DailyOffersManager: React.FC = () => {
   const toast = useToast();
@@ -164,47 +96,53 @@ export const DailyOffersManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Studio mode
+  // Studio Mode States
   const [showStudio, setShowStudio] = useState(false);
+  const [editOffer, setEditOffer] = useState<DailyOffer | null>(null);
   const [activeTab, setActiveTab] = useState<StudioTab>('content');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
-  const [editOffer, setEditOffer] = useState<DailyOffer | null>(null);
-  const [form, setForm] = useState<Partial<DailyOffer>>(DEFAULT_OFFER_FORM);
 
-  // Catalog selectors
+  // Form State
+  const [form, setForm] = useState<Partial<DailyOffer>>(DEFAULT_OFFER_FORM);
+  const [desktopImageFile, setDesktopImageFile] = useState<File | null>(null);
+  const [mobileImageFile, setMobileImageFile] = useState<File | null>(null);
+
+  // Product Selection States
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState('');
 
-  // Image uploads
-  const [desktopImageFile, setDesktopImageFile] = useState<File | null>(null);
-  const [mobileImageFile, setMobileImageFile] = useState<File | null>(null);
+  const desktopFileInputRef = useRef<HTMLInputElement>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [offersRes, prodRes, catRes, brandRes] = await Promise.all([
+      const [offersRes, prodsRes, catsRes, brandsRes] = await Promise.all([
         homepageService.getDailyOffers(),
-        adminService.getProducts({ limit: 100 }),
-        adminService.getCategories(),
-        adminService.getBrands(),
+        adminService.getProducts({ page_size: 100 }).catch(() => ({ data: [] })),
+        adminService.getCategories().catch(() => ({ data: [] })),
+        adminService.getBrands().catch(() => ({ data: [] })),
       ]);
 
       if (offersRes.success && offersRes.data) {
-        setOffers(offersRes.data);
+        setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
       }
-      if (prodRes.success && prodRes.data) {
-        setAllProducts(prodRes.data);
+      if (prodsRes && prodsRes.data) {
+        const prodList = (prodsRes.data as any).results || prodsRes.data;
+        setAllProducts(Array.isArray(prodList) ? prodList : []);
       }
-      if (catRes.success && catRes.data) {
-        setCategories(catRes.data);
+      if (catsRes && catsRes.data) {
+        const catList = (catsRes.data as any).results || catsRes.data;
+        setCategories(Array.isArray(catList) ? catList : []);
       }
-      if (brandRes.success && brandRes.data) {
-        setBrands(brandRes.data);
+      if (brandsRes && brandsRes.data) {
+        const brandList = (brandsRes.data as any).results || brandsRes.data;
+        setBrands(Array.isArray(brandList) ? brandList : []);
       }
     } catch {
-      toast.error('Failed to load daily offers');
+      toast.error('Failed to load daily offers configuration');
     } finally {
       setLoading(false);
     }
@@ -216,24 +154,7 @@ export const DailyOffersManager: React.FC = () => {
 
   const openCreateStudio = () => {
     setEditOffer(null);
-    setForm({
-      ...DEFAULT_OFFER_FORM,
-      items: allProducts.slice(0, 4).map((p, idx) => ({
-        id: `temp-${idx}`,
-        product: p.id,
-        product_id: p.id,
-        product_name: p.name,
-        product_slug: p.slug,
-        product_sku: p.sku,
-        product_image: p.primary_image || (p.images && p.images[0]?.image) || null,
-        brand_name: p.brand_name || 'Brand',
-        category_name: p.category_name,
-        deal_price: p.pricing?.selling_price || 0,
-        badge_override: 'HOT DEAL',
-        sort_order: idx,
-        pricing: p.pricing,
-      })),
-    });
+    setForm(DEFAULT_OFFER_FORM);
     setDesktopImageFile(null);
     setMobileImageFile(null);
     setActiveTab('content');
@@ -246,6 +167,7 @@ export const DailyOffersManager: React.FC = () => {
       ...offer,
       start_date: offer.start_date ? offer.start_date.substring(0, 16) : '',
       end_date: offer.end_date ? offer.end_date.substring(0, 16) : '',
+      desktop_image_url: offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url,
       items: offer.items ? [...offer.items] : [],
     });
     setDesktopImageFile(null);
@@ -294,28 +216,6 @@ export const DailyOffersManager: React.FC = () => {
     }
   };
 
-  const handleApplyTheme = (themeId: string) => {
-    const preset = THEME_PRESETS.find((t) => t.id === themeId);
-    if (!preset) return;
-    setForm((prev) => ({
-      ...prev,
-      theme: preset.id as any,
-      bg_color: preset.bg_color,
-      bg_gradient: preset.bg_gradient,
-      heading_color: preset.heading_color,
-      description_color: preset.description_color,
-      badge_bg_color: preset.badge_bg_color,
-      badge_text_color: preset.badge_text_color,
-      offer_color: preset.offer_color,
-      cta_bg_color: preset.cta_bg_color,
-      cta_text_color: preset.cta_text_color,
-      cta_border_color: preset.cta_border_color,
-      countdown_bg_color: preset.countdown_bg_color,
-      countdown_text_color: preset.countdown_text_color,
-      product_badge_color: preset.product_badge_color,
-    }));
-  };
-
   // Product multi-selection
   const handleAddProduct = (prod: any) => {
     const currentItems = form.items || [];
@@ -345,6 +245,7 @@ export const DailyOffersManager: React.FC = () => {
       ...form,
       items: [...currentItems, newItem],
     });
+    toast.success(`Added ${prod.name}`);
   };
 
   const handleRemoveProduct = (index: number) => {
@@ -374,6 +275,36 @@ export const DailyOffersManager: React.FC = () => {
     setForm({ ...form, items });
   };
 
+  // Image Upload Handlers
+  const handleDesktopImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDesktopImageFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setForm((prev) => ({ ...prev, desktop_image_url: previewUrl }));
+    }
+  };
+
+  const handleMobileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMobileImageFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setForm((prev) => ({ ...prev, mobile_image_url: previewUrl }));
+    }
+  };
+
+  const handleSelectPresetArtwork = (preset: typeof ARTWORK_PRESETS[0]) => {
+    setDesktopImageFile(null);
+    setForm((prev) => ({
+      ...prev,
+      desktop_image_url: preset.url,
+      desktop_image: preset.url,
+    }));
+    toast.success(`Selected artwork: ${preset.name}`);
+  };
+
+  // Save / Publish
   const handleSave = async (publishNow = false) => {
     setSaving(true);
     try {
@@ -381,9 +312,17 @@ export const DailyOffersManager: React.FC = () => {
       const statusToSave = publishNow ? 'live' : form.status || 'draft';
       const isActiveToSave = publishNow ? true : form.is_active !== false;
 
-      // Append text/config fields
+      // Clean & append text fields
       Object.entries(form).forEach(([key, val]) => {
-        if (key === 'items' || key === 'desktop_image' || key === 'mobile_image' || key === 'desktop_image_url' || key === 'mobile_image_url') {
+        if (
+          key === 'items' ||
+          key === 'desktop_image' ||
+          key === 'mobile_image' ||
+          key === 'desktop_image_url' ||
+          key === 'mobile_image_url' ||
+          key === 'start_date' ||
+          key === 'end_date'
+        ) {
           return;
         }
         if (val !== undefined && val !== null) {
@@ -394,6 +333,21 @@ export const DailyOffersManager: React.FC = () => {
       fd.set('status', statusToSave);
       fd.set('is_active', String(isActiveToSave));
 
+      // Sanitize dates
+      if (form.start_date && form.start_date.trim()) {
+        const d = new Date(form.start_date);
+        fd.append('start_date', !isNaN(d.getTime()) ? d.toISOString() : '');
+      } else {
+        fd.append('start_date', '');
+      }
+
+      if (form.end_date && form.end_date.trim()) {
+        const d = new Date(form.end_date);
+        fd.append('end_date', !isNaN(d.getTime()) ? d.toISOString() : '');
+      } else {
+        fd.append('end_date', '');
+      }
+
       // Append items as JSON
       const itemsPayload = (form.items || []).map((it, idx) => ({
         product_id: it.product_id || it.product,
@@ -403,9 +357,13 @@ export const DailyOffersManager: React.FC = () => {
       }));
       fd.append('items_data', JSON.stringify(itemsPayload));
 
-      // Append images if selected
-      if (desktopImageFile) fd.append('desktop_image', desktopImageFile);
-      if (mobileImageFile) fd.append('mobile_image', mobileImageFile);
+      // Append images
+      if (desktopImageFile) {
+        fd.append('desktop_image', desktopImageFile);
+      }
+      if (mobileImageFile) {
+        fd.append('mobile_image', mobileImageFile);
+      }
 
       let res;
       if (editOffer) {
@@ -414,15 +372,28 @@ export const DailyOffersManager: React.FC = () => {
         res = await homepageService.createDailyOffer(fd);
       }
 
-      if (res.success) {
+      if (res && res.success) {
         toast.success(publishNow ? 'Daily Offer Published Live!' : 'Daily Offer Draft Saved!');
         setShowStudio(false);
         loadData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('daily-offers-updated'));
+        }
       } else {
-        toast.error(res.message || 'Failed to save offer');
+        toast.error(res?.message || 'Failed to save daily offer');
       }
-    } catch {
-      toast.error('Unexpected error saving daily offer');
+    } catch (err: any) {
+      let msg = 'Failed to save daily offer';
+      if (err?.response?.data) {
+        const d = err.response.data;
+        if (typeof d === 'string') msg = d;
+        else if (d.message) msg = d.message;
+        else if (typeof d === 'object') {
+          const firstKey = Object.keys(d)[0];
+          msg = `${firstKey}: ${Array.isArray(d[firstKey]) ? d[firstKey][0] : d[firstKey]}`;
+        }
+      }
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -458,18 +429,18 @@ export const DailyOffersManager: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-red-50 text-red-600">
+                <span className="p-2 rounded-xl bg-teal-50 text-[#006670]">
                   <Flame className="w-5 h-5 fill-current" />
                 </span>
-                <h2 className="text-xl font-bold text-slate-900">Daily Offers & Hot Deals</h2>
+                <h2 className="text-xl font-bold text-slate-900">Daily Offers & Deals Management</h2>
               </div>
               <p className="text-sm text-slate-500 mt-1">
-                Configure promotional banners with live countdown timers and discounted deal products.
+                Configure promotional banners with live countdown timers, hero artwork, and deal products.
               </p>
             </div>
             <button
               onClick={openCreateStudio}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md transition-all active:scale-98 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#006670] hover:bg-[#004d54] text-white font-bold text-sm shadow-md shadow-teal-900/10 transition-all active:scale-98 cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Create Daily Offer</span>
@@ -487,11 +458,11 @@ export const DailyOffersManager: React.FC = () => {
               <Flame className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-800">No Daily Offers Created Yet</h3>
               <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                Create your first promotional deals section with urgent countdown timers and sale products.
+                Create your first promotional deals section with high-impact hero artwork and discounted products.
               </p>
               <button
                 onClick={openCreateStudio}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#006670] hover:bg-[#004d54] text-white font-bold text-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 Create Now
@@ -499,18 +470,20 @@ export const DailyOffersManager: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {offers.map((offer, idx) => (
+              {offers.map((offer) => (
                 <div
                   key={offer.id}
                   className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
                 >
                   <div className="flex items-start gap-4">
-                    {/* Theme Swatch */}
-                    <div
-                      className="w-14 h-14 rounded-xl shadow-inner shrink-0 flex items-center justify-center text-white font-bold text-lg border border-black/10"
-                      style={{ background: offer.bg_gradient || offer.bg_color }}
-                    >
-                      <Flame className="w-6 h-6 fill-current" />
+                    {/* Theme / Image Thumbnail */}
+                    <div className="w-16 h-16 rounded-xl shadow-inner shrink-0 relative overflow-hidden border border-slate-200 bg-teal-900">
+                      <Image
+                        src={offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url!}
+                        alt={offer.title}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
 
                     <div>
@@ -520,12 +493,13 @@ export const DailyOffersManager: React.FC = () => {
                           {offer.badge_text}
                         </span>
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${offer.status === 'live' && offer.is_active
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                            offer.status === 'live' && offer.is_active
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : offer.status === 'scheduled'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
                         >
                           {offer.status}
                         </span>
@@ -535,6 +509,7 @@ export const DailyOffersManager: React.FC = () => {
                       <div className="flex items-center gap-4 text-xs text-slate-400 mt-2 flex-wrap">
                         <span>Products: <strong className="text-slate-700">{offer.items?.length || 0}</strong></span>
                         <span>Countdown: <strong className="text-slate-700">{offer.countdown_enabled ? 'Enabled' : 'Disabled'}</strong></span>
+                        <span>Layout: <strong className="text-slate-700 capitalize">{offer.image_position === 'center' ? 'Background Image' : `Split (${offer.image_position || 'right'})`}</strong></span>
                         {offer.end_date && (
                           <span>Ends: <strong className="text-slate-700">{new Date(offer.end_date).toLocaleDateString()}</strong></span>
                         )}
@@ -547,37 +522,35 @@ export const DailyOffersManager: React.FC = () => {
                     {/* Quick Active Toggle */}
                     <button
                       onClick={() => handleToggleActive(offer)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${offer.is_active
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        offer.is_active
                           ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                          : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                        }`}
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                     >
-                      {offer.is_active ? 'Active' : 'Disabled'}
+                      {offer.is_active ? 'Active' : 'Inactive'}
                     </button>
 
-                    {/* Duplicate */}
                     <button
                       onClick={() => handleDuplicate(offer)}
-                      title="Duplicate Section"
-                      className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                      title="Duplicate Offer"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
 
-                    {/* Edit */}
                     <button
                       onClick={() => openEditStudio(offer)}
-                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-[#006670] text-white text-xs font-bold transition-colors cursor-pointer"
                     >
                       <Edit className="w-3.5 h-3.5" />
                       <span>Customize</span>
                     </button>
 
-                    {/* Delete */}
                     <button
                       onClick={() => handleDelete(offer)}
-                      title="Delete Section"
-                      className="p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                      className="p-2 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer"
+                      title="Delete Offer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -589,22 +562,21 @@ export const DailyOffersManager: React.FC = () => {
         </div>
       ) : (
         /* ============================================================
-            VIEW 2: IMMERSIVE TWO-COLUMN STUDIO & LIVE PREVIEW
+            VIEW 2: FULL BUILDER STUDIO WITH WYSIWYG
            ============================================================ */
         <div className="space-y-4">
-          {/* Top Studio Action Bar */}
-          <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl flex items-center justify-between flex-wrap gap-4 shadow-xl">
+          {/* Top Navigation Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-2xl shadow-xl">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowStudio(false)}
-                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
               >
-                ← Back to List
+                ← Back to Offers
               </button>
-              <span className="h-4 w-px bg-white/20" />
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-amber-400 fill-current" />
-                <span className="font-extrabold text-sm sm:text-base">
+              <div>
+                <h3 className="text-sm font-black text-white">Daily Offers Builder Studio</h3>
+                <span className="text-[11px] text-slate-400">
                   {editOffer ? `Editing: ${form.title}` : 'New Daily Offers Campaign'}
                 </span>
               </div>
@@ -614,17 +586,21 @@ export const DailyOffersManager: React.FC = () => {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
                 <button
+                  type="button"
                   onClick={() => setPreviewDevice('desktop')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${previewDevice === 'desktop' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    previewDevice === 'desktop' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <Monitor className="w-3.5 h-3.5" />
                   <span>Desktop</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPreviewDevice('mobile')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${previewDevice === 'mobile' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    previewDevice === 'mobile' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>Mobile (375px)</span>
@@ -632,17 +608,19 @@ export const DailyOffersManager: React.FC = () => {
               </div>
 
               <button
+                type="button"
                 disabled={saving}
                 onClick={() => handleSave(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Save Draft
               </button>
 
               <button
+                type="button"
                 disabled={saving}
                 onClick={() => handleSave(true)}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow-lg shadow-red-900/30 transition-all active:scale-98 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#006670] hover:bg-[#00525a] text-white text-xs font-black shadow-lg shadow-teal-900/20 transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
               >
                 <Zap className="w-4 h-4 fill-current" />
                 <span>{saving ? 'Publishing...' : 'Publish Live'}</span>
@@ -658,24 +636,24 @@ export const DailyOffersManager: React.FC = () => {
               <div className="flex border-b border-slate-200 overflow-x-auto bg-slate-50/70 p-1.5 gap-1">
                 {[
                   { id: 'content', label: 'Content', icon: Type },
-                  { id: 'styling', label: 'Themes & Colors', icon: Palette },
-                  { id: 'products', label: `Products (${form.items?.length || 0})`, icon: ShoppingCart },
-                  { id: 'layout', label: 'Layout', icon: Layout },
+                  { id: 'artwork', label: 'Banner Image', icon: ImageIcon },
                   { id: 'countdown', label: 'Countdown', icon: Clock },
-                  { id: 'cta', label: 'CTA Action', icon: ArrowRight },
-                  { id: 'media', label: 'Banner Image', icon: ImageIcon },
-                  { id: 'scheduling', label: 'Status', icon: Calendar },
+                  { id: 'cta', label: 'CTA Button', icon: ArrowRight },
+                  { id: 'products', label: `Products (${form.items?.length || 0})`, icon: ShoppingCart },
+                  { id: 'scheduling', label: 'Status & Visibility', icon: Calendar },
                 ].map((t) => {
                   const Icon = t.icon;
                   const isActive = activeTab === t.id;
                   return (
                     <button
                       key={t.id}
+                      type="button"
                       onClick={() => setActiveTab(t.id as StudioTab)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
-                          ? 'bg-white text-red-600 shadow-2xs border border-slate-200/80'
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-white text-[#006670] shadow-2xs border border-slate-200/80'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                        }`}
+                      }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
                       <span>{t.label}</span>
@@ -691,472 +669,230 @@ export const DailyOffersManager: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Badge / Label
-                      </label>
-                      <input
-                        type="text"
-                        value={form.badge_text || ''}
-                        onChange={(e) => setForm({ ...form, badge_text: e.target.value })}
-                        placeholder="🔥 DAILY DEALS"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Section Heading
+                        Offer Main Heading *
                       </label>
                       <input
                         type="text"
                         value={form.title || ''}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        placeholder="Big Savings Today"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Subheading / Description
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={form.subheading || ''}
-                        onChange={(e) => setForm({ ...form, subheading: e.target.value })}
-                        placeholder="Limited-time deals on selected clinical products."
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
+                        placeholder="e.g. Big Savings Today"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-[#006670] focus:outline-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Offer Text / Highlight
+                          Hot Deal Badge
+                        </label>
+                        <input
+                          type="text"
+                          value={form.badge_text || ''}
+                          onChange={(e) => setForm({ ...form, badge_text: e.target.value })}
+                          placeholder="🔥 DAILY DEALS"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Offer Highlight Tag
                         </label>
                         <input
                           type="text"
                           value={form.offer_text || ''}
                           onChange={(e) => setForm({ ...form, offer_text: e.target.value })}
                           placeholder="UP TO 40% OFF"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                         />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Offer Type
-                        </label>
-                        <select
-                          value={form.offer_type || 'percentage'}
-                          onChange={(e) => setForm({ ...form, offer_type: e.target.value as any })}
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
-                        >
-                          <option value="percentage">Percentage Discount</option>
-                          <option value="flat">Flat Discount</option>
-                          <option value="bogo">Buy One Get One</option>
-                          <option value="limited">Limited Time Deal</option>
-                          <option value="new_arrival">New Arrival Deal</option>
-                          <option value="clearance">Clearance</option>
-                          <option value="custom">Custom Promotion</option>
-                        </select>
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Secondary Microcopy / Guarantee
+                        Subheading
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={form.subheading || ''}
+                        onChange={(e) => setForm({ ...form, subheading: e.target.value })}
+                        placeholder="Limited-time deals on selected clinical products."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Secondary Urgency Tag
                       </label>
                       <input
                         type="text"
                         value={form.secondary_text || ''}
                         onChange={(e) => setForm({ ...form, secondary_text: e.target.value })}
-                        placeholder="Special clinical pricing while stocks last • 100% Genuine"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
+                        placeholder="Special clinical pricing while stocks last"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                       />
                     </div>
                   </div>
                 )}
 
-                {/* 2. THEMES & STYLING TAB */}
-                {activeTab === 'styling' && (
+                {/* 2. BANNER IMAGE & ARTWORK TAB (Replacing Themes & Colors) */}
+                {activeTab === 'artwork' && (
                   <div className="space-y-5">
-                    {/* Preset Theme Buttons */}
+                    {/* Layout Mode Selector */}
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Predefined Visual Themes
+                        Banner Layout Presentation
                       </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {THEME_PRESETS.map((t) => (
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'right', label: 'Split (Image Right)' },
+                          { id: 'left', label: 'Split (Image Left)' },
+                          { id: 'center', label: 'Full Background' },
+                        ].map((pos) => (
                           <button
-                            key={t.id}
+                            key={pos.id}
                             type="button"
-                            onClick={() => handleApplyTheme(t.id)}
-                            className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${form.theme === t.id
-                                ? 'border-red-600 bg-red-50/60 ring-2 ring-red-500/20'
-                                : 'border-slate-200 hover:border-slate-300 bg-white'
-                              }`}
+                            onClick={() => setForm({ ...form, image_position: pos.id as any })}
+                            className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                              (form.image_position || 'right') === pos.id
+                                ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
                           >
-                            <span
-                              className="w-5 h-5 rounded-md shrink-0 shadow-2xs border border-black/10"
-                              style={{ background: t.bg_gradient || t.bg_color }}
-                            />
-                            <span className="text-xs font-bold text-slate-800 line-clamp-1">{t.name}</span>
+                            {pos.label}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Detailed Color Pickers */}
+                    {/* Quick Preset Clinical Artwork */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Quick Preset Clinical Artwork
+                      </label>
+                      <p className="text-[11px] text-slate-500 mb-3">
+                        Choose from high-resolution clinical equipment artwork with 1 click:
+                      </p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {ARTWORK_PRESETS.map((preset) => {
+                          const isSelected = form.desktop_image_url === preset.url;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => handleSelectPresetArtwork(preset)}
+                              className={`flex items-center gap-3 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                              }`}
+                            >
+                              <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-200">
+                                <Image src={preset.url} alt={preset.name} fill className="object-cover" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-bold text-xs text-slate-800 block truncate">{preset.name}</span>
+                                <span className="text-[10px] text-slate-500 block truncate">{preset.subtitle}</span>
+                              </div>
+                              {isSelected && <CheckCircle2 className="w-4 h-4 text-[#006670] shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Custom Image Upload */}
                     <div className="pt-2 border-t border-slate-200 space-y-3">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
-                        Granular Color Customization
-                      </h4>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Custom Image Upload (Optional)
+                      </label>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Background Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.bg_color || '#991B1B'}
-                              onChange={(e) => setForm({ ...form, bg_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.bg_color || ''}
-                              onChange={(e) => setForm({ ...form, bg_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Heading Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.heading_color || '#FFFFFF'}
-                              onChange={(e) => setForm({ ...form, heading_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.heading_color || ''}
-                              onChange={(e) => setForm({ ...form, heading_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Badge Background</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.badge_bg_color || '#FEF3C7'}
-                              onChange={(e) => setForm({ ...form, badge_bg_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.badge_bg_color || ''}
-                              onChange={(e) => setForm({ ...form, badge_bg_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Badge Text Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.badge_text_color || '#B45309'}
-                              onChange={(e) => setForm({ ...form, badge_text_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.badge_text_color || ''}
-                              onChange={(e) => setForm({ ...form, badge_text_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Offer Tag Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.offer_color || '#FDE047'}
-                              onChange={(e) => setForm({ ...form, offer_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.offer_color || ''}
-                              onChange={(e) => setForm({ ...form, offer_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">CTA Button Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.cta_bg_color || '#FBBF24'}
-                              onChange={(e) => setForm({ ...form, cta_bg_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.cta_bg_color || ''}
-                              onChange={(e) => setForm({ ...form, cta_bg_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Countdown Box Bg</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.countdown_bg_color || '#111827'}
-                              onChange={(e) => setForm({ ...form, countdown_bg_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.countdown_bg_color || ''}
-                              onChange={(e) => setForm({ ...form, countdown_bg_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Product Badge Color</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={form.product_badge_color || '#DC2626'}
-                              onChange={(e) => setForm({ ...form, product_badge_color: e.target.value })}
-                              className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0"
-                            />
-                            <input
-                              type="text"
-                              value={form.product_badge_color || ''}
-                              onChange={(e) => setForm({ ...form, product_badge_color: e.target.value })}
-                              className="w-full px-2 py-1 text-xs font-mono border rounded"
-                            />
-                          </div>
+                      {/* Desktop Image File */}
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">
+                          Desktop Artwork File
+                        </span>
+                        <input
+                          type="file"
+                          ref={desktopFileInputRef}
+                          accept="image/*"
+                          onChange={handleDesktopImageChange}
+                          className="hidden"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => desktopFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>{desktopImageFile ? 'Change File' : 'Upload Image'}</span>
+                          </button>
+                          {desktopImageFile && (
+                            <span className="text-xs text-emerald-700 font-semibold truncate max-w-xs">
+                              {desktopImageFile.name}
+                            </span>
+                          )}
                         </div>
                       </div>
 
+                      {/* Image URL Direct Input */}
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                          Custom CSS Background Gradient
-                        </label>
+                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">
+                          Or Direct Image URL
+                        </span>
                         <input
                           type="text"
-                          value={form.bg_gradient || ''}
-                          onChange={(e) => setForm({ ...form, bg_gradient: e.target.value })}
-                          placeholder="linear-gradient(135deg, #7F1D1D 0%, #DC2626 50%, #991B1B 100%)"
-                          className="w-full px-3 py-1.5 text-xs font-mono border rounded-lg"
+                          value={form.desktop_image_url || ''}
+                          onChange={(e) => setForm({ ...form, desktop_image_url: e.target.value })}
+                          placeholder="/images/hero_equipment.png or https://..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono"
                         />
                       </div>
-                    </div>
-                  </div>
-                )}
 
-                {/* 3. PRODUCTS TAB */}
-                {activeTab === 'products' && (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-teal-50/80 border border-teal-200/80 rounded-xl text-xs text-[#004D54]">
-                      <span className="font-bold block mb-0.5">ℹ️ Dedicated Offer Landing Page:</span>
-                      Products configured here will be displayed on this deal's dedicated landing page (<code className="font-mono text-[11px] bg-white px-1.5 py-0.5 rounded border border-teal-200">/daily-offers/[id]</code>). The homepage presents a clean, high-impact promotional banner directing shoppers to this page.
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Selected Deal Products ({form.items?.length || 0})
-                      </span>
-                    </div>
-
-                    {/* Search & Add Products */}
-                    <div className="relative">
-                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        value={productSearchQuery}
-                        onChange={(e) => setProductSearchQuery(e.target.value)}
-                        placeholder="Search products by title or SKU to add..."
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-[#006670] focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Search Suggestions Dropdown */}
-                    {productSearchQuery && (
-                      <div className="border border-slate-200 rounded-xl p-2 max-h-48 overflow-y-auto space-y-1 bg-slate-50">
-                        {filteredProducts.length === 0 ? (
-                          <div className="text-xs text-slate-400 p-2 text-center">No products found</div>
-                        ) : (
-                          filteredProducts.map((p) => {
-                            const isAdded = form.items?.some((i) => i.product === p.id || i.product_id === p.id);
-                            return (
-                              <div
-                                key={p.id}
-                                className="flex items-center justify-between p-1.5 bg-white rounded-lg border border-slate-100 text-xs hover:bg-slate-50"
-                              >
-                                <span className="font-semibold text-slate-800 line-clamp-1">{p.name}</span>
-                                <button
-                                  disabled={isAdded}
-                                  onClick={() => handleAddProduct(p)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${isAdded ? 'bg-slate-100 text-slate-400' : 'bg-red-600 text-white hover:bg-red-700'
-                                    }`}
-                                >
-                                  {isAdded ? 'Added' : '+ Add'}
-                                </button>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-
-                    {/* Selected Products List */}
-                    <div className="space-y-2">
-                      {form.items?.map((it, idx) => (
-                        <div
-                          key={it.id || idx}
-                          className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200"
-                        >
-                          <div className="flex flex-col gap-0.5">
+                      {/* Image Fit */}
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">Image Fit</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['cover', 'contain'].map((fit) => (
                             <button
+                              key={fit}
                               type="button"
-                              disabled={idx === 0}
-                              onClick={() => handleMoveProduct(idx, 'up')}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-600 disabled:opacity-30"
+                              onClick={() => setForm({ ...form, image_fit: fit as any })}
+                              className={`py-1.5 px-3 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
+                                (form.image_fit || 'cover') === fit
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                  : 'border-slate-200 text-slate-600'
+                              }`}
                             >
-                              <ChevronUp className="w-3.5 h-3.5" />
+                              {fit}
                             </button>
-                            <button
-                              type="button"
-                              disabled={idx === (form.items?.length || 1) - 1}
-                              onClick={() => handleMoveProduct(idx, 'down')}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-600 disabled:opacity-30"
-                            >
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-xs text-slate-800 truncate">{it.product_name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <input
-                                type="number"
-                                value={it.deal_price ?? ''}
-                                onChange={(e) => handleUpdateProductDealPrice(idx, e.target.value)}
-                                placeholder="Deal Price"
-                                className="w-24 px-2 py-0.5 text-xs border rounded bg-white"
-                              />
-                              <input
-                                type="text"
-                                value={it.badge_override || ''}
-                                onChange={(e) => handleUpdateProductBadge(idx, e.target.value)}
-                                placeholder="Badge (HOT DEAL)"
-                                className="w-24 px-2 py-0.5 text-xs border rounded bg-white"
-                              />
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveProduct(idx)}
-                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Overlay Opacity (for background mode) */}
+                      {form.image_position === 'center' && (
+                        <div>
+                          <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600 mb-1">
+                            <span>Overlay Darkening</span>
+                            <span>{form.overlay_opacity ?? 60}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="10"
+                            max="90"
+                            value={form.overlay_opacity ?? 60}
+                            onChange={(e) => setForm({ ...form, overlay_opacity: parseInt(e.target.value) })}
+                            className="w-full accent-[#006670]"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* 4. LAYOUT TAB */}
-                {activeTab === 'layout' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Horizontal Alignment
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {['left', 'center', 'right'].map((align) => (
-                          <button
-                            key={align}
-                            type="button"
-                            onClick={() => setForm({ ...form, horizontal_alignment: align as any })}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize transition-all ${form.horizontal_alignment === align
-                                ? 'border-red-600 bg-red-50 text-red-700 ring-2 ring-red-500/20'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                              }`}
-                          >
-                            {align}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Vertical Alignment
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {['top', 'center', 'bottom'].map((align) => (
-                          <button
-                            key={align}
-                            type="button"
-                            onClick={() => setForm({ ...form, vertical_alignment: align as any })}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize transition-all ${form.vertical_alignment === align
-                                ? 'border-red-600 bg-red-50 text-red-700 ring-2 ring-red-500/20'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                              }`}
-                          >
-                            {align}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Content Width
-                      </label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {['small', 'medium', 'large', 'full'].map((w) => (
-                          <button
-                            key={w}
-                            type="button"
-                            onClick={() => setForm({ ...form, content_width: w as any })}
-                            className={`py-2 px-2 rounded-xl border text-xs font-bold capitalize transition-all ${form.content_width === w
-                                ? 'border-red-600 bg-red-50 text-red-700 ring-2 ring-red-500/20'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                              }`}
-                          >
-                            {w}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. COUNTDOWN TAB */}
+                {/* 3. COUNTDOWN TAB */}
                 {activeTab === 'countdown' && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -1168,7 +904,7 @@ export const DailyOffersManager: React.FC = () => {
                         type="checkbox"
                         checked={form.countdown_enabled !== false}
                         onChange={(e) => setForm({ ...form, countdown_enabled: e.target.checked })}
-                        className="w-5 h-5 accent-red-600 rounded cursor-pointer"
+                        className="w-5 h-5 accent-[#006670] rounded cursor-pointer"
                       />
                     </div>
 
@@ -1186,7 +922,7 @@ export const DailyOffersManager: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        End Date & Time
+                        Deals End Date & Time *
                       </label>
                       <input
                         type="datetime-local"
@@ -1198,32 +934,32 @@ export const DailyOffersManager: React.FC = () => {
                   </div>
                 )}
 
-                {/* 6. CTA TAB */}
+                {/* 4. CTA TAB */}
                 {activeTab === 'cta' && (
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        CTA Button Text
+                        Button Label *
                       </label>
                       <input
                         type="text"
                         value={form.cta_text || ''}
                         onChange={(e) => setForm({ ...form, cta_text: e.target.value })}
                         placeholder="Shop Today's Deals →"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        CTA Destination Type
+                        Click Action Destination
                       </label>
                       <select
                         value={form.cta_action_type || 'url'}
                         onChange={(e) => setForm({ ...form, cta_action_type: e.target.value as any })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                       >
-                        <option value="url">Custom URL / Internal Page</option>
+                        <option value="url">Dedicated Offer Page (/daily-offers/[id])</option>
                         <option value="category">Product Category</option>
                         <option value="brand">Brand</option>
                         <option value="product">Specific Product</option>
@@ -1233,13 +969,13 @@ export const DailyOffersManager: React.FC = () => {
                     {form.cta_action_type === 'url' && (
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Destination URL
+                          Destination URL (Default: /daily-offers)
                         </label>
                         <input
                           type="text"
                           value={form.cta_url || ''}
                           onChange={(e) => setForm({ ...form, cta_url: e.target.value })}
-                          placeholder="/offers or https://..."
+                          placeholder="/daily-offers"
                           className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono"
                         />
                       </div>
@@ -1284,63 +1020,129 @@ export const DailyOffersManager: React.FC = () => {
                         </select>
                       </div>
                     )}
+                  </div>
+                )}
 
-                    {form.cta_action_type === 'product' && (
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Select Product
-                        </label>
-                        <select
-                          value={form.cta_target_id || ''}
-                          onChange={(e) => setForm({ ...form, cta_target_id: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                        >
-                          <option value="">-- Choose Product --</option>
-                          {allProducts.map((p) => (
-                            <option key={p.id} value={p.slug}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
+                {/* 5. PRODUCTS TAB */}
+                {activeTab === 'products' && (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-teal-50/80 border border-teal-200/80 rounded-xl text-xs text-[#004D54]">
+                      <span className="font-bold block mb-0.5">ℹ️ Dedicated Offer Landing Page:</span>
+                      Products added here are displayed on this deal's dedicated landing page (<code className="font-mono text-[11px] bg-white px-1.5 py-0.5 rounded border border-teal-200">/daily-offers/[id]</code>). The homepage presents an uncluttered hero banner directing shoppers to this page.
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Selected Deal Products ({form.items?.length || 0})
+                      </span>
+                    </div>
+
+                    {/* Search & Add Products */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        placeholder="Search products by title or SKU to add..."
+                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-[#006670] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Search Suggestions Dropdown */}
+                    {productSearchQuery && (
+                      <div className="border border-slate-200 rounded-xl p-2 max-h-48 overflow-y-auto space-y-1 bg-slate-50">
+                        {filteredProducts.length === 0 ? (
+                          <div className="text-xs text-slate-400 p-2 text-center">No products found</div>
+                        ) : (
+                          filteredProducts.map((p) => {
+                            const isAdded = form.items?.some((i) => i.product === p.id || i.product_id === p.id);
+                            return (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between p-1.5 bg-white rounded-lg border border-slate-100 text-xs hover:bg-slate-50"
+                              >
+                                <span className="font-semibold text-slate-800 line-clamp-1">{p.name}</span>
+                                <button
+                                  type="button"
+                                  disabled={isAdded}
+                                  onClick={() => handleAddProduct(p)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                                    isAdded ? 'bg-slate-100 text-slate-400' : 'bg-[#006670] text-white hover:bg-[#004d54]'
+                                  }`}
+                                >
+                                  {isAdded ? 'Added' : '+ Add'}
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     )}
+
+                    {/* Selected Products List */}
+                    <div className="space-y-2">
+                      {form.items?.map((it, idx) => (
+                        <div
+                          key={it.id || idx}
+                          className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200"
+                        >
+                          <div className="flex flex-col gap-0.5 text-slate-400">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(idx, 'up')}
+                              disabled={idx === 0}
+                              className="hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(idx, 'down')}
+                              disabled={idx === (form.items?.length || 1) - 1}
+                              className="hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <span className="font-bold text-xs text-slate-800 block truncate">
+                              {it.product_name}
+                            </span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <input
+                                type="text"
+                                value={it.badge_override || ''}
+                                onChange={(e) => handleUpdateProductBadge(idx, e.target.value)}
+                                placeholder="Badge (HOT DEAL)"
+                                className="w-24 px-1.5 py-0.5 text-[11px] border rounded"
+                              />
+                              <input
+                                type="number"
+                                value={it.deal_price ?? ''}
+                                onChange={(e) => handleUpdateProductDealPrice(idx, e.target.value)}
+                                placeholder="Deal Price ₹"
+                                className="w-24 px-1.5 py-0.5 text-[11px] border rounded"
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProduct(idx)}
+                            className="p-1.5 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
+                            title="Remove Product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* 7. MEDIA TAB */}
-                {activeTab === 'media' && (
-                  <div className="space-y-4">
-                    <p className="text-xs text-slate-500">
-                      Promotional banner images are completely optional. The section is engineered to look stunning with pure typography and color gradients.
-                    </p>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Desktop Artwork
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setDesktopImageFile(e.target.files?.[0] || null)}
-                        className="w-full text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Mobile Artwork
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setMobileImageFile(e.target.files?.[0] || null)}
-                        className="w-full text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 8. SCHEDULING & STATUS TAB */}
+                {/* 6. SCHEDULING & STATUS TAB */}
                 {activeTab === 'scheduling' && (
                   <div className="space-y-4">
                     <div>
@@ -1352,10 +1154,9 @@ export const DailyOffersManager: React.FC = () => {
                         onChange={(e) => setForm({ ...form, status: e.target.value as any })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                       >
-                        <option value="draft">Draft (Hidden)</option>
-                        <option value="scheduled">Scheduled (Activates automatically)</option>
-                        <option value="live">Live (Visible on Homepage)</option>
-                        <option value="expired">Expired</option>
+                        <option value="draft">Draft (Admin Preview Only)</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="live">Live on Storefront</option>
                         <option value="disabled">Disabled</option>
                       </select>
                     </div>
@@ -1369,7 +1170,7 @@ export const DailyOffersManager: React.FC = () => {
                         type="checkbox"
                         checked={form.is_active !== false}
                         onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                        className="w-5 h-5 accent-red-600 rounded cursor-pointer"
+                        className="w-5 h-5 accent-[#006670] rounded cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1381,29 +1182,20 @@ export const DailyOffersManager: React.FC = () => {
             <div className="xl:col-span-7 bg-slate-100 rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col items-center">
               <div className="w-full flex items-center justify-between mb-3 px-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-red-500" />
+                  <Eye className="w-3.5 h-3.5 text-[#006670]" />
                   Live Real-Time Preview
                 </span>
                 <span className="text-[11px] font-semibold text-slate-400">
-                  {previewDevice === 'desktop' ? 'Desktop View (Full Canvas)' : 'Mobile View (375px Device Frame)'}
+                  {previewDevice === 'mobile' ? 'Mobile View (375px Canvas)' : 'Desktop View (Full Canvas)'}
                 </span>
               </div>
 
-              {/* Viewport Frame Container */}
+              {/* Canvas Viewport */}
               <div
-                className={`transition-all duration-300 overflow-x-hidden ${previewDevice === 'mobile'
-                    ? 'w-[375px] rounded-[36px] border-[8px] border-slate-800 shadow-2xl bg-white overflow-hidden my-4'
-                    : 'w-full rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden'
-                  }`}
+                className={`transition-all duration-300 overflow-hidden ${
+                  previewDevice === 'mobile' ? 'w-[375px] shadow-2xl' : 'w-full'
+                }`}
               >
-                {/* Mobile Device Notch Header */}
-                {previewDevice === 'mobile' && (
-                  <div className="w-full bg-slate-800 h-6 flex items-center justify-center">
-                    <div className="w-20 h-3 bg-slate-900 rounded-full" />
-                  </div>
-                )}
-
-                {/* Render Customer-Facing Component with Live Form State */}
                 <DailyOffersSection
                   previewOffer={livePreviewOffer}
                   isLivePreview={true}
