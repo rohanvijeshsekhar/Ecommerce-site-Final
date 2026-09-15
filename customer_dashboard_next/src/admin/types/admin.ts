@@ -464,9 +464,40 @@ export interface FeaturedCollection {
   description: string;
   image?: string | null;
   image_url?: string | null;
+  mobile_image?: string | null;
+  mobile_image_url?: string | null;
+  banner_layout?: 'split' | 'background' | 'solid';
+  content_width?: 'small' | 'medium' | 'large' | 'full' | 'narrow' | 'wide';
+  horizontal_alignment?: 'left' | 'center' | 'right';
+  vertical_alignment?: 'top' | 'center' | 'bottom';
+  badge_text?: string;
+  offer_text?: string;
+  secondary_text?: string;
+  cta_text?: string;
+  cta_action_type?: 'product' | 'category' | 'brand' | 'url';
+  cta_target_id?: string;
+  cta_url?: string;
+  cta_style?: 'filled' | 'outline' | 'ghost';
+  cta_open_in_new_tab?: boolean;
+  heading_size?: 'medium' | 'large' | 'xlarge' | 'jumbo' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  heading_weight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold' | 'black';
+  heading_color?: string;
+  description_color?: string;
+  badge_color?: string;
+  badge_bg_color?: string;
+  cta_bg_color?: string;
+  cta_text_color?: string;
+  cta_border_color?: string;
+  bg_color?: string;
+  image_position?: 'left' | 'right' | 'center';
+  image_fit?: 'cover' | 'contain';
+  overlay_gradient?: 'none' | 'dark' | 'light' | 'teal' | 'left' | 'right' | 'top' | 'bottom' | 'radial';
+  overlay_opacity?: number;
+  start_date?: string | null;
+  end_date?: string | null;
   sort_order: number;
   is_visible: boolean;
-  items: FeaturedCollectionItem[];
+  items?: FeaturedCollectionItem[];
 }
 
 export interface LimitedTimeOffer {

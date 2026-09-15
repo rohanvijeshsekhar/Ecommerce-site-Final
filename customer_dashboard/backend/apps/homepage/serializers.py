@@ -257,14 +257,28 @@ class FeaturedCollectionItemReadSerializer(serializers.ModelSerializer):
 
 class FeaturedCollectionReadSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    mobile_image_url = serializers.SerializerMethodField()
     items = FeaturedCollectionItemReadSerializer(many=True, read_only=True)
 
     class Meta:
         model  = FeaturedCollection
-        fields = ["id", "title", "description", "image", "image_url", "sort_order", "is_visible", "items"]
+        fields = [
+            "id", "title", "description", "image", "image_url",
+            "mobile_image", "mobile_image_url",
+            "banner_layout", "content_width", "horizontal_alignment", "vertical_alignment",
+            "badge_text", "offer_text", "secondary_text",
+            "cta_text", "cta_action_type", "cta_target_id", "cta_url", "cta_style", "cta_open_in_new_tab",
+            "heading_size", "heading_weight", "heading_color", "description_color",
+            "badge_color", "badge_bg_color", "cta_bg_color", "cta_text_color", "cta_border_color",
+            "bg_color", "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
+            "start_date", "end_date", "sort_order", "is_visible", "items"
+        ]
 
     def get_image_url(self, obj):
         return abs_image_url(self.context.get("request"), obj.image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
 
 
 class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
@@ -277,17 +291,32 @@ class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
 class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, allow_null=True)
     image_url = serializers.SerializerMethodField(read_only=True)
+    mobile_image = serializers.ImageField(required=False, allow_null=True)
+    mobile_image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model  = FeaturedCollection
-        fields = ["id", "title", "description", "image", "image_url", "sort_order", "is_visible"]
-        read_only_fields = ["id", "image_url"]
+        fields = [
+            "id", "title", "description", "image", "image_url",
+            "mobile_image", "mobile_image_url",
+            "banner_layout", "content_width", "horizontal_alignment", "vertical_alignment",
+            "badge_text", "offer_text", "secondary_text",
+            "cta_text", "cta_action_type", "cta_target_id", "cta_url", "cta_style", "cta_open_in_new_tab",
+            "heading_size", "heading_weight", "heading_color", "description_color",
+            "badge_color", "badge_bg_color", "cta_bg_color", "cta_text_color", "cta_border_color",
+            "bg_color", "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
+            "start_date", "end_date", "sort_order", "is_visible"
+        ]
+        read_only_fields = ["id", "image_url", "mobile_image_url"]
 
     def get_image_url(self, obj):
         return abs_image_url(self.context.get("request"), obj.image)
 
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
     def to_internal_value(self, data):
-        # Handle clear instruction: if image is passed as empty string or 'null'
+        # Handle clear instruction: if image or mobile_image is passed as empty string or 'null'
         # in multipart/form-data or JSON, convert it to None so the field is cleared.
         if hasattr(data, 'copy'):
             data = data.copy()
@@ -296,6 +325,8 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
         
         if "image" in data and (data["image"] == "" or data["image"] == "null" or data["image"] is False):
             data["image"] = None
+        if "mobile_image" in data and (data["mobile_image"] == "" or data["mobile_image"] == "null" or data["mobile_image"] is False):
+            data["mobile_image"] = None
         return super().to_internal_value(data)
 
 

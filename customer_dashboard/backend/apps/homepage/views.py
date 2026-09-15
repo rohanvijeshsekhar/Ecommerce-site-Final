@@ -7,6 +7,7 @@ Pattern:
   - Shared /reorder/ action on each viewset
 """
 
+from django.db import models
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -190,7 +191,14 @@ class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
         )
         if not (self.request.user.is_authenticated and
                 getattr(self.request.user, "role", None) == "admin"):
-            qs = qs.filter(is_visible=True)
+            from django.utils import timezone
+            now = timezone.now()
+            qs = qs.filter(
+                is_visible=True
+            ).filter(
+                models.Q(start_date__isnull=True) | models.Q(start_date__lte=now),
+                models.Q(end_date__isnull=True) | models.Q(end_date__gte=now),
+            )
         return qs
 
     def get_permissions(self):
@@ -203,15 +211,46 @@ class FeaturedCollectionViewSet(ReorderMixin, BaseModelViewSet):
             return FeaturedCollectionWriteSerializer
         return FeaturedCollectionReadSerializer
 
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        if instance.is_visible:
-            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
-
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        if instance.is_visible:
-            FeaturedCollection.objects.exclude(id=instance.id).update(is_visible=False)
+    @action(detail=True, methods=["post"], url_path="duplicate")
+    def duplicate(self, request, pk=None):
+        original = self.get_object()
+        cloned = FeaturedCollection.objects.create(
+            title=f"{original.title} (Copy)",
+            description=original.description,
+            image=original.image,
+            mobile_image=original.mobile_image,
+            banner_layout=original.banner_layout,
+            content_width=original.content_width,
+            horizontal_alignment=original.horizontal_alignment,
+            vertical_alignment=original.vertical_alignment,
+            badge_text=original.badge_text,
+            offer_text=original.offer_text,
+            secondary_text=original.secondary_text,
+            cta_text=original.cta_text,
+            cta_action_type=original.cta_action_type,
+            cta_target_id=original.cta_target_id,
+            cta_url=original.cta_url,
+            cta_style=original.cta_style,
+            cta_open_in_new_tab=original.cta_open_in_new_tab,
+            heading_size=original.heading_size,
+            heading_weight=original.heading_weight,
+            heading_color=original.heading_color,
+            description_color=original.description_color,
+            badge_color=original.badge_color,
+            badge_bg_color=original.badge_bg_color,
+            cta_bg_color=original.cta_bg_color,
+            cta_text_color=original.cta_text_color,
+            cta_border_color=original.cta_border_color,
+            bg_color=original.bg_color,
+            image_position=original.image_position,
+            image_fit=original.image_fit,
+            overlay_gradient=original.overlay_gradient,
+            overlay_opacity=original.overlay_opacity,
+            sort_order=original.sort_order + 1,
+            is_visible=False,
+        )
+        serializer = FeaturedCollectionReadSerializer(cloned, context={"request": request})
+        return Response({"success": True, "message": "Banner duplicated successfully.", "data": serializer.data})
 
 
 class FeaturedCollectionItemViewSet(BaseModelViewSet):

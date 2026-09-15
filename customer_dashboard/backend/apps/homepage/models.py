@@ -324,19 +324,237 @@ class FeaturedCollection(BaseModel):
 
     title = models.CharField(
         max_length=200,
-        verbose_name="Collection Title",
+        verbose_name="Collection Title / Main Heading",
     )
     description = models.TextField(
         blank=True,
-        verbose_name="Collection Description",
+        verbose_name="Collection Description / Subtitle",
     )
     image = OptimizedImageField(
         upload_to="homepage/collections/",
         null=True,
         blank=True,
-        verbose_name="Collection Image",
-        help_text="Featured image shown on the homepage collection section.",
+        verbose_name="Desktop Banner Image",
+        help_text="Featured image shown on the promotional banner.",
     )
+    mobile_image = OptimizedImageField(
+        upload_to="homepage/collections/mobile/",
+        null=True,
+        blank=True,
+        verbose_name="Mobile Banner Image",
+        help_text="Optional mobile-specific image for responsive art direction.",
+    )
+
+    # ── Composition & Layout Controls ──
+    banner_layout = models.CharField(
+        max_length=30,
+        default="split",
+        choices=[
+            ("split", "Split Image + Content"),
+            ("background", "Full Background Image"),
+            ("solid", "Solid / Gradient Minimal"),
+        ],
+        verbose_name="Banner Layout",
+    )
+    content_width = models.CharField(
+        max_length=20,
+        default="medium",
+        choices=[
+            ("small", "Small (420px)"),
+            ("medium", "Medium (580px)"),
+            ("large", "Large (760px)"),
+            ("full", "Full Width"),
+        ],
+        verbose_name="Content Max Width",
+    )
+    horizontal_alignment = models.CharField(
+        max_length=20,
+        default="left",
+        choices=[("left", "Left"), ("center", "Center"), ("right", "Right")],
+        verbose_name="Horizontal Text Alignment",
+    )
+    vertical_alignment = models.CharField(
+        max_length=20,
+        default="center",
+        choices=[("top", "Top"), ("center", "Center"), ("bottom", "Bottom")],
+        verbose_name="Vertical Text Alignment",
+    )
+
+    # ── Content & Promotional Messaging ──
+    badge_text = models.CharField(
+        max_length=100,
+        default="FEATURED COLLECTION",
+        blank=True,
+        verbose_name="Small Label / Badge Text",
+    )
+    offer_text = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Offer Text",
+        help_text="e.g. UP TO 25% OFF or SPECIAL CLINICAL PROMO",
+    )
+    secondary_text = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Secondary Text / Footnote",
+    )
+
+    # ── Call To Action (CTA) ──
+    cta_text = models.CharField(
+        max_length=100,
+        default="Explore Collection",
+        verbose_name="CTA Button Text",
+    )
+    cta_action_type = models.CharField(
+        max_length=30,
+        default="url",
+        choices=[
+            ("product", "Product"),
+            ("category", "Product Category / Collection"),
+            ("brand", "Brand"),
+            ("url", "Custom URL / Internal Page"),
+        ],
+        verbose_name="CTA Destination Type",
+    )
+    cta_target_id = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="CTA Target Identifier",
+        help_text="Selected Product SKU/ID, Category slug, or Brand slug.",
+    )
+    cta_url = models.CharField(
+        max_length=500,
+        default="/offers",
+        blank=True,
+        verbose_name="CTA URL",
+    )
+    cta_style = models.CharField(
+        max_length=20,
+        default="filled",
+        choices=[("filled", "Filled"), ("outline", "Outline"), ("ghost", "Ghost")],
+        verbose_name="CTA Button Style",
+    )
+    cta_open_in_new_tab = models.BooleanField(
+        default=False,
+        verbose_name="Open CTA In New Tab",
+    )
+
+    # ── Visual Styling & Typography ──
+    heading_size = models.CharField(
+        max_length=20,
+        default="large",
+        choices=[
+            ("medium", "Medium (32px)"),
+            ("large", "Large (40px)"),
+            ("xlarge", "Extra Large (48px)"),
+            ("jumbo", "Jumbo (56px)"),
+        ],
+        verbose_name="Heading Size",
+    )
+    heading_weight = models.CharField(
+        max_length=20,
+        default="black",
+        choices=[
+            ("normal", "Normal (400)"),
+            ("semibold", "Semi-Bold (600)"),
+            ("bold", "Bold (700)"),
+            ("extrabold", "Extra-Bold (800)"),
+            ("black", "Black / Heavy (900)"),
+        ],
+        verbose_name="Heading Weight",
+    )
+    heading_color = models.CharField(
+        max_length=30,
+        default="#1E293B",
+        blank=True,
+        verbose_name="Heading Color",
+    )
+    description_color = models.CharField(
+        max_length=30,
+        default="#475569",
+        blank=True,
+        verbose_name="Description Color",
+    )
+    badge_color = models.CharField(
+        max_length=30,
+        default="#006670",
+        blank=True,
+        verbose_name="Badge Text Color",
+    )
+    badge_bg_color = models.CharField(
+        max_length=30,
+        default="#E6F3F5",
+        blank=True,
+        verbose_name="Badge Background Color",
+    )
+    cta_bg_color = models.CharField(
+        max_length=30,
+        default="#006670",
+        blank=True,
+        verbose_name="CTA Button Background Color",
+    )
+    cta_text_color = models.CharField(
+        max_length=30,
+        default="#FFFFFF",
+        blank=True,
+        verbose_name="CTA Button Text Color",
+    )
+    cta_border_color = models.CharField(
+        max_length=30,
+        default="#006670",
+        blank=True,
+        verbose_name="CTA Button Border Color",
+    )
+    bg_color = models.CharField(
+        max_length=100,
+        default="#F0F7F7",
+        blank=True,
+        verbose_name="Banner Background Color / Gradient",
+        help_text="Hex code (e.g. #F0F7F7) or linear-gradient string.",
+    )
+
+    # ── Image Position & Overlays ──
+    image_position = models.CharField(
+        max_length=20,
+        default="right",
+        choices=[("left", "Left"), ("right", "Right"), ("center", "Center")],
+        verbose_name="Image Position (Split Layout)",
+    )
+    image_fit = models.CharField(
+        max_length=20,
+        default="cover",
+        choices=[("cover", "Cover"), ("contain", "Contain")],
+        verbose_name="Image Fit",
+    )
+    overlay_gradient = models.CharField(
+        max_length=30,
+        default="dark",
+        choices=[
+            ("none", "None"),
+            ("dark", "Dark Contrast (for bright images)"),
+            ("light", "Light Subtle (for dark images)"),
+            ("teal", "Teal Brand Gradient"),
+        ],
+        verbose_name="Overlay Gradient Type",
+    )
+    overlay_opacity = models.PositiveSmallIntegerField(
+        default=40,
+        verbose_name="Overlay Opacity %",
+        help_text="Percentage from 0 to 100",
+    )
+
+    # ── Scheduling ──
+    start_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Schedule Start Date",
+    )
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Schedule End Date",
+    )
+
     sort_order = models.PositiveSmallIntegerField(
         default=0,
         db_index=True,

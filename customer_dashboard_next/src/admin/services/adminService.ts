@@ -776,6 +776,14 @@ export const homepageService = {
     const res = await api.delete(`homepage/featured-collections/${id}/`);
     return res.data;
   },
+  async duplicateFeaturedCollection(id: string): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
+    const res = await api.post(`homepage/featured-collections/${id}/duplicate/`);
+    return res.data;
+  },
+  async reorderFeaturedCollections(order: { id: string; sort_order: number }[]): Promise<ServiceResponse<void>> {
+    const res = await api.patch('homepage/featured-collections/reorder/', order);
+    return res.data;
+  },
   async createCollectionItem(data: any): Promise<ServiceResponse<import('../types/admin').FeaturedCollectionItem>> {
     const res = await api.post('homepage/collection-items/', data);
     return res.data;
