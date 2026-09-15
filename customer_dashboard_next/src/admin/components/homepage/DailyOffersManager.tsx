@@ -42,6 +42,7 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   image_fit: 'cover',
   overlay_opacity: 60,
   desktop_image_url: '/images/featured_digital_equipment.jpg',
+  mobile_image_url: '',
   countdown_enabled: true,
   start_date: new Date().toISOString().substring(0, 16),
   end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16),
@@ -133,6 +134,7 @@ export const DailyOffersManager: React.FC = () => {
       start_date: offer.start_date ? offer.start_date.substring(0, 16) : '',
       end_date: offer.end_date ? offer.end_date.substring(0, 16) : '',
       desktop_image_url: offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url,
+      mobile_image_url: offer.mobile_image_url || offer.mobile_image || '',
       items: offer.items ? [...offer.items] : [],
     });
     setDesktopImageFile(null);
@@ -1230,6 +1232,7 @@ export const DailyOffersManager: React.FC = () => {
                 <DailyOffersSection
                   previewOffer={livePreviewOffer}
                   isLivePreview={true}
+                  previewDevice={previewDevice}
                 />
               </div>
             </div>

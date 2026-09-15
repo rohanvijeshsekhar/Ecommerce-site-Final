@@ -12,6 +12,7 @@ interface DailyOffersSectionProps {
   initialOffers?: DailyOffer[];
   previewOffer?: DailyOffer; // Allows live real-time preview in Admin Studio
   isLivePreview?: boolean;
+  previewDevice?: 'desktop' | 'mobile';
 }
 
 const DEFAULT_BANNER_IMAGE = '/images/featured_digital_equipment.jpg';
@@ -20,6 +21,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   initialOffers,
   previewOffer,
   isLivePreview = false,
+  previewDevice,
 }) => {
   const router = useRouter();
   const [offers, setOffers] = useState<DailyOffer[]>(() => initialOffers || []);
@@ -81,11 +83,15 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
   // Image & Layout configuration
   const bannerImage = activeOffer.desktop_image_url || activeOffer.desktop_image || DEFAULT_BANNER_IMAGE;
-  const mobileBannerImage = activeOffer.mobile_image_url || activeOffer.mobile_image || bannerImage;
+  const mobileBannerImage = activeOffer.mobile_image_url || activeOffer.mobile_image;
   const imagePos = activeOffer.image_position || 'right'; // 'left' | 'right' | 'center'
   const isBackgroundMode = imagePos === 'center';
   const isImageLeft = imagePos === 'left';
   const imageFit = activeOffer.image_fit || 'cover';
+
+  // Preview device mode
+  const isMobilePreview = previewDevice === 'mobile';
+  const effectivePreviewImage = isMobilePreview && mobileBannerImage ? mobileBannerImage : bannerImage;
 
   // Alignment
   const hAlign = activeOffer.horizontal_alignment || (isBackgroundMode ? 'center' : 'left');
@@ -134,13 +140,26 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
       {isBackgroundMode && (
         <>
           <div className="absolute inset-0 z-0 pointer-events-none">
-            <Image
-              src={bannerImage}
-              alt={activeOffer.title}
-              fill
-              priority
-              className={`object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
-            />
+            {isLivePreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={effectivePreviewImage}
+                alt={activeOffer.title}
+                className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
+              />
+            ) : (
+              <picture className="absolute inset-0 w-full h-full">
+                {mobileBannerImage && (
+                  <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
+                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bannerImage}
+                  alt={activeOffer.title}
+                  className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
+                />
+              </picture>
+            )}
             {/* High-contrast gradient overlay */}
             <div
               className="absolute inset-0"
@@ -159,7 +178,11 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
       {/* ============================================================
           BANNER INNER CONTENT
          ============================================================ */}
-      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-16">
+      <div
+        className={`relative z-10 max-w-[1440px] mx-auto ${
+          isMobilePreview ? 'px-4 py-8' : 'px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-16'
+        }`}
+      >
         {isBackgroundMode ? (
           /* Background Mode: Centered / Configurable Content Stack */
           <div className={`mx-auto flex flex-col ${textAlignClass} max-w-4xl`}>
@@ -188,7 +211,9 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
             {/* Title */}
             <h2
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12] mb-3.5 drop-shadow-md"
+              className={`${
+                isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
+              } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
               style={{ color: headingColor }}
             >
               {activeOffer.title}
@@ -243,12 +268,16 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
           /* ============================================================
              MODE 2: SPLIT LAYOUT (Content + High-Impact Promotional Image)
              ============================================================ */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          <div
+            className={`grid grid-cols-1 ${
+              isMobilePreview ? 'gap-6' : 'lg:grid-cols-12 gap-8 lg:gap-12'
+            } items-center`}
+          >
             {/* Content Column */}
             <div
-              className={`flex flex-col ${textAlignClass} lg:col-span-7 ${
-                isImageLeft ? 'lg:order-2' : 'lg:order-1'
-              }`}
+              className={`flex flex-col ${textAlignClass} ${
+                isMobilePreview ? 'w-full' : 'lg:col-span-7'
+              } ${isImageLeft && !isMobilePreview ? 'lg:order-2' : 'lg:order-1'}`}
             >
               {/* Badges */}
               <div className="flex items-center gap-2.5 flex-wrap mb-3.5">
@@ -275,7 +304,9 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
               {/* Title */}
               <h2
-                className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.12] mb-3.5"
+                className={`${
+                  isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
+                } font-black tracking-tight leading-[1.12] mb-3.5`}
                 style={{ color: headingColor }}
               >
                 {activeOffer.title}
@@ -335,18 +366,33 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
             {/* Promotional Image Column */}
             <div
-              className={`lg:col-span-5 relative w-full h-[280px] sm:h-[340px] lg:h-[400px] flex items-center justify-center ${
+              className={`lg:col-span-5 relative w-full ${
+                isMobilePreview ? 'h-[220px]' : 'h-[280px] sm:h-[340px] lg:h-[400px]'
+              } flex items-center justify-center ${
                 isImageLeft ? 'lg:order-1' : 'lg:order-2'
               }`}
             >
               <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-white/5 backdrop-blur-xs group-hover:scale-102 transition-transform duration-500">
-                <Image
-                  src={bannerImage}
-                  alt={activeOffer.title}
-                  fill
-                  priority
-                  className={`object-${imageFit} object-center p-2`}
-                />
+                {isLivePreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={effectivePreviewImage}
+                    alt={activeOffer.title}
+                    className={`w-full h-full object-${imageFit} object-center p-2`}
+                  />
+                ) : (
+                  <picture className="w-full h-full flex items-center justify-center">
+                    {mobileBannerImage && (
+                      <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
+                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={bannerImage}
+                      alt={activeOffer.title}
+                      className={`w-full h-full object-${imageFit} object-center p-2`}
+                    />
+                  </picture>
+                )}
                 {/* Subtle sheen highlight */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10 pointer-events-none" />
               </div>
