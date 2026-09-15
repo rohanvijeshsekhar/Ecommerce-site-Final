@@ -188,8 +188,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setSavedForLaterItems(mapBackendSavedToFrontend(res.data));
           }
         } catch (e: any) {
-          if (e?.response?.status !== 401 && e?.response?.status !== 403) {
-            console.error('Failed to load user cart:', e);
+          if (e?.response && e.response.status !== 401 && e.response.status !== 403) {
+            console.warn('Could not load user cart:', e.message || e);
           }
         } finally {
           setCartLoading(false);
@@ -348,8 +348,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setOrders(mappedOrders);
           }
         } catch (e: any) {
-          if (e?.response?.status !== 401) {
-            console.error('Failed to load user orders:', e);
+          if (e?.response && e.response.status !== 401) {
+            console.warn('Could not load user orders:', e.message || e);
           }
         }
       };

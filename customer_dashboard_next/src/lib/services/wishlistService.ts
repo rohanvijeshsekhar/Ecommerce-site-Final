@@ -17,8 +17,12 @@ export interface WishlistData {
 export const wishlistService = {
   // Fetch user's wishlist
   async getWishlist(): Promise<WishlistData> {
-    const res = await api.get('wishlist/');
-    return res.data?.data || res.data;
+    try {
+      const res = await api.get('wishlist/');
+      return res.data?.data || res.data || { id: '', items: [], item_count: 0, updated_at: '' };
+    } catch {
+      return { id: '', items: [], item_count: 0, updated_at: '' };
+    }
   },
 
   // Toggle product in wishlist (idempotent)

@@ -104,12 +104,12 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       try {
         const data = await wishlistService.getWishlist();
-        const items = data.items || [];
+        const items = data?.items || [];
         setWishlistItems(items);
         updateAuthCache(items);
       } catch (err: any) {
-        if (err?.response?.status !== 401 && err?.response?.status !== 403) {
-          console.error('Error fetching wishlist:', err);
+        if (err?.response && err.response.status !== 401 && err.response.status !== 403) {
+          console.warn('Could not fetch wishlist:', err.message || err);
         }
       } finally {
         setLoading(false);
