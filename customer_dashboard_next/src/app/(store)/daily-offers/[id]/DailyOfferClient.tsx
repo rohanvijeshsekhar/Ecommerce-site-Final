@@ -204,7 +204,7 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
               <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-white/5 backdrop-blur-xs">
                 <Image
                   src={bannerImage}
-                  alt={offer.title}
+                  alt={offer.title || 'Daily Offer Banner'}
                   fill
                   priority
                   className="object-cover object-center p-1"

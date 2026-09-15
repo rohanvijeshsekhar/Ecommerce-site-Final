@@ -6,13 +6,77 @@ import {
   Flame, Plus, Trash2, Edit, Copy, ChevronUp, ChevronDown, Check,
   Eye, Monitor, Smartphone, Sparkles, Clock, Calendar, ArrowRight,
   Layout, Type, ShoppingCart, Image as ImageIcon, Save,
-  Search, X, ExternalLink, Zap, RefreshCw, AlertCircle, Upload, CheckCircle2
+  Search, X, ExternalLink, Zap, RefreshCw, AlertCircle, Upload, CheckCircle2,
+  Sliders, Palette
 } from 'lucide-react';
 import type { DailyOffer, DailyOfferProduct } from '../../types/admin';
 import { homepageService, adminService } from '../../services/adminService';
 import { useToast } from '../Toast';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
+import { BANNER_FONTS } from '@/lib/bannerFonts';
 
+export const THEME_PRESETS = [
+  {
+    id: 'teal_premium',
+    name: 'FAAZO Teal Premium',
+    bg_color: '#004D54',
+    bg_gradient: 'linear-gradient(135deg, #002B30 0%, #004D54 45%, #006670 100%)',
+    heading_color: '#FFFFFF',
+    description_color: '#CCECEE',
+    badge_bg_color: '#E6FFFA',
+    badge_text_color: '#004D54',
+    offer_color: '#2DD4BF',
+    cta_bg_color: '#2DD4BF',
+    cta_text_color: '#002B30',
+    countdown_bg_color: '#002B30',
+    countdown_text_color: '#FFFFFF',
+  },
+  {
+    id: 'emerald_clinic',
+    name: 'Clinical Emerald',
+    bg_color: '#064E3B',
+    bg_gradient: 'linear-gradient(135deg, #022C22 0%, #065F46 50%, #047857 100%)',
+    heading_color: '#FFFFFF',
+    description_color: '#D1FAE5',
+    badge_bg_color: '#ECFDF5',
+    badge_text_color: '#065F46',
+    offer_color: '#34D399',
+    cta_bg_color: '#10B981',
+    cta_text_color: '#022C22',
+    countdown_bg_color: '#022C22',
+    countdown_text_color: '#FFFFFF',
+  },
+  {
+    id: 'navy_pro',
+    name: 'Deep Navy Pro',
+    bg_color: '#0F172A',
+    bg_gradient: 'linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E293B 100%)',
+    heading_color: '#FFFFFF',
+    description_color: '#CBD5E1',
+    badge_bg_color: '#F1F5F9',
+    badge_text_color: '#0F172A',
+    offer_color: '#38BDF8',
+    cta_bg_color: '#38BDF8',
+    cta_text_color: '#0F172A',
+    countdown_bg_color: '#020617',
+    countdown_text_color: '#FFFFFF',
+  },
+  {
+    id: 'amber_sunset',
+    name: 'Amber Special',
+    bg_color: '#78350F',
+    bg_gradient: 'linear-gradient(135deg, #451A03 0%, #78350F 50%, #B45309 100%)',
+    heading_color: '#FFFFFF',
+    description_color: '#FEF3C7',
+    badge_bg_color: '#FFFBEB',
+    badge_text_color: '#78350F',
+    offer_color: '#FDE047',
+    cta_bg_color: '#F59E0B',
+    cta_text_color: '#451A03',
+    countdown_bg_color: '#451A03',
+    countdown_text_color: '#FFFFFF',
+  },
+];
 
 const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   title: 'Big Savings Today',
@@ -20,6 +84,7 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   subheading: 'Limited-time deals on selected clinical products.',
   offer_text: 'UP TO 40% OFF',
   secondary_text: 'Special clinical pricing while stocks last',
+  font_family: 'Inter',
   offer_type: 'percentage',
   theme: 'teal_premium',
   bg_color: '#004D54',
@@ -44,17 +109,21 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   desktop_image_url: '/images/featured_digital_equipment.jpg',
   mobile_image_url: '',
   countdown_enabled: true,
+  countdown_position: 'left',
   start_date: new Date().toISOString().substring(0, 16),
   end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16),
+  cta_enabled: true,
+  cta_position: 'left',
   cta_text: "Shop Today's Deals →",
   cta_action_type: 'url',
+  cta_target_id: '',
   cta_url: '/daily-offers',
   status: 'live',
   is_active: true,
   items: [],
 };
 
-type StudioTab = 'content' | 'artwork' | 'countdown' | 'cta' | 'products' | 'scheduling';
+type StudioTab = 'content' | 'artwork' | 'countdown' | 'cta' | 'styling' | 'products' | 'scheduling';
 
 export const DailyOffersManager: React.FC = () => {
   const toast = useToast();
@@ -78,6 +147,7 @@ export const DailyOffersManager: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [ctaProductSearchQuery, setCtaProductSearchQuery] = useState('');
 
   const desktopFileInputRef = useRef<HTMLInputElement>(null);
   const mobileFileInputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +193,7 @@ export const DailyOffersManager: React.FC = () => {
     setForm(DEFAULT_OFFER_FORM);
     setDesktopImageFile(null);
     setMobileImageFile(null);
+    setCtaProductSearchQuery('');
     setActiveTab('content');
     setShowStudio(true);
   };
@@ -131,14 +202,28 @@ export const DailyOffersManager: React.FC = () => {
     setEditOffer(offer);
     setForm({
       ...offer,
+      font_family: offer.font_family || 'Inter',
+      countdown_enabled: offer.countdown_enabled !== false,
+      countdown_position: offer.countdown_position || 'left',
+      cta_enabled: offer.cta_enabled !== false,
+      cta_position: offer.cta_position || 'left',
+      horizontal_alignment: offer.horizontal_alignment || 'left',
+      vertical_alignment: offer.vertical_alignment || 'center',
+      content_width: offer.content_width || 'large',
+      cta_bg_color: offer.cta_bg_color || '#2DD4BF',
+      cta_text_color: offer.cta_text_color || '#002B30',
+      cta_border_color: offer.cta_border_color || '#14B8A6',
+      countdown_bg_color: offer.countdown_bg_color || '#002B30',
+      countdown_text_color: offer.countdown_text_color || '#FFFFFF',
       start_date: offer.start_date ? offer.start_date.substring(0, 16) : '',
       end_date: offer.end_date ? offer.end_date.substring(0, 16) : '',
-      desktop_image_url: offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url,
+      desktop_image_url: offer.desktop_image_url || offer.desktop_image || '',
       mobile_image_url: offer.mobile_image_url || offer.mobile_image || '',
       items: offer.items ? [...offer.items] : [],
     });
     setDesktopImageFile(null);
     setMobileImageFile(null);
+    setCtaProductSearchQuery('');
     setActiveTab('content');
     setShowStudio(true);
   };
@@ -389,6 +474,28 @@ export const DailyOffersManager: React.FC = () => {
       .slice(0, 20);
   }, [allProducts, productSearchQuery]);
 
+  // Filtered searchable products for CTA destination picker
+  const ctaFilteredProducts = useMemo(() => {
+    if (!ctaProductSearchQuery.trim()) return allProducts.slice(0, 10);
+    const q = ctaProductSearchQuery.toLowerCase();
+    return allProducts
+      .filter((p) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+      .slice(0, 15);
+  }, [allProducts, ctaProductSearchQuery]);
+
+  // Selected CTA Product info
+  const selectedCtaProduct = useMemo(() => {
+    if (!form.cta_target_id || form.cta_action_type !== 'product') return null;
+    return (
+      allProducts.find(
+        (p) =>
+          p.slug === form.cta_target_id ||
+          p.id === form.cta_target_id ||
+          p.sku === form.cta_target_id
+      ) || null
+    );
+  }, [allProducts, form.cta_target_id, form.cta_action_type]);
+
   // Real-time preview object
   const livePreviewOffer: DailyOffer = useMemo(() => {
     return {
@@ -461,7 +568,7 @@ export const DailyOffersManager: React.FC = () => {
                     <div className="w-16 h-16 rounded-xl shadow-inner shrink-0 relative overflow-hidden border border-slate-200 bg-teal-900">
                       <Image
                         src={offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url!}
-                        alt={offer.title}
+                        alt={offer.title || 'Daily Offer Banner'}
                         fill
                         className="object-cover"
                       />
@@ -469,10 +576,14 @@ export const DailyOffersManager: React.FC = () => {
 
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-extrabold text-slate-900 text-lg">{offer.title}</span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-slate-100 text-slate-700">
-                          {offer.badge_text}
+                        <span className="font-extrabold text-slate-900 text-lg">
+                          {offer.title || 'Untitled Banner Deal'}
                         </span>
+                        {offer.badge_text && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-slate-100 text-slate-700">
+                            {offer.badge_text}
+                          </span>
+                        )}
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
                             offer.status === 'live' && offer.is_active
@@ -620,6 +731,7 @@ export const DailyOffersManager: React.FC = () => {
                   { id: 'artwork', label: 'Banner Image', icon: ImageIcon },
                   { id: 'countdown', label: 'Countdown', icon: Clock },
                   { id: 'cta', label: 'CTA Button', icon: ArrowRight },
+                  { id: 'styling', label: 'Styling / Layout', icon: Layout },
                   { id: 'products', label: `Products (${form.items?.length || 0})`, icon: ShoppingCart },
                   { id: 'scheduling', label: 'Status & Visibility', icon: Calendar },
                 ].map((t) => {
@@ -648,24 +760,39 @@ export const DailyOffersManager: React.FC = () => {
                 {/* 1. CONTENT TAB */}
                 {activeTab === 'content' && (
                   <div className="space-y-4">
+                    {/* Informative Guidance Banner */}
+                    <div className="p-3 bg-teal-50 border border-teal-200/80 rounded-xl text-xs text-[#004D54] flex items-start gap-2.5">
+                      <span className="text-base leading-none shrink-0">💡</span>
+                      <div>
+                        <strong className="block font-bold">Content fields are completely optional:</strong>
+                        If your uploaded banner artwork already contains the headline, discount percentages, timeline, and promo details, leave these fields blank. The image will render cleanly without duplicate text overlays.
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Offer Main Heading *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Offer Main Heading
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                      </div>
                       <input
                         type="text"
                         value={form.title || ''}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        placeholder="e.g. Big Savings Today"
+                        placeholder="e.g. Big Savings Today (or leave blank if inside image)"
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:ring-2 focus:ring-[#006670] focus:outline-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Hot Deal Badge
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Hot Deal Badge
+                          </label>
+                          <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                        </div>
                         <input
                           type="text"
                           value={form.badge_text || ''}
@@ -675,9 +802,12 @@ export const DailyOffersManager: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Offer Highlight Tag
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Offer Highlight Tag
+                          </label>
+                          <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                        </div>
                         <input
                           type="text"
                           value={form.offer_text || ''}
@@ -689,9 +819,12 @@ export const DailyOffersManager: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Subheading
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Subheading / Description
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                      </div>
                       <textarea
                         rows={2}
                         value={form.subheading || ''}
@@ -702,9 +835,12 @@ export const DailyOffersManager: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Secondary Urgency Tag
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Secondary Urgency Tag
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-medium">Optional</span>
+                      </div>
                       <input
                         type="text"
                         value={form.secondary_text || ''}
@@ -713,10 +849,47 @@ export const DailyOffersManager: React.FC = () => {
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                       />
                     </div>
+
+                    {/* Typography / Font Style Selector */}
+                    <div className="pt-3 border-t border-slate-200">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Banner Font Style / Family
+                      </label>
+                      <p className="text-[11px] text-slate-500 mb-2">
+                        Select typography for all dynamic text layers on this banner:
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {BANNER_FONTS.map((font) => (
+                          <button
+                            key={font.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, font_family: font.id })}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                              (form.font_family || 'Inter') === font.id
+                                ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20 shadow-xs'
+                                : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                            }`}
+                          >
+                            <span
+                              className="text-xs font-black block text-slate-900 truncate"
+                              style={{ fontFamily: font.family }}
+                            >
+                              {font.name}
+                            </span>
+                            <span
+                              className="text-[11px] text-slate-500 block mt-0.5 truncate"
+                              style={{ fontFamily: font.family }}
+                            >
+                              {font.preview}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* 2. BANNER IMAGE & ARTWORK TAB (Replacing Themes & Colors) */}
+                {/* 2. BANNER IMAGE & ARTWORK TAB */}
                 {activeTab === 'artwork' && (
                   <div className="space-y-5">
                     {/* Layout Mode Selector */}
@@ -750,7 +923,7 @@ export const DailyOffersManager: React.FC = () => {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                          Banner Artwork Image File
+                          Banner Artwork Image File (Desktop)
                         </label>
                         <input
                           type="file"
@@ -772,12 +945,12 @@ export const DailyOffersManager: React.FC = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <span className="font-bold text-xs text-slate-800 block truncate">
-                                {desktopImageFile ? desktopImageFile.name : 'Current Banner Image'}
+                                {desktopImageFile ? desktopImageFile.name : 'Active Banner Image'}
                               </span>
                               <span className="text-[11px] text-emerald-600 font-medium block">
                                 {desktopImageFile
                                   ? `${(desktopImageFile.size / 1024).toFixed(1)} KB • Ready to save`
-                                  : 'Active image set'}
+                                  : 'Image configured'}
                               </span>
                               <div className="flex items-center gap-2 mt-2">
                                 <button
@@ -913,12 +1086,15 @@ export const DailyOffersManager: React.FC = () => {
                           </div>
                           <input
                             type="range"
-                            min="10"
+                            min="0"
                             max="90"
                             value={form.overlay_opacity ?? 60}
                             onChange={(e) => setForm({ ...form, overlay_opacity: parseInt(e.target.value) })}
                             className="w-full accent-[#006670]"
                           />
+                          <span className="text-[10px] text-slate-400 block mt-1">
+                            Tip: Set to 0% for pre-designed banners with no text overlay.
+                          </span>
                         </div>
                       )}
                     </div>
@@ -928,6 +1104,7 @@ export const DailyOffersManager: React.FC = () => {
                 {/* 3. COUNTDOWN TAB */}
                 {activeTab === 'countdown' && (
                   <div className="space-y-4">
+                    {/* Enable / Disable Toggle */}
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <div>
                         <span className="font-bold text-xs text-slate-900 block">Enable Countdown Timer</span>
@@ -941,118 +1118,604 @@ export const DailyOffersManager: React.FC = () => {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Start Date & Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={form.start_date || ''}
-                        onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                      />
-                    </div>
+                    {form.countdown_enabled !== false && (
+                      <>
+                        {/* Countdown Alignment */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Countdown Alignment
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'left', label: 'Left' },
+                              { id: 'center', label: 'Center' },
+                              { id: 'right', label: 'Right' },
+                            ].map((pos) => (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, countdown_position: pos.id as any })}
+                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                  (form.countdown_position || 'left') === pos.id
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Deals End Date & Time *
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={form.end_date || ''}
-                        onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                      />
-                    </div>
+                        {/* Dates */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Deals End Date & Time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={form.end_date || ''}
+                              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                            />
+                            <span className="text-[10px] text-slate-400 block mt-1">Timer counts down to this moment</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Start Date & Time (Optional)
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={form.start_date || ''}
+                              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Countdown Styling */}
+                        <div className="pt-3 border-t border-slate-200 space-y-3">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Countdown Colors
+                          </label>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Box Background</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={form.countdown_bg_color || '#002B30'}
+                                  onChange={(e) => setForm({ ...form, countdown_bg_color: e.target.value })}
+                                  className="w-8 h-8 rounded border border-slate-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={form.countdown_bg_color || '#002B30'}
+                                  onChange={(e) => setForm({ ...form, countdown_bg_color: e.target.value })}
+                                  className="flex-1 px-2 py-1 border rounded text-xs font-mono uppercase"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Number / Text Color</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={form.countdown_text_color || '#FFFFFF'}
+                                  onChange={(e) => setForm({ ...form, countdown_text_color: e.target.value })}
+                                  className="w-8 h-8 rounded border border-slate-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={form.countdown_text_color || '#FFFFFF'}
+                                  onChange={(e) => setForm({ ...form, countdown_text_color: e.target.value })}
+                                  className="flex-1 px-2 py-1 border rounded text-xs font-mono uppercase"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
                 {/* 4. CTA TAB */}
                 {activeTab === 'cta' && (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Button Label *
-                      </label>
+                    {/* Enable / Disable Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <div>
+                        <span className="font-bold text-xs text-slate-900 block">Enable CTA Button</span>
+                        <span className="text-[11px] text-slate-500">Displays clickable action button on the banner</span>
+                      </div>
                       <input
-                        type="text"
-                        value={form.cta_text || ''}
-                        onChange={(e) => setForm({ ...form, cta_text: e.target.value })}
-                        placeholder="Shop Today's Deals →"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                        type="checkbox"
+                        checked={form.cta_enabled !== false}
+                        onChange={(e) => setForm({ ...form, cta_enabled: e.target.checked })}
+                        className="w-5 h-5 accent-[#006670] rounded cursor-pointer"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Click Action Destination
+                    {form.cta_enabled !== false && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={form.cta_text || ''}
+                            onChange={(e) => setForm({ ...form, cta_text: e.target.value })}
+                            placeholder="Shop Today's Deals →"
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                          />
+                        </div>
+
+                        {/* Button Alignment */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Button Alignment
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'left', label: 'Left' },
+                              { id: 'center', label: 'Center' },
+                              { id: 'right', label: 'Right' },
+                            ].map((pos) => (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, cta_position: pos.id as any })}
+                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                  (form.cta_position || 'left') === pos.id
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Button Colors */}
+                        <div className="pt-3 border-t border-slate-200 space-y-3">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Button Colors
+                          </label>
+                          <div className="grid grid-cols-3 gap-2.5">
+                            <div>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Background</span>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="color"
+                                  value={form.cta_bg_color || '#2DD4BF'}
+                                  onChange={(e) => setForm({ ...form, cta_bg_color: e.target.value })}
+                                  className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={form.cta_bg_color || '#2DD4BF'}
+                                  onChange={(e) => setForm({ ...form, cta_bg_color: e.target.value })}
+                                  className="w-full px-1.5 py-1 border rounded text-[10px] font-mono uppercase"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Text Color</span>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="color"
+                                  value={form.cta_text_color || '#002B30'}
+                                  onChange={(e) => setForm({ ...form, cta_text_color: e.target.value })}
+                                  className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={form.cta_text_color || '#002B30'}
+                                  onChange={(e) => setForm({ ...form, cta_text_color: e.target.value })}
+                                  className="w-full px-1.5 py-1 border rounded text-[10px] font-mono uppercase"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Border Color</span>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="color"
+                                  value={form.cta_border_color || '#14B8A6'}
+                                  onChange={(e) => setForm({ ...form, cta_border_color: e.target.value })}
+                                  className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={form.cta_border_color || '#14B8A6'}
+                                  onChange={(e) => setForm({ ...form, cta_border_color: e.target.value })}
+                                  className="w-full px-1.5 py-1 border rounded text-[10px] font-mono uppercase"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CTA Destination */}
+                        <div className="pt-3 border-t border-slate-200 space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              CTA Destination Action
+                            </label>
+                            <select
+                              value={form.cta_action_type || 'url'}
+                              onChange={(e) => {
+                                const val = e.target.value as any;
+                                setForm({
+                                  ...form,
+                                  cta_action_type: val,
+                                  cta_target_id: '',
+                                  cta_url: val === 'url' ? '/daily-offers' : form.cta_url,
+                                });
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                            >
+                              <option value="url">Website URL (Default: /daily-offers/[id])</option>
+                              <option value="product">Specific Product (Search & Select)</option>
+                              <option value="category">Product Category</option>
+                              <option value="brand">Brand</option>
+                            </select>
+                          </div>
+
+                          {/* Specific Product Search & Selector */}
+                          {form.cta_action_type === 'product' && (
+                            <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Target Product
+                              </label>
+
+                              {selectedCtaProduct ? (
+                                <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-teal-200 shadow-2xs">
+                                  {selectedCtaProduct.primary_image && (
+                                    <div className="w-10 h-10 rounded bg-slate-100 relative overflow-hidden shrink-0 border border-slate-200">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={selectedCtaProduct.primary_image}
+                                        alt={selectedCtaProduct.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-bold text-xs text-slate-900 block truncate">
+                                      {selectedCtaProduct.name}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 block">
+                                      SKU: {selectedCtaProduct.sku || 'N/A'} • ₹{selectedCtaProduct.pricing?.selling_price || 0}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, cta_target_id: '' })}
+                                    className="p-1 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
+                                    title="Change product"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="relative">
+                                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                                    <input
+                                      type="text"
+                                      value={ctaProductSearchQuery}
+                                      onChange={(e) => setCtaProductSearchQuery(e.target.value)}
+                                      placeholder="Search product by name or SKU..."
+                                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold focus:ring-1 focus:ring-[#006670] focus:outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="max-h-40 overflow-y-auto space-y-1 bg-white rounded-lg border border-slate-200 p-1.5">
+                                    {ctaFilteredProducts.length === 0 ? (
+                                      <p className="text-center text-slate-400 text-xs py-2">No products found</p>
+                                    ) : (
+                                      ctaFilteredProducts.map((p) => (
+                                        <div
+                                          key={p.id}
+                                          className="flex items-center justify-between p-1.5 hover:bg-slate-50 rounded text-xs gap-2"
+                                        >
+                                          <span className="truncate font-semibold text-slate-800">{p.name}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setForm({ ...form, cta_target_id: p.slug || p.id })}
+                                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#006670] text-white hover:bg-[#004d54] shrink-0 cursor-pointer"
+                                          >
+                                            Select
+                                          </button>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {form.cta_action_type === 'category' && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Select Category
+                              </label>
+                              <select
+                                value={form.cta_target_id || ''}
+                                onChange={(e) => setForm({ ...form, cta_target_id: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                              >
+                                <option value="">-- Choose Category --</option>
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.slug}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {form.cta_action_type === 'brand' && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Select Brand
+                              </label>
+                              <select
+                                value={form.cta_target_id || ''}
+                                onChange={(e) => setForm({ ...form, cta_target_id: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                              >
+                                <option value="">-- Choose Brand --</option>
+                                {brands.map((b) => (
+                                  <option key={b.id} value={b.slug}>
+                                    {b.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {form.cta_action_type === 'url' && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Destination URL
+                              </label>
+                              <input
+                                type="text"
+                                value={form.cta_url || ''}
+                                onChange={(e) => setForm({ ...form, cta_url: e.target.value })}
+                                placeholder="/daily-offers"
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* 5. STYLING & LAYOUT TAB */}
+                {activeTab === 'styling' && (
+                  <div className="space-y-5">
+                    {/* Positioning Controls */}
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Dynamic Content Positioning
                       </label>
-                      <select
-                        value={form.cta_action_type || 'url'}
-                        onChange={(e) => setForm({ ...form, cta_action_type: e.target.value as any })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                      >
-                        <option value="url">Dedicated Offer Page (/daily-offers/[id])</option>
-                        <option value="category">Product Category</option>
-                        <option value="brand">Brand</option>
-                        <option value="product">Specific Product</option>
-                      </select>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Horizontal Alignment</span>
+                          <div className="grid grid-cols-3 gap-1">
+                            {['left', 'center', 'right'].map((h) => (
+                              <button
+                                key={h}
+                                type="button"
+                                onClick={() => setForm({ ...form, horizontal_alignment: h as any })}
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
+                                  (form.horizontal_alignment || 'left') === h
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {h}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Vertical Placement</span>
+                          <div className="grid grid-cols-3 gap-1">
+                            {['top', 'center', 'bottom'].map((v) => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => setForm({ ...form, vertical_alignment: v as any })}
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
+                                  (form.vertical_alignment || 'center') === v
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {v}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-600 mb-1">Content Width</span>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { id: 'small', label: 'Small' },
+                            { id: 'medium', label: 'Medium' },
+                            { id: 'large', label: 'Large' },
+                            { id: 'full', label: 'Full Width' },
+                          ].map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => setForm({ ...form, content_width: w.id as any })}
+                              className={`py-1 px-2 rounded-lg border text-xs font-bold cursor-pointer ${
+                                (form.content_width || 'large') === w.id
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              {w.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
-                    {form.cta_action_type === 'url' && (
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Destination URL (Default: /daily-offers)
-                        </label>
-                        <input
-                          type="text"
-                          value={form.cta_url || ''}
-                          onChange={(e) => setForm({ ...form, cta_url: e.target.value })}
-                          placeholder="/daily-offers"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono"
-                        />
+                    {/* Theme Presets */}
+                    <div className="pt-3 border-t border-slate-200 space-y-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Color Theme Presets
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {THEME_PRESETS.map((th) => (
+                          <button
+                            key={th.id}
+                            type="button"
+                            onClick={() =>
+                              setForm({
+                                ...form,
+                                theme: th.id as any,
+                                bg_color: th.bg_color,
+                                bg_gradient: th.bg_gradient,
+                                heading_color: th.heading_color,
+                                description_color: th.description_color,
+                                badge_bg_color: th.badge_bg_color,
+                                badge_text_color: th.badge_text_color,
+                                offer_color: th.offer_color,
+                                cta_bg_color: th.cta_bg_color,
+                                cta_text_color: th.cta_text_color,
+                                countdown_bg_color: th.countdown_bg_color,
+                                countdown_text_color: th.countdown_text_color,
+                              })
+                            }
+                            className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                              form.theme === th.id
+                                ? 'border-[#006670] ring-2 ring-teal-500/20 shadow-xs'
+                                : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-xs font-black block text-slate-900">{th.name}</span>
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/10"
+                                style={{ backgroundColor: th.bg_color }}
+                              />
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/10"
+                                style={{ backgroundColor: th.cta_bg_color }}
+                              />
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/10"
+                                style={{ backgroundColor: th.offer_color }}
+                              />
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    )}
+                    </div>
 
-                    {form.cta_action_type === 'category' && (
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Select Category
-                        </label>
-                        <select
-                          value={form.cta_target_id || ''}
-                          onChange={(e) => setForm({ ...form, cta_target_id: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                        >
-                          <option value="">-- Choose Category --</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.slug}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {/* Detailed Palette Customization */}
+                    <div className="pt-3 border-t border-slate-200 space-y-3">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Banner Custom Palette
+                      </label>
 
-                    {form.cta_action_type === 'brand' && (
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Select Brand
-                        </label>
-                        <select
-                          value={form.cta_target_id || ''}
-                          onChange={(e) => setForm({ ...form, cta_target_id: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                        >
-                          <option value="">-- Choose Brand --</option>
-                          {brands.map((b) => (
-                            <option key={b.id} value={b.slug}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Heading Text</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={form.heading_color || '#FFFFFF'}
+                              onChange={(e) => setForm({ ...form, heading_color: e.target.value })}
+                              className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={form.heading_color || '#FFFFFF'}
+                              onChange={(e) => setForm({ ...form, heading_color: e.target.value })}
+                              className="flex-1 px-1.5 py-1 border rounded text-[11px] font-mono uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Description Text</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={form.description_color || '#CCECEE'}
+                              onChange={(e) => setForm({ ...form, description_color: e.target.value })}
+                              className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={form.description_color || '#CCECEE'}
+                              onChange={(e) => setForm({ ...form, description_color: e.target.value })}
+                              className="flex-1 px-1.5 py-1 border rounded text-[11px] font-mono uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Offer Tag Color</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={form.offer_color || '#2DD4BF'}
+                              onChange={(e) => setForm({ ...form, offer_color: e.target.value })}
+                              className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={form.offer_color || '#2DD4BF'}
+                              onChange={(e) => setForm({ ...form, offer_color: e.target.value })}
+                              className="flex-1 px-1.5 py-1 border rounded text-[11px] font-mono uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-600 mb-1">Badge Background</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={form.badge_bg_color || '#E6FFFA'}
+                              onChange={(e) => setForm({ ...form, badge_bg_color: e.target.value })}
+                              className="w-7 h-7 rounded border border-slate-300 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={form.badge_bg_color || '#E6FFFA'}
+                              onChange={(e) => setForm({ ...form, badge_bg_color: e.target.value })}
+                              className="flex-1 px-1.5 py-1 border rounded text-[11px] font-mono uppercase"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
 

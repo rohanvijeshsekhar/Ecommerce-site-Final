@@ -324,7 +324,15 @@ class FeaturedCollection(BaseModel):
 
     title = models.CharField(
         max_length=200,
+        blank=True,
+        default="",
         verbose_name="Collection Title / Main Heading",
+    )
+    font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="Font Family / Style",
     )
     description = models.TextField(
         blank=True,
@@ -971,33 +979,41 @@ class DailyOffer(BaseModel):
         verbose_name_plural = "Daily Offers / Hot Deals"
         ordering = ["sort_order", "-created_at"]
 
-    # ── Promotional Messaging & Content ──
+    # ── Promotional Messaging & Content (All Optional) ──
     badge_text = models.CharField(
         max_length=100,
-        default="🔥 DAILY DEALS",
         blank=True,
+        default="",
         verbose_name="Badge / Label",
     )
     title = models.CharField(
         max_length=200,
-        default="Big Savings Today",
+        blank=True,
+        default="",
         verbose_name="Section Heading",
     )
     subheading = models.TextField(
         blank=True,
-        default="Limited-time deals on selected products.",
+        default="",
         verbose_name="Subheading / Description",
     )
     offer_text = models.CharField(
         max_length=100,
-        default="UP TO 40% OFF",
         blank=True,
+        default="",
         verbose_name="Offer Text / Discount Tag",
     )
     secondary_text = models.CharField(
         max_length=255,
         blank=True,
+        default="",
         verbose_name="Secondary Text / Microcopy",
+    )
+    font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="Font Family / Style",
     )
 
     # ── Offer Type ──
@@ -1179,6 +1195,13 @@ class DailyOffer(BaseModel):
         default=True,
         verbose_name="Enable Countdown Timer",
     )
+    countdown_position = models.CharField(
+        max_length=20,
+        default="left",
+        choices=[("left", "Left"), ("center", "Center"), ("right", "Right")],
+        blank=True,
+        verbose_name="Countdown Alignment",
+    )
     start_date = models.DateTimeField(
         null=True,
         blank=True,
@@ -1191,9 +1214,21 @@ class DailyOffer(BaseModel):
     )
 
     # ── Call To Action (CTA) ──
+    cta_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Enable CTA Button",
+    )
+    cta_position = models.CharField(
+        max_length=20,
+        default="left",
+        choices=[("left", "Left"), ("center", "Center"), ("right", "Right")],
+        blank=True,
+        verbose_name="CTA Button Alignment",
+    )
     cta_text = models.CharField(
         max_length=100,
         default="Shop Today's Deals →",
+        blank=True,
         verbose_name="CTA Button Text",
     )
     cta_action_type = models.CharField(

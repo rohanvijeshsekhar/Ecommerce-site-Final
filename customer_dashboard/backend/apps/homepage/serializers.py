@@ -265,7 +265,7 @@ class FeaturedCollectionReadSerializer(serializers.ModelSerializer):
     class Meta:
         model  = FeaturedCollection
         fields = [
-            "id", "title", "description", "image", "image_url",
+            "id", "title", "description", "font_family", "image", "image_url",
             "mobile_image", "mobile_image_url",
             "banner_layout", "content_width", "horizontal_alignment", "vertical_alignment",
             "badge_text", "offer_text", "secondary_text",
@@ -291,6 +291,8 @@ class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
 
 
 class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    font_family = serializers.CharField(required=False, allow_blank=True)
     image = serializers.ImageField(required=False, allow_null=True)
     image_url = serializers.SerializerMethodField(read_only=True)
     mobile_image = serializers.ImageField(required=False, allow_null=True)
@@ -302,7 +304,7 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model  = FeaturedCollection
         fields = [
-            "id", "title", "description", "image", "image_url",
+            "id", "title", "description", "font_family", "image", "image_url",
             "mobile_image", "mobile_image_url",
             "banner_layout", "content_width", "horizontal_alignment", "vertical_alignment",
             "badge_text", "offer_text", "secondary_text",
@@ -817,6 +819,7 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
         model = DailyOffer
         fields = [
             "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
+            "font_family",
             "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
             "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
             "horizontal_alignment", "vertical_alignment", "content_width",
@@ -824,8 +827,8 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
             "badge_bg_color", "badge_text_color", "offer_color",
             "cta_bg_color", "cta_text_color", "cta_border_color",
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
-            "countdown_enabled", "start_date", "end_date",
-            "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "countdown_enabled", "countdown_position", "start_date", "end_date",
+            "cta_enabled", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
             "status", "is_active", "sort_order", "created_at", "updated_at",
             "items",
         ]
@@ -838,6 +841,16 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
 
 
 class DailyOfferWriteSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    badge_text = serializers.CharField(required=False, allow_blank=True)
+    subheading = serializers.CharField(required=False, allow_blank=True)
+    offer_text = serializers.CharField(required=False, allow_blank=True)
+    secondary_text = serializers.CharField(required=False, allow_blank=True)
+    font_family = serializers.CharField(required=False, allow_blank=True)
+    countdown_position = serializers.CharField(required=False, allow_blank=True)
+    cta_enabled = serializers.BooleanField(required=False, default=True)
+    cta_position = serializers.CharField(required=False, allow_blank=True)
+    cta_text = serializers.CharField(required=False, allow_blank=True)
     desktop_image = serializers.ImageField(required=False, allow_null=True)
     desktop_image_url = serializers.SerializerMethodField(read_only=True)
     mobile_image = serializers.ImageField(required=False, allow_null=True)
@@ -851,6 +864,7 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
         model = DailyOffer
         fields = [
             "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
+            "font_family",
             "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
             "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
             "horizontal_alignment", "vertical_alignment", "content_width",
@@ -858,8 +872,8 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
             "badge_bg_color", "badge_text_color", "offer_color",
             "cta_bg_color", "cta_text_color", "cta_border_color",
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
-            "countdown_enabled", "start_date", "end_date",
-            "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "countdown_enabled", "countdown_position", "start_date", "end_date",
+            "cta_enabled", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
             "status", "is_active", "sort_order", "items_data",
         ]
         read_only_fields = ["id", "desktop_image_url", "mobile_image_url"]

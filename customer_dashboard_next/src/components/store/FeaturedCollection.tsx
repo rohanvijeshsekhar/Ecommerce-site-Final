@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { api } from '@/lib/api';
+import { getFontFamilyCss } from '@/lib/bannerFonts';
 
 export interface FeaturedCollectionData {
   id: string;
@@ -20,6 +21,7 @@ export interface FeaturedCollectionData {
   badge_text?: string;
   offer_text?: string;
   secondary_text?: string;
+  font_family?: string;
   cta_text?: string;
   cta_action_type?: string;
   cta_target_id?: string;
@@ -253,7 +255,10 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
       id="featured-collection-banner"
       aria-label="Promotional Banner"
       className="w-full relative overflow-hidden select-none"
-      style={{ backgroundColor: activeCollection.bg_color || '#E8F5F4' }}
+      style={{
+        backgroundColor: activeCollection.bg_color || '#E8F5F4',
+        fontFamily: getFontFamilyCss(activeCollection.font_family),
+      }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -315,14 +320,16 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               </div>
 
               {/* Main Headline */}
-              <h2
-                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
-                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                }`}
-                style={{ color: activeCollection.heading_color || '#0F172A' }}
-              >
-                {activeCollection.title}
-              </h2>
+              {activeCollection.title && (
+                <h2
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
+                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                  }`}
+                  style={{ color: activeCollection.heading_color || '#0F172A' }}
+                >
+                  {activeCollection.title}
+                </h2>
+              )}
 
               {/* Description */}
               {activeCollection.description && (

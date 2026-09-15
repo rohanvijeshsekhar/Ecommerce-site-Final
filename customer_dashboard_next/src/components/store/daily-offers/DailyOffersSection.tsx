@@ -7,6 +7,7 @@ import { ArrowRight, Flame, Sparkles } from 'lucide-react';
 import type { DailyOffer } from '@/admin/types/admin';
 import { api } from '@/lib/api';
 import DailyOfferCountdown from './DailyOfferCountdown';
+import { getFontFamilyCss } from '@/lib/bannerFonts';
 
 interface DailyOffersSectionProps {
   initialOffers?: DailyOffer[];
@@ -57,8 +58,12 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('daily-offers-updated', handleUpdated);
-      return () => window.removeEventListener('daily-offers-updated', handleUpdated);
     }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('daily-offers-updated', handleUpdated);
+      }
+    };
   }, []);
 
   const activeOffer = previewOffer || offers[0];
@@ -93,10 +98,42 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   const isMobilePreview = previewDevice === 'mobile';
   const effectivePreviewImage = isMobilePreview && mobileBannerImage ? mobileBannerImage : bannerImage;
 
-  // Alignment
+  // Font resolution
+  const bannerFontFamily = getFontFamilyCss(activeOffer.font_family);
+
+  // Dynamic Content Presence Checks (all optional)
+  const hasTitle = Boolean(activeOffer.title?.trim());
+  const hasSubheading = Boolean(activeOffer.subheading?.trim());
+  const hasBadge = Boolean(activeOffer.badge_text?.trim());
+  const hasOfferText = Boolean(activeOffer.offer_text?.trim());
+  const hasSecondaryText = Boolean(activeOffer.secondary_text?.trim());
+  const hasAnyText = hasTitle || hasSubheading || hasBadge || hasOfferText || hasSecondaryText;
+
+  const hasCountdown = Boolean(activeOffer.countdown_enabled !== false && activeOffer.end_date);
+  const hasCta = Boolean(activeOffer.cta_enabled !== false && activeOffer.cta_text?.trim());
+  const hasAnyDynamicOverlay = hasAnyText || hasCountdown || hasCta;
+
+  // Alignment & Positioning
   const hAlign = activeOffer.horizontal_alignment || (isBackgroundMode ? 'center' : 'left');
   const textAlignClass =
     hAlign === 'left' ? 'text-left items-start' : hAlign === 'right' ? 'text-right items-end' : 'text-center items-center';
+
+  const vAlign = activeOffer.vertical_alignment || 'center';
+  const vAlignClass =
+    vAlign === 'top' ? 'justify-start' : vAlign === 'bottom' ? 'justify-end' : 'justify-center';
+
+  const cWidth = activeOffer.content_width || 'large';
+  const widthClass =
+    cWidth === 'small' ? 'max-w-xl' : cWidth === 'medium' ? 'max-w-3xl' : cWidth === 'full' ? 'max-w-full' : 'max-w-5xl';
+
+  // Element Specific Alignments
+  const countdownAlign = activeOffer.countdown_position || hAlign;
+  const countdownAlignClass =
+    countdownAlign === 'center' ? 'items-center text-center' : countdownAlign === 'right' ? 'items-end text-right' : 'items-start text-left';
+
+  const ctaAlign = activeOffer.cta_position || hAlign;
+  const ctaAlignClass =
+    ctaAlign === 'center' ? 'self-center' : ctaAlign === 'right' ? 'self-end' : 'self-start';
 
   // Dedicated offer landing page destination
   const targetOfferId = activeOffer.id || 'current';
@@ -121,16 +158,26 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
     router.push(ctaDestination);
   };
 
+  // Overlay opacity: 0 if no dynamic overlay (clean image banner), or configured opacity if text exists
+  const effectiveOverlayOpacity = hasAnyDynamicOverlay ? (activeOffer.overlay_opacity ?? 60) : 0;
+
   return (
     <section
       onClick={handleNavigate}
       className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${
+        !hasAnyDynamicOverlay && isBackgroundMode
+          ? isMobilePreview
+            ? 'h-[220px]'
+            : 'h-[280px] sm:h-[380px] md:h-[460px] lg:h-[520px]'
+          : 'min-h-[320px]'
+      } ${
         isLivePreview
           ? 'rounded-2xl border border-slate-200 cursor-default'
           : 'cursor-pointer group hover:shadow-[0_20px_50px_rgba(0,102,112,0.22)]'
       }`}
       style={{
         background: bgGradient || bgColor,
+        fontFamily: bannerFontFamily,
       }}
       aria-label="Daily Offers & Hot Deals"
     >
@@ -144,7 +191,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={effectivePreviewImage}
-                alt={activeOffer.title}
+                alt={activeOffer.title || 'Daily Offer Banner'}
                 className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
               />
             ) : (
@@ -155,167 +202,96 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={bannerImage}
-                  alt={activeOffer.title}
+                  alt={activeOffer.title || 'Daily Offer Banner'}
                   className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
                 />
               </picture>
             )}
-            {/* High-contrast gradient overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(135deg, rgba(0,43,48,${(activeOffer.overlay_opacity ?? 70) / 100}) 0%, rgba(0,77,84,${(activeOffer.overlay_opacity ?? 60) / 100}) 100%)`,
-              }}
-            />
+
+            {/* Gradient overlay only rendered if text/countdown/cta overlay is active */}
+            {effectiveOverlayOpacity > 0 && (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, rgba(0,43,48,${effectiveOverlayOpacity / 100}) 0%, rgba(0,77,84,${(effectiveOverlayOpacity * 0.85) / 100}) 100%)`,
+                }}
+              />
+            )}
           </div>
         </>
       )}
 
-      {/* Decorative Radial Glow */}
-      <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[700px] h-[350px] bg-white/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 translate-x-1/2 w-[600px] h-[300px] bg-black/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative Radial Glow (Only if dynamic text exists to prevent washing out clean images) */}
+      {hasAnyDynamicOverlay && (
+        <>
+          <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[700px] h-[350px] bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 translate-x-1/2 w-[600px] h-[300px] bg-black/20 rounded-full blur-3xl pointer-events-none" />
+        </>
+      )}
 
       {/* ============================================================
           BANNER INNER CONTENT
          ============================================================ */}
       <div
         className={`relative z-10 max-w-[1440px] mx-auto ${
+          isBackgroundMode && hasAnyDynamicOverlay
+            ? isMobilePreview
+              ? 'min-h-[220px] flex flex-col ' + vAlignClass
+              : 'min-h-[340px] sm:min-h-[420px] md:min-h-[480px] flex flex-col ' + vAlignClass
+            : ''
+        } ${
           isMobilePreview ? 'px-4 py-8' : 'px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-16'
-        }`}
+        } ${!hasAnyDynamicOverlay && isBackgroundMode ? 'pointer-events-none' : ''}`}
       >
         {isBackgroundMode ? (
           /* Background Mode: Centered / Configurable Content Stack */
-          <div className={`mx-auto flex flex-col ${textAlignClass} max-w-4xl`}>
-            {/* Badge & Offer Tag Row */}
-            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start mb-3.5">
-              {activeOffer.badge_text && (
-                <span
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
-                  style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
+          hasAnyDynamicOverlay ? (
+            <div className={`w-full flex flex-col ${textAlignClass} ${vAlignClass} ${widthClass} ${hAlign === 'center' ? 'mx-auto' : hAlign === 'right' ? 'ml-auto' : 'mr-auto'}`}>
+              {/* Badge & Offer Tag Row */}
+              {(hasBadge || hasOfferText) && (
+                <div
+                  className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${
+                    hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                  }`}
                 >
-                  <Flame className="w-4 h-4 fill-current animate-bounce" />
-                  {activeOffer.badge_text}
-                </span>
-              )}
+                  {hasBadge && (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
+                      style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
+                    >
+                      <Flame className="w-4 h-4 fill-current animate-bounce" />
+                      {activeOffer.badge_text}
+                    </span>
+                  )}
 
-              {activeOffer.offer_text && (
-                <span
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/40 backdrop-blur-md border border-white/20 shadow-inner"
-                  style={{ color: offerColor }}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {activeOffer.offer_text}
-                </span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h2
-              className={`${
-                isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
-              } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
-              style={{ color: headingColor }}
-            >
-              {activeOffer.title}
-            </h2>
-
-            {/* Subtitle */}
-            {activeOffer.subheading && (
-              <p
-                className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-2xl mb-6 drop-shadow-sm"
-                style={{ color: descColor }}
-              >
-                {activeOffer.subheading}
-              </p>
-            )}
-
-            {/* Countdown & CTA */}
-            <div className="flex items-center gap-5 sm:gap-7 flex-wrap justify-center sm:justify-start pt-1">
-              {activeOffer.countdown_enabled && (
-                <div className="flex flex-col items-center sm:items-start gap-1">
-                  <span className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80" style={{ color: descColor }}>
-                    Deals End In:
-                  </span>
-                  <DailyOfferCountdown
-                    endDate={activeOffer.end_date}
-                    startDate={activeOffer.start_date}
-                    bgColor={countdownBgColor}
-                    textColor={countdownTextColor}
-                  />
+                  {hasOfferText && (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/40 backdrop-blur-md border border-white/20 shadow-inner"
+                      style={{ color: offerColor }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {activeOffer.offer_text}
+                    </span>
+                  )}
                 </div>
               )}
-
-              {activeOffer.cta_text && (
-                <div className="self-end mt-2 sm:mt-0">
-                  <button
-                    type="button"
-                    onClick={handleNavigate}
-                    className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
-                    style={{
-                      backgroundColor: ctaBgColor,
-                      color: ctaTextColor,
-                      border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
-                    }}
-                  >
-                    <span>{activeOffer.cta_text}</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* ============================================================
-             MODE 2: SPLIT LAYOUT (Content + High-Impact Promotional Image)
-             ============================================================ */
-          <div
-            className={`grid grid-cols-1 ${
-              isMobilePreview ? 'gap-6' : 'lg:grid-cols-12 gap-8 lg:gap-12'
-            } items-center`}
-          >
-            {/* Content Column */}
-            <div
-              className={`flex flex-col ${textAlignClass} ${
-                isMobilePreview ? 'w-full' : 'lg:col-span-7'
-              } ${isImageLeft && !isMobilePreview ? 'lg:order-2' : 'lg:order-1'}`}
-            >
-              {/* Badges */}
-              <div className="flex items-center gap-2.5 flex-wrap mb-3.5">
-                {activeOffer.badge_text && (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
-                    style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
-                  >
-                    <Flame className="w-4 h-4 fill-current animate-bounce" />
-                    {activeOffer.badge_text}
-                  </span>
-                )}
-
-                {activeOffer.offer_text && (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/30 backdrop-blur-md border border-white/20 shadow-inner"
-                    style={{ color: offerColor }}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {activeOffer.offer_text}
-                  </span>
-                )}
-              </div>
 
               {/* Title */}
-              <h2
-                className={`${
-                  isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
-                } font-black tracking-tight leading-[1.12] mb-3.5`}
-                style={{ color: headingColor }}
-              >
-                {activeOffer.title}
-              </h2>
+              {hasTitle && (
+                <h2
+                  className={`${
+                    isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
+                  } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
+                  style={{ color: headingColor }}
+                >
+                  {activeOffer.title}
+                </h2>
+              )}
 
-              {/* Subheading */}
-              {activeOffer.subheading && (
+              {/* Subtitle */}
+              {hasSubheading && (
                 <p
-                  className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-xl mb-6"
+                  className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-2xl mb-6 drop-shadow-sm"
                   style={{ color: descColor }}
                 >
                   {activeOffer.subheading}
@@ -323,62 +299,202 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               )}
 
               {/* Countdown & CTA */}
-              <div className="flex items-center gap-5 sm:gap-7 flex-wrap pt-1">
-                {activeOffer.countdown_enabled && (
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80" style={{ color: descColor }}>
-                      Deals End In:
-                    </span>
-                    <DailyOfferCountdown
-                      endDate={activeOffer.end_date}
-                      startDate={activeOffer.start_date}
-                      bgColor={countdownBgColor}
-                      textColor={countdownTextColor}
-                    />
-                  </div>
-                )}
+              {(hasCountdown || hasCta) && (
+                <div
+                  className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${
+                    hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  {hasCountdown && (
+                    <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
+                      <span
+                        className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80"
+                        style={{ color: descColor }}
+                      >
+                        Deals End In:
+                      </span>
+                      <DailyOfferCountdown
+                        endDate={activeOffer.end_date}
+                        startDate={activeOffer.start_date}
+                        bgColor={countdownBgColor}
+                        textColor={countdownTextColor}
+                      />
+                    </div>
+                  )}
 
-                {activeOffer.cta_text && (
-                  <div className="self-end mt-2 sm:mt-0">
-                    <button
-                      type="button"
-                      onClick={handleNavigate}
-                      className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
-                      style={{
-                        backgroundColor: ctaBgColor,
-                        color: ctaTextColor,
-                        border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
-                      }}
-                    >
-                      <span>{activeOffer.cta_text}</span>
-                      <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
-                )}
-              </div>
+                  {hasCta && (
+                    <div className={`${ctaAlignClass} mt-2 sm:mt-0`}>
+                      <button
+                        type="button"
+                        onClick={handleNavigate}
+                        className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
+                        style={{
+                          backgroundColor: ctaBgColor,
+                          color: ctaTextColor,
+                          border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
+                        }}
+                      >
+                        <span>{activeOffer.cta_text}</span>
+                        <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {activeOffer.secondary_text && (
+              {hasSecondaryText && (
                 <span className="text-xs opacity-75 mt-3.5 font-medium" style={{ color: descColor }}>
                   {activeOffer.secondary_text}
                 </span>
               )}
             </div>
+          ) : null
+        ) : (
+          /* ============================================================
+             MODE 2: SPLIT LAYOUT (Content + High-Impact Promotional Image)
+             ============================================================ */
+          <div
+            className={`grid grid-cols-1 ${
+              isMobilePreview || !hasAnyDynamicOverlay ? 'gap-6' : 'lg:grid-cols-12 gap-8 lg:gap-12'
+            } items-center`}
+          >
+            {/* Content Column (Only rendered when dynamic text or CTA exists) */}
+            {hasAnyDynamicOverlay && (
+              <div
+                className={`flex flex-col ${textAlignClass} ${
+                  isMobilePreview ? 'w-full' : 'lg:col-span-7'
+                } ${isImageLeft && !isMobilePreview ? 'lg:order-2' : 'lg:order-1'}`}
+              >
+                {/* Badges */}
+                {(hasBadge || hasOfferText) && (
+                  <div
+                    className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${
+                      hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    {hasBadge && (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
+                        style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
+                      >
+                        <Flame className="w-4 h-4 fill-current animate-bounce" />
+                        {activeOffer.badge_text}
+                      </span>
+                    )}
+
+                    {hasOfferText && (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/30 backdrop-blur-md border border-white/20 shadow-inner"
+                        style={{ color: offerColor }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {activeOffer.offer_text}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Title */}
+                {hasTitle && (
+                  <h2
+                    className={`${
+                      isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
+                    } font-black tracking-tight leading-[1.12] mb-3.5`}
+                    style={{ color: headingColor }}
+                  >
+                    {activeOffer.title}
+                  </h2>
+                )}
+
+                {/* Subheading */}
+                {hasSubheading && (
+                  <p
+                    className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-xl mb-6"
+                    style={{ color: descColor }}
+                  >
+                    {activeOffer.subheading}
+                  </p>
+                )}
+
+                {/* Countdown & CTA */}
+                {(hasCountdown || hasCta) && (
+                  <div
+                    className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${
+                      hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    {hasCountdown && (
+                      <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
+                        <span
+                          className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80"
+                          style={{ color: descColor }}
+                        >
+                          Deals End In:
+                        </span>
+                        <DailyOfferCountdown
+                          endDate={activeOffer.end_date}
+                          startDate={activeOffer.start_date}
+                          bgColor={countdownBgColor}
+                          textColor={countdownTextColor}
+                        />
+                      </div>
+                    )}
+
+                    {hasCta && (
+                      <div className={`${ctaAlignClass} mt-2 sm:mt-0`}>
+                        <button
+                          type="button"
+                          onClick={handleNavigate}
+                          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
+                          style={{
+                            backgroundColor: ctaBgColor,
+                            color: ctaTextColor,
+                            border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
+                          }}
+                        >
+                          <span>{activeOffer.cta_text}</span>
+                          <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {hasSecondaryText && (
+                  <span className="text-xs opacity-75 mt-3.5 font-medium" style={{ color: descColor }}>
+                    {activeOffer.secondary_text}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Promotional Image Column */}
             <div
-              className={`lg:col-span-5 relative w-full ${
-                isMobilePreview ? 'h-[220px]' : 'h-[280px] sm:h-[340px] lg:h-[400px]'
-              } flex items-center justify-center ${
-                isImageLeft ? 'lg:order-1' : 'lg:order-2'
+              className={`${
+                !hasAnyDynamicOverlay
+                  ? 'w-full h-[320px] sm:h-[420px] lg:h-[500px]'
+                  : isMobilePreview
+                  ? 'w-full h-[220px]'
+                  : 'lg:col-span-5 h-[280px] sm:h-[340px] lg:h-[400px]'
+              } relative w-full flex items-center justify-center ${
+                isImageLeft && hasAnyDynamicOverlay && !isMobilePreview ? 'lg:order-1' : 'lg:order-2'
               }`}
             >
-              <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-white/5 backdrop-blur-xs group-hover:scale-102 transition-transform duration-500">
+              <div
+                className={`relative w-full h-full rounded-2xl overflow-hidden ${
+                  !hasAnyDynamicOverlay
+                    ? 'shadow-xl'
+                    : 'shadow-2xl border border-white/15 bg-white/5 backdrop-blur-xs'
+                } group-hover:scale-102 transition-transform duration-500`}
+              >
                 {isLivePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={effectivePreviewImage}
-                    alt={activeOffer.title}
-                    className={`w-full h-full object-${imageFit} object-center p-2`}
+                    alt={activeOffer.title || 'Daily Offer Banner'}
+                    className={`w-full h-full object-${imageFit} object-center ${
+                      !hasAnyDynamicOverlay ? '' : 'p-2'
+                    }`}
                   />
                 ) : (
                   <picture className="w-full h-full flex items-center justify-center">
@@ -388,13 +504,17 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={bannerImage}
-                      alt={activeOffer.title}
-                      className={`w-full h-full object-${imageFit} object-center p-2`}
+                      alt={activeOffer.title || 'Daily Offer Banner'}
+                      className={`w-full h-full object-${imageFit} object-center ${
+                        !hasAnyDynamicOverlay ? '' : 'p-2'
+                      }`}
                     />
                   </picture>
                 )}
-                {/* Subtle sheen highlight */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10 pointer-events-none" />
+                {/* Subtle sheen highlight only when overlay exists */}
+                {hasAnyDynamicOverlay && (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10 pointer-events-none" />
+                )}
               </div>
             </div>
           </div>

@@ -495,6 +495,7 @@ export interface FeaturedCollection {
   overlay_opacity?: number;
   start_date?: string | null;
   end_date?: string | null;
+  font_family?: string;
   sort_order: number;
   is_visible: boolean;
   items?: FeaturedCollectionItem[];
@@ -532,11 +533,12 @@ export interface DailyOfferProduct {
 
 export interface DailyOffer {
   id: string;
-  badge_text: string;
-  title: string;
-  subheading: string;
-  offer_text: string;
+  badge_text?: string;
+  title?: string;
+  subheading?: string;
+  offer_text?: string;
   secondary_text?: string;
+  font_family?: string;
   offer_type: 'percentage' | 'flat' | 'bogo' | 'limited' | 'new_arrival' | 'clearance' | 'custom';
   desktop_image?: string | null;
   desktop_image_url?: string | null;
@@ -564,8 +566,11 @@ export interface DailyOffer {
   countdown_text_color?: string;
   product_badge_color?: string;
   countdown_enabled?: boolean;
+  countdown_position?: 'left' | 'center' | 'right';
   start_date?: string | null;
   end_date?: string | null;
+  cta_enabled?: boolean;
+  cta_position?: 'left' | 'center' | 'right';
   cta_text?: string;
   cta_action_type?: 'product' | 'category' | 'brand' | 'collection' | 'url';
   cta_target_id?: string;
