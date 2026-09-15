@@ -1124,10 +1124,66 @@ class ShiprocketWebhookView(APIView):
                     if status_changed:
                         dispatch_shipment_notification(shipment, event_type="status_changed")
 
+                else:
+                    # Check ReturnShipment (Reverse Logistics flow)
+                    from apps.returns.models import ReturnShipment, ReturnShipmentTrackingEvent
+                    from apps.returns.services.logistics import map_shiprocket_to_return_status, RETURN_STATUS_RANK
+                    from apps.returns.services.state_machine import ReturnStateMachineService
+
+                    return_shipment = None
+                    if awb_code:
+                        return_shipment = ReturnShipment.objects.filter(awb_number=awb_code).select_related("return_request", "return_request__customer", "return_request__order").first()
+                    if not return_shipment and sr_shipment_id:
+                        return_shipment = ReturnShipment.objects.filter(shiprocket_shipment_id=str(sr_shipment_id)).select_related("return_request", "return_request__customer", "return_request__order").first()
+
+                    if return_shipment:
+                        mapped_status = map_shiprocket_to_return_status(current_status, return_shipment.return_request.status)
+
+                        # Status Regression Protection
+                        cur_rank = RETURN_STATUS_RANK.get(return_shipment.return_request.status, 0)
+                        new_rank = RETURN_STATUS_RANK.get(mapped_status, 0)
+
+                        # Update Location from webhook payload
+                        loc = payload.get("location") or payload.get("city") or payload.get("destination")
+                        if not loc and payload.get("scans"):
+                            scans = payload.get("scans", [])
+                            if scans and isinstance(scans, list):
+                                loc = scans[-1].get("location") if isinstance(scans[-1], dict) else None
+                        if loc:
+                            return_shipment.current_location = str(loc)
+
+                        return_shipment.shiprocket_status = str(current_status)
+                        return_shipment.last_synced_at = timezone.now()
+                        return_shipment.save(update_fields=["current_location", "shiprocket_status", "last_synced_at", "updated_at"])
+
+                        # Log ReturnShipmentTrackingEvent
+                        ReturnShipmentTrackingEvent.objects.create(
+                            shipment=return_shipment,
+                            event_code=f"WEBHOOK_{str(current_status).upper()}",
+                            event_label=f"Webhook: {current_status}",
+                            status_mapped=mapped_status,
+                            event_timestamp=timezone.now(),
+                            location=return_shipment.current_location or "Shiprocket Network",
+                            description=f"Reverse status updated via Shiprocket Webhook: {current_status}",
+                            event_source="webhook",
+                        )
+
+                        # Advance ReturnRequest state machine if forward progression
+                        if new_rank > cur_rank:
+                            try:
+                                ReturnStateMachineService.transition_to(
+                                    return_request_id=str(return_shipment.return_request.id),
+                                    target_status=mapped_status,
+                                    notes=f"Reverse shipment updated via Webhook: {current_status} at {return_shipment.current_location}",
+                                )
+                            except Exception as ex:
+                                logger.warning(f"[RETURN_WEBHOOK_TRANSITION_FAILED] {ex}")
+
                 log_entry.is_processed = True
                 log_entry.processed_at = timezone.now()
                 log_entry.processing_result = f"Successfully processed status '{current_status}' for shipment."
                 log_entry.save()
+
 
         except Exception as e:
             logger.exception("Shiprocket webhook processing error: %s", e)

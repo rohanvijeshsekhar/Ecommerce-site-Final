@@ -48,14 +48,21 @@ class IsAdminUserPermission(permissions.BasePermission):
 class AdminReturnListFilterView(APIView):
     """
     GET /api/v1/admin/returns/
-    List all return requests with multi-field filtering.
+    List all return requests with multi-field filtering, search, and KPI counter aggregation.
     """
     permission_classes = [IsAdminUserPermission]
 
     def get(self, request):
         qs = (
             ReturnRequest.objects.select_related("customer", "order", "replacement_order")
-            .prefetch_related("items__order_item__product", "evidence", "events", "refund", "shipment")
+            .prefetch_related(
+                "items__order_item__product",
+                "evidence",
+                "events",
+                "refund",
+                "shipment__tracking_events",
+                "verification",
+            )
             .order_by("-created_at")
         )
 
@@ -64,9 +71,43 @@ class AdminReturnListFilterView(APIView):
         request_type = request.query_params.get("request_type", "").strip()
         order_number = request.query_params.get("order_number", "").strip()
         customer_email = request.query_params.get("customer_email", "").strip()
+        search_query = request.query_params.get("search", "") or request.query_params.get("q", "").strip()
+
+        if search_query:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(order__order_number__icontains=search_query) |
+                Q(customer__email__icontains=search_query) |
+                Q(customer__first_name__icontains=search_query) |
+                Q(customer__last_name__icontains=search_query) |
+                Q(shipment__awb_number__icontains=search_query) |
+                Q(id__icontains=search_query)
+            )
 
         if status_param:
-            qs = qs.filter(status=status_param)
+            if status_param == "pending_review":
+                qs = qs.filter(status__in=[ReturnStatus.REQUESTED, ReturnStatus.UNDER_REVIEW])
+            elif status_param == "in_transit":
+                qs = qs.filter(status=ReturnStatus.RETURN_IN_TRANSIT)
+            elif status_param == "delivered":
+                qs = qs.filter(status__in=[ReturnStatus.RETURN_DELIVERED, ReturnStatus.ITEM_RECEIVED])
+            elif status_param == "verification":
+                qs = qs.filter(status__in=[ReturnStatus.QC_PENDING, ReturnStatus.VERIFICATION_PENDING])
+            elif status_param == "refund_pending":
+                qs = qs.filter(status=ReturnStatus.REFUND_PENDING)
+            elif status_param == "completed":
+                qs = qs.filter(status__in=[ReturnStatus.REFUNDED, ReturnStatus.COMPLETED, ReturnStatus.DELIVERED])
+            elif status_param == "exceptions":
+                qs = qs.filter(status__in=[
+                    ReturnStatus.REJECTED,
+                    ReturnStatus.PICKUP_FAILED,
+                    ReturnStatus.VERIFICATION_FAILED,
+                    ReturnStatus.RETURN_LOST,
+                    ReturnStatus.CANCELLED,
+                ])
+            else:
+                qs = qs.filter(status=status_param)
+
         if reason_param:
             qs = qs.filter(reason=reason_param)
         if request_type:
@@ -76,8 +117,35 @@ class AdminReturnListFilterView(APIView):
         if customer_email:
             qs = qs.filter(customer__email__icontains=customer_email)
 
+        # Real KPI counts
+        all_reqs = ReturnRequest.objects.all()
+        counts = {
+            "all": all_reqs.count(),
+            "return_requests": all_reqs.filter(request_type="return_refund").count(),
+            "replacement_requests": all_reqs.filter(request_type="return_replacement").count(),
+            "pending_review": all_reqs.filter(status__in=[ReturnStatus.REQUESTED, ReturnStatus.UNDER_REVIEW]).count(),
+            "approved": all_reqs.filter(status=ReturnStatus.APPROVED).count(),
+            "pickup_scheduled": all_reqs.filter(status=ReturnStatus.PICKUP_SCHEDULED).count(),
+            "picked_up": all_reqs.filter(status=ReturnStatus.PICKED_UP).count(),
+            "in_transit": all_reqs.filter(status=ReturnStatus.RETURN_IN_TRANSIT).count(),
+            "delivered": all_reqs.filter(status__in=[ReturnStatus.RETURN_DELIVERED, ReturnStatus.ITEM_RECEIVED]).count(),
+            "verification": all_reqs.filter(status__in=[ReturnStatus.QC_PENDING, ReturnStatus.VERIFICATION_PENDING]).count(),
+            "refund_pending": all_reqs.filter(status=ReturnStatus.REFUND_PENDING).count(),
+            "completed": all_reqs.filter(status__in=[ReturnStatus.REFUNDED, ReturnStatus.COMPLETED]).count(),
+            "rejected": all_reqs.filter(status=ReturnStatus.REJECTED).count(),
+            "exceptions": all_reqs.filter(status__in=[
+                ReturnStatus.PICKUP_FAILED,
+                ReturnStatus.VERIFICATION_FAILED,
+                ReturnStatus.RETURN_LOST,
+                ReturnStatus.CANCELLED,
+            ]).count(),
+        }
+
         serializer = ReturnRequestSerializer(qs, many=True)
-        return success_response(data=serializer.data, message="Return requests retrieved.")
+        return success_response(
+            data={"results": serializer.data, "counts": counts},
+            message="Return requests retrieved."
+        )
 
 
 class AdminReturnDetailView(APIView):
@@ -90,7 +158,14 @@ class AdminReturnDetailView(APIView):
         try:
             return_req = (
                 ReturnRequest.objects.select_related("customer", "order", "replacement_order")
-                .prefetch_related("items__order_item__product", "evidence", "events", "refund", "shipment")
+                .prefetch_related(
+                    "items__order_item__product",
+                    "evidence",
+                    "events",
+                    "refund",
+                    "shipment__tracking_events",
+                    "verification",
+                )
                 .get(pk=pk)
             )
         except ReturnRequest.DoesNotExist:
@@ -98,6 +173,58 @@ class AdminReturnDetailView(APIView):
 
         serializer = ReturnRequestSerializer(return_req)
         return success_response(data=serializer.data, message="Return request details retrieved.")
+
+
+class AdminReturnSyncTrackingView(APIView):
+    """
+    POST /api/v1/admin/returns/<uuid:pk>/sync/
+    """
+    permission_classes = [IsAdminUserPermission]
+
+    def post(self, request, pk):
+        try:
+            res = ReturnShippingService.sync_tracking(return_request_id=str(pk))
+        except Exception as exc:
+            return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+
+        return success_response(data=res, message="Tracking synchronized from Shiprocket.")
+
+
+class AdminReturnVerificationView(APIView):
+    """
+    POST /api/v1/admin/returns/<uuid:pk>/verification/
+    Records doorstep or warehouse verification outcome.
+    """
+    permission_classes = [IsAdminUserPermission]
+
+    def post(self, request, pk):
+        status_val = request.data.get("status", "").strip()
+        verifier_name = request.data.get("verifier_name", "").strip()
+        failure_reason = request.data.get("failure_reason", "").strip()
+        notes = request.data.get("notes", "").strip()
+        evidence_file = request.FILES.get("evidence_file")
+        is_restockable = bool(request.data.get("is_restockable", True))
+
+        if not status_val:
+            return error_response("status ('PASS' or 'FAIL') is required.", status_code=status.HTTP_400_BAD_REQUEST)
+
+        from apps.returns.services.qc_service import ReturnVerificationService
+        try:
+            res = ReturnVerificationService.record_verification(
+                return_request_id=str(pk),
+                status=status_val,
+                verifier_name=verifier_name,
+                failure_reason=failure_reason,
+                notes=notes,
+                evidence_file=evidence_file,
+                actor=request.user,
+                is_restockable=is_restockable,
+            )
+        except Exception as exc:
+            return error_response(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+
+        return success_response(data=res, message="Verification recorded successfully.")
+
 
 
 class AdminReturnApproveView(APIView):

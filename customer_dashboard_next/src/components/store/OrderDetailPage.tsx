@@ -20,12 +20,22 @@ import {
   Package,
   Star,
   MessageSquarePlus,
+  RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { ordersService } from '../../lib/services/ordersService';
 import type { OrderDetail } from '../../lib/services/ordersService';
 import { api } from '../../lib/api';
 import { ReviewModal } from './ReviewModal';
 import OrderTrackingTimeline from './OrderTrackingTimeline';
+import { returnsService } from '@/services/returnsService';
+import type {
+  ReturnRequestDetail,
+  ReturnEligibilityResponse,
+  ReturnEligibilityItem,
+} from '@/services/returnsService';
+import { ReturnRequestModal } from './ReturnRequestModal';
+import { ReturnTrackingTimeline } from './ReturnTrackingTimeline';
 
 
 interface OrderDetailPageProps {
@@ -51,6 +61,29 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [activeReviewProduct, setActiveReviewProduct] = useState<{ id: string; name: string } | null>(null);
+  const [eligibility, setEligibility] = useState<ReturnEligibilityResponse | null>(null);
+  const [orderReturns, setOrderReturns] = useState<ReturnRequestDetail[]>([]);
+  const [activeReturnModalItem, setActiveReturnModalItem] = useState<{
+    item: ReturnEligibilityItem;
+    type: 'return_refund' | 'return_replacement';
+  } | null>(null);
+
+  const fetchReturnsData = useCallback(async () => {
+    try {
+      const [eligRes, retRes] = await Promise.all([
+        returnsService.checkEligibility(orderId).catch(() => null),
+        returnsService.getCustomerReturns({ order_id: orderId }).catch(() => null),
+      ]);
+      if (eligRes && eligRes.success && eligRes.data) {
+        setEligibility(eligRes.data);
+      }
+      if (retRes && retRes.success && retRes.data) {
+        setOrderReturns(retRes.data);
+      }
+    } catch (e) {
+      console.error('Failed to load return details:', e);
+    }
+  }, [orderId]);
 
   const handleDownloadPDF = async () => {
     if (!order) return;
@@ -97,7 +130,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
 
   useEffect(() => {
     fetchOrderDetail();
-  }, [fetchOrderDetail]);
+    fetchReturnsData();
+  }, [fetchOrderDetail, fetchReturnsData]);
 
   const handleCancelOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,6 +316,18 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
           </div>
         )}
 
+        {/* Active Return & Replacement Reverse Timelines */}
+        {orderReturns.map((retReq) => (
+          <ReturnTrackingTimeline
+            key={retReq.id}
+            returnRequest={retReq}
+            onRefresh={() => {
+              fetchReturnsData();
+              fetchOrderDetail();
+            }}
+          />
+        ))}
+
         {/* Detailed Grid: Products List & Breakdown Summary */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-start">
           {/* List of items */}
@@ -326,6 +372,59 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                         <span>Review</span>
                       </button>
                     )}
+
+                    {['delivered', 'DELIVERED'].includes(order.status) && (() => {
+                      const returnForThisItem = orderReturns.find((r) =>
+                        r.items?.some((ri) => ri.order_item === item.id)
+                      );
+                      const eligItem = eligibility?.items?.find((e) => e.order_item_id === item.id);
+
+                      if (returnForThisItem) {
+                        return (
+                          <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold uppercase px-2 py-1 rounded-lg border bg-amber-50 border-amber-200 text-amber-800">
+                            {returnForThisItem.request_type === 'return_replacement'
+                              ? 'Replacement Requested'
+                              : 'Return Requested'}
+                          </span>
+                        );
+                      }
+
+                      if (eligItem && eligItem.is_eligible) {
+                        return (
+                          <div className="flex items-center gap-1 sm:gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveReturnModalItem({
+                                  item: eligItem,
+                                  type: 'return_refund',
+                                })
+                              }
+                              className="inline-flex items-center gap-1 text-[9.5px] sm:text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-rose-200 transition-colors shadow-2xs cursor-pointer"
+                              title="Return this item for refund"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span className="hidden sm:inline">Return</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveReturnModalItem({
+                                  item: eligItem,
+                                  type: 'return_replacement',
+                                })
+                              }
+                              className="inline-flex items-center gap-1 text-[9.5px] sm:text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-indigo-200 transition-colors shadow-2xs cursor-pointer"
+                              title="Request free replacement"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span className="hidden sm:inline">Replace</span>
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               ))}
@@ -609,6 +708,23 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
             showToast?.('Review submitted successfully!');
             setActiveReviewProduct(null);
           }}
+        />
+      )}
+
+      {/* Return & Replacement Request Modal */}
+      {activeReturnModalItem && order && (
+        <ReturnRequestModal
+          isOpen={!!activeReturnModalItem}
+          onClose={() => setActiveReturnModalItem(null)}
+          orderId={order.id}
+          orderNumber={order.order_number}
+          eligibleItem={activeReturnModalItem.item}
+          defaultType={activeReturnModalItem.type}
+          onSuccess={() => {
+            fetchReturnsData();
+            fetchOrderDetail();
+          }}
+          showToast={showToast}
         />
       )}
     </div>

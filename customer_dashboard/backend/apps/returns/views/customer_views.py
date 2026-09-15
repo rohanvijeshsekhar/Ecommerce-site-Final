@@ -63,17 +63,28 @@ class CustomerReturnListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        order_id = request.query_params.get("order_id", "").strip()
         returns_qs = (
             ReturnRequest.objects.filter(customer=request.user)
             .select_related("order", "replacement_order")
             .prefetch_related("items__order_item__product", "evidence", "events", "refund", "shipment")
             .order_by("-created_at")
         )
+        if order_id:
+            returns_qs = returns_qs.filter(order__id=order_id)
         serializer = ReturnRequestSerializer(returns_qs, many=True)
         return success_response(data=serializer.data, message="Return requests retrieved.")
 
     def post(self, request):
-        serializer = CreateReturnRequestSerializer(data=request.data)
+        import json
+        payload_data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if isinstance(payload_data.get("items"), str):
+            try:
+                payload_data["items"] = json.loads(payload_data["items"])
+            except Exception:
+                pass
+
+        serializer = CreateReturnRequestSerializer(data=payload_data)
         if not serializer.is_valid():
             return error_response("Invalid return request payload.", errors=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
 

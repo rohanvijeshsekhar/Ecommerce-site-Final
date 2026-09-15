@@ -124,7 +124,10 @@ class RefundService:
             else:
                 logger.info(f"[RefundService] Retreived existing Refund record {refund.id} for Return {return_req.id}.")
 
-            if return_req.status in [ReturnStatus.QC_PASSED, ReturnStatus.APPROVED]:
+            if hasattr(return_req, "verification") and return_req.verification.status == "failed":
+                raise ValidationError("Cannot initiate refund: doorstep/warehouse verification has failed.")
+
+            if return_req.status in [ReturnStatus.VERIFICATION_PASSED, ReturnStatus.QC_PASSED, ReturnStatus.APPROVED]:
                 ReturnStateMachineService.transition_to(
                     return_request_id=str(return_req.id),
                     target_status=ReturnStatus.REFUND_PENDING,
@@ -133,6 +136,7 @@ class RefundService:
                 )
 
             return refund
+
 
     @classmethod
     def execute_refund(cls, refund_id: str, actor=None) -> Dict[str, Any]:

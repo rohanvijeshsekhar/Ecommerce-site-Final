@@ -15,6 +15,8 @@ from apps.returns.views.admin_views import (
     AdminReturnApproveView,
     AdminReturnRejectView,
     AdminReturnSchedulePickupView,
+    AdminReturnSyncTrackingView,
+    AdminReturnVerificationView,
     AdminReturnReceiveView,
     AdminReturnQCView,
     AdminReturnApproveRefundView,
@@ -37,9 +39,13 @@ urlpatterns = [
     path("admin/returns/<uuid:pk>/approve/", AdminReturnApproveView.as_view(), name="admin-return-approve"),
     path("admin/returns/<uuid:pk>/reject/", AdminReturnRejectView.as_view(), name="admin-return-reject"),
     path("admin/returns/<uuid:pk>/schedule-pickup/", AdminReturnSchedulePickupView.as_view(), name="admin-return-schedule-pickup"),
+    path("admin/returns/<uuid:pk>/create-reverse-shipment/", AdminReturnSchedulePickupView.as_view(), name="admin-return-create-reverse-shipment"),
+    path("admin/returns/<uuid:pk>/sync/", AdminReturnSyncTrackingView.as_view(), name="admin-return-sync"),
+    path("admin/returns/<uuid:pk>/verification/", AdminReturnVerificationView.as_view(), name="admin-return-verification"),
     path("admin/returns/<uuid:pk>/receive/", AdminReturnReceiveView.as_view(), name="admin-return-receive"),
     path("admin/returns/<uuid:pk>/qc/", AdminReturnQCView.as_view(), name="admin-return-qc"),
     path("admin/returns/<uuid:pk>/approve-refund/", AdminReturnApproveRefundView.as_view(), name="admin-return-approve-refund"),
     path("admin/returns/<uuid:pk>/approve-replacement/", AdminReturnApproveReplacementView.as_view(), name="admin-return-approve-replacement"),
     path("admin/refunds/<uuid:pk>/retry/", AdminRefundRetryView.as_view(), name="admin-refund-retry"),
 ]
+
