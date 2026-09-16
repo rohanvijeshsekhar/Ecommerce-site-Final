@@ -209,8 +209,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     stage: 'verifying',
   });
 
-  // Payment method selection ('razorpay' | 'cod')
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
+  // Payment method selection ('razorpay')
+  const [paymentMethod] = useState<'razorpay'>('razorpay');
 
   // Dynamic pricing overrides from backend preview
   const [previewPricing, setPreviewPricing] = useState<CheckoutPreview | null>(null);
@@ -238,13 +238,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         setAddresses(mapped);
 
         if (mapped.length > 0) {
-          setSelectedAddressId((currentId) => {
-            if (currentId && mapped.some((a) => a.id === currentId)) {
-              return currentId;
-            }
-            const defaultAddr = mapped.find((a) => a.is_default);
-            return defaultAddr ? defaultAddr.id : mapped[0].id;
-          });
+          const defaultAddr = mapped.find((a) => a.is_default) || mapped[0];
+          setSelectedAddressId(defaultAddr.id);
         }
       }
     } catch (e) {
@@ -319,15 +314,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const baseProductDiscountVal = previewPricing
     ? previewPricing.mrp_subtotal - previewPricing.selling_subtotal
     : baseProductDiscount;
-  const codFeeVal = previewPricing
-    ? (paymentMethod === 'cod' ? (previewPricing.cod_fee ?? previewPricing.estimated_cod_fee ?? 0) : 0)
-    : 0;
-  const estimatedCodFee = previewPricing
-    ? (previewPricing.estimated_cod_fee ?? previewPricing.cod_fee ?? 0)
-    : 0;
   const orderTotalVal = previewPricing
     ? previewPricing.total_amount
-    : orderTotal + (paymentMethod === 'cod' ? estimatedCodFee : 0);
+    : orderTotal;
   const overallSavingsVal = previewPricing ? previewPricing.savings : overallSavings;
   const couponDiscountVal = couponDiscount;
 
@@ -650,55 +639,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
-    // Branch 1: Cash on Delivery (COD)
-    if (paymentMethod === 'cod') {
-      if (previewPricing && previewPricing.cod_eligible === false) {
-        showToast?.(previewPricing.cod_ineligible_reason || 'Cash on Delivery is not available for this order.');
-        return;
-      }
-
-      setIsPlacing(true);
-      try {
-        const { cartService } = await import('../../lib/services/cart');
-        const itemsPayload =
-          cartItems && cartItems.length > 0
-            ? cartItems.map((item) => ({ product_id: item.id, quantity: item.qty }))
-            : undefined;
-
-        const placeRes = await cartService.placeOrder(
-          selectedAddressId,
-          'standard',
-          'cod',
-          gstInvoice ? gstNumber.trim().toUpperCase() : undefined,
-          itemsPayload
-        );
-
-        if (!placeRes.success || !placeRes.data) {
-          showToast?.(placeRes.message || 'Failed to place COD order.');
-          setIsPlacing(false);
-          return;
-        }
-
-        setPaymentProcessing({
-          isOpen: true,
-          stage: 'success',
-        });
-
-        setTimeout(() => {
-          onPlaceOrderSuccess(placeRes.data as any);
-        }, 600);
-      } catch (err: any) {
-        const errMsg =
-          err?.response?.data?.error?.message ||
-          err?.response?.data?.message ||
-          'Failed to place COD order.';
-        showToast?.(errMsg);
-        setIsPlacing(false);
-      }
-      return;
-    }
-
-    // Branch 2: Online Payment via Razorpay
+    // Online Payment via Razorpay
     setIsPlacing(true);
 
     try {
@@ -1420,23 +1361,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="p-4 sm:p-5 space-y-3">
-                {/* Option 1: Razorpay (UPI / Cards / Net Banking / Wallets) */}
+                {/* Online Payment (UPI / Cards / Net Banking / Wallets) */}
                 <div
-                  onClick={() => setPaymentMethod('razorpay')}
-                  className={`rounded-xl p-4 border transition-all cursor-pointer ${
-                    paymentMethod === 'razorpay'
-                      ? 'border-[#006670] bg-[#F2FAF9]/40 ring-1 ring-[#006670]/40 shadow-xs'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
+                  className="rounded-xl p-4 border border-[#006670] bg-[#F2FAF9]/40 ring-1 ring-[#006670]/40 shadow-xs"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border mt-1 flex items-center justify-center shrink-0 transition-colors ${
-                          paymentMethod === 'razorpay' ? 'border-[#006670] bg-[#006670]' : 'border-slate-300 bg-white'
-                        }`}
-                      >
-                        {paymentMethod === 'razorpay' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      <div className="w-4 h-4 rounded-full border border-[#006670] bg-[#006670] mt-1 flex items-center justify-center shrink-0 transition-colors">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
                       </div>
 
                       <div>
@@ -1445,7 +1377,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             UPI / Credit & Debit Card / Net Banking (Razorpay)
                           </h4>
                           <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                            FASTEST & RECOMMENDED
+                            100% SECURE PAYMENT
                           </span>
                         </div>
 
@@ -1469,104 +1401,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </div>
                   </div>
 
-                  {paymentMethod === 'razorpay' && (
-                    <div className="mt-4 pt-3.5 border-t border-slate-200/60">
-                      <button
-                        type="button"
-                        onClick={handlePlaceOrder}
-                        disabled={isPlacing}
-                        className="w-full sm:w-auto px-8 py-3 bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        {isPlacing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Opening Gateway...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>PAY ₹{orderTotalVal.toLocaleString('en-IN')} & PLACE ORDER</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Option 2: Cash on Delivery (COD) */}
-                <div
-                  onClick={() => {
-                    if (previewPricing && previewPricing.cod_eligible === false) {
-                      showToast?.(previewPricing.cod_ineligible_reason || 'Cash on Delivery is not available for this order.');
-                      return;
-                    }
-                    setPaymentMethod('cod');
-                  }}
-                  className={`rounded-xl p-4 border transition-all cursor-pointer ${
-                    previewPricing && previewPricing.cod_eligible === false
-                      ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-200'
-                      : paymentMethod === 'cod'
-                      ? 'border-[#006670] bg-[#F2FAF9]/40 ring-1 ring-[#006670]/40 shadow-xs'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border mt-1 flex items-center justify-center shrink-0 transition-colors ${
-                          paymentMethod === 'cod' ? 'border-[#006670] bg-[#006670]' : 'border-slate-300 bg-white'
-                        }`}
-                      >
-                        {paymentMethod === 'cod' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                            Cash on Delivery (Pay at Clinic)
-                          </h4>
-                          {estimatedCodFee > 0 && (
-                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                              + ₹{estimatedCodFee} Handling Fee
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-xs text-slate-500 mt-1">
-                          Pay with cash or UPI directly to the courier agent upon arrival of your medical package.
-                        </p>
-
-                        {previewPricing && previewPricing.cod_eligible === false && (
-                          <p className="text-xs font-bold text-rose-600 mt-1">
-                            {previewPricing.cod_ineligible_reason || 'COD is not available for this order.'}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                  <div className="mt-4 pt-3.5 border-t border-slate-200/60">
+                    <button
+                      type="button"
+                      onClick={handlePlaceOrder}
+                      disabled={isPlacing}
+                      className="w-full sm:w-auto px-8 py-3 bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {isPlacing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Opening Gateway...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>PAY ₹{orderTotalVal.toLocaleString('en-IN')} & PLACE ORDER</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
                   </div>
-
-                  {paymentMethod === 'cod' && (
-                    <div className="mt-4 pt-3.5 border-t border-slate-200/60">
-                      <button
-                        type="button"
-                        onClick={handlePlaceOrder}
-                        disabled={Boolean(isPlacing || (paymentMethod === 'cod' && previewPricing?.cod_eligible === false))}
-                        className="w-full sm:w-auto px-8 py-3 bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        {isPlacing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Confirming Order...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>CONFIRM COD ORDER (₹{orderTotalVal.toLocaleString('en-IN')})</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1614,15 +1468,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <span className="text-slate-600 font-medium">Included in Price</span>
                 </div>
 
-                {paymentMethod === 'cod' && (codFeeVal > 0 || estimatedCodFee > 0) && (
-                  <div className="flex justify-between">
-                    <span>COD Handling Fee</span>
-                    <span className="font-semibold text-slate-800">
-                      +₹{(codFeeVal || estimatedCodFee).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                )}
-
                 {/* Total Row */}
                 <div className="border-t border-dashed border-slate-200 pt-3 mt-2 flex justify-between items-center text-sm font-bold text-slate-900">
                   <span className="text-sm">Total Amount</span>
@@ -1644,7 +1489,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <button
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={Boolean(isPlacing || (paymentMethod === 'cod' && previewPricing?.cod_eligible === false))}
+                disabled={isPlacing}
                 className="w-full py-3.5 mt-4 rounded-lg bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md hover:shadow cursor-pointer flex items-center justify-center gap-2"
               >
                 {isPlacing ? (
@@ -1654,7 +1499,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>{paymentMethod === 'cod' ? 'Place COD Order' : 'Place Order & Pay'}</span>
+                    <span>Place Order & Pay</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -1707,7 +1552,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <button
           type="button"
           onClick={handlePlaceOrder}
-          disabled={Boolean(isPlacing || (paymentMethod === 'cod' && previewPricing?.cod_eligible === false))}
+          disabled={isPlacing}
           className="px-6 py-3 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-black uppercase tracking-wider shadow-md active:scale-98 cursor-pointer disabled:opacity-50 flex items-center gap-2"
         >
           {isPlacing ? (
@@ -1717,7 +1562,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </>
           ) : (
             <>
-              <span>{paymentMethod === 'cod' ? 'Place COD Order' : 'Proceed to Pay'}</span>
+              <span>Proceed to Pay</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -1781,15 +1626,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <span className="text-slate-600 font-medium">Included in Price</span>
               </div>
 
-              {paymentMethod === 'cod' && (codFeeVal > 0 || estimatedCodFee > 0) && (
-                <div className="flex justify-between">
-                  <span>COD Handling Fee</span>
-                  <span className="font-semibold text-slate-800">
-                    +₹{(codFeeVal || estimatedCodFee).toLocaleString('en-IN')}
-                  </span>
-                </div>
-              )}
-
               {/* Total Payable Row */}
               <div className="border-t border-dashed border-slate-200 pt-3 mt-1.5 flex justify-between items-center text-sm font-bold text-slate-900">
                 <span>Total Payable</span>
@@ -1815,7 +1651,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   setShowMobilePriceDetails(false);
                   handlePlaceOrder();
                 }}
-                disabled={Boolean(isPlacing || (paymentMethod === 'cod' && previewPricing?.cod_eligible === false))}
+                disabled={isPlacing}
                 className="w-full py-3.5 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-black uppercase tracking-wider shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isPlacing ? (
