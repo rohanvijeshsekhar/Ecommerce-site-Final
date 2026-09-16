@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Flame, Sparkles, ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
+import { ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
 import type { DailyOffer } from '@/admin/types/admin';
 import { api } from '@/lib/api';
-import DailyOfferCountdown from '@/components/store/daily-offers/DailyOfferCountdown';
 import DailyOfferCard from '@/components/store/daily-offers/DailyOfferCard';
 
 interface DailyOfferClientProps {
@@ -65,12 +64,6 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
   const productBadgeColor = offer.product_badge_color || '#006670';
   const items = offer.items || [];
 
-  const stripEmojis = (str?: string | null) =>
-    str ? str.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, '').trim() : '';
-
-  const badgeText = stripEmojis(offer.badge_text);
-  const offerText = stripEmojis(offer.offer_text);
-
   return (
     <div className="min-h-screen bg-slate-50 pt-[100px] lg:pt-[124px] pb-20">
       {/* ============================================================
@@ -93,56 +86,9 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
       </div>
 
       {/* ============================================================
-          2. FEATURED DEAL PRODUCTS (NO BANNER IMAGES)
+          2. FEATURED DEAL PRODUCTS LIST
          ============================================================ */}
       <main id="deal-products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {/* Header with Title, Badges & Countdown */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-xs mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div>
-              {/* Badges */}
-              <div className="flex items-center gap-2 flex-wrap mb-3">
-                {badgeText && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[#005F63] text-white shadow-2xs">
-                    {badgeText}
-                  </span>
-                )}
-                {offerText && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-teal-50 text-[#005F63] border border-[#005F63]/25">
-                    {offerText}
-                  </span>
-                )}
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200/80">
-                  {items.length} {items.length === 1 ? 'Product' : 'Products'} on Deal
-                </span>
-              </div>
-
-              {/* Title & Subheading */}
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-                {offer.title || 'Featured Deal Products'}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 max-w-2xl">
-                {offer.subheading || 'Lock in discounted pricing on verified clinical instruments and consumables before the timer expires.'}
-              </p>
-            </div>
-
-            {/* Countdown Timer */}
-            {offer.countdown_enabled && (
-              <div className="flex flex-col items-start md:items-end gap-1.5 shrink-0 bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl border md:border-0 border-slate-100">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                  Deals Expire In:
-                </span>
-                <DailyOfferCountdown
-                  endDate={offer.end_date}
-                  startDate={offer.start_date}
-                  bgColor="#002B30"
-                  textColor="#FFFFFF"
-                  compact={true}
-                />
-              </div>
-            )}
-          </div>
-        </div>
 
         {items.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center my-8">
