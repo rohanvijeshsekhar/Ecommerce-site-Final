@@ -12,6 +12,7 @@ import {
 import type { DailyOffer, DailyOfferProduct } from '../../types/admin';
 import { homepageService, adminService } from '../../services/adminService';
 import { useToast } from '../Toast';
+import ConfirmDialog from '../ConfirmDialog';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 import { BANNER_FONTS } from '@/lib/bannerFonts';
 
@@ -130,6 +131,8 @@ export const DailyOffersManager: React.FC = () => {
   const [offers, setOffers] = useState<DailyOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DailyOffer | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Studio Mode States
   const [showStudio, setShowStudio] = useState(false);
@@ -240,16 +243,26 @@ export const DailyOffersManager: React.FC = () => {
     }
   };
 
-  const handleDelete = async (offer: DailyOffer) => {
-    if (!window.confirm(`Are you sure you want to delete "${offer.title}"?`)) return;
+  const handleDelete = (offer: DailyOffer) => {
+    setDeleteTarget(offer);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      const res = await homepageService.deleteDailyOffer(offer.id);
+      const res = await homepageService.deleteDailyOffer(deleteTarget.id);
       if (res.success) {
-        toast.success('Offer deleted successfully');
+        toast.success('Daily offer deleted successfully');
         loadData();
+      } else {
+        toast.error(res.message || 'Failed to delete offer');
       }
     } catch {
       toast.error('Failed to delete offer');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -658,7 +671,7 @@ export const DailyOffersManager: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => handleDelete(offer)}
+                      onClick={() => setDeleteTarget(offer)}
                       className="p-2 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer"
                       title="Delete Offer"
                     >
@@ -1920,6 +1933,28 @@ export const DailyOffersManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Standard FAAZO Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Daily Offer"
+        message={
+          <span>
+            Are you sure you want to delete{' '}
+            <strong className="text-slate-900 font-semibold">
+              &ldquo;{deleteTarget?.title || 'Untitled Banner Deal'}&rdquo;
+            </strong>
+            ? This action cannot be undone and will permanently remove this campaign from the storefront.
+          </span>
+        }
+        confirmLabel="Delete Offer"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useAdmin } from '../../contexts/AdminContext';
 import ImageUploader from '../ImageUploader';
 import LoadingOverlay from '../LoadingOverlay';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface Banner {
   id: number;
@@ -35,6 +36,7 @@ const BestSellerBannerManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [isDirty, setIsDirty] = useState(false);
 
@@ -129,9 +131,8 @@ const BestSellerBannerManager: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!banner) return;
-    if (!confirm('Delete this banner? This cannot be undone.')) return;
     setDeleting(true);
     try {
       await api.delete(`bestsellers/admin/banner/${banner.id}/`);
@@ -139,6 +140,7 @@ const BestSellerBannerManager: React.FC = () => {
       setBanner(null);
       setForm({ ...EMPTY_FORM });
       setIsDirty(false);
+      setShowDeleteConfirm(false);
     } catch {
       showToast({ variant: 'error', title: 'Delete failed' });
     } finally {
@@ -160,7 +162,7 @@ const BestSellerBannerManager: React.FC = () => {
         <div className="flex items-center gap-3">
           {banner && (
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={deleting}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50 transition-colors cursor-pointer"
             >
@@ -321,6 +323,27 @@ const BestSellerBannerManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Best Seller Banner"
+        message={
+          <span>
+            Are you sure you want to delete{' '}
+            <strong className="text-slate-900 font-semibold">
+              &ldquo;{banner?.title || 'this banner'}&rdquo;
+            </strong>
+            ? This action cannot be undone.
+          </span>
+        }
+        confirmLabel="Delete Banner"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          if (!deleting) setShowDeleteConfirm(false);
+        }}
+      />
     </div>
   );
 };
