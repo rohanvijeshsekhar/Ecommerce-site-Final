@@ -148,8 +148,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     custom_label: '',
     full_name: '',
     mobile: '',
-    clinic_name: '', // line1
-    street_address: '', // line2
+    street_address: '', // line1 (Required)
+    landmark: '', // line2 (Optional)
     city: '',
     state: '',
     pincode: '',
@@ -369,15 +369,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const detected = await detectCurrentLocationAddress();
       setDetectedLocationData(detected);
 
-      // Populate or prefill address modal form, preserving contact details & clinic name
+      // Populate or prefill address modal form, preserving contact details
       setEditingAddress(null);
       setModalForm((prev) => ({
         ...prev,
         label_type: prev.label_type || 'Primary Clinic',
         full_name: prev.full_name || dentistName || user?.full_name || '',
         mobile: prev.mobile || phone || user?.phone_number || '',
-        clinic_name: prev.clinic_name || clinicName || profile?.clinic_name || '',
         street_address: detected.street_address || prev.street_address || '',
+        landmark: prev.landmark || clinicName || profile?.clinic_name || '',
         city: detected.city || prev.city || '',
         state: detected.state || prev.state || '',
         pincode: detected.pincode || prev.pincode || '',
@@ -417,8 +417,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       custom_label: '',
       full_name: dentistName || user?.full_name || '',
       mobile: phone || user?.phone_number || '',
-      clinic_name: clinicName || profile?.clinic_name || '',
       street_address: '',
+      landmark: clinicName || profile?.clinic_name || '',
       city: '',
       state: '',
       pincode: '',
@@ -440,8 +440,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       custom_label: isStandardLabel ? '' : addr.label,
       full_name: addr.full_name,
       mobile: addr.mobile,
-      clinic_name: addr.line1,
-      street_address: addr.line2,
+      street_address: addr.line1 || '',
+      landmark: addr.line2 || '',
       city: addr.city,
       state: addr.state,
       pincode: addr.pincode,
@@ -504,10 +504,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       errors.mobile = 'Enter a valid 10-digit Indian mobile number (starting with 6-9).';
     }
 
-    if (!modalForm.clinic_name || modalForm.clinic_name.trim().length < 5) {
-      errors.clinic_name = 'Please enter clinic / practice / business name (min 5 characters).';
-    }
-
     if (!modalForm.street_address || modalForm.street_address.trim().length < 5) {
       errors.street_address = 'Please enter complete street/building address (min 5 characters).';
     }
@@ -546,8 +542,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       label: resolvedLabel || 'Primary Clinic',
       full_name: modalForm.full_name.trim(),
       mobile: modalForm.mobile.replace(/\D/g, ''),
-      line1: modalForm.clinic_name.trim(),
-      line2: modalForm.street_address.trim(),
+      line1: modalForm.street_address.trim(),
+      line2: modalForm.landmark ? modalForm.landmark.trim() : '',
       city: modalForm.city.trim(),
       state: modalForm.state.trim(),
       pincode: modalForm.pincode.trim(),
@@ -1180,9 +1176,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               ) : addresses.length === 0 ? (
                 <div className="py-10 px-6 border-2 border-dashed border-slate-200 rounded-2xl text-center bg-slate-50/50">
                   <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <h4 className="text-sm font-black text-slate-800">No Saved Clinic Addresses</h4>
+                  <h4 className="text-sm font-black text-slate-800">No Saved Delivery Addresses</h4>
                   <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    Please add your clinic, hospital, or practice delivery address to proceed with secure checkout.
+                    Please add your delivery address to proceed with secure checkout.
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
                     <button
@@ -1190,7 +1186,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       onClick={handleOpenAddModal}
                       className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#004e56] transition-colors cursor-pointer shadow-xs active:scale-98"
                     >
-                      <Plus className="w-4 h-4" /> Add Clinic Delivery Address
+                      <Plus className="w-4 h-4" /> Add Delivery Address
                     </button>
                     <button
                       type="button"
@@ -1251,14 +1247,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             </div>
                           </div>
 
-                          {/* Recipient & Practice Name */}
-                          <h4 className="text-sm font-black text-slate-900 leading-snug">{addr.full_name}</h4>
-                          <p className="text-xs font-bold text-[#006670] mt-0.5">{addr.line1}</p>
+                          {/* Recipient Name */}
+                          <h4 className="text-sm font-bold text-slate-900 leading-snug">{addr.full_name}</h4>
 
                           {/* Address Details */}
-                          <p className="text-xs text-slate-600 font-sans mt-2 leading-relaxed">
-                            {addr.line2 ? `${addr.line2}, ` : ''}
-                            {addr.city}, {addr.state} - <span className="font-black text-slate-900">{addr.pincode}</span>
+                          <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
+                            {addr.line1}
+                            {addr.line2 ? `, ${addr.line2}` : ''}
+                          </p>
+                          <p className="text-xs text-slate-500 font-sans mt-0.5">
+                            {addr.city}, {addr.state} - <span className="font-bold text-slate-800">{addr.pincode}</span>
                           </p>
 
                           {/* Phone */}
@@ -1273,7 +1271,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           {isSelected && (
                             <div className="flex items-center justify-between flex-wrap gap-1.5 text-[11px]">
                               <span className="inline-flex items-center gap-1 font-extrabold text-emerald-800 bg-emerald-100/70 border border-emerald-300/60 px-2.5 py-0.5 rounded-md">
-                                <Check className="w-3.5 h-3.5 stroke-[3]" /> Delivering to this clinic
+                                <Check className="w-3.5 h-3.5 stroke-[3]" /> Delivering to this address
                               </span>
 
                               {srv?.loading ? (
@@ -1599,10 +1597,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5 gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                  {editingAddress ? 'Edit Practice Address' : 'Add New Practice Address'}
+                  {editingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Enter complete clinic delivery location details for courier dispatch.
+                  Enter complete delivery location details for courier dispatch.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1650,7 +1648,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
                     <span className="text-emerald-600 font-bold">✓</span>
-                    <span>Fields auto-filled. Please verify clinic name and suite/unit details below.</span>
+                    <span>Fields auto-filled. Please verify building number and landmark details below.</span>
                   </p>
                 </div>
               </div>
@@ -1702,8 +1700,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
               </div>
 
-              {/* GROUP 2: Practice Information */}
+              {/* GROUP 2: Street Address (Required) */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Street Address / Building / Flat / Suite <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={modalForm.street_address}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, street_address: e.target.value }))}
+                  placeholder="Flat / Room No., Building Name, Street, Area"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border ${
+                    modalErrors.street_address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
+                  } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
+                />
+                {modalErrors.street_address && (
+                  <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.street_address}</span>
+                )}
+              </div>
+
+              {/* GROUP 3: Landmark (Optional) & Address Label */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Landmark / Clinic Name
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={modalForm.landmark}
+                    onChange={(e) => setModalForm((prev) => ({ ...prev, landmark: e.target.value }))}
+                    placeholder="e.g. Near Metro, Opp. City Hospital, or Practice Name"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs"
+                  />
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-700">
                     Address Label <span className="text-rose-500">*</span>
@@ -1722,7 +1755,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
 
                 {modalForm.label_type === 'Other' && (
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 md:col-span-2">
                     <label className="text-xs font-semibold text-slate-700">
                       Custom Label Name <span className="text-rose-500">*</span>
                     </label>
@@ -1737,43 +1770,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.custom_label}</span>
                     )}
                   </div>
-                )}
-
-                <div className={`flex flex-col gap-1.5 ${modalForm.label_type === 'Other' ? 'md:col-span-2' : ''}`}>
-                  <label className="text-xs font-semibold text-slate-700">
-                    Clinic / Practice / Hospital Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={modalForm.clinic_name}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, clinic_name: e.target.value }))}
-                    placeholder="Aesthetic Dental Center"
-                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
-                      modalErrors.clinic_name ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
-                  />
-                  {modalErrors.clinic_name && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.clinic_name}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* GROUP 3: Street & Location */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700">
-                  Street Address / Building / Area / Suite <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={modalForm.street_address}
-                  onChange={(e) => setModalForm((prev) => ({ ...prev, street_address: e.target.value }))}
-                  placeholder="Flat 101, Medical Plaza, MG Road"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border ${
-                    modalErrors.street_address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                  } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
-                />
-                {modalErrors.street_address && (
-                  <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.street_address}</span>
                 )}
               </div>
 
@@ -1937,14 +1933,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <Trash2 className="w-5 h-5 text-rose-600" />
               </div>
               <div>
-                <h4 className="text-sm font-black text-slate-900 uppercase">Remove Practice Address</h4>
+                <h4 className="text-sm font-black text-slate-900 uppercase">Remove Delivery Address</h4>
                 <p className="text-[11px] text-slate-400">Are you sure you want to remove this saved address?</p>
               </div>
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs space-y-1 text-slate-700">
               <p className="font-bold text-slate-900">{deletingAddress.full_name}</p>
-              <p className="text-slate-600 font-semibold">{deletingAddress.line1}</p>
+              <p className="text-slate-600 font-medium">
+                {deletingAddress.line1}
+                {deletingAddress.line2 ? `, ${deletingAddress.line2}` : ''}
+              </p>
               <p className="text-slate-500">
                 {deletingAddress.city}, {deletingAddress.state} - {deletingAddress.pincode}
               </p>
