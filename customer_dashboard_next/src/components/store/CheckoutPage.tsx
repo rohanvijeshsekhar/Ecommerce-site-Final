@@ -14,6 +14,7 @@ import {
   Edit3,
   Trash2,
   MapPin,
+  LocateFixed,
   Building2,
   User,
   Mail,
@@ -1116,34 +1117,34 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
                   <button
                     type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={isDetectingLocation}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200/80 hover:border-emerald-600 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
-                    title="Detect your current practice location via GPS"
+                    onClick={handleOpenAddModal}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#006670] hover:bg-[#004e56] text-white rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-98"
                   >
-                    {isDetectingLocation ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
-                        <span>Detecting your location...</span>
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="w-3.5 h-3.5 text-emerald-700" />
-                        <span>Use Current Location</span>
-                      </>
-                    )}
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Address</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleOpenAddModal}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#006670]/10 hover:bg-[#006670] text-[#006670] hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-2xs"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isDetectingLocation}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-teal-50/70 text-[#005B63] hover:text-[#004D54] border border-[#006670]/25 hover:border-[#006670] rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed group"
+                    title="Detect your current practice location via GPS"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add New Address</span>
+                    {isDetectingLocation ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#006670]" />
+                        <span>Detecting location...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LocateFixed className="w-3.5 h-3.5 text-[#006670] group-hover:scale-110 transition-transform duration-200" />
+                        <span>Use Current Location</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1186,28 +1187,28 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
                     <button
                       type="button"
-                      onClick={handleUseCurrentLocation}
-                      disabled={isDetectingLocation}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-black tracking-wider uppercase rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={handleOpenAddModal}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-bold rounded-xl hover:bg-[#004e56] transition-colors cursor-pointer shadow-xs active:scale-98"
                     >
-                      {isDetectingLocation ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Detecting your location...</span>
-                        </>
-                      ) : (
-                        <>
-                          <MapPin className="w-4 h-4" />
-                          <span>Use Current Location</span>
-                        </>
-                      )}
+                      <Plus className="w-4 h-4" /> Add Clinic Delivery Address
                     </button>
                     <button
                       type="button"
-                      onClick={handleOpenAddModal}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006670] text-white text-xs font-black tracking-wider uppercase rounded-xl hover:bg-[#004e56] transition-colors cursor-pointer shadow-sm"
+                      onClick={handleUseCurrentLocation}
+                      disabled={isDetectingLocation}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-teal-50/70 text-[#005B63] hover:text-[#004D54] border border-[#006670]/25 hover:border-[#006670] text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed group"
                     >
-                      <Plus className="w-4 h-4" /> Add Clinic Delivery Address
+                      {isDetectingLocation ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-[#006670]" />
+                          <span>Detecting location...</span>
+                        </>
+                      ) : (
+                        <>
+                          <LocateFixed className="w-4 h-4 text-[#006670] group-hover:scale-110 transition-transform duration-200" />
+                          <span>Use Current Location</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1609,15 +1610,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   type="button"
                   onClick={handleUseCurrentLocation}
                   disabled={isDetectingLocation}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-teal-50/70 text-[#005B63] hover:text-[#004D54] border border-[#006670]/25 hover:border-[#006670] rounded-xl text-[11px] font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98 disabled:opacity-60 group"
                   title="Auto-fill form using current GPS location"
                 >
                   {isDetectingLocation ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#006670]" />
                   ) : (
-                    <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                    <LocateFixed className="w-3.5 h-3.5 text-[#006670] group-hover:scale-110 transition-transform duration-200" />
                   )}
-                  <span className="hidden sm:inline">{isDetectingLocation ? 'Detecting...' : 'Use GPS Location'}</span>
+                  <span className="hidden sm:inline">{isDetectingLocation ? 'Detecting...' : 'Use Current Location'}</span>
                 </button>
                 <button
                   type="button"
