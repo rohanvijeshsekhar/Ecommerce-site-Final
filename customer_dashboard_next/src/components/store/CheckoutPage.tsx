@@ -29,6 +29,8 @@ import {
   Smartphone,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  Tag,
   PackageCheck,
   Sparkles,
   ReceiptText,
@@ -65,6 +67,8 @@ interface AddressItem {
   is_default: boolean;
   address_type?: 'shipping' | 'billing' | 'both';
 }
+
+type CheckoutStep = 'address' | 'payment' | 'review';
 
 interface CheckoutPageProps {
   cartItems: MockCartItem[];
@@ -170,10 +174,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     result?: CourierServiceabilityResult;
   }>({ checking: false });
 
+  // --- CHECKOUT STEP PROGRESSION ---
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>('address');
+
   // Location Detection State (GPS + Google Maps Geocoder)
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationDetectError, setLocationDetectError] = useState<string | null>(null);
   const [detectedLocationData, setDetectedLocationData] = useState<DetectedAddressResult | null>(null);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Delete Address Modal State
   const [deletingAddress, setDeletingAddress] = useState<AddressItem | null>(null);
@@ -183,7 +191,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const pincodeDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Promo / Coupons
-  const [activeCoupon] = useState<{ code: string; type: 'fixed' | 'percent'; value: number } | null>(null);
+  const [activeCoupon, setActiveCoupon] = useState<{ code: string; type: 'fixed' | 'percent'; value: number } | null>(null);
+  const [couponInput, setCouponInput] = useState('');
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
 
   // Sandbox simulation overlay
   const [showSandboxModal, setShowSandboxModal] = useState(false);
@@ -209,8 +220,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     stage: 'verifying',
   });
 
-  // Payment method selection ('razorpay')
-  const [paymentMethod] = useState<'razorpay'>('razorpay');
+  // Selected Payment Method Subtype ('upi' | 'card' | 'netbanking')
+  const [selectedPaymentSubtype, setSelectedPaymentSubtype] = useState<'upi' | 'card' | 'netbanking'>('upi');
+  const paymentMethod = 'razorpay'; // Authoritative backend identifier
 
   // Dynamic pricing overrides from backend preview
   const [previewPricing, setPreviewPricing] = useState<CheckoutPreview | null>(null);
@@ -808,1009 +820,1050 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const selectedServiceability = selectedAddressId ? serviceabilityMap[selectedAddressId] : undefined;
 
+  // Coupon Apply Handler
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return;
+    const code = couponInput.trim().toUpperCase();
+    if (code === 'WELCOME10' || code === 'FAAZO10' || code === 'DENTAL10') {
+      setActiveCoupon({ code, type: 'percent', value: 10 });
+      setCouponError(null);
+      showToast?.(`Coupon '${code}' applied!`);
+    } else if (code === 'SAVE500') {
+      setActiveCoupon({ code, type: 'fixed', value: 500 });
+      setCouponError(null);
+      showToast?.(`Coupon '${code}' applied!`);
+    } else {
+      setCouponError('Invalid coupon code. Try WELCOME10 or SAVE500');
+    }
+  };
+
+  const selectedServ = selectedAddressId ? serviceabilityMap[selectedAddressId]?.data : undefined;
+
   return (
-    <div className="w-full bg-[#F1F3F6] min-h-screen pt-24 sm:pt-28 lg:pt-32 pb-24 font-sans select-none text-left">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
+    <div className="w-full bg-[#F2FBFB]/60 min-h-screen pt-20 sm:pt-24 lg:pt-28 pb-28 font-sans select-none text-left">
+      <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8">
         
-        {/* Top Minimalist Navigation & Stepper Header (Flipkart / Myntra / Amazon Style) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs mb-4 px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => {
-              if (onBackCheckout) onBackCheckout();
-              else setCurrentView('cart');
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#006670] transition-colors cursor-pointer group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="hidden sm:inline font-semibold">{checkoutSource === 'buy-now' ? 'Back to Product' : 'Back to Cart'}</span>
-            <span className="sm:hidden font-semibold">Back</span>
-          </button>
-
-          {/* Clean Stepper */}
-          <div className="flex items-center gap-2 sm:gap-4 text-xs font-bold">
-            <div className="flex items-center gap-1.5 text-emerald-700">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black">
-                <Check className="w-3 h-3 stroke-[3]" />
+        {/* ========================================================================= */}
+        {/* TOP BRAND & STEP PROGRESS HEADER (Screen 1, 2, 3 Reference Design)        */}
+        {/* ========================================================================= */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs mb-5 p-4 sm:p-5">
+          {/* Top Brand Bar */}
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <button
+              onClick={() => {
+                if (currentStep === 'payment') {
+                  setCurrentStep('address');
+                } else if (currentStep === 'review') {
+                  setCurrentStep('payment');
+                } else {
+                  if (onBackCheckout) onBackCheckout();
+                  else setCurrentView('cart');
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#005F63] transition-colors cursor-pointer group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline font-semibold">
+                {currentStep === 'address' ? (checkoutSource === 'buy-now' ? 'Back to Product' : 'Back to Cart') : 'Back'}
               </span>
-              <span className="hidden md:inline font-bold">BAG</span>
+              <span className="sm:hidden font-semibold">Back</span>
+            </button>
+
+            {/* Brand Logo & Subtitle */}
+            <div className="text-center">
+              <div className="text-sm font-black tracking-widest text-[#005F63] font-serif">FAAZO</div>
+              <div className="text-[9px] font-medium text-slate-400 tracking-tight">Dental Essentials, Delivered.</div>
             </div>
 
-            <div className="w-6 sm:w-10 h-[2px] bg-emerald-600"></div>
-
-            <div className="flex items-center gap-1.5 text-[#006670]">
-              <span className="w-5 h-5 rounded-full bg-[#006670] text-white flex items-center justify-center text-[10px] font-black shadow-xs">
-                2
-              </span>
-              <span className="font-bold">ADDRESS</span>
-            </div>
-
-            <div className="w-6 sm:w-10 h-[2px] bg-slate-200"></div>
-
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold">
-                3
-              </span>
-              <span className="hidden md:inline font-semibold">PAYMENT</span>
+            {/* Secure Badge */}
+            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+              <Lock className="w-3.5 h-3.5 text-[#005F63]" />
+              <span className="hidden sm:inline">Secure Checkout</span>
             </div>
           </div>
 
-          {/* Secure Reassurance */}
-          <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span className="hidden sm:inline">100% Secure Checkout</span>
+          {/* Stepper Progress Bar (Address -> Payment -> Review) */}
+          <div className="pt-4 flex items-center justify-center max-w-sm mx-auto">
+            {/* Step 1: Address */}
+            <button
+              type="button"
+              onClick={() => setCurrentStep('address')}
+              className="flex items-center gap-2 group cursor-pointer"
+            >
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition-all ${
+                  currentStep === 'address'
+                    ? 'bg-[#005F63] text-white shadow-xs'
+                    : 'bg-emerald-600 text-white'
+                }`}
+              >
+                {currentStep === 'payment' || currentStep === 'review' ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  '1'
+                )}
+              </div>
+              <span
+                className={`text-xs font-bold transition-colors ${
+                  currentStep === 'address' ? 'text-[#005F63]' : 'text-slate-600'
+                }`}
+              >
+                Address
+              </span>
+            </button>
+
+            {/* Line 1 */}
+            <div
+              className={`flex-1 h-[2px] mx-3 transition-colors ${
+                currentStep === 'payment' || currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
+              }`}
+            />
+
+            {/* Step 2: Payment */}
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedAddressId) setCurrentStep('payment');
+                else showToast?.('Please select a delivery address first.');
+              }}
+              className="flex items-center gap-2 group cursor-pointer"
+            >
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition-all ${
+                  currentStep === 'payment'
+                    ? 'bg-[#005F63] text-white shadow-xs'
+                    : currentStep === 'review'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                }`}
+              >
+                {currentStep === 'review' ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  '2'
+                )}
+              </div>
+              <span
+                className={`text-xs font-bold transition-colors ${
+                  currentStep === 'payment' ? 'text-[#005F63]' : 'text-slate-500'
+                }`}
+              >
+                Payment
+              </span>
+            </button>
+
+            {/* Line 2 */}
+            <div
+              className={`flex-1 h-[2px] mx-3 transition-colors ${
+                currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
+              }`}
+            />
+
+            {/* Step 3: Review */}
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedAddressId) setCurrentStep('review');
+                else showToast?.('Please select a delivery address first.');
+              }}
+              className="flex items-center gap-2 group cursor-pointer"
+            >
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition-all ${
+                  currentStep === 'review'
+                    ? 'bg-[#005F63] text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                }`}
+              >
+                3
+              </div>
+              <span
+                className={`text-xs font-bold transition-colors ${
+                  currentStep === 'review' ? 'text-[#005F63]' : 'text-slate-400'
+                }`}
+              >
+                Review
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* 2-Column Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+        {/* ========================================================================= */}
+        {/* MAIN CHECKOUT CONTENT AREA (Mobile Vertical + Desktop 2-Column Responsive) */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* Left Column (8 Cols): Flipkart/Amazon Style Accordion Steps */}
-          <div className="lg:col-span-8 space-y-3.5 sm:space-y-4">
+          {/* Left Column / Mobile Primary Flow */}
+          <div className="lg:col-span-8 space-y-4">
+            
+            {/* ===================================================================== */}
+            {/* STEP 1: DELIVERY ADDRESS (Screen 1 Reference Design)                  */}
+            {/* ===================================================================== */}
+            {currentStep === 'address' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Section Title Header */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Delivery Address</h2>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">Where should we deliver your order?</p>
 
-            {/* ============================================================ */}
-            {/* STEP 1: LOGIN / ACCOUNT INFO (Flipkart Collapsible Style)    */}
-            {/* ============================================================ */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              {/* Header / Collapsed Summary */}
-              <div className="p-4 sm:p-5 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-md bg-[#006670] text-white text-xs font-black flex items-center justify-center">
-                    1
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        LOGIN / ACCOUNT
-                      </h3>
-                      <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    </div>
-                    {!isEditingContact && (
-                      <p className="text-xs font-bold text-slate-800 mt-0.5">
-                        {dentistName || 'Registered User'} <span className="font-normal text-slate-500">({phone ? `+91 ${phone}` : email})</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsEditingContact(!isEditingContact)}
-                  className="px-3 py-1.5 border border-slate-300 hover:border-[#006670] text-[#006670] rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-teal-50/50 transition-colors cursor-pointer"
-                >
-                  {isEditingContact ? 'Close' : 'Change'}
-                </button>
-              </div>
-
-              {/* Editable Form (When expanded) */}
-              {isEditingContact && (
-                <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 animate-in slide-in-from-top-2 duration-150">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Dentist / Contact Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={dentistName}
-                        onChange={(e) => {
-                          setDentistName(e.target.value);
-                          if (contactErrors.dentistName) setContactErrors((prev) => ({ ...prev, dentistName: '' }));
-                        }}
-                        placeholder="Dr. Aditya Sharma"
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:ring-1 focus:ring-[#006670] focus:outline-none"
-                      />
-                      {contactErrors.dentistName && (
-                        <span className="text-[10px] text-rose-500 font-semibold">{contactErrors.dentistName}</span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Clinic / Hospital Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={clinicName}
-                        onChange={(e) => {
-                          setClinicName(e.target.value);
-                          if (contactErrors.clinicName) setContactErrors((prev) => ({ ...prev, clinicName: '' }));
-                        }}
-                        placeholder="Aesthetic Dental Clinic"
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:ring-1 focus:ring-[#006670] focus:outline-none"
-                      />
-                      {contactErrors.clinicName && (
-                        <span className="text-[10px] text-rose-500 font-semibold">{contactErrors.clinicName}</span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Email Address (For Invoices) *
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          if (contactErrors.email) setContactErrors((prev) => ({ ...prev, email: '' }));
-                        }}
-                        placeholder="doctor@clinic.com"
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:ring-1 focus:ring-[#006670] focus:outline-none"
-                      />
-                      {contactErrors.email && (
-                        <span className="text-[10px] text-rose-500 font-semibold">{contactErrors.email}</span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Mobile Number (Courier SMS) *
-                      </label>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-3 text-xs font-bold text-slate-400 select-none">+91</span>
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          value={phone}
-                          onChange={(e) => {
-                            setPhone(e.target.value.replace(/\D/g, ''));
-                            if (contactErrors.phone) setContactErrors((prev) => ({ ...prev, phone: '' }));
-                          }}
-                          placeholder="9876543210"
-                          className="w-full border border-slate-200 rounded-lg pl-11 pr-3 py-2 text-xs font-medium focus:border-[#006670] focus:ring-1 focus:ring-[#006670] focus:outline-none"
-                        />
+                  {/* Saved Addresses List */}
+                  <div className="mt-4 space-y-3">
+                    {addrLoading ? (
+                      <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#005F63]" />
+                        <span className="text-xs font-semibold">Loading saved addresses...</span>
                       </div>
-                      {contactErrors.phone && (
-                        <span className="text-[10px] text-rose-500 font-semibold">{contactErrors.phone}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* GST Tax Invoice Box */}
-                  <div className="mt-4 pt-3.5 border-t border-slate-100">
-                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={gstInvoice}
-                        onChange={(e) => setGstInvoice(e.target.checked)}
-                        className="w-4 h-4 rounded text-[#006670] accent-[#006670] cursor-pointer"
-                      />
-                      <span className="text-xs font-bold text-slate-800">
-                        Use GST Invoice (Claim Input Tax Credit)
-                      </span>
-                    </label>
-
-                    {gstInvoice && (
-                      <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-lg max-w-sm">
-                        <label className="text-[10px] font-bold uppercase text-slate-600 block mb-1">
-                          GSTIN Registration Number *
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={15}
-                          value={gstNumber}
-                          onChange={(e) => {
-                            setGstNumber(e.target.value.toUpperCase());
-                            if (contactErrors.gstNumber) setContactErrors((prev) => ({ ...prev, gstNumber: '' }));
-                          }}
-                          placeholder="27AAAAA1111A1Z1"
-                          className="w-full uppercase border border-slate-200 rounded-md px-3 py-1.5 text-xs font-bold bg-white focus:border-[#006670] focus:outline-none"
-                        />
-                        {contactErrors.gstNumber && (
-                          <span className="text-[10px] text-rose-500 font-semibold">{contactErrors.gstNumber}</span>
-                        )}
+                    ) : addresses.length === 0 ? (
+                      <div className="py-8 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200 p-5">
+                        <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-slate-700">No saved addresses found</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Add an address below to proceed with checkout</p>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (validateContactSection()) {
-                          setIsEditingContact(false);
-                          showToast?.('Contact details saved.');
-                        }
-                      }}
-                      className="px-5 py-2 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
-                    >
-                      Save & Continue
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ============================================================ */}
-            {/* STEP 2: DELIVERY ADDRESS (Flipkart Style Selector)          */}
-            {/* ============================================================ */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              {/* Step Header */}
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-md bg-[#006670] text-white text-xs font-black flex items-center justify-center">
-                    2
-                  </span>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      DELIVERY ADDRESS
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      {addresses.length} saved address{addresses.length === 1 ? '' : 'es'} available
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleOpenAddModal}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-[#006670] hover:bg-[#004e56] text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-98 text-center"
-                  >
-                    <Plus className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">Add Address</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={isDetectingLocation}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#006670] border border-slate-200 hover:border-[#006670] rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-98 disabled:opacity-60 text-center"
-                    title="Detect location via GPS"
-                  >
-                    {isDetectingLocation ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#006670] shrink-0" />
                     ) : (
-                      <LocateFixed className="w-3.5 h-3.5 text-[#006670] shrink-0" />
-                    )}
-                    <span className="truncate">{isDetectingLocation ? 'Locating...' : 'Current Location'}</span>
-                  </button>
-                </div>
-              </div>
+                      addresses.map((addr) => {
+                        const isSelected = selectedAddressId === addr.id;
+                        const serv = serviceabilityMap[addr.id]?.data;
 
-              {/* Geolocation Detection Error Banner */}
-              {locationDetectError && (
-                <div className="m-4 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-amber-900 text-xs">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>{locationDetectError}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setLocationDetectError(null)}
-                    className="text-amber-500 hover:text-amber-800 p-0.5 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Saved Address Cards */}
-              <div className="p-4 sm:p-5">
-                {addrLoading ? (
-                  <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#006670]" />
-                    <span className="text-xs font-medium">Loading saved addresses...</span>
-                  </div>
-                ) : addresses.length === 0 ? (
-                  <div className="py-8 px-4 border-2 border-dashed border-slate-200 rounded-xl text-center bg-slate-50/50">
-                    <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <h4 className="text-xs font-bold text-slate-700">No Saved Delivery Addresses</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Please add your clinic or practice address to proceed.
-                    </p>
-                    <div className="mt-3 flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleOpenAddModal}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#006670] text-white text-xs font-bold rounded-lg shadow-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add Address
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {addresses.map((addr) => {
-                      const isSelected = addr.id === selectedAddressId;
-                      const srv = serviceabilityMap[addr.id];
-
-                      return (
-                        <div
-                          key={addr.id}
-                          onClick={() => setSelectedAddressId(addr.id)}
-                          className={`rounded-xl p-4 border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-[#006670] bg-[#F2FAF9]/40 ring-1 ring-[#006670]/40 shadow-xs'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              {/* Radio indicator */}
-                              <div
-                                className={`w-4 h-4 rounded-full border mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
-                                  isSelected ? 'border-[#006670] bg-[#006670]' : 'border-slate-300 bg-white'
-                                }`}
-                              >
-                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => {
+                              setSelectedAddressId(addr.id);
+                              if (addressValidationError) setAddressValidationError(null);
+                            }}
+                            className={`relative p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3.5">
+                              {/* Custom Radio Button */}
+                              <div className="mt-0.5 shrink-0">
+                                <div
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? 'border-[#005F63] bg-[#005F63]'
+                                      : 'border-slate-300 bg-white'
+                                  }`}
+                                >
+                                  {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                </div>
                               </div>
 
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs font-bold text-slate-900">{addr.full_name}</span>
-                                  <span className="text-xs font-semibold text-slate-600">+91 {addr.mobile}</span>
-                                  {addr.is_default && (
-                                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                                      DEFAULT
+                              {/* Address Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-slate-800 capitalize">
+                                      {addr.label || 'Home'}
                                     </span>
-                                  )}
-                                  <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-teal-50 text-[#006670] border border-[#006670]/20">
-                                    {addr.label || 'CLINIC'}
-                                  </span>
+                                    {addr.is_default && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#005F63]/10 text-[#005F63]">
+                                        Default
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Edit / Delete Actions */}
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleOpenEditModal(addr, e)}
+                                      className="text-xs font-bold text-[#005F63] hover:underline cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingAddress(addr);
+                                        handleDeleteAddressConfirm();
+                                      }}
+                                      className="text-xs font-semibold text-slate-400 hover:text-rose-500 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
 
-                                <p className="text-xs text-slate-600 font-normal mt-1 leading-relaxed">
-                                  {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}, {addr.city}, {addr.state} -{' '}
-                                  <strong className="text-slate-800 font-semibold">{addr.pincode}</strong>
+                                {/* Recipient Name */}
+                                <p className="text-xs font-bold text-slate-700 mt-1">
+                                  {addr.full_name || dentistName || user?.full_name || 'Customer'}
                                 </p>
 
-                                {/* Serviceability Info */}
-                                {isSelected && (
-                                  <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px]">
-                                    {srv?.loading ? (
-                                      <span className="inline-flex items-center gap-1 text-slate-500 font-medium">
-                                        <Loader2 className="w-3 h-3 animate-spin text-[#006670]" /> Checking delivery availability...
-                                      </span>
-                                    ) : srv?.data?.is_serviceable ? (
-                                      <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Free Courier Service Available
-                                      </span>
-                                    ) : srv?.data && !srv.data.is_serviceable ? (
-                                      <span className="inline-flex items-center gap-1 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded">
-                                        <XCircle className="w-3 h-3 text-rose-600" /> Courier not serviceable to this PIN
-                                      </span>
-                                    ) : null}
+                                {/* Address Text */}
+                                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                                  {addr.line1}
+                                  {addr.line2 ? `, ${addr.line2}` : ''}, {addr.city},{' '}
+                                  {addr.state} - <span className="font-semibold">{addr.pincode}</span>
+                                </p>
+
+                                {/* Phone */}
+                                <p className="text-xs text-slate-600 mt-1.5 font-medium">
+                                  +91 {addr.mobile || phone}
+                                </p>
+
+                                {/* Serviceability Alert */}
+                                {serv && !serv.is_serviceable && (
+                                  <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-semibold">
+                                    <AlertCircle className="w-3.5 h-3.5" />
+                                    <span>Pincode {addr.pincode} currently unserviceable</span>
                                   </div>
                                 )}
                               </div>
                             </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
 
-                            {/* Actions on right */}
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                type="button"
-                                onClick={(e) => handleOpenEditModal(addr, e)}
-                                className="text-xs font-bold text-[#006670] hover:underline cursor-pointer p-1"
-                              >
-                                EDIT
-                              </button>
-                              {addresses.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeletingAddress(addr);
-                                  }}
-                                  className="text-xs font-medium text-slate-400 hover:text-rose-600 cursor-pointer p-1"
-                                >
-                                  REMOVE
-                                </button>
+                  {addressValidationError && (
+                    <div className="mt-3.5 p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-center gap-2 text-xs font-semibold text-rose-600">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{addressValidationError}</span>
+                    </div>
+                  )}
+
+                  {/* Action Cards: Current Location & Add Address */}
+                  <div className="mt-4 space-y-2.5 pt-3 border-t border-slate-100">
+                    {/* Use My Current Location Card (Screen 1 & 5) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUseCurrentLocation();
+                        setIsLocationModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-teal-50/30 hover:border-[#005F63]/40 transition-all text-left group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#F2FBFB] text-[#005F63] flex items-center justify-center">
+                          {isDetectingLocation ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <LocateFixed className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-800 group-hover:text-[#005F63] transition-colors">
+                            Use my current location
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            {locationDetectError || 'Detect my current address'}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#005F63] group-hover:translate-x-0.5 transition-all" />
+                    </button>
+
+                    {/* Add New Address Card */}
+                    <button
+                      type="button"
+                      onClick={handleOpenAddModal}
+                      className="w-full flex items-center gap-2.5 p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left font-bold text-xs text-[#005F63] cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-[#005F63]/10 text-[#005F63] flex items-center justify-center">
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                      </div>
+                      <span>Add New Address</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile Continue CTA Button */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
+                  <div className="hidden sm:block">
+                    <span className="text-xs text-slate-400 block font-medium">Selected Address</span>
+                    <span className="text-xs font-bold text-slate-800">
+                      {selectedAddress ? `${selectedAddress.label || 'Saved'} (${selectedAddress.pincode})` : 'None selected'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedAddressId) {
+                        setAddressValidationError('Please select or add a delivery address to continue.');
+                        showToast?.('Please select a delivery address.');
+                        return;
+                      }
+                      if (selectedServ && !selectedServ.is_serviceable) {
+                        setAddressValidationError('The selected address is not serviceable for delivery.');
+                        return;
+                      }
+                      setAddressValidationError(null);
+                      setCurrentStep('payment');
+                    }}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                  >
+                    <span>Continue</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===================================================================== */}
+            {/* STEP 2: PAYMENT METHOD (Screen 2 Reference Design)                    */}
+            {/* ===================================================================== */}
+            {currentStep === 'payment' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Payment Method</h2>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">Choose how you want to pay</p>
+
+                  {/* Payment Options List */}
+                  <div className="mt-4 space-y-3">
+                    {/* 1. UPI */}
+                    <div
+                      onClick={() => setSelectedPaymentSubtype('upi')}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        selectedPaymentSubtype === 'upi'
+                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedPaymentSubtype === 'upi'
+                                ? 'border-[#005F63] bg-[#005F63]'
+                                : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedPaymentSubtype === 'upi' && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900">UPI</span>
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-700">
+                                Recommended
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Pay with any UPI app (GPay, PhonePe, Paytm)</p>
+                          </div>
+                        </div>
+
+                        {/* UPI Icons Strip */}
+                        <div className="flex items-center gap-1.5 opacity-85">
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-bold text-slate-600">GPay</span>
+                          <span className="px-1.5 py-0.5 rounded bg-purple-50 text-[9px] font-bold text-purple-600">PhonePe</span>
+                          <span className="px-1.5 py-0.5 rounded bg-sky-50 text-[9px] font-bold text-sky-600">Paytm</span>
+                          <ChevronRight className="w-4 h-4 text-slate-400 ml-1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Credit / Debit Card */}
+                    <div
+                      onClick={() => setSelectedPaymentSubtype('card')}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        selectedPaymentSubtype === 'card'
+                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedPaymentSubtype === 'card'
+                                ? 'border-[#005F63] bg-[#005F63]'
+                                : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedPaymentSubtype === 'card' && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-slate-900">Credit / Debit Card</span>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Visa, Mastercard, RuPay & more</p>
+                          </div>
+                        </div>
+
+                        {/* Card Icons Strip */}
+                        <div className="flex items-center gap-1.5 opacity-85">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[9px] font-bold text-blue-700">VISA</span>
+                          <span className="px-1.5 py-0.5 rounded bg-amber-50 text-[9px] font-bold text-amber-700">Mastercard</span>
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-[9px] font-bold text-emerald-700">RuPay</span>
+                          <ChevronRight className="w-4 h-4 text-slate-400 ml-1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Net Banking */}
+                    <div
+                      onClick={() => setSelectedPaymentSubtype('netbanking')}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        selectedPaymentSubtype === 'netbanking'
+                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedPaymentSubtype === 'netbanking'
+                                ? 'border-[#005F63] bg-[#005F63]'
+                                : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedPaymentSubtype === 'netbanking' && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-slate-900">Net Banking</span>
+                            <p className="text-[11px] text-slate-500 mt-0.5">All major Indian banks supported</p>
+                          </div>
+                        </div>
+
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 100% Secure Trust Card */}
+                  <div className="mt-5 p-3.5 rounded-xl bg-teal-50/60 border border-[#005F63]/20 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#005F63] text-white flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[#005F63]">100% Secure Payments</div>
+                      <div className="text-[11px] text-slate-500">Your payment information is end-to-end encrypted with Razorpay.</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Review Order CTA */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('address')}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    ← Change Address
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('review')}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                  >
+                    <span>Review Order</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===================================================================== */}
+            {/* STEP 3: REVIEW YOUR ORDER (Screen 3 & Screen 6 Reference Design)       */}
+            {/* ===================================================================== */}
+            {currentStep === 'review' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Review Your Order</h2>
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Please check your details before placing the order</p>
+                  </div>
+
+                  {/* 1. Selected Delivery Address Summary Box */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#F2FBFB] text-[#005F63] flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Delivery Address</div>
+                        {selectedAddress ? (
+                          <>
+                            <p className="text-xs font-semibold text-slate-700 mt-1">
+                              {selectedAddress.full_name || dentistName || user?.full_name || 'Customer'}
+                              <span className="font-normal text-slate-500"> ({selectedAddress.label || 'Home'})</span>
+                            </p>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                              {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+                            </p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 font-medium">+91 {selectedAddress.mobile || phone}</p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-rose-500 font-semibold mt-1">No delivery address selected</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep('address')}
+                      className="text-xs font-bold text-[#005F63] hover:underline cursor-pointer shrink-0"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  {/* 2. Selected Payment Method Summary Box */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#F2FBFB] text-[#005F63] flex items-center justify-center shrink-0 mt-0.5">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Payment Method</div>
+                        <p className="text-xs font-semibold text-slate-700 mt-1">
+                          {selectedPaymentSubtype === 'upi' && 'UPI (Google Pay / PhonePe / Paytm)'}
+                          {selectedPaymentSubtype === 'card' && 'Credit / Debit Card (Razorpay)'}
+                          {selectedPaymentSubtype === 'netbanking' && 'Net Banking (All Banks)'}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-medium mt-0.5">100% Encrypted & Verified</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep('payment')}
+                      className="text-xs font-bold text-[#005F63] hover:underline cursor-pointer shrink-0"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  {/* 3. Compact Order Summary (Fashion/Instamart Style Product Cards) */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-slate-900">Order Summary</h3>
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {cartItems.map((item) => {
+                        const itemImg = getAbsoluteImageUrl(item.image);
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-3 rounded-xl border border-slate-100 bg-white flex items-center gap-3"
+                          >
+                            <div className="w-14 h-14 rounded-lg bg-slate-50 border border-slate-200/60 overflow-hidden shrink-0 flex items-center justify-center">
+                              {itemImg ? (
+                                <img src={itemImg} alt={item.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <PackageCheck className="w-6 h-6 text-slate-300" />
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-bold text-slate-800 truncate">{item.name}</h4>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                <span>Qty: <strong className="text-slate-700">{item.qty}</strong></span>
+                                <span>•</span>
+                                <span>{item.category || 'Dental Essential'}</span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-bold text-slate-900">
+                                ₹{(item.price * item.qty).toLocaleString('en-IN')}
+                              </span>
+                              {item.qty > 1 && (
+                                <span className="text-[10px] text-slate-400 block">
+                                  ₹{item.price.toLocaleString('en-IN')} each
+                                </span>
                               )}
                             </div>
                           </div>
-
-                          {/* Selected Deliver Here Banner */}
-                          {isSelected && (
-                            <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
-                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Selected for delivery
-                              </span>
-                              {!addr.is_default && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleSetDefaultAddress(addr.id, e)}
-                                  className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                                >
-                                  Set as default address
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Validation Notice */}
-                {addressValidationError && (
-                  <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-2.5 text-xs text-rose-800">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-rose-900">Address Deliverability Notice</p>
-                      <p className="text-rose-700 mt-0.5">{addressValidationError}</p>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* ============================================================ */}
-            {/* STEP 3: ORDER SUMMARY (Flipkart / Amazon Product Items)     */}
-            {/* ============================================================ */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-md bg-[#006670] text-white text-xs font-black flex items-center justify-center">
-                    3
-                  </span>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      ORDER SUMMARY
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      {cartItems.length} item{cartItems.length === 1 ? '' : 's'} in your order
-                    </p>
+                  {/* 4. Apply Coupon Code Card */}
+                  <div className="pt-2">
+                    {activeCoupon ? (
+                      <div className="p-3.5 rounded-xl bg-teal-50/80 border border-[#005F63]/30 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <Tag className="w-4 h-4 text-[#005F63]" />
+                          <div>
+                            <span className="text-xs font-bold text-[#005F63]">
+                              Coupon &apos;{activeCoupon.code}&apos; Applied!
+                            </span>
+                            <span className="text-[11px] text-emerald-700 block font-medium">
+                              You saved ₹{couponDiscountVal.toLocaleString('en-IN')} with this code
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveCoupon(null);
+                            showToast?.('Coupon removed.');
+                          }}
+                          className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <Tag className="w-4 h-4 text-[#005F63]" />
+                          <input
+                            type="text"
+                            value={couponInput}
+                            onChange={(e) => {
+                              setCouponInput(e.target.value.toUpperCase());
+                              if (couponError) setCouponError(null);
+                            }}
+                            placeholder="Enter Coupon Code"
+                            className="text-xs font-bold uppercase bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:normal-case w-36 sm:w-48"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={!couponInput.trim()}
+                          className="px-4 py-1.5 rounded-lg bg-[#005F63] hover:bg-[#0B7C80] disabled:bg-slate-300 text-white text-xs font-bold transition-all cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    )}
+                    {couponError && (
+                      <p className="text-[11px] text-rose-500 font-semibold mt-1 px-1">{couponError}</p>
+                    )}
+                  </div>
+
+                  {/* 5. Price Details Breakdown */}
+                  <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Price Details</h3>
+                    
+                    <div className="flex justify-between text-slate-600">
+                      <span>Item Total ({cartItems.length} items)</span>
+                      <span className="font-semibold text-slate-800">₹{subtotalVal.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Delivery Charge</span>
+                      {deliveryFeeVal === 0 ? (
+                        <span className="font-bold text-emerald-600">FREE</span>
+                      ) : (
+                        <span className="font-semibold text-slate-800">₹{deliveryFeeVal.toLocaleString('en-IN')}</span>
+                      )}
+                    </div>
+
+                    {couponDiscountVal > 0 && (
+                      <div className="flex justify-between text-emerald-700 font-medium">
+                        <span>Discount ({activeCoupon?.code})</span>
+                        <span className="font-bold">-₹{couponDiscountVal.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t border-slate-200 flex items-baseline justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-slate-900 block">Total Amount</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Inclusive of all taxes</span>
+                      </div>
+                      <span className="text-xl font-black text-[#005F63]">
+                        ₹{orderTotalVal.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 6. Savings Highlight Pill */}
+                  {overallSavingsVal > 0 && (
+                    <div className="p-3 rounded-xl bg-[#E6F5F5] border border-[#B2E2E4] flex items-center gap-2 text-xs font-bold text-[#005F63]">
+                      <span>🌱</span>
+                      <span>You are saving ₹{overallSavingsVal.toLocaleString('en-IN')} on this order!</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Final Place Order CTA Button */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-2">
+                  <button
+                    type="button"
+                    onClick={handlePlaceOrder}
+                    disabled={isPlacing || (selectedServ && !selectedServ.is_serviceable)}
+                    className="w-full py-4 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] disabled:bg-slate-300 text-white text-base font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {isPlacing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Processing Order...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Place Order</span>
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                    <Lock className="w-3.5 h-3.5 text-[#005F63]" />
+                    <span>Your order is safe with us • 100% Verified Checkout</span>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Items List */}
-              <div className="divide-y divide-slate-100">
+          {/* ===================================================================== */}
+          {/* RIGHT COLUMN (Desktop Sticky Summary Sidebar)                        */}
+          {/* ===================================================================== */}
+          <div className="hidden lg:block lg:col-span-4 space-y-4 sticky top-28">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Order Summary</h3>
+                <span className="text-xs font-semibold text-slate-500">{cartItems.length} items</span>
+              </div>
+
+              {/* Items List Preview */}
+              <div className="max-h-56 overflow-y-auto space-y-2.5 pr-1">
                 {cartItems.map((item) => {
-                  const origPrice = item.originalPrice || Math.round(item.price * 1.25);
-                  const discountPct = Math.round(((origPrice - item.price) / origPrice) * 100);
-
+                  const itemImg = getAbsoluteImageUrl(item.image);
                   return (
-                    <div key={item.id} className="p-4 sm:p-5 flex gap-3 sm:gap-4 items-start">
-                      <img
-                        src={getAbsoluteImageUrl(item.image)}
-                        alt={item.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-slate-50 border border-slate-100 rounded-lg p-1 shrink-0"
-                      />
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                          {item.name}
-                        </h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Category: {item.category}</p>
-
-                        <div className="flex items-baseline gap-2 mt-2">
-                          <span className="text-sm sm:text-base font-bold text-slate-900">
-                            ₹{(item.price * item.qty).toLocaleString('en-IN')}
-                          </span>
-                          {origPrice > item.price && (
-                            <>
-                              <span className="text-xs text-slate-400 line-through">
-                                ₹{(origPrice * item.qty).toLocaleString('en-IN')}
-                              </span>
-                              <span className="text-xs font-bold text-emerald-600">
-                                {discountPct}% off
-                              </span>
-                            </>
-                          )}
-                          <span className="text-xs font-bold text-slate-500 ml-1">
-                            (Qty: {item.qty})
-                          </span>
-                        </div>
-
-                        {/* Delivery Promise Snippet */}
-                        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                          <Truck className="w-3.5 h-3.5 text-[#006670]" />
-                          <span>Delivery in 2-4 business days | <strong className="text-emerald-700 font-bold">FREE Delivery</strong></span>
-                        </div>
+                    <div key={item.id} className="flex items-center gap-2.5 text-xs">
+                      <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
+                        {itemImg ? (
+                          <img src={itemImg} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <PackageCheck className="w-5 h-5 text-slate-300 m-auto mt-2.5" />
+                        )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-800 truncate">{item.name}</p>
+                        <p className="text-[10px] text-slate-400">Qty: {item.qty}</p>
+                      </div>
+                      <span className="font-bold text-slate-900 shrink-0">
+                        ₹{(item.price * item.qty).toLocaleString('en-IN')}
+                      </span>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Order summary confirmation footer */}
-              <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Order confirmation email will be sent to <strong className="text-slate-800 font-semibold">{email || 'your email'}</strong></span>
-                </span>
-              </div>
-            </div>
-
-            {/* ============================================================ */}
-            {/* STEP 4: PAYMENT OPTIONS (Flipkart / Amazon / Myntra Style)  */}
-            {/* ============================================================ */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-md bg-[#006670] text-white text-xs font-black flex items-center justify-center">
-                    4
-                  </span>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      PAYMENT OPTIONS
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Choose your preferred payment method
-                    </p>
-                  </div>
+              {/* Pricing Breakdown */}
+              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Item Total</span>
+                  <span className="font-semibold text-slate-800">₹{subtotalVal.toLocaleString('en-IN')}</span>
                 </div>
 
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                  <Lock className="w-3 h-3" />
-                  <span>256-Bit SSL Encrypted</span>
-                </div>
-              </div>
-
-              <div className="p-4 sm:p-5 space-y-3">
-                {/* Online Payment (UPI / Cards / Net Banking / Wallets) */}
-                <div
-                  className="rounded-xl p-4 border border-[#006670] bg-[#F2FAF9]/40 ring-1 ring-[#006670]/40 shadow-xs"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-4 h-4 rounded-full border border-[#006670] bg-[#006670] mt-1 flex items-center justify-center shrink-0 transition-colors">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                            UPI / Credit & Debit Card / Net Banking (Razorpay)
-                          </h4>
-                          <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                            100% SECURE PAYMENT
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-slate-500 mt-1">
-                          Google Pay, PhonePe, Paytm, BHIM, QR, Visa, Mastercard, RuPay & 50+ Net Banking options.
-                        </p>
-
-                        {/* Payment Mode Badges */}
-                        <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] font-semibold text-slate-600">
-                          <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs">
-                            <Smartphone className="w-3.5 h-3.5 text-[#006670]" /> UPI Apps (Instant)
-                          </span>
-                          <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs">
-                            <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Cards & EMI
-                          </span>
-                          <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs">
-                            <Building2 className="w-3.5 h-3.5 text-slate-600" /> Net Banking
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3.5 border-t border-slate-200/60">
-                    <button
-                      type="button"
-                      onClick={handlePlaceOrder}
-                      disabled={isPlacing}
-                      className="w-full sm:w-auto px-8 py-3 bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      {isPlacing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Opening Gateway...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>PAY ₹{orderTotalVal.toLocaleString('en-IN')} & PLACE ORDER</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* ============================================================ */}
-          {/* RIGHT COLUMN (4 Cols): Iconic Flipkart / Myntra Price Summary*/}
-          {/* ============================================================ */}
-          <div className="lg:col-span-4 lg:sticky lg:top-[120px] space-y-3.5 text-left">
-            
-            {/* Price Details Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-3 mb-3.5">
-                PRICE DETAILS
-              </h3>
-
-              <div className="space-y-3 text-xs text-slate-600 font-sans">
-                <div className="flex justify-between">
-                  <span>Price ({cartItems.length} item{cartItems.length === 1 ? '' : 's'})</span>
-                  <span className="font-semibold text-slate-800">₹{totalOriginalPriceVal.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between text-slate-600">
+                  <span>Delivery Charge</span>
+                  {deliveryFeeVal === 0 ? (
+                    <span className="font-bold text-emerald-600">FREE</span>
+                  ) : (
+                    <span className="font-semibold text-slate-800">₹{deliveryFeeVal.toLocaleString('en-IN')}</span>
+                  )}
                 </div>
 
-                <div className="flex justify-between">
-                  <span>Discount</span>
-                  <span className="font-bold text-emerald-600">-₹{baseProductDiscountVal.toLocaleString('en-IN')}</span>
-                </div>
-
-                {activeCoupon && (
-                  <div className="flex justify-between">
+                {couponDiscountVal > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-medium">
                     <span>Coupon Discount</span>
-                    <span className="font-bold text-emerald-600">-₹{couponDiscountVal.toLocaleString('en-IN')}</span>
+                    <span className="font-bold">-₹{couponDiscountVal.toLocaleString('en-IN')}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between">
-                  <span>Delivery Charges</span>
-                  <span className="text-emerald-600 font-bold">
-                    FREE
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>GST (18%)</span>
-                  <span className="text-slate-600 font-medium">Included in Price</span>
-                </div>
-
-                {/* Total Row */}
-                <div className="border-t border-dashed border-slate-200 pt-3 mt-2 flex justify-between items-center text-sm font-bold text-slate-900">
-                  <span className="text-sm">Total Amount</span>
-                  <span className="text-base text-[#006670] font-black">
+                <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
+                  <span className="font-bold text-slate-900">Total Amount</span>
+                  <span className="text-lg font-black text-[#005F63]">
                     ₹{orderTotalVal.toLocaleString('en-IN')}
                   </span>
                 </div>
-
-                {/* Savings Callout */}
-                {overallSavingsVal > 0 && (
-                  <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-bold text-left border border-emerald-200/60 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>You will save ₹{overallSavingsVal.toLocaleString('en-IN')} on this order</span>
-                  </div>
-                )}
               </div>
 
-              {/* Main Sticky Place Order CTA */}
-              <button
-                type="button"
-                onClick={handlePlaceOrder}
-                disabled={isPlacing}
-                className="w-full py-3.5 mt-4 rounded-lg bg-[#006670] hover:bg-[#004e56] disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md hover:shadow cursor-pointer flex items-center justify-center gap-2"
-              >
-                {isPlacing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Place Order & Pay</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Trust Assurances (Flipkart / Amazon style) */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3 text-left">
-              <div className="flex items-center gap-2.5 text-slate-600 text-xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Safe and Secure Payments. Easy returns.</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-600 text-xs">
-                <Truck className="w-4 h-4 text-[#006670] shrink-0" />
-                <span>Fast Dispatched with Transit Insurance.</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-600 text-xs">
-                <PackageCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>100% Authentic Brand Dental Supplies.</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* MOBILE BOTTOM STICKY BAR (Flipkart/Meesho style)            */}
-      {/* ============================================================ */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/90 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 pb-safe">
-        <div className="text-left">
-          <div className="flex items-center gap-1">
-            <span className="text-base font-black text-[#006670] leading-tight">₹{orderTotalVal.toLocaleString('en-IN')}</span>
-            {overallSavingsVal > 0 && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
-                Save ₹{overallSavingsVal.toLocaleString('en-IN')}
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowMobilePriceDetails(true)}
-            className="text-[11px] font-bold text-[#006670] hover:underline flex items-center gap-0.5 mt-0.5 cursor-pointer"
-          >
-            <span>View Price Details</span>
-            <ChevronUp className="w-3.5 h-3.5 text-[#006670]" />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={handlePlaceOrder}
-          disabled={isPlacing}
-          className="px-6 py-3 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-black uppercase tracking-wider shadow-md active:scale-98 cursor-pointer disabled:opacity-50 flex items-center gap-2"
-        >
-          {isPlacing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Placing Order...</span>
-            </>
-          ) : (
-            <>
-              <span>Proceed to Pay</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* ============================================================ */}
-      {/* MOBILE PRICE DETAILS BOTTOM SHEET (Flipkart/Amazon style)    */}
-      {/* ============================================================ */}
-      {showMobilePriceDetails && (
-        <div className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-t-3xl p-5 w-full max-h-[85vh] overflow-y-auto shadow-2xl border-t border-slate-100 animate-in slide-in-from-bottom duration-200 text-left space-y-4">
-            {/* Grab Handle */}
-            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2"></div>
-
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                  Price Details
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  {cartItems.length} Item{cartItems.length === 1 ? '' : 's'} in Order
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowMobilePriceDetails(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Price Matrix */}
-            <div className="space-y-2.5 text-xs text-slate-600 font-sans">
-              <div className="flex justify-between">
-                <span>Total MRP</span>
-                <span className="font-semibold text-slate-800">₹{totalOriginalPriceVal.toLocaleString('en-IN')}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span>Discount on MRP</span>
-                <span className="font-bold text-emerald-600">-₹{baseProductDiscountVal.toLocaleString('en-IN')}</span>
-              </div>
-
-              {activeCoupon && (
-                <div className="flex justify-between">
-                  <span>Coupon Savings</span>
-                  <span className="font-bold text-emerald-600">-₹{couponDiscountVal.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span>Delivery Charges</span>
-                <span className="text-emerald-600 font-bold">FREE</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span>GST (18%)</span>
-                <span className="text-slate-600 font-medium">Included in Price</span>
-              </div>
-
-              {/* Total Payable Row */}
-              <div className="border-t border-dashed border-slate-200 pt-3 mt-1.5 flex justify-between items-center text-sm font-bold text-slate-900">
-                <span>Total Payable</span>
-                <span className="text-lg text-[#006670] font-black">
-                  ₹{orderTotalVal.toLocaleString('en-IN')}
-                </span>
-              </div>
-
-              {/* Savings Banner */}
               {overallSavingsVal > 0 && (
-                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold text-center border border-emerald-200/60 flex items-center justify-center gap-1.5 mt-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>You will save ₹{overallSavingsVal.toLocaleString('en-IN')} on this order</span>
+                <div className="p-2.5 rounded-xl bg-[#E6F5F5] border border-[#B2E2E4] text-[11px] font-bold text-[#005F63] text-center">
+                  🌱 You save ₹{overallSavingsVal.toLocaleString('en-IN')} on this order
                 </div>
               )}
             </div>
-
-            {/* Action CTA inside sheet */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMobilePriceDetails(false);
-                  handlePlaceOrder();
-                }}
-                disabled={isPlacing}
-                className="w-full py-3.5 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-black uppercase tracking-wider shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isPlacing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Placing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Proceed to Order (₹{orderTotalVal.toLocaleString('en-IN')})</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* ============================================================ */}
-      {/* MODAL: ADD / EDIT DELIVERY ADDRESS                           */}
-      {/* ============================================================ */}
+      {/* ========================================================================= */}
+      {/* MODAL 1: ADD / EDIT ADDRESS SHEET (Screen 4 Reference Design)             */}
+      {/* ========================================================================= */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150 text-left">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 my-auto text-left animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 pb-4 flex items-center justify-between border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  {editingAddress ? 'Edit Delivery Address' : 'Add Delivery Address'}
+                <h3 className="text-lg font-bold text-slate-900">
+                  {editingAddress ? 'Edit Address' : 'Add New Address'}
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Enter complete delivery address for courier dispatch.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Enter your delivery address</p>
               </div>
-
               <button
                 type="button"
-                onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+                onClick={() => setIsAddressModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* GPS Location Auto-fill Notification */}
-            {detectedLocationData && (
-              <div className="mb-4 p-3 bg-teal-50/70 border border-teal-200/80 rounded-lg flex items-start gap-2 text-xs text-slate-700">
-                <LocateFixed className="w-4 h-4 text-[#006670] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-[#006670]">GPS Location Auto-filled: </span>
-                  <span>{detectedLocationData.formatted_address}</span>
+            {/* Modal Body Form */}
+            <form onSubmit={handleSaveModalAddress} className="p-5 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Server error alert */}
+              {modalServerError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold">
+                  {modalServerError}
                 </div>
-              </div>
-            )}
+              )}
 
-            <form onSubmit={handleSaveModalAddress} className="space-y-3.5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                    Contact Name *
-                  </label>
+              {/* Full Name */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={modalForm.full_name}
+                  onChange={(e) => {
+                    setModalForm({ ...modalForm, full_name: e.target.value });
+                    if (modalErrors.full_name) setModalErrors({ ...modalErrors, full_name: '' });
+                  }}
+                  placeholder="Enter your full name"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
+                />
+                {modalErrors.full_name && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.full_name}</p>
+                )}
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Phone Number *</label>
+                <div className="flex gap-2">
+                  <span className="px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 flex items-center">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    maxLength={10}
+                    value={modalForm.mobile}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setModalForm({ ...modalForm, mobile: val });
+                      if (modalErrors.mobile) setModalErrors({ ...modalErrors, mobile: '' });
+                    }}
+                    placeholder="Enter your mobile number"
+                    className="flex-1 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
+                  />
+                </div>
+                {modalErrors.mobile && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.mobile}</p>
+                )}
+              </div>
+
+              {/* Pincode with Detect Location */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Pincode *</label>
+                <div className="relative">
                   <input
                     type="text"
-                    value={modalForm.full_name}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, full_name: e.target.value }))}
-                    placeholder="Dr. Aditya Sharma"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
+                    maxLength={6}
+                    value={modalForm.pincode}
+                    onChange={(e) => handlePincodeChange(e.target.value)}
+                    placeholder="Enter pincode"
+                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none pr-32"
                   />
-                  {modalErrors.full_name && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.full_name}</span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleUseCurrentLocation();
+                      setIsLocationModalOpen(true);
+                    }}
+                    className="absolute right-2 top-1.5 px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#005F63] text-[11px] font-bold flex items-center gap-1 hover:bg-teal-100 transition-colors cursor-pointer"
+                  >
+                    <LocateFixed className="w-3.5 h-3.5" />
+                    <span>Detect Location</span>
+                  </button>
                 </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                    10-Digit Mobile *
-                  </label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 text-xs font-bold text-slate-400 select-none">+91</span>
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      value={modalForm.mobile}
-                      onChange={(e) =>
-                        setModalForm((prev) => ({ ...prev, mobile: e.target.value.replace(/\D/g, '') }))
-                      }
-                      placeholder="9876543210"
-                      className="w-full border border-slate-200 rounded-lg pl-11 pr-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
-                    />
-                  </div>
-                  {modalErrors.mobile && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.mobile}</span>
-                  )}
-                </div>
+                {modalErrors.pincode && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.pincode}</p>
+                )}
+                {modalPincodeStatus.checking && (
+                  <p className="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin text-[#005F63]" /> Checking courier serviceability...
+                  </p>
+                )}
+                {modalPincodeStatus.result && (
+                  <p className={`text-[10px] font-bold mt-1 ${modalPincodeStatus.result.is_serviceable ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    {modalPincodeStatus.result.is_serviceable ? '✓ Pincode is serviceable for delivery' : '✗ Pincode is currently unserviceable'}
+                  </p>
+                )}
               </div>
 
+              {/* House No, Building, Street */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                  Street Address / Clinic Location *
-                </label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">House No, Building, Street *</label>
                 <input
                   type="text"
                   value={modalForm.street_address}
-                  onChange={(e) => setModalForm((prev) => ({ ...prev, street_address: e.target.value }))}
-                  placeholder="Flat / Room No., Building Name, Street"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
+                  onChange={(e) => {
+                    setModalForm({ ...modalForm, street_address: e.target.value });
+                    if (modalErrors.street_address) setModalErrors({ ...modalErrors, street_address: '' });
+                  }}
+                  placeholder="Enter address"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
                 />
                 {modalErrors.street_address && (
-                  <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.street_address}</span>
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.street_address}</p>
                 )}
               </div>
 
+              {/* Area / Locality */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                  Landmark / Clinic Name <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Area / Locality / Landmark</label>
                 <input
                   type="text"
                   value={modalForm.landmark}
-                  onChange={(e) => setModalForm((prev) => ({ ...prev, landmark: e.target.value }))}
-                  placeholder="Near Metro Station or Opposite Hospital"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
+                  onChange={(e) => setModalForm({ ...modalForm, landmark: e.target.value })}
+                  placeholder="Enter locality / landmark"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* City & State Grid */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">City *</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">City *</label>
                   <input
                     type="text"
                     value={modalForm.city}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, city: e.target.value }))}
-                    placeholder="Mumbai"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
+                    onChange={(e) => {
+                      setModalForm({ ...modalForm, city: e.target.value });
+                      if (modalErrors.city) setModalErrors({ ...modalErrors, city: '' });
+                    }}
+                    placeholder="Enter city"
+                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
                   />
                   {modalErrors.city && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.city}</span>
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.city}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">State *</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">State *</label>
                   <select
                     value={modalForm.state}
                     onChange={(e) => {
-                      const st = e.target.value;
-                      setModalForm((prev) => ({ ...prev, state: st }));
-                      if (modalForm.pincode.length === 6 && !isPincodeMatchingState(modalForm.pincode, st)) {
-                        setModalErrors((prev) => ({
-                          ...prev,
-                          pincode: `Pincode does not correspond to ${st}.`,
-                        }));
-                      } else {
-                        setModalErrors((prev) => ({ ...prev, pincode: '', state: '' }));
-                      }
+                      setModalForm({ ...modalForm, state: e.target.value });
+                      if (modalErrors.state) setModalErrors({ ...modalErrors, state: '' });
                     }}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none bg-white cursor-pointer"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium bg-white focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] focus:outline-none"
                   >
-                    <option value="">Select State</option>
+                    <option value="">Select state</option>
                     {INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>
                         {st}
@@ -1818,87 +1871,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     ))}
                   </select>
                   {modalErrors.state && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.state}</span>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Pincode *</label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={modalForm.pincode}
-                    onChange={(e) => handlePincodeChange(e.target.value)}
-                    placeholder="400001"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:border-[#006670] focus:outline-none"
-                  />
-                  {modalErrors.pincode && (
-                    <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.pincode}</span>
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1">{modalErrors.state}</p>
                   )}
                 </div>
               </div>
 
-              {/* Serviceability check feedback */}
-              {modalPincodeStatus.checking ? (
-                <div className="p-2.5 bg-slate-50 rounded-lg flex items-center gap-2 text-xs text-slate-600">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#006670]" />
-                  <span>Checking courier serviceability...</span>
-                </div>
-              ) : modalPincodeStatus.result ? (
-                modalPincodeStatus.result.is_serviceable ? (
-                  <div className="p-2.5 bg-emerald-50 rounded-lg flex items-center gap-2 text-xs text-emerald-800 font-medium">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Courier service available for PIN code {modalPincodeStatus.result.destination_pincode}</span>
-                  </div>
-                ) : (
-                  <div className="p-2.5 bg-rose-50 rounded-lg flex items-center gap-2 text-xs text-rose-800 font-medium">
-                    <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Courier delivery unavailable for PIN code {modalPincodeStatus.result.destination_pincode}</span>
-                  </div>
-                )
-              ) : null}
-
-              {/* Default checkbox */}
-              <div>
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={modalForm.is_default}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, is_default: e.target.checked }))}
-                    className="w-4 h-4 rounded text-[#006670] accent-[#006670] cursor-pointer"
-                  />
-                  <span className="text-xs text-slate-700 font-medium">
-                    Set as default delivery address
-                  </span>
-                </label>
-              </div>
-
-              {modalServerError && (
-                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-medium">
-                  {modalServerError}
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              {/* Save as default address toggle */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-800">Save as default address</span>
                 <button
                   type="button"
-                  onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
-                  className="px-4 py-2 border border-slate-200 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer"
+                  onClick={() => setModalForm({ ...modalForm, is_default: !modalForm.is_default })}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    modalForm.is_default ? 'bg-[#005F63]' : 'bg-slate-300'
+                  }`}
                 >
-                  Cancel
+                  <div
+                    className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
+                      modalForm.is_default ? 'translate-x-5.5' : 'translate-x-0.5'
+                    }`}
+                  />
                 </button>
+              </div>
+
+              {/* Save Address CTA Button */}
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={modalSaving}
-                  className="px-5 py-2 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-2 disabled:opacity-60"
+                  className="w-full py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] disabled:bg-slate-300 text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer disabled:cursor-not-allowed"
                 >
                   {modalSaving ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving...</span>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Address...</span>
                     </>
                   ) : (
-                    <span>Save & Select</span>
+                    <span>Save Address</span>
                   )}
                 </button>
               </div>
@@ -1907,154 +1916,178 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* MODAL: DELETE ADDRESS CONFIRMATION                           */}
-      {/* ============================================================ */}
-      {deletingAddress && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-100 text-left space-y-3">
-            <div className="flex items-center gap-2.5 text-rose-600">
-              <Trash2 className="w-5 h-5 text-rose-600" />
-              <h4 className="text-sm font-bold text-slate-900">Remove Address</h4>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              Are you sure you want to remove <strong className="text-slate-900">{deletingAddress.full_name}</strong>&#39;s address?
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
+      {/* ========================================================================= */}
+      {/* MODAL 2: DETECT YOUR LOCATION RADAR MODAL (Screen 5 Reference Design)     */}
+      {/* ========================================================================= */}
+      {isLocationModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 my-auto text-left animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 pb-3 flex items-center justify-between border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Detect Your Location</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Allow location access to get your current address</p>
+              </div>
               <button
                 type="button"
-                onClick={() => setDeletingAddress(null)}
-                className="px-3 py-1.5 border border-slate-200 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer"
+                onClick={() => setIsLocationModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleteLoading}
-                onClick={handleDeleteAddressConfirm}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5"
-              >
-                {deleteLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Remove</span>
+                <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* ============================================================ */}
-      {/* FULL-SCREEN PAYMENT PROCESSING OVERLAY (Flipkart/Amazon/Ajio)*/}
-      {/* ============================================================ */}
-      {paymentProcessing.isOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-center">
-              {paymentProcessing.stage === 'success' ? (
-                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center animate-in zoom-in ring-8 ring-emerald-50/50">
-                  <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
+            {/* Radar Animation Graphic */}
+            <div className="p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#F2FBFB] to-white relative overflow-hidden">
+              <div className="relative w-44 h-44 flex items-center justify-center my-4">
+                {/* Outer pulsing ring */}
+                <div className="absolute inset-0 rounded-full bg-[#005F63]/10 animate-ping opacity-75" />
+                {/* Inner wave ring */}
+                <div className="absolute inset-4 rounded-full bg-[#005F63]/15 animate-pulse" />
+                {/* Inner circle */}
+                <div className="absolute inset-10 rounded-full bg-[#005F63]/20" />
+                
+                {/* Center Map Pin Pinpoint */}
+                <div className="relative z-10 w-12 h-12 rounded-full bg-[#005F63] text-white flex items-center justify-center shadow-lg">
+                  {isDetectingLocation ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <MapPin className="w-6 h-6" />
+                  )}
                 </div>
-              ) : paymentProcessing.stage === 'failed' ? (
-                <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center animate-in zoom-in ring-8 ring-rose-50/50">
-                  <XCircle className="w-8 h-8 stroke-[2.5]" />
+              </div>
+
+              {/* Status Note */}
+              <div className="text-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-100 text-[#005F63] text-xs font-bold">
+                  <LocateFixed className="w-3.5 h-3.5" />
+                  {isDetectingLocation ? 'Pinpointing coordinates...' : detectedLocationData ? 'Location Locked' : 'Ready to Detect'}
+                </span>
+              </div>
+            </div>
+
+            {/* Detected Address Details */}
+            <div className="p-5 pt-0 space-y-4">
+              {detectedLocationData ? (
+                <div className="p-4 rounded-2xl border border-teal-200 bg-[#F2FBFB] space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <MapPin className="w-4 h-4 text-[#005F63] shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Detected Address</div>
+                      <p className="text-xs text-slate-700 mt-1 leading-relaxed">
+                        {detectedLocationData.street_address}
+                        {detectedLocationData.city ? `, ${detectedLocationData.city}` : ''}, {detectedLocationData.state} - <strong className="font-bold">{detectedLocationData.pincode}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLocationModalOpen(false);
+                      setIsAddressModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-[#005F63] hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Address Manually</span>
+                  </button>
                 </div>
               ) : (
-                <div className="relative w-14 h-14 rounded-full bg-[#006670]/10 text-[#006670] flex items-center justify-center ring-8 ring-[#006670]/5">
-                  <Lock className="w-6 h-6 animate-pulse" />
-                  <div className="absolute inset-0 rounded-full border-3 border-transparent border-t-[#006670] animate-spin" />
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                  <p className="text-xs text-slate-600 font-medium">
+                    {locationDetectError || 'Click below to detect your current GPS location'}
+                  </p>
                 </div>
               )}
+
+              {/* Action Button */}
+              {detectedLocationData ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLocationModalOpen(false);
+                    showToast?.('Current location applied to address form.');
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold transition-all shadow-md cursor-pointer"
+                >
+                  Use This Address
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  disabled={isDetectingLocation}
+                  className="w-full py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] disabled:bg-slate-300 text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {isDetectingLocation ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Detecting...</span>
+                    </>
+                  ) : (
+                    <span>Detect Location</span>
+                  )}
+                </button>
+              )}
             </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                {paymentProcessing.stage === 'success'
-                  ? 'Order Confirmed!'
-                  : paymentProcessing.stage === 'failed'
-                  ? 'Payment Incomplete'
-                  : 'Processing Your Order'}
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-1">
-                {paymentProcessing.stage === 'success'
-                  ? 'Redirecting to your order confirmation...'
-                  : paymentProcessing.stage === 'failed'
-                  ? paymentProcessing.errorMessage || 'Unable to place order. Please try again.'
-                  : 'Please do not refresh or press back.'}
-              </p>
-            </div>
-
-            {paymentProcessing.stage !== 'failed' && (
-              <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 text-left space-y-2.5 font-sans">
-                <div className="flex items-center gap-2.5">
-                  {paymentProcessing.stage === 'verifying' ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#006670] animate-spin shrink-0" />
-                  ) : (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 font-bold shrink-0 stroke-[3]" />
-                  )}
-                  <span className="text-xs font-semibold text-slate-700">1. Payment Authorization</span>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  {paymentProcessing.stage === 'confirming' ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#006670] animate-spin shrink-0" />
-                  ) : paymentProcessing.stage === 'success' ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 font-bold shrink-0 stroke-[3]" />
-                  ) : (
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 shrink-0" />
-                  )}
-                  <span className="text-xs font-semibold text-slate-700">2. Inventory Allocation & Dispatch</span>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  {paymentProcessing.stage === 'success' ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 font-bold shrink-0 stroke-[3]" />
-                  ) : (
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 shrink-0" />
-                  )}
-                  <span className="text-xs font-semibold text-slate-700">3. Order Confirmed</span>
-                </div>
-              </div>
-            )}
-
-            {paymentProcessing.stage === 'failed' && (
-              <button
-                type="button"
-                onClick={() => setPaymentProcessing({ isOpen: false, stage: 'verifying' })}
-                className="w-full py-2.5 rounded-lg bg-[#006670] text-white text-xs font-bold uppercase transition-colors cursor-pointer"
-              >
-                Try Again
-              </button>
-            )}
           </div>
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* MODAL: RAZORPAY SANDBOX SIMULATION                           */}
-      {/* ============================================================ */}
-      {process.env.NODE_ENV !== 'production' && showSandboxModal && sandboxOrderData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <Shield className="w-7 h-7 text-[#006670]" />
-              </div>
+      {/* ========================================================================= */}
+      {/* MODAL 3: PAYMENT PROCESSING OVERLAY                                       */}
+      {/* ========================================================================= */}
+      {paymentProcessing.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-teal-50 text-[#005F63] flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 animate-spin" />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-slate-800 uppercase">Payment Simulation Mode</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Developer sandbox simulation for testing checkout</p>
+              <h3 className="text-base font-bold text-slate-900">
+                {paymentProcessing.stage === 'verifying' ? 'Verifying Payment...' : 'Securing Order...'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Please do not refresh the page or press back button.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: SANDBOX DEV SIMULATOR MODAL                                      */}
+      {/* ========================================================================= */}
+      {showSandboxModal && sandboxOrderData && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100 text-left animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Payment Sandbox</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSandboxModal(false);
+                  sandboxOrderData.ondismiss();
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl text-left text-xs space-y-1.5 border border-slate-100">
+            <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1.5 border border-slate-100">
               <div className="flex justify-between">
                 <span className="text-slate-400 font-medium">Order ID</span>
                 <span className="font-mono font-bold text-slate-700">{sandboxOrderData.razorpay_order_id}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-1.5">
                 <span className="text-slate-500 font-bold">Total Amount</span>
-                <span className="font-bold text-sm text-[#006670]">
+                <span className="font-bold text-sm text-[#005F63]">
                   ₹{(sandboxOrderData.amount / 100).toLocaleString('en-IN')}
                 </span>
               </div>
@@ -2072,7 +2105,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     razorpay_signature: `sig_mock_${sandboxOrderData.razorpay_order_id}_${mockPayId}`,
                   });
                 }}
-                className="py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase transition-all shadow-xs cursor-pointer"
+                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer text-center"
               >
                 Simulate Success
               </button>
@@ -2082,22 +2115,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   setShowSandboxModal(false);
                   sandboxOrderData.ondismiss();
                 }}
-                className="py-2.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase transition-all shadow-xs cursor-pointer"
+                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase transition-all shadow-xs cursor-pointer text-center"
               >
                 Simulate Failure
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowSandboxModal(false);
-                sandboxOrderData.ondismiss();
-              }}
-              className="text-xs font-bold text-slate-400 hover:text-slate-600 block mx-auto cursor-pointer"
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
