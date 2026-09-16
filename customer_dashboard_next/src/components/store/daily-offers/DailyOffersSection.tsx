@@ -279,7 +279,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               <img
                 src={effectivePreviewImage}
                 alt={activeOffer.title || 'Daily Offer Banner'}
-                className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
+                className={`w-full h-full object-${imageFit} object-center`}
               />
             ) : (
               <picture className="absolute inset-0 w-full h-full">
@@ -290,7 +290,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 <img
                   src={bannerImage}
                   alt={activeOffer.title || 'Daily Offer Banner'}
-                  className={`w-full h-full object-${imageFit} object-center transform group-hover:scale-102 transition-transform duration-700`}
+                  className={`w-full h-full object-${imageFit} object-center`}
                 />
               </picture>
             )}
@@ -343,21 +343,19 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 >
                   {hasBadge && (
                     <span
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
+                      className="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black tracking-wide shadow-md uppercase"
                       style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
                     >
-                      <Flame className="w-4 h-4 fill-current animate-bounce" />
-                      {activeOffer.badge_text}
+                      {activeOffer.badge_text?.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '').trim()}
                     </span>
                   )}
 
                   {hasOfferText && (
                     <span
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/40 backdrop-blur-md border border-white/20 shadow-inner"
+                      className="inline-flex items-center px-3.5 py-1 rounded-full text-xs sm:text-sm font-black tracking-wider bg-black/40 backdrop-blur-md border border-white/20 shadow-inner"
                       style={{ color: offerColor }}
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {activeOffer.offer_text}
+                      {activeOffer.offer_text?.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '').trim()}
                     </span>
                   )}
                 </div>
@@ -570,7 +568,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                   !hasAnyDynamicOverlay
                     ? 'shadow-xl'
                     : 'shadow-2xl border border-white/15 bg-white/5 backdrop-blur-xs'
-                } group-hover:scale-102 transition-transform duration-500`}
+                }`}
               >
                 {isLivePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
