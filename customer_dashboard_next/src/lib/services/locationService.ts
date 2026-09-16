@@ -315,12 +315,128 @@ export async function reverseGeocodeGoogle(
 }
 
 /**
+ * Free fallback reverse geocoder using BigDataCloud and OpenStreetMap Nominatim.
+ * Operates with full CORS in client-side browsers and requires NO API keys.
+ */
+export async function reverseGeocodeFallback(
+  lat: number,
+  lng: number
+): Promise<DetectedAddressResult> {
+  // Strategy 1: OpenStreetMap Nominatim reverse geocoding (High detail in India)
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          Accept: 'application/json',
+        },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data?.address || {};
+      const rawState = addr.state || addr.state_district || '';
+      const canonicalState = matchCanonicalIndianState(rawState);
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.suburb ||
+        addr.city_district ||
+        addr.county ||
+        '';
+      const pincode = (addr.postcode || '').replace(/\D/g, '').slice(0, 6);
+      const country = addr.country || 'India';
+
+      const streetParts = [
+        addr.house_number,
+        addr.building,
+        addr.road,
+        addr.neighbourhood,
+        addr.suburb,
+      ].filter(Boolean);
+
+      const streetAddress =
+        streetParts.join(', ') ||
+        data.display_name?.split(',').slice(0, 2).join(',').trim() ||
+        '';
+
+      if (canonicalState || city || pincode) {
+        return {
+          formatted_address: data.display_name || '',
+          street_address: streetAddress,
+          city,
+          district: addr.county || addr.state_district || city,
+          state: canonicalState,
+          pincode,
+          country,
+          latitude: lat,
+          longitude: lng,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[locationService] Nominatim fallback failed, trying BigDataCloud...', err);
+  }
+
+  // Strategy 2: BigDataCloud client-side reverse geocoding API
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.city || data.locality || data.principalSubdivision)) {
+        const rawState = data.principalSubdivision || '';
+        const canonicalState = matchCanonicalIndianState(rawState);
+        const city = data.city || data.locality || '';
+        const pincode = (data.postcode || '').replace(/\D/g, '').slice(0, 6);
+        const country = data.countryName || 'India';
+
+        const streetParts: string[] = [];
+        if (data.locality && data.locality !== city) streetParts.push(data.locality);
+        const streetAddress = streetParts.join(', ') || `${city}, ${canonicalState}`;
+
+        return {
+          formatted_address: `${streetAddress}, ${city}, ${canonicalState} ${pincode}, ${country}`.trim(),
+          street_address: streetAddress,
+          city,
+          district: data.locality || city,
+          state: canonicalState,
+          pincode,
+          country,
+          latitude: lat,
+          longitude: lng,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[locationService] BigDataCloud fallback failed', err);
+  }
+
+  throw new Error('Location detected, but unable to resolve address details. Please enter your address manually.');
+}
+
+/**
  * End-to-end pipeline:
  * 1. Checks browser support & acquires GPS coordinates via navigator.geolocation
- * 2. Reverse geocodes using Google Maps Geocoder API
- * 3. Returns parsed, canonicalized address payload
+ * 2. Reverse geocodes using Google Maps Geocoder API (if key is configured)
+ *    or fallback public reverse geocoders (OpenStreetMap / BigDataCloud)
+ * 3. Returns parsed, canonicalized address payload with valid 6-digit Indian PIN code
  */
 export async function detectCurrentLocationAddress(): Promise<DetectedAddressResult> {
   const coords = await getCurrentBrowserCoordinates();
-  return await reverseGeocodeGoogle(coords.latitude, coords.longitude);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
+
+  if (apiKey) {
+    try {
+      return await reverseGeocodeGoogle(coords.latitude, coords.longitude);
+    } catch (googleErr) {
+      console.warn('[locationService] Google Maps Geocoder failed, falling back to public geocoder:', googleErr);
+      return await reverseGeocodeFallback(coords.latitude, coords.longitude);
+    }
+  }
+
+  // If no Google Maps API key is configured, use the free high-accuracy geocoder
+  return await reverseGeocodeFallback(coords.latitude, coords.longitude);
 }
