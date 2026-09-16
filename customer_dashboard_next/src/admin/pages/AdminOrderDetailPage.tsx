@@ -138,8 +138,13 @@ const ShipmentPanel: React.FC<ShipmentPanelProps> = ({
   const [length, setLength] = useState('15');
   const [breadth, setBreadth] = useState('15');
   const [height, setHeight] = useState('10');
-  const [paymentMode, setPaymentMode] = useState<'Prepaid' | 'COD'>('Prepaid');
+  const [paymentMode, setPaymentMode] = useState<'Prepaid' | 'COD'>(order.payment_method === 'cod' ? 'COD' : 'Prepaid');
   const [pickupDate, setPickupDate] = useState('');
+
+  useEffect(() => {
+    setPaymentMode(order.payment_method === 'cod' ? 'COD' : 'Prepaid');
+  }, [order.payment_method]);
+
   const [view, setView] = useState<PanelView>('form');
 
   const [creating, setCreating] = useState(false);
@@ -975,10 +980,22 @@ const AdminOrderDetailPage: React.FC = () => {
                   {order.shipping_fee === 0 ? 'FREE Express Delivery' : `₹${order.shipping_fee.toLocaleString('en-IN')}`}
                 </span>
               </div>
+              {order.cod_fee && order.cod_fee > 0 ? (
+                <div className="flex justify-between">
+                  <span>COD Handling Fee</span>
+                  <span className="font-bold text-slate-800 font-mono">₹{order.cod_fee.toLocaleString('en-IN')}</span>
+                </div>
+              ) : null}
               <div className="border-t border-slate-200 pt-3 flex justify-between font-black text-slate-900 text-sm">
                 <span>Grand Total</span>
                 <span className="text-[#006670] font-mono text-base">₹{order.total_amount.toLocaleString('en-IN')}</span>
               </div>
+              {order.payment_method === 'cod' && (
+                <div className="flex justify-between text-xs font-extrabold text-[#006670] pt-1">
+                  <span>COD Collectable Amount</span>
+                  <span className="font-mono">₹{(order.cod_collectable_amount || order.total_amount).toLocaleString('en-IN')}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1067,17 +1084,29 @@ const AdminOrderDetailPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                 <p className="text-[9px] font-black uppercase text-slate-400">Payment Method</p>
-                <p className="font-black text-slate-800 mt-0.5 uppercase">{order.payment_method}</p>
+                <p className="font-black text-slate-800 mt-0.5 uppercase">
+                  {order.payment_method === 'cod' ? 'Cash on Delivery (COD)' : order.payment_method}
+                </p>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                 <p className="text-[9px] font-black uppercase text-slate-400">Payment Status</p>
                 <p className="font-bold text-emerald-700 mt-0.5 capitalize">
-                  {order.payment_status === 'captured' ? 'Paid (Captured)' : order.payment_status}
+                  {order.payment_status === 'captured'
+                    ? 'Paid (Captured)'
+                    : order.payment_status === 'pending_cod'
+                    ? 'Pending COD Collection'
+                    : order.payment_status}
                 </p>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <p className="text-[9px] font-black uppercase text-slate-400">Razorpay Ref ID</p>
-                <p className="font-mono font-bold text-slate-700 mt-0.5 truncate">{order.razorpay_payment_id || 'N/A (Prepaid)'}</p>
+                <p className="text-[9px] font-black uppercase text-slate-400">
+                  {order.payment_method === 'cod' ? 'COD Collectable' : 'Razorpay Ref ID'}
+                </p>
+                <p className="font-mono font-bold text-slate-700 mt-0.5 truncate">
+                  {order.payment_method === 'cod'
+                    ? `₹${(order.cod_collectable_amount || order.total_amount).toLocaleString('en-IN')}`
+                    : (order.razorpay_payment_id || 'N/A (Prepaid)')}
+                </p>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                 <p className="text-[9px] font-black uppercase text-slate-400">Refund Status</p>

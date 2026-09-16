@@ -5,6 +5,7 @@ DO NOT add environment-specific values here.
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -553,6 +554,17 @@ OTP_MAX_ATTEMPTS = env.int("OTP_MAX_ATTEMPTS", default=3)
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
 RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
+
+
+# ============================================================
+# Cash On Delivery (COD) Payment Configuration
+# ============================================================
+COD_ENABLED = env.bool("COD_ENABLED", default=True)
+COD_FEE_TYPE = env.str("COD_FEE_TYPE", default="percentage").lower() # "percentage" | "fixed"
+COD_PERCENTAGE = Decimal(str(env("COD_PERCENTAGE", default="0.02"))) # 2% of final selling price
+COD_MINIMUM_FEE = Decimal(str(env("COD_MINIMUM_FEE", default="49.00")))
+COD_MAXIMUM_FEE = Decimal(str(env("COD_MAXIMUM_FEE", default="199.00")))
+COD_MAX_ORDER_VALUE = Decimal(str(env("COD_MAX_ORDER_VALUE", default="500000.00")))
 
 
 # ============================================================

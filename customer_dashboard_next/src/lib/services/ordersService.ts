@@ -43,6 +43,8 @@ export interface OrderDetail {
   selling_subtotal: number;
   gst_amount: number;
   shipping_fee: number;
+  cod_fee?: number;
+  cod_collectable_amount?: number;
   total_amount: number;
   items: OrderItemDetail[];
   created_at: string;

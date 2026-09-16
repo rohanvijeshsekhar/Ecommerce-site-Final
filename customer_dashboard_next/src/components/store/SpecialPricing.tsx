@@ -76,8 +76,8 @@ const SpecialPricing: React.FC<SpecialPricingProps> = ({ onProductClick, onOpenL
         ? Math.round(item.pricing.discount_percentage) 
         : (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0);
 
-      const rating = item.rating || item.avg_rating ? parseFloat(item.rating || item.avg_rating) : undefined;
-      const reviews = item.reviews_count || item.review_count ? parseInt(item.reviews_count || item.review_count) : undefined;
+      const rating = item.average_rating || item.rating || item.avg_rating ? parseFloat(item.average_rating || item.rating || item.avg_rating) : undefined;
+      const reviews = item.total_reviews || item.reviews_count || item.review_count ? parseInt(item.total_reviews || item.reviews_count || item.review_count) : undefined;
 
       return {
         id: item.product_slug ?? item.product ?? item.slug ?? String(item.id),

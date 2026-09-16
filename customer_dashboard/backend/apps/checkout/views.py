@@ -21,8 +21,9 @@ def is_valid_uuid(val):
         return False
 
 # Helper pricing calculator
-def calculate_checkout_pricing(user, cart_items, delivery_method, address=None):
+def calculate_checkout_pricing(user, cart_items, delivery_method, address=None, payment_method="upi"):
     from apps.common.tax_engine import calculate_order_tax_summary, determine_is_intra_state, get_warehouse_state
+    from .cod import calculate_cod_fee, check_cod_eligibility
 
     mrp_subtotal = Decimal("0.00")
     line_items = []
@@ -55,6 +56,22 @@ def calculate_checkout_pricing(user, cart_items, delivery_method, address=None):
     )
 
     savings = mrp_subtotal - summary["selling_subtotal"]
+    selling_subtotal = summary["selling_subtotal"]
+
+    # Calculate authoritative FAAZO customer COD fee on final selling price
+    estimated_cod_fee = calculate_cod_fee(selling_subtotal)
+    is_cod = str(payment_method).strip().lower() in ("cod", "cash_on_delivery")
+
+    if is_cod:
+        cod_fee = estimated_cod_fee
+        total_amount = summary["total_amount"] + cod_fee
+        cod_collectable_amount = total_amount
+        is_eligible, ineligibility_reason = check_cod_eligibility(total_amount, address)
+    else:
+        cod_fee = Decimal("0.00")
+        total_amount = summary["total_amount"]
+        cod_collectable_amount = Decimal("0.00")
+        is_eligible, ineligibility_reason = check_cod_eligibility(total_amount + estimated_cod_fee, address)
 
     return {
         "mrp_subtotal": float(summary["selling_subtotal"] + savings),
@@ -62,7 +79,12 @@ def calculate_checkout_pricing(user, cart_items, delivery_method, address=None):
         "taxable_subtotal": float(summary["taxable_subtotal"]),
         "gst_amount": float(summary["total_gst"]),
         "shipping_fee": float(summary["shipping_fee"]),
-        "total_amount": float(summary["total_amount"]),
+        "cod_fee": float(cod_fee),
+        "estimated_cod_fee": float(estimated_cod_fee),
+        "cod_eligible": is_eligible,
+        "cod_ineligible_reason": ineligibility_reason if not is_eligible else "",
+        "cod_collectable_amount": float(cod_collectable_amount),
+        "total_amount": float(total_amount),
         "savings": float(savings if savings > Decimal("0.00") else Decimal("0.00")),
         "is_intra_state": is_intra,
         "line_breakdowns": summary["line_breakdowns"],
@@ -141,6 +163,7 @@ class CheckoutPreviewView(APIView):
     def post(self, request):
         address_id = request.data.get("address_id")
         delivery_method = request.data.get("delivery_method", "standard")
+        payment_method = request.data.get("payment_method", "razorpay")
 
         if not address_id:
             return error_response("address_id is required.", status_code=status.HTTP_400_BAD_REQUEST)
@@ -198,7 +221,7 @@ class CheckoutPreviewView(APIView):
                 details=inv_err.get("details")
             )
 
-        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
+        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address, payment_method=payment_method)
         return success_response(data=pricing, message="Checkout pricing preview calculated.")
 
 class CheckoutPlaceView(APIView):
@@ -207,7 +230,9 @@ class CheckoutPlaceView(APIView):
     def post(self, request):
         address_id = request.data.get("address_id")
         delivery_method = request.data.get("delivery_method", "standard")
-        payment_method = request.data.get("payment_method", "upi")
+        payment_method = str(request.data.get("payment_method", "upi")).strip().lower()
+        if payment_method in ("cod", "cash_on_delivery"):
+            payment_method = "cod"
         gst_number = request.data.get("gst_number")
 
         if not address_id:
@@ -261,9 +286,49 @@ class CheckoutPlaceView(APIView):
                 cart_items = []
 
         if not cart_items:
+            # Check if this is a duplicate submission right after the cart was cleared by an immediate prior click
+            if payment_method == "cod":
+                from django.utils import timezone
+                recent_cutoff = timezone.now() - timezone.timedelta(seconds=45)
+                existing_recent = Order.objects.filter(
+                    user=request.user,
+                    payment_method="cod",
+                    shipping_address=address,
+                    created_at__gte=recent_cutoff,
+                ).first()
+                if existing_recent:
+                    return success_response(
+                        data=self._build_order_response(existing_recent, {}, address),
+                        message="Order already placed successfully."
+                    )
             return error_response("Your checkout queue is empty.", status_code=status.HTTP_400_BAD_REQUEST)
 
-        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address)
+        pricing = calculate_checkout_pricing(request.user, cart_items, delivery_method, address, payment_method=payment_method)
+
+        # Validate COD eligibility if customer selected Cash on Delivery
+        if payment_method == "cod":
+            if not pricing.get("cod_eligible", True):
+                return error_response(
+                    pricing.get("cod_ineligible_reason") or "Cash on Delivery is unavailable for this order.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    code="COD_NOT_ELIGIBLE"
+                )
+
+            # Duplicate submission protection (Idempotency)
+            from django.utils import timezone
+            recent_cutoff = timezone.now() - timezone.timedelta(seconds=45)
+            existing_recent = Order.objects.filter(
+                user=request.user,
+                payment_method="cod",
+                shipping_address=address,
+                total_amount=Decimal(str(pricing["total_amount"])),
+                created_at__gte=recent_cutoff,
+            ).first()
+            if existing_recent:
+                return success_response(
+                    data=self._build_order_response(existing_recent, pricing, address),
+                    message="Order already placed successfully."
+                )
 
         # Atomically lock inventory rows, validate stock, place order, and reserve stock
         from apps.inventory.services import validate_items_inventory, reserve_items_stock
@@ -314,16 +379,19 @@ class CheckoutPlaceView(APIView):
                         taxable_subtotal=Decimal(str(pricing["taxable_subtotal"])),
                         gst_amount=Decimal(str(pricing["gst_amount"])),
                         shipping_fee=Decimal(str(pricing["shipping_fee"])),
+                        cod_fee=Decimal(str(pricing.get("cod_fee", "0.00"))),
+                        cod_collectable_amount=Decimal(str(pricing.get("cod_collectable_amount", pricing["total_amount"]))),
                         total_amount=Decimal(str(pricing["total_amount"]))
                     )
 
                     # Step 3: Record Status History
                     from apps.orders.models import OrderStatusHistory
+                    payment_notes = "Cash on Delivery (COD)" if payment_method == "cod" else payment_method
                     OrderStatusHistory.objects.create(
                         order=order,
                         status=OrderStatus.PROCESSING,
                         changed_by=request.user,
-                        notes=f"Order placed via {payment_method}."
+                        notes=f"Order placed via {payment_notes}."
                     )
 
                     # Step 4: Create Order Items
@@ -363,43 +431,7 @@ class CheckoutPlaceView(APIView):
                         lambda: dispatch_order_success_notification(order_id_str)
                     )
 
-                    # Build response matching frontend orderData expectations
-                    items_serialized = []
-                    for order_item in order.items.all():
-                        primary_img = order_item.product.images.filter(is_primary=True).first() or order_item.product.images.first()
-                        items_serialized.append({
-                            "id": order_item.product.slug,
-                            "name": order_item.product.name,
-                            "category": order_item.product.category.name if order_item.product.category else "",
-                            "price": float(order_item.price),
-                            "qty": order_item.quantity,
-                            "image": primary_img.image.url if primary_img else ""
-                        })
-
-                    response_data = {
-                        "id": str(order.id),
-                        "items": items_serialized,
-                        "address": {
-                            "id": str(address.id),
-                            "type": address.label,
-                            "dentist": address.full_name,
-                            "clinic": address.line1,
-                            "street": address.line2,
-                            "city": f"{address.city}, {address.state}",
-                            "pincode": address.pincode,
-                            "phone": address.mobile
-                        },
-                        "paymentMethod": order.payment_method,
-                        "pricing": {
-                            "subtotal": pricing["selling_subtotal"],
-                            "shipping": pricing["shipping_fee"],
-                            "gst": pricing["gst_amount"],
-                            "discount": pricing["savings"],
-                            "total": pricing["total_amount"],
-                            "savings": pricing["savings"]
-                        }
-                    }
-
+                    response_data = self._build_order_response(order, pricing, address)
                     return success_response(data=response_data, message="Order placed successfully.")
             except OperationalError as oe:
                 if "locked" in str(oe).lower() and attempt < max_retries - 1:
@@ -408,3 +440,49 @@ class CheckoutPlaceView(APIView):
                 return error_response(f"Order placement failed due to lock contention: {str(oe)}", status_code=status.HTTP_409_CONFLICT)
             except Exception as e:
                 return error_response(f"Order placement failed: {str(e)}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _build_order_response(self, order, pricing, address):
+        items_serialized = []
+        for order_item in order.items.all():
+            primary_img = order_item.product.images.filter(is_primary=True).first() or order_item.product.images.first()
+            items_serialized.append({
+                "id": order_item.product.slug,
+                "name": order_item.product.name,
+                "category": order_item.product.category.name if order_item.product.category else "",
+                "price": float(order_item.price),
+                "qty": order_item.quantity,
+                "image": primary_img.image.url if primary_img else ""
+            })
+
+        is_cod = (order.payment_method or "").lower() == "cod"
+        cod_fee_val = float(getattr(order, "cod_fee", 0.0) or 0.0)
+        cod_collectable_val = float(getattr(order, "cod_collectable_amount", 0.0) or float(order.total_amount))
+        pricing = pricing or {}
+        savings_val = float(pricing.get("savings", 0.0) if pricing.get("savings") is not None else max(0.0, float(order.mrp_subtotal - order.selling_subtotal)))
+
+        return {
+            "id": str(order.id),
+            "order_number": order.order_number or str(order.id)[:8],
+            "items": items_serialized,
+            "address": {
+                "id": str(address.id),
+                "type": address.label,
+                "dentist": address.full_name,
+                "clinic": address.line1,
+                "street": address.line2,
+                "city": f"{address.city}, {address.state}",
+                "pincode": address.pincode,
+                "phone": address.mobile
+            },
+            "paymentMethod": "Cash on Delivery" if is_cod else order.payment_method,
+            "pricing": {
+                "subtotal": float(pricing.get("selling_subtotal", order.selling_subtotal)),
+                "shipping": float(pricing.get("shipping_fee", order.shipping_fee)),
+                "gst": float(pricing.get("gst_amount", order.gst_amount)),
+                "discount": savings_val,
+                "cod_fee": cod_fee_val,
+                "cod_collectable_amount": cod_collectable_val,
+                "total": float(order.total_amount),
+                "savings": savings_val
+            }
+        }

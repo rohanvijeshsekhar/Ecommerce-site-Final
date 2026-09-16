@@ -839,15 +839,28 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {productData && <p className="text-[10px] font-mono text-slate-400 -mt-0.5 mb-1">SKU: {productData.sku}</p>}
 
               <div className="flex items-center gap-1.5">
-                <div className="flex items-center text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-500 stroke-amber-500" />
-                  ))}
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((starVal) => {
+                    const avg = productData?.average_rating ? parseFloat(productData.average_rating) : 0;
+                    const isFilled = avg >= starVal || (avg >= starVal - 0.5 && avg < starVal);
+                    return (
+                      <Star
+                        key={starVal}
+                        className={`w-3.5 h-3.5 ${
+                          isFilled
+                            ? 'fill-amber-400 stroke-amber-400 text-amber-400'
+                            : 'fill-slate-100 stroke-slate-300 text-slate-300'
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
                 <span className="text-[11px] font-bold text-slate-700 mt-0.5">
-                  {productData?.average_rating ? parseFloat(productData.average_rating).toFixed(1) : '0.0'}
+                  {productData?.average_rating && parseFloat(productData.average_rating) > 0
+                    ? parseFloat(productData.average_rating).toFixed(1)
+                    : '0.0'}
                   <span className="text-slate-400 font-medium ml-1.5 hover:text-[#006670] hover:underline cursor-pointer" onClick={() => setActiveTab('reviews')}>
-                    ({productData?.total_reviews ?? 0} Reviews)
+                    ({productData?.total_reviews ?? 0} {productData?.total_reviews === 1 ? 'Review' : 'Reviews'})
                   </span>
                 </span>
               </div>
@@ -1083,7 +1096,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     : 'border-transparent text-slate-400 hover:text-slate-650'
                   }`}
               >
-                {tab === 'reviews' ? 'Reviews (128)' : tab}
+                {tab === 'reviews' ? `Reviews (${productData?.total_reviews ?? 0})` : tab}
               </button>
             ))}
           </div>
@@ -1440,13 +1453,23 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1">
-                {productData ? productData.name : 'NSK Pana-Max High Speed Handpiece'}
+                {productData ? productData.name : 'Product'}
               </h4>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="flex text-amber-500">
-                  <Star className="w-3 h-3 fill-amber-500 stroke-amber-500" />
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 mt-0.5">4.8 (128 Reviews)</span>
+                {productData?.average_rating && parseFloat(productData.average_rating) > 0 ? (
+                  <>
+                    <div className="flex text-amber-500">
+                      <Star className="w-3 h-3 fill-amber-500 stroke-amber-500" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 mt-0.5">
+                      {parseFloat(productData.average_rating).toFixed(1)} ({productData.total_reviews ?? 0} {productData?.total_reviews === 1 ? 'Review' : 'Reviews'})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[10px] font-medium text-slate-400 mt-0.5">
+                    No reviews yet
+                  </span>
+                )}
               </div>
             </div>
           </div>

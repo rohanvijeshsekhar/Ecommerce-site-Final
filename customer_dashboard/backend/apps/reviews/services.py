@@ -41,12 +41,46 @@ def _sanitize_text(text: Optional[str]) -> str:
     return html.escape(text.strip())
 
 
+def _resolve_product(identifier_or_instance) -> Product:
+    """
+    Safely resolve a product identifier (UUID string, slug string, or Product instance)
+    into a valid Product model instance.
+    """
+    if isinstance(identifier_or_instance, Product):
+        return identifier_or_instance
+
+    if not identifier_or_instance:
+        raise ValidationError("Product identifier is required.")
+
+    identifier = str(identifier_or_instance).strip()
+
+    # Check if identifier is a valid 36-char UUID
+    if len(identifier) == 36 and identifier.count("-") == 4:
+        try:
+            return Product.objects.get(id=identifier, is_deleted=False)
+        except (Product.DoesNotExist, ValidationError):
+            pass
+
+    # Try resolving by slug
+    try:
+        return Product.objects.get(slug=identifier, is_deleted=False)
+    except Product.DoesNotExist:
+        pass
+
+    # Try resolving by ID as a fallback
+    try:
+        return Product.objects.get(id=identifier, is_deleted=False)
+    except (Product.DoesNotExist, ValidationError, Exception):
+        raise ValidationError(f"Product '{identifier}' does not exist or has been deleted.")
+
+
 class ReviewService:
     @staticmethod
-    def check_eligibility(user, product_id: str) -> Dict[str, Any]:
+    def check_eligibility(user, product_id: Any) -> Dict[str, Any]:
         """
         Check if the user is eligible to write or edit a review for the given product.
         Must have a DELIVERED order containing this product.
+        Safely resolves product_id as UUID, slug, or Product instance.
         """
         if not user or not user.is_authenticated:
             return {
@@ -56,9 +90,19 @@ class ReviewService:
                 "order_id": None,
             }
 
+        try:
+            product = _resolve_product(product_id)
+        except ValidationError as e:
+            return {
+                "can_review": False,
+                "reason": str(e),
+                "existing_review_id": None,
+                "order_id": None,
+            }
+
         # Check for existing review
         existing_review = ProductReview.objects.filter(
-            user=user, product_id=product_id, is_deleted=False
+            user=user, product=product, is_deleted=False
         ).first()
 
         if existing_review:
@@ -74,7 +118,7 @@ class ReviewService:
         delivered_order = Order.objects.filter(
             user=user,
             status=OrderStatus.DELIVERED,
-            items__product_id=product_id,
+            items__product=product,
         ).order_by("-created_at").first()
 
         if not delivered_order:
@@ -95,14 +139,15 @@ class ReviewService:
         }
 
     @staticmethod
-    def recalculate_product_ratings(product_id: str) -> None:
+    def recalculate_product_ratings(product_id: Any) -> None:
         """
         Recalculate average rating, total count, and 1-5 star distribution
         for all APPROVED reviews of a product, and update the Product model.
         """
         try:
+            product = _resolve_product(product_id)
             approved_reviews = ProductReview.objects.filter(
-                product_id=product_id,
+                product=product,
                 status=ReviewStatus.APPROVED,
                 is_deleted=False,
             )
@@ -110,7 +155,7 @@ class ReviewService:
             total_count = approved_reviews.count()
 
             if total_count == 0:
-                Product.objects.filter(id=product_id).update(
+                Product.objects.filter(id=product.id).update(
                     average_rating=Decimal("0.00"),
                     total_reviews=0,
                     rating_distribution={"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
@@ -128,29 +173,30 @@ class ReviewService:
                 if r_key in distribution:
                     distribution[r_key] = item["count"]
 
-            Product.objects.filter(id=product_id).update(
+            Product.objects.filter(id=product.id).update(
                 average_rating=avg_decimal,
                 total_reviews=total_count,
                 rating_distribution=distribution,
             )
-            logger.info("[ReviewService] Recalculated ratings for product %s: avg=%s total=%d", product_id, avg_decimal, total_count)
+            logger.info("[ReviewService] Recalculated ratings for product %s: avg=%s total=%d", product.id, avg_decimal, total_count)
         except Exception as exc:
             logger.error("[ReviewService Error] Failed to recalculate ratings for product %s: %s", product_id, exc, exc_info=True)
 
     @classmethod
     @transaction.atomic
-    def create_review(cls, user, product_id: str, data: Dict[str, Any], files: List[Any] = None) -> ProductReview:
+    def create_review(cls, user, product_id: Any, data: Dict[str, Any], files: List[Any] = None) -> ProductReview:
         """
         Create a new product review after validating eligibility & file constraints.
+        Safely resolves product_id as UUID, slug, or Product instance.
         """
-        eligibility = cls.check_eligibility(user, product_id)
+        product = _resolve_product(product_id)
+        eligibility = cls.check_eligibility(user, product)
         if not eligibility["can_review"]:
             raise ValidationError(eligibility["reason"])
 
         if eligibility.get("is_edit"):
             raise ValidationError("You have already submitted a review for this product. Please use edit instead.")
 
-        product = Product.objects.get(id=product_id)
         order_id = eligibility["order_id"]
 
         # Instantiate review

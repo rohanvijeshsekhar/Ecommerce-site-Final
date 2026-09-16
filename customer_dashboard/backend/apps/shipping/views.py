@@ -294,7 +294,7 @@ class AdminCreateCourierShipmentView(APIView):
             "length":       float(request.data.get("length") or shipment.length or 10.0),
             "breadth":      float(request.data.get("breadth") or request.data.get("width") or shipment.width or 10.0),
             "height":       float(request.data.get("height") or shipment.height or 10.0),
-            "payment_mode": request.data.get("payment_mode") or "Prepaid",
+            "payment_mode": request.data.get("payment_mode") or ("COD" if (getattr(shipment.order, "payment_method", "") or "").upper() == "COD" else "Prepaid"),
         }
 
         try:

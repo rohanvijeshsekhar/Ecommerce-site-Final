@@ -365,8 +365,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({
                     </span>
                     {['delivered', 'DELIVERED'].includes(order.status) && (
                       <button
-                        onClick={() => setActiveReviewProduct({ id: (item as any).product_id || (item as any).product || item.id, name: item.product_name })}
-                        className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-teal-200 transition-colors shadow-2xs"
+                        onClick={() => setActiveReviewProduct({ id: (item as any).product_id || (item as any).product_slug || (item as any).product || item.id, name: item.product_name })}
+                        className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-teal-200 transition-colors shadow-2xs cursor-pointer"
                       >
                         <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400 stroke-none" />
                         <span>Review</span>

@@ -77,30 +77,34 @@ const BestSellers: React.FC<BestSellersProps> = ({
     if (initialProducts && initialProducts.length > 0) return;
     const mapBestSeller = (b: any): ProductItem => {
       const price = b.pricing ? parseFloat(b.pricing.effective_price || b.pricing.selling_price || '0') : 0;
-      const rating = b.average_rating || b.avg_rating || b.rating ? parseFloat(b.average_rating || b.avg_rating || b.rating) : undefined;
-      const reviews = b.total_reviews || b.reviews_count || b.review_count || b.reviews ? parseInt(b.total_reviews || b.reviews_count || b.review_count || b.reviews) : undefined;
+      const rawRating = b.average_rating ?? b.avg_rating ?? b.rating;
+      const rating = rawRating !== undefined && rawRating !== null ? parseFloat(String(rawRating)) : 0;
+      const rawReviews = b.total_reviews ?? b.reviews_count ?? b.review_count ?? b.reviews;
+      const reviews = rawReviews !== undefined && rawReviews !== null ? parseInt(String(rawReviews), 10) : 0;
       return {
         id:       b.product_slug ?? b.product,
         title:    b.display_heading || b.product_name,
         subtitle: b.display_short_description || '',
         price:    price,
-        rating:   rating && rating > 0 ? rating : undefined,
-        reviews:  reviews && reviews > 0 ? reviews : undefined,
+        rating:   rating,
+        reviews:  reviews,
         image:    getAbsoluteImageUrl(b.display_image_url) || '/images/nsk_handpiece_portrait.png',
       };
     };
 
     const mapProductToBestSeller = (p: any): ProductItem => {
       const price = p.pricing ? parseFloat(p.pricing.effective_price || p.pricing.selling_price || '0') : 0;
-      const rating = p.average_rating || p.avg_rating || p.rating ? parseFloat(p.average_rating || p.avg_rating || p.rating) : undefined;
-      const reviews = p.total_reviews || p.reviews_count || p.review_count || p.reviews ? parseInt(p.total_reviews || p.reviews_count || p.review_count || p.reviews) : undefined;
+      const rawRating = p.average_rating ?? p.avg_rating ?? p.rating;
+      const rating = rawRating !== undefined && rawRating !== null ? parseFloat(String(rawRating)) : 0;
+      const rawReviews = p.total_reviews ?? p.reviews_count ?? p.review_count ?? p.reviews;
+      const reviews = rawReviews !== undefined && rawReviews !== null ? parseInt(String(rawReviews), 10) : 0;
       return {
         id:       p.slug,
         title:    p.name,
         subtitle: p.short_description || '',
         price:    price,
-        rating:   rating && rating > 0 ? rating : undefined,
-        reviews:  reviews && reviews > 0 ? reviews : undefined,
+        rating:   rating,
+        reviews:  reviews,
         image:    getAbsoluteImageUrl(p.primary_image) || '/images/nsk_handpiece_portrait.png',
       };
     };
@@ -259,15 +263,15 @@ const BestSellers: React.FC<BestSellersProps> = ({
                         </p>
 
                         {/* Ratings */}
-                        {prod.rating && prod.reviews && prod.reviews > 0 ? (
+                        {prod.reviews && prod.reviews > 0 && prod.rating && prod.rating > 0 ? (
                           <div className="flex items-center justify-center gap-1.5 mt-2">
                             <div className="flex items-center text-amber-400">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`w-3.5 h-3.5 ${i < Math.floor(prod.rating!)
+                                  className={`w-3.5 h-3.5 ${i < Math.round(prod.rating!)
                                       ? 'fill-amber-400 stroke-amber-400'
-                                      : 'stroke-slate-300'
+                                      : 'stroke-slate-300 fill-none'
                                     }`}
                                 />
                               ))}
@@ -277,7 +281,21 @@ const BestSellers: React.FC<BestSellersProps> = ({
                               <span className="text-slate-400 font-medium ml-1">({prod.reviews})</span>
                             </span>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="flex items-center justify-center gap-1.5 mt-2">
+                            <div className="flex items-center text-slate-300">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="w-3.5 h-3.5 stroke-slate-300 fill-none"
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-400 mt-0.5">
+                              No reviews yet
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                     </div>
@@ -385,15 +403,15 @@ const BestSellers: React.FC<BestSellersProps> = ({
                         </p>
 
                         {/* Ratings */}
-                        {prod.rating && prod.reviews && prod.reviews > 0 ? (
+                        {prod.reviews && prod.reviews > 0 && prod.rating && prod.rating > 0 ? (
                           <div className="flex items-center justify-center gap-1.5 mt-2">
                             <div className="flex items-center text-amber-400">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`w-3.5 h-3.5 ${i < Math.floor(prod.rating!)
+                                  className={`w-3.5 h-3.5 ${i < Math.round(prod.rating!)
                                       ? 'fill-amber-400 stroke-amber-400'
-                                      : 'stroke-slate-300'
+                                      : 'stroke-slate-300 fill-none'
                                     }`}
                                 />
                               ))}
@@ -403,7 +421,21 @@ const BestSellers: React.FC<BestSellersProps> = ({
                               <span className="text-slate-400 font-medium ml-1">({prod.reviews})</span>
                             </span>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="flex items-center justify-center gap-1.5 mt-2">
+                            <div className="flex items-center text-slate-300">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="w-3.5 h-3.5 stroke-slate-300 fill-none"
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-400 mt-0.5">
+                              No reviews yet
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </SwiperSlide>

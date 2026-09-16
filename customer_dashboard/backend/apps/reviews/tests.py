@@ -295,3 +295,154 @@ class ProductRatingPipelineTests(TestCase):
         item2 = [i for i in bs_items2 if i["product_slug"] == self.product.slug][0]
         self.assertEqual(str(item2["average_rating"]), "4.67")
         self.assertEqual(item2["total_reviews"], 3)
+
+    def test_eligibility_and_creation_by_product_slug(self):
+        """Test that passing a product slug (rather than UUID) works seamlessly for verified buyers."""
+        addr = Address.objects.create(
+            user=self.customer_user,
+            full_name="Dr. John Doe",
+            mobile="+919876543211",
+            line1="123 Clinic St",
+            city="Mumbai",
+            state="Maharashtra",
+            pincode="400001",
+        )
+        order = Order.objects.create(
+            user=self.customer_user,
+            shipping_address=addr,
+            status="delivered",
+            mrp_subtotal=Decimal("15000.00"),
+            selling_subtotal=Decimal("12000.00"),
+            taxable_subtotal=Decimal("10169.49"),
+            gst_amount=Decimal("1830.51"),
+            total_amount=Decimal("12000.00"),
+            shipping_line1="123 Clinic St",
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            quantity=1,
+            price=Decimal("12000.00"),
+        )
+
+        self.client.force_authenticate(user=self.customer_user)
+        # Check eligibility via slug
+        res_elig = self.client.get(f"/api/v1/reviews/eligibility/?product_id={self.product.slug}")
+        self.assertEqual(res_elig.status_code, 200)
+        elig_data = res_elig.data.get("data", res_elig.data)
+        self.assertTrue(elig_data["can_review"])
+        self.assertEqual(elig_data["order_id"], str(order.id))
+
+        # Submit review via slug
+        res_post = self.client.post("/api/v1/reviews/", {
+            "product_id": self.product.slug,
+            "rating": 5,
+            "title": "Submitted via slug",
+            "comment": "Works smoothly with slug resolution.",
+        })
+        self.assertEqual(res_post.status_code, 201)
+        review_id = res_post.data.get("data", res_post.data)["id"]
+        review = ProductReview.objects.get(id=review_id)
+        self.assertEqual(review.product_id, self.product.id)
+        self.assertTrue(review.is_verified_purchase)
+        self.assertEqual(review.order_id, order.id)
+
+    def test_non_delivered_order_cannot_review(self):
+        """Orders in processing, shipped, or cancelled status cannot review."""
+        addr = Address.objects.create(
+            user=self.customer_user,
+            full_name="Dr. John Doe",
+            mobile="+919876543211",
+            line1="123 Clinic St",
+            city="Mumbai",
+            state="Maharashtra",
+            pincode="400001",
+        )
+        order = Order.objects.create(
+            user=self.customer_user,
+            shipping_address=addr,
+            status="shipped",  # Not DELIVERED
+            mrp_subtotal=Decimal("15000.00"),
+            selling_subtotal=Decimal("12000.00"),
+            taxable_subtotal=Decimal("10169.49"),
+            gst_amount=Decimal("1830.51"),
+            total_amount=Decimal("12000.00"),
+            shipping_line1="123 Clinic St",
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            quantity=1,
+            price=Decimal("12000.00"),
+        )
+
+        self.client.force_authenticate(user=self.customer_user)
+        res_elig = self.client.get(f"/api/v1/reviews/eligibility/?product_id={self.product.id}")
+        self.assertEqual(res_elig.status_code, 200)
+        elig_data = res_elig.data.get("data", res_elig.data)
+        self.assertFalse(elig_data["can_review"])
+        self.assertIn("Only verified customers", elig_data["reason"])
+
+    def test_edit_existing_review_workflow(self):
+        """Customers can edit their existing review; rating recalculation updates upon approval."""
+        addr = Address.objects.create(
+            user=self.customer_user,
+            full_name="Dr. John Doe",
+            mobile="+919876543211",
+            line1="123 Clinic St",
+            city="Mumbai",
+            state="Maharashtra",
+            pincode="400001",
+        )
+        order = Order.objects.create(
+            user=self.customer_user,
+            shipping_address=addr,
+            status="delivered",
+            mrp_subtotal=Decimal("15000.00"),
+            selling_subtotal=Decimal("12000.00"),
+            taxable_subtotal=Decimal("10169.49"),
+            gst_amount=Decimal("1830.51"),
+            total_amount=Decimal("12000.00"),
+            shipping_line1="123 Clinic St",
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            quantity=1,
+            price=Decimal("12000.00"),
+        )
+
+        self.client.force_authenticate(user=self.customer_user)
+        # Create initial review
+        res_post = self.client.post("/api/v1/reviews/", {
+            "product_id": str(self.product.id),
+            "rating": 3,
+            "title": "Initial Review",
+            "comment": "Average.",
+        })
+        self.assertEqual(res_post.status_code, 201)
+        review_id = res_post.data.get("data", res_post.data)["id"]
+
+        # Check eligibility now returns is_edit = True
+        res_elig = self.client.get(f"/api/v1/reviews/eligibility/?product_id={self.product.id}")
+        self.assertEqual(res_elig.status_code, 200)
+        elig_data = res_elig.data.get("data", res_elig.data)
+        self.assertTrue(elig_data["can_review"])
+        self.assertTrue(elig_data["is_edit"])
+        self.assertEqual(elig_data["existing_review_id"], review_id)
+
+        # Edit review
+        res_put = self.client.put(f"/api/v1/reviews/{review_id}/", {
+            "rating": 5,
+            "title": "Updated Review",
+            "comment": "Much better after latest firmware!",
+        })
+        self.assertEqual(res_put.status_code, 200)
+
+        # Admin approves
+        rev_obj = ProductReview.objects.get(id=review_id)
+        ReviewService.moderate_review(review=rev_obj, status=ReviewStatus.APPROVED, admin_user=self.admin_user)
+
+        self.product.refresh_from_db()
+        self.assertEqual(float(self.product.average_rating), 5.0)
+        self.assertEqual(self.product.total_reviews, 1)

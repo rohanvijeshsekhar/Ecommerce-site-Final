@@ -605,8 +605,9 @@ class ShiprocketProvider(BaseShippingProvider):
         length = float(package_info.get("length", 10))
         breadth = float(package_info.get("breadth", 10))
         height = float(package_info.get("height", 10))
-        payment_mode = package_info.get("payment_mode", "Prepaid")
-        is_cod = payment_mode.upper() == "COD"
+        order_pm = str(getattr(order, "payment_method", "") or "").strip().upper()
+        payment_mode = package_info.get("payment_mode") or ("COD" if order_pm == "COD" else "Prepaid")
+        is_cod = payment_mode.upper() == "COD" or order_pm == "COD"
 
         name_parts = (full_name or "Doctor").strip().split()
         first_name = name_parts[0] if name_parts else "Doctor"
@@ -624,6 +625,10 @@ class ShiprocketProvider(BaseShippingProvider):
                 "tax": "",
                 "hsn": getattr(item, "hsn_code", "") or getattr(item.product, "hsn_code", "") or "9018",
             })
+
+        # For COD shipments, the courier collectable amount must match the customer's final payable total
+        cod_collectable = float(getattr(order, "cod_collectable_amount", 0.0) or order.total_amount)
+        final_collectable_amount = cod_collectable if is_cod else float(order.total_amount)
 
         order_payload = {
             "order_id": str(order.order_number),
@@ -648,7 +653,7 @@ class ShiprocketProvider(BaseShippingProvider):
             "giftwrap_charges": 0,
             "transaction_charges": 0,
             "total_discount": 0,
-            "sub_total": float(order.total_amount),
+            "sub_total": final_collectable_amount,
             "length": length,
             "breadth": breadth,
             "height": height,

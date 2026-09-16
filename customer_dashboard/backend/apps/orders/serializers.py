@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from apps.users.serializers import AddressSerializer
-from .models import Order, OrderItem, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatus, OrderStatusHistory
 
 User = get_user_model()
 
@@ -15,6 +15,7 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.UUIDField(source="product.id", read_only=True)
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_slug = serializers.CharField(source="product.slug", read_only=True)
     image_url = serializers.SerializerMethodField()
@@ -22,7 +23,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = [
-            "id", "product_name", "product_slug", "image_url", "quantity", "price",
+            "id", "product_id", "product_name", "product_slug", "image_url", "quantity", "price",
             "gst_rate", "hsn_code", "taxable_value_per_unit", "taxable_subtotal",
             "cgst_amount", "sgst_amount", "igst_amount", "total_gst_amount", "is_intra_state"
         ]
@@ -58,6 +59,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "id", "order_number", "invoice_number", "shipping_address_label", 
             "shipping_address_detail", "status", "payment_method",
             "mrp_subtotal", "selling_subtotal", "taxable_subtotal", "gst_amount", "shipping_fee",
+            "cod_fee", "cod_collectable_amount",
             "total_amount", "items", "created_at", "updated_at",
             "status_history", "razorpay_payment_id", "razorpay_order_id",
             "payment_status", "customer_email", "customer_name",
@@ -77,6 +79,11 @@ class OrderSerializer(serializers.ModelSerializer):
         return ""
 
     def get_payment_status(self, obj) -> str:
+        pm = str(getattr(obj, "payment_method", "") or "").strip().lower()
+        if pm in ("cod", "cash_on_delivery"):
+            if obj.status == OrderStatus.DELIVERED:
+                return "collected"
+            return "pending_cod"
         if hasattr(obj, 'payment') and obj.payment:
             return obj.payment.status
         return "pending"

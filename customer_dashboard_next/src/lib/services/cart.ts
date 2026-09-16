@@ -39,6 +39,11 @@ export interface CheckoutPreview {
   selling_subtotal: number;
   gst_amount: number;
   shipping_fee: number;
+  cod_fee?: number;
+  estimated_cod_fee?: number;
+  cod_eligible?: boolean;
+  cod_ineligible_reason?: string;
+  cod_collectable_amount?: number;
   total_amount: number;
   savings: number;
 }
@@ -56,6 +61,7 @@ export interface Address {
 
 export interface OrderSuccessData {
   id: string;
+  order_number?: string;
   items: Array<{
     id: string;
     name: string;
@@ -71,6 +77,8 @@ export interface OrderSuccessData {
     shipping: number;
     gst: number;
     discount: number;
+    cod_fee?: number;
+    cod_collectable_amount?: number;
     total: number;
     savings: number;
   };
@@ -158,9 +166,15 @@ export const cartService = {
   async checkoutPreview(
     addressId: string,
     deliveryMethod: string = 'standard',
-    items?: Array<{ product_id: string; quantity: number }>
+    items?: Array<{ product_id: string; quantity: number }>,
+    paymentMethod: string = 'razorpay'
   ): Promise<ApiResponse<CheckoutPreview>> {
-    const res = await api.post('checkout/preview/', { address_id: addressId, delivery_method: deliveryMethod, items });
+    const res = await api.post('checkout/preview/', {
+      address_id: addressId,
+      delivery_method: deliveryMethod,
+      items,
+      payment_method: paymentMethod,
+    });
     return res.data;
   },
 

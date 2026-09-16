@@ -82,15 +82,17 @@ export default function HomeClient({
 
   const mappedBestSellers = initialBestSellers.map((b: any) => {
     const price = b.pricing ? parseFloat(b.pricing.effective_price || b.pricing.selling_price || '0') : 0;
-    const rating = b.average_rating || b.avg_rating || b.rating ? parseFloat(b.average_rating || b.avg_rating || b.rating) : undefined;
-    const reviews = b.total_reviews || b.reviews_count || b.review_count || b.reviews ? parseInt(b.total_reviews || b.reviews_count || b.review_count || b.reviews) : undefined;
+    const rawRating = b.average_rating ?? b.avg_rating ?? b.rating;
+    const rating = rawRating !== undefined && rawRating !== null ? parseFloat(String(rawRating)) : 0;
+    const rawReviews = b.total_reviews ?? b.reviews_count ?? b.review_count ?? b.reviews;
+    const reviews = rawReviews !== undefined && rawReviews !== null ? parseInt(String(rawReviews), 10) : 0;
     return {
       id:       b.product_slug ?? b.product,
       title:    b.display_heading || b.product_name,
       subtitle: b.display_short_description || '',
       price:    price,
-      rating:   rating && rating > 0 ? rating : undefined,
-      reviews:  reviews && reviews > 0 ? reviews : undefined,
+      rating:   rating,
+      reviews:  reviews,
       image:    b.display_image_url || '/images/nsk_handpiece_portrait.png',
     };
   });

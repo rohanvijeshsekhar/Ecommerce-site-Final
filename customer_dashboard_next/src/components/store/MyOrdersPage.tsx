@@ -312,6 +312,12 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({
                             <span className="text-[9px] font-extrabold uppercase text-slate-400 block tracking-wider">Order ID</span>
                             <span className="text-[11.5px] font-bold text-slate-700 block mt-0.5">{order.id}</span>
                           </div>
+                          <div>
+                            <span className="text-[9px] font-extrabold uppercase text-slate-400 block tracking-wider">Payment</span>
+                            <span className="text-[11.5px] font-bold text-slate-700 block mt-0.5">
+                              {(order.paymentMethod || '').toLowerCase() === 'cod' ? 'Cash on Delivery' : 'Online / Prepaid'}
+                            </span>
+                          </div>
                         </div>
 
                         <div>
@@ -425,10 +431,12 @@ const MyOrdersPage: React.FC<MyOrdersPageProps> = ({
                     </div>
                     <div className="mt-3 space-y-1">
                       <h4 className="text-[10.5px] font-bold text-slate-800 line-clamp-1 group-hover:text-[#006670]">{acc.name}</h4>
-                      <div className="flex items-center gap-0.5 text-amber-500">
-                        <Star className="w-2.5 h-2.5 fill-amber-500 stroke-none" />
-                        <span className="text-[9px] font-bold text-slate-600 mt-0.5">{acc.rating}</span>
-                      </div>
+                      {(acc as any).rating && (
+                        <div className="flex items-center gap-0.5 text-amber-500">
+                          <Star className="w-2.5 h-2.5 fill-amber-500 stroke-none" />
+                          <span className="text-[9px] font-bold text-slate-600 mt-0.5">{(acc as any).rating}</span>
+                        </div>
+                      )}
                       <span className="text-xs font-black text-[#006670] font-display block pt-0.5">₹{acc.price.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
@@ -475,28 +483,24 @@ const accessories = [
     id: 'acc-1',
     name: 'NSK Lubricating Spray Oil',
     price: 1299,
-    rating: 4.8,
     image: '/images/bestseller_handpiece.png',
   },
   {
     id: 'acc-2',
     name: 'Scaling Tips Torque Wrench Key',
     price: 699,
-    rating: 4.9,
     image: '/images/bestseller_scaler.png',
   },
   {
     id: 'acc-3',
     name: 'Light Cure Shield Protective Filter',
     price: 499,
-    rating: 4.7,
     image: '/images/bestseller_curing.png',
   },
   {
     id: 'acc-4',
     name: 'Composites Cavity Finishing Burrs Set',
     price: 1599,
-    rating: 4.8,
     image: '/images/bestseller_materials.png',
   }
 ];

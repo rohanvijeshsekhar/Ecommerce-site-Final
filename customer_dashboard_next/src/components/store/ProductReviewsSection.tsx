@@ -106,7 +106,9 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const checkEligibility = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await reviewsService.checkEligibility(productId);
+      const targetId = productId || productSlug || '';
+      if (!targetId) return;
+      const res = await reviewsService.checkEligibility(targetId);
       setEligibility(res);
     } catch (e) {
       console.error('Eligibility check error:', e);
@@ -121,7 +123,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     if (isAuthenticated) {
       checkEligibility();
     }
-  }, [isAuthenticated, productId]);
+  }, [isAuthenticated, productId, productSlug]);
 
   const handleVote = async (reviewId: string, isHelpful: boolean) => {
     if (!isAuthenticated) {
@@ -156,6 +158,18 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     setIsLightboxOpen(true);
   };
 
+  const handleWriteReviewClick = () => {
+    if (!isAuthenticated) {
+      showToast?.('Please sign in with your account to rate or review this product.');
+      return;
+    }
+    if (eligibility && !eligibility.can_review) {
+      showToast?.(eligibility.reason || 'Only verified purchasers with delivered orders can review this product.');
+      return;
+    }
+    setIsReviewModalOpen(true);
+  };
+
   const existingReviewObject = reviews.find(r => r.id === eligibility?.existing_review_id);
 
   return (
@@ -181,6 +195,22 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-2">
               <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
               <span>Verified buyers only</span>
+            </div>
+
+            {/* Write / Edit Review Button */}
+            <div className="mt-3.5 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleWriteReviewClick}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+              >
+                <MessageSquarePlus className="w-3.5 h-3.5" />
+                <span>
+                  {eligibility?.is_edit
+                    ? 'Edit Your Review'
+                    : 'Rate Product'}
+                </span>
+              </button>
             </div>
           </div>
 

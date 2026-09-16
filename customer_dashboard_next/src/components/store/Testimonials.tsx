@@ -15,33 +15,6 @@ interface ReviewItem {
 
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80';
 
-const STATIC_REVIEWS: ReviewItem[] = [
-  {
-    id: 'testimonial-1',
-    name: 'Dr. Arjun Mehta',
-    clinic: 'Smile Dental Clinic, Mumbai',
-    quote: 'Faazo has transformed how we source dental equipment. The quality is outstanding and delivery is always on time. Highly recommend!',
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'testimonial-2',
-    name: 'Dr. Priya Sharma',
-    clinic: 'Advanced Dental Care, Bangalore',
-    quote: 'Exceptional product range and competitive pricing. The NSK handpieces we ordered have made a significant difference in our patient outcomes.',
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'testimonial-3',
-    name: 'Dr. Rahul Verma',
-    clinic: 'City Dental Hub, Delhi',
-    quote: 'Best place to source professional dental equipment. The team is knowledgeable and the after-sales support is excellent.',
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80',
-  },
-];
-
 const Testimonials: React.FC = () => {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
 
@@ -72,12 +45,15 @@ const Testimonials: React.FC = () => {
 
   // Duplicate items to ensure a seamless infinite marquee scroll
   const marqueeItems = useMemo(() => {
-    const base = reviews.length > 0 ? reviews : STATIC_REVIEWS;
-    if (!base || base.length === 0) return [];
+    if (!reviews || reviews.length === 0) return [];
     
     // Repeat the base list so we have enough items to loop continuously without visual gaps
-    return [...base, ...base, ...base, ...base];
+    return [...reviews, ...reviews, ...reviews, ...reviews];
   }, [reviews]);
+
+  if (reviews.length === 0) {
+    return null;
+  }
 
   return (
     <>
