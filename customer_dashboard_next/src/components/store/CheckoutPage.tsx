@@ -1598,19 +1598,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           <div className="bg-white rounded-3xl p-6 md:p-7 max-w-xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-5 gap-3">
               <div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
                   {editingAddress ? 'Edit Practice Address' : 'Add New Practice Address'}
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Enter complete clinic delivery location details for courier dispatch.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleUseCurrentLocation}
                   disabled={isDetectingLocation}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-teal-50/70 text-[#005B63] hover:text-[#004D54] border border-[#006670]/25 hover:border-[#006670] rounded-xl text-[11px] font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98 disabled:opacity-60 group"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-teal-50/70 text-[#005B63] hover:text-[#004D54] border border-[#006670]/25 hover:border-[#006670] rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98 disabled:opacity-60 group"
                   title="Auto-fill form using current GPS location"
                 >
                   {isDetectingLocation ? (
@@ -1618,12 +1618,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   ) : (
                     <LocateFixed className="w-3.5 h-3.5 text-[#006670] group-hover:scale-110 transition-transform duration-200" />
                   )}
-                  <span className="hidden sm:inline">{isDetectingLocation ? 'Detecting...' : 'Use Current Location'}</span>
+                  <span>{isDetectingLocation ? 'Detecting...' : 'Use Current Location'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 cursor-pointer transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1632,24 +1632,25 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
             {/* Current Location Detected Banner */}
             {detectedLocationData && (
-              <div className="mb-4 p-3.5 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl flex items-start gap-3 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                  <MapPin className="w-4 h-4" />
+              <div className="mb-5 p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-start gap-3 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-[#006670]/10 text-[#006670] flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                  <LocateFixed className="w-4 h-4 text-[#006670]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-black text-emerald-950 uppercase tracking-wide">
+                    <span className="text-xs font-bold text-slate-900 tracking-wide">
                       Current Location Detected
                     </span>
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      GPS Verified
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-full">
+                      <Check className="w-2.5 h-2.5" /> GPS Verified
                     </span>
                   </div>
-                  <p className="text-xs text-emerald-900 font-medium mt-1 leading-snug">
+                  <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
                     {detectedLocationData.formatted_address}
                   </p>
-                  <p className="text-[10px] text-emerald-700 mt-1.5 font-semibold">
-                    ✓ Street, city, state & PIN code auto-filled. Please verify your clinic name & suite/unit details below.
+                  <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span>Fields auto-filled. Please verify clinic name and suite/unit details below.</span>
                   </p>
                 </div>
               </div>
@@ -1658,30 +1659,30 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             <form onSubmit={handleSaveModalAddress} className="space-y-4">
               {/* GROUP 1: Contact Person */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    Contact Person Name *
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Contact Person Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={modalForm.full_name}
                     onChange={(e) => setModalForm((prev) => ({ ...prev, full_name: e.target.value }))}
                     placeholder="Dr. Aditya Sharma"
-                    className={`border ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
                       modalErrors.full_name ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                    } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                   />
                   {modalErrors.full_name && (
                     <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.full_name}</span>
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    Contact Mobile (10 Digits) *
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Contact Mobile (10 Digits) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3 text-xs font-bold text-slate-400 select-none">+91</span>
+                    <span className="absolute left-3.5 text-xs font-bold text-slate-400 select-none">+91</span>
                     <input
                       type="tel"
                       maxLength={10}
@@ -1692,7 +1693,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       placeholder="9876543210"
                       className={`w-full border ${
                         modalErrors.mobile ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                      } pl-10 pr-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                      } pl-11 pr-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                     />
                   </div>
                   {modalErrors.mobile && (
@@ -1703,14 +1704,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* GROUP 2: Practice Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    Address Label *
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Address Label <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={modalForm.label_type}
                     onChange={(e) => setModalForm((prev) => ({ ...prev, label_type: e.target.value }))}
-                    className="border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 bg-white focus:outline-none focus:border-[#006670]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs cursor-pointer"
                   >
                     {ADDRESS_LABEL_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
@@ -1721,16 +1722,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
 
                 {modalForm.label_type === 'Other' && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                      Custom Label Name *
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Custom Label Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={modalForm.custom_label}
                       onChange={(e) => setModalForm((prev) => ({ ...prev, custom_label: e.target.value }))}
                       placeholder="e.g. Research Center"
-                      className="border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 bg-white focus:outline-none focus:border-[#006670]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs"
                     />
                     {modalErrors.custom_label && (
                       <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.custom_label}</span>
@@ -1738,18 +1739,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                 )}
 
-                <div className={`flex flex-col gap-1 ${modalForm.label_type === 'Other' ? 'md:col-span-2' : ''}`}>
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    Clinic / Practice / Hospital Name *
+                <div className={`flex flex-col gap-1.5 ${modalForm.label_type === 'Other' ? 'md:col-span-2' : ''}`}>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Clinic / Practice / Hospital Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={modalForm.clinic_name}
                     onChange={(e) => setModalForm((prev) => ({ ...prev, clinic_name: e.target.value }))}
                     placeholder="Aesthetic Dental Center"
-                    className={`border ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
                       modalErrors.clinic_name ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                    } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                   />
                   {modalErrors.clinic_name && (
                     <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.clinic_name}</span>
@@ -1758,18 +1759,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               {/* GROUP 3: Street & Location */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                  Street Address / Building / Area / Suite *
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Street Address / Building / Area / Suite <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={modalForm.street_address}
                   onChange={(e) => setModalForm((prev) => ({ ...prev, street_address: e.target.value }))}
                   placeholder="Flat 101, Medical Plaza, MG Road"
-                  className={`border ${
+                  className={`w-full px-3.5 py-2.5 rounded-xl border ${
                     modalErrors.street_address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                  } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                  } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                 />
                 {modalErrors.street_address && (
                   <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.street_address}</span>
@@ -1777,25 +1778,25 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">City *</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">City <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     value={modalForm.city}
                     onChange={(e) => setModalForm((prev) => ({ ...prev, city: e.target.value }))}
                     placeholder="Mumbai"
-                    className={`border ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
                       modalErrors.city ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                    } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                   />
                   {modalErrors.city && (
                     <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.city}</span>
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    State / UT *
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    State / UT <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={modalForm.state}
@@ -1811,9 +1812,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         setModalErrors((prev) => ({ ...prev, pincode: '', state: '' }));
                       }
                     }}
-                    className={`border ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
                       modalErrors.state ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                    } text-xs font-medium text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs cursor-pointer`}
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((st) => (
@@ -1827,9 +1828,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                    Pincode (6 Digits) *
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Pincode (6 Digits) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1837,9 +1838,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     value={modalForm.pincode}
                     onChange={(e) => handlePincodeChange(e.target.value)}
                     placeholder="400001"
-                    className={`border ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
                       modalErrors.pincode ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 bg-white'
-                    } px-3 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#006670]`}
+                    } text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs`}
                   />
                   {modalErrors.pincode && (
                     <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.pincode}</span>
@@ -1849,39 +1850,42 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Live Serviceability Feedback */}
               {modalPincodeStatus.checking ? (
-                <div className="p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center gap-2 text-xs text-slate-500">
+                <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl flex items-center gap-2 text-xs text-slate-600 shadow-2xs">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#006670]" />
                   <span>Checking live courier delivery availability with Shiprocket...</span>
                 </div>
               ) : modalPincodeStatus.result ? (
                 modalPincodeStatus.result.is_serviceable ? (
-                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800">
+                  <div className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-xl flex items-center gap-2.5 text-xs text-emerald-800 shadow-2xs">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="font-semibold">
-                      ✓ Delivery available for PIN code {modalPincodeStatus.result.destination_pincode}
+                      Courier delivery available for PIN code{' '}
+                      <strong className="text-emerald-950 font-bold">{modalPincodeStatus.result.destination_pincode}</strong>
                     </span>
                   </div>
                 ) : (
-                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-800">
+                  <div className="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl flex items-center gap-2.5 text-xs text-rose-800 shadow-2xs">
                     <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span className="font-semibold">
-                      ✕ Courier delivery is currently unavailable for PIN code{' '}
-                      {modalPincodeStatus.result.destination_pincode}.
+                      Courier delivery is currently unavailable for PIN code{' '}
+                      <strong className="text-rose-950 font-bold">{modalPincodeStatus.result.destination_pincode}</strong>
                     </span>
                   </div>
                 )
               ) : null}
 
               {/* Default Checkbox */}
-              <div className="pt-2">
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <div className="pt-1">
+                <label className="inline-flex items-center gap-2.5 cursor-pointer select-none group">
                   <input
                     type="checkbox"
                     checked={modalForm.is_default}
                     onChange={(e) => setModalForm((prev) => ({ ...prev, is_default: e.target.checked }))}
-                    className="w-4 h-4 rounded accent-[#006670] cursor-pointer"
+                    className="w-4 h-4 rounded-md text-[#006670] border-slate-300 focus:ring-[#006670]/20 accent-[#006670] cursor-pointer"
                   />
-                  <span className="text-xs font-bold text-slate-700">Set as my default practice delivery address</span>
+                  <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                    Set as my default practice delivery address
+                  </span>
                 </label>
               </div>
 
@@ -1894,27 +1898,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               )}
 
               {/* Modal Buttons */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <div className="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => { setIsAddressModalOpen(false); setModalServerError(null); }}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-all cursor-pointer shadow-2xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={modalSaving}
-                  className="px-6 py-2.5 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
+                  className="px-6 py-2.5 rounded-xl bg-[#006670] hover:bg-[#004e56] text-white text-xs font-bold transition-all shadow-xs hover:shadow active:scale-98 cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {modalSaving ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving Address...</span>
                     </>
-                  ) : editingAddress ? (
-                    'Save Changes'
                   ) : (
-                    'Save & Select Address'
+                    <span>{editingAddress ? 'Save Changes' : 'Save & Select Address'}</span>
                   )}
                 </button>
               </div>
