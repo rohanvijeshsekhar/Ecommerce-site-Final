@@ -35,7 +35,7 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center py-20">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 pt-[140px] lg:pt-[160px]">
         <RefreshCw className="w-10 h-10 text-[#006670] animate-spin mb-4" />
         <p className="text-slate-600 font-semibold text-sm">Loading today's exclusive deals...</p>
       </div>
@@ -44,7 +44,7 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
 
   if (!offer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-4xl mx-auto px-4 py-20 pt-[140px] lg:pt-[160px] text-center">
         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
           <ShoppingBag className="w-8 h-8" />
         </div>
@@ -66,7 +66,7 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
   const items = offer.items || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pt-[100px] lg:pt-[124px] pb-20">
       {/* ============================================================
           1. BREADCRUMBS
          ============================================================ */}
