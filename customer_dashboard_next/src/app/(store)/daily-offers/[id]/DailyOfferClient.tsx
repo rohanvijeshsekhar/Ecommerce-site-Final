@@ -133,6 +133,7 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
                   startDate={offer.start_date}
                   bgColor="#002B30"
                   textColor="#FFFFFF"
+                  compact={true}
                 />
               </div>
             )}

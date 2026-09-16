@@ -103,72 +103,72 @@ export const DailyOfferCountdown: React.FC<DailyOfferCountdownProps> = ({
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 sm:gap-2 select-none ${className}`}>
+    <div className={`inline-flex items-center ${compact ? 'gap-1 sm:gap-1.5' : 'gap-1.5 sm:gap-2'} select-none ${className}`}>
       {/* Optional Days if > 0 */}
       {timeLeft.days > 0 && (
         <>
           <div
-            className={`flex flex-col items-center justify-center rounded-xl shadow-md border border-white/15 backdrop-blur-md ${
-              compact ? 'w-11 h-11' : 'w-13 h-14 sm:w-16 sm:h-16'
+            className={`flex flex-col items-center justify-center border border-white/15 backdrop-blur-md shadow-xs ${
+              compact ? 'w-9 h-10 sm:w-10 sm:h-11 rounded-lg' : 'w-13 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md'
             }`}
             style={{ backgroundColor: bgColor, color: textColor }}
           >
-            <span className={`font-mono font-black leading-none ${compact ? 'text-sm' : 'text-base sm:text-2xl'}`}>
+            <span className={`font-mono font-black leading-none ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'}`}>
               {padZero(timeLeft.days)}
             </span>
-            <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
+            <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[7px] sm:text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
               Days
             </span>
           </div>
-          <span className="font-mono font-bold text-base sm:text-xl opacity-60 self-center -mt-2">:</span>
+          <span className={`font-mono font-bold opacity-60 self-center ${compact ? 'text-xs -mt-1' : 'text-base sm:text-xl -mt-2'}`}>:</span>
         </>
       )}
 
       {/* Hours */}
       <div
-        className={`flex flex-col items-center justify-center rounded-xl shadow-md border border-white/15 backdrop-blur-md transition-transform hover:scale-105 ${
-          compact ? 'w-11 h-11' : 'w-13 h-14 sm:w-16 sm:h-16'
+        className={`flex flex-col items-center justify-center border border-white/15 backdrop-blur-md transition-transform hover:scale-105 shadow-xs ${
+          compact ? 'w-9 h-10 sm:w-10 sm:h-11 rounded-lg' : 'w-13 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md'
         }`}
         style={{ backgroundColor: bgColor, color: textColor }}
       >
-        <span className={`font-mono font-black leading-none ${compact ? 'text-sm' : 'text-base sm:text-2xl'}`}>
+        <span className={`font-mono font-black leading-none ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'}`}>
           {padZero(timeLeft.hours)}
         </span>
-        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
+        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[7px] sm:text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
           Hours
         </span>
       </div>
 
-      <span className="font-mono font-bold text-base sm:text-xl opacity-60 self-center -mt-2">:</span>
+      <span className={`font-mono font-bold opacity-60 self-center ${compact ? 'text-xs -mt-1' : 'text-base sm:text-xl -mt-2'}`}>:</span>
 
       {/* Minutes */}
       <div
-        className={`flex flex-col items-center justify-center rounded-xl shadow-md border border-white/15 backdrop-blur-md transition-transform hover:scale-105 ${
-          compact ? 'w-11 h-11' : 'w-13 h-14 sm:w-16 sm:h-16'
+        className={`flex flex-col items-center justify-center border border-white/15 backdrop-blur-md transition-transform hover:scale-105 shadow-xs ${
+          compact ? 'w-9 h-10 sm:w-10 sm:h-11 rounded-lg' : 'w-13 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md'
         }`}
         style={{ backgroundColor: bgColor, color: textColor }}
       >
-        <span className={`font-mono font-black leading-none ${compact ? 'text-sm' : 'text-base sm:text-2xl'}`}>
+        <span className={`font-mono font-black leading-none ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'}`}>
           {padZero(timeLeft.minutes)}
         </span>
-        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
+        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[7px] sm:text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
           Mins
         </span>
       </div>
 
-      <span className="font-mono font-bold text-base sm:text-xl opacity-60 self-center -mt-2">:</span>
+      <span className={`font-mono font-bold opacity-60 self-center ${compact ? 'text-xs -mt-1' : 'text-base sm:text-xl -mt-2'}`}>:</span>
 
       {/* Seconds */}
       <div
-        className={`flex flex-col items-center justify-center rounded-xl shadow-md border border-white/15 backdrop-blur-md transition-transform hover:scale-105 ${
-          compact ? 'w-11 h-11' : 'w-13 h-14 sm:w-16 sm:h-16'
+        className={`flex flex-col items-center justify-center border border-white/15 backdrop-blur-md transition-transform hover:scale-105 shadow-xs ${
+          compact ? 'w-9 h-10 sm:w-10 sm:h-11 rounded-lg' : 'w-13 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md'
         }`}
         style={{ backgroundColor: bgColor, color: textColor }}
       >
-        <span className={`font-mono font-black leading-none animate-pulse ${compact ? 'text-sm' : 'text-base sm:text-2xl'}`}>
+        <span className={`font-mono font-black leading-none animate-pulse ${compact ? 'text-xs sm:text-sm' : 'text-base sm:text-2xl'}`}>
           {padZero(timeLeft.seconds)}
         </span>
-        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
+        <span className={`uppercase font-bold tracking-wider opacity-70 ${compact ? 'text-[7px] sm:text-[8px] mt-0.5' : 'text-[9px] sm:text-[10px] mt-1'}`}>
           Secs
         </span>
       </div>
