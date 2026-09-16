@@ -144,8 +144,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [editingAddress, setEditingAddress] = useState<AddressItem | null>(null);
 
   const [modalForm, setModalForm] = useState({
-    label_type: 'Primary Clinic',
-    custom_label: '',
     full_name: '',
     mobile: '',
     street_address: '', // line1 (Required)
@@ -373,7 +371,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setEditingAddress(null);
       setModalForm((prev) => ({
         ...prev,
-        label_type: prev.label_type || 'Primary Clinic',
         full_name: prev.full_name || dentistName || user?.full_name || '',
         mobile: prev.mobile || phone || user?.phone_number || '',
         street_address: detected.street_address || prev.street_address || '',
@@ -413,8 +410,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setEditingAddress(null);
     setDetectedLocationData(null);
     setModalForm({
-      label_type: 'Primary Clinic',
-      custom_label: '',
       full_name: dentistName || user?.full_name || '',
       mobile: phone || user?.phone_number || '',
       street_address: '',
@@ -434,10 +429,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     e.stopPropagation();
     setEditingAddress(addr);
     setDetectedLocationData(null);
-    const isStandardLabel = ADDRESS_LABEL_OPTIONS.includes(addr.label);
     setModalForm({
-      label_type: isStandardLabel ? addr.label : 'Other',
-      custom_label: isStandardLabel ? '' : addr.label,
       full_name: addr.full_name,
       mobile: addr.mobile,
       street_address: addr.line1 || '',
@@ -522,10 +514,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       errors.pincode = `Pincode ${modalForm.pincode.trim()} does not match ${modalForm.state}.`;
     }
 
-    if (modalForm.label_type === 'Other' && !modalForm.custom_label.trim()) {
-      errors.custom_label = 'Please specify custom address label.';
-    }
-
     setModalErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -535,11 +523,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     if (!validateModalForm()) return;
 
     setModalSaving(true);
-    const resolvedLabel =
-      modalForm.label_type === 'Other' ? modalForm.custom_label.trim() : modalForm.label_type;
-
     const payload = {
-      label: resolvedLabel || 'Primary Clinic',
+      label: editingAddress?.label || 'Delivery Address',
       full_name: modalForm.full_name.trim(),
       mobile: modalForm.mobile.replace(/\D/g, ''),
       line1: modalForm.street_address.trim(),
@@ -1236,9 +1221,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               >
                                 {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
-                              <span className="text-[10px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                {addr.label}
-                              </span>
                               {addr.is_default && (
                                 <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                                   Default
@@ -1719,58 +1701,21 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 )}
               </div>
 
-              {/* GROUP 3: Landmark (Optional) & Address Label */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Landmark / Clinic Name
-                    </label>
-                    <span className="text-[10px] text-slate-400 font-medium">Optional</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={modalForm.landmark}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, landmark: e.target.value }))}
-                    placeholder="e.g. Near Metro, Opp. City Hospital, or Practice Name"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
+              {/* GROUP 3: Landmark / Clinic Name (Optional) */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-700">
-                    Address Label <span className="text-rose-500">*</span>
+                    Landmark / Practice Name
                   </label>
-                  <select
-                    value={modalForm.label_type}
-                    onChange={(e) => setModalForm((prev) => ({ ...prev, label_type: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs cursor-pointer"
-                  >
-                    {ADDRESS_LABEL_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="text-[10px] text-slate-400 font-medium">Optional</span>
                 </div>
-
-                {modalForm.label_type === 'Other' && (
-                  <div className="flex flex-col gap-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Custom Label Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={modalForm.custom_label}
-                      onChange={(e) => setModalForm((prev) => ({ ...prev, custom_label: e.target.value }))}
-                      placeholder="e.g. Research Center"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs"
-                    />
-                    {modalErrors.custom_label && (
-                      <span className="text-[10px] text-rose-500 font-semibold">{modalErrors.custom_label}</span>
-                    )}
-                  </div>
-                )}
+                <input
+                  type="text"
+                  value={modalForm.landmark}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, landmark: e.target.value }))}
+                  placeholder="e.g. Near Metro, Opp. City Hospital, or Clinic Name"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#006670]/15 focus:border-[#006670] transition-all shadow-2xs"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
