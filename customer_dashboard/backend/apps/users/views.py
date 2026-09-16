@@ -179,13 +179,13 @@ class AddressViewSet(ViewSet):
 
     def _get_address_or_404(self, pk, user):
         try:
-            return Address.objects.get(pk=pk, user=user)
+            return Address.objects.get(pk=pk, user=user, is_deleted=False)
         except Address.DoesNotExist:
             return None
 
     @extend_schema(summary="List Addresses", responses={200: AddressSerializer(many=True)})
     def list(self, request):
-        addresses = Address.objects.filter(user=request.user)
+        addresses = Address.objects.filter(user=request.user, is_deleted=False)
         serializer = AddressSerializer(addresses, many=True)
         return _ok(data=serializer.data, message=f"{len(addresses)} address(es) found.")
 
@@ -236,11 +236,19 @@ class AddressViewSet(ViewSet):
             return _error("Address not found.", status_code=404)
 
         was_default = address.is_default
-        address.delete()
 
-        # If this was the default, promote the most recent address
+        # Soft delete: preserves historical order records & foreign key integrity
+        address.is_deleted = True
+        address.is_default = False
+        address.save(update_fields=["is_deleted", "is_default"])
+
+        # If this was the default, promote the most recent active address
         if was_default:
-            remaining = Address.objects.filter(user=request.user).order_by("-created_at").first()
+            remaining = (
+                Address.objects.filter(user=request.user, is_deleted=False)
+                .order_by("-created_at")
+                .first()
+            )
             if remaining:
                 remaining.is_default = True
                 remaining.save(update_fields=["is_default"])

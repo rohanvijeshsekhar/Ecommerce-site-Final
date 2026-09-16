@@ -129,7 +129,7 @@ class CreatePaymentOrderView(APIView):
             return error_response("address_id is required.", status_code=status.HTTP_400_BAD_REQUEST)
 
         try:
-            address = Address.objects.get(pk=address_id, user=user)
+            address = Address.objects.get(pk=address_id, user=user, is_deleted=False)
         except (Address.DoesNotExist, ValueError):
             return error_response(
                 "Selected shipping address was not found.",
@@ -440,13 +440,13 @@ def create_order_from_payment(payment, razorpay_payment_id, razorpay_signature, 
             address = None
             if address_id:
                 try:
-                    address = Address.objects.get(pk=address_id, user=user)
+                    address = Address.objects.get(pk=address_id, user=user, is_deleted=False)
                 except (Address.DoesNotExist, ValueError):
                     address = None
 
             if not address:
                 # Fall back to user's primary active address
-                address = Address.objects.filter(user=user).first()
+                address = Address.objects.filter(user=user, is_deleted=False).first()
 
             order_notes = ""
             if not address:

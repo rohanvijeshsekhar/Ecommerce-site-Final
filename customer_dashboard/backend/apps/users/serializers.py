@@ -290,9 +290,9 @@ class CustomerAdminSerializer(serializers.ModelSerializer):
         return f"CUST-{str(obj.pk)[:8].upper()}"
 
     def get_default_address(self, obj) -> dict | None:
-        default_addr = obj.addresses.filter(is_default=True).first()
+        default_addr = obj.addresses.filter(is_default=True, is_deleted=False).first()
         if not default_addr:
-            default_addr = obj.addresses.first()
+            default_addr = obj.addresses.filter(is_deleted=False).first()
         if default_addr:
             return AddressSerializer(default_addr).data
         return None

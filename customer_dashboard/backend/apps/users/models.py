@@ -470,6 +470,11 @@ class Address(models.Model):
         db_index=True,
         verbose_name="Default Address",
     )
+    is_deleted = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Is Deleted",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

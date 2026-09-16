@@ -593,9 +593,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         showToast?.('Address removed.');
         setDeletingAddress(null);
         await fetchAddresses();
+      } else {
+        showToast?.(res.message || 'Failed to delete address.');
       }
     } catch (err: any) {
-      showToast?.('Failed to delete address.');
+      showToast?.(err?.response?.data?.message || 'Failed to delete address.');
     } finally {
       setDeleteLoading(false);
     }

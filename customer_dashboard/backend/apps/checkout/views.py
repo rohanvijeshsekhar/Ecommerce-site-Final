@@ -146,7 +146,7 @@ class CheckoutPreviewView(APIView):
             return error_response("address_id is required.", status_code=status.HTTP_400_BAD_REQUEST)
 
         try:
-            address = Address.objects.get(pk=address_id, user=request.user)
+            address = Address.objects.get(pk=address_id, user=request.user, is_deleted=False)
         except (Address.DoesNotExist, ValueError):
             return error_response("Selected shipping address was not found.", status_code=status.HTTP_404_NOT_FOUND)
 
@@ -214,7 +214,7 @@ class CheckoutPlaceView(APIView):
             return error_response("address_id is required.", status_code=status.HTTP_400_BAD_REQUEST)
 
         try:
-            address = Address.objects.get(pk=address_id, user=request.user)
+            address = Address.objects.get(pk=address_id, user=request.user, is_deleted=False)
         except (Address.DoesNotExist, ValueError):
             return error_response("Selected shipping address was not found.", status_code=status.HTTP_404_NOT_FOUND)
 

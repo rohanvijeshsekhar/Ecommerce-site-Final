@@ -22,7 +22,9 @@ class Order(BaseModel):
     )
     shipping_address = models.ForeignKey(
         Address,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Shipping Address"
     )
     status = models.CharField(
