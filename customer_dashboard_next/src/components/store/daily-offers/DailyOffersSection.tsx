@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Flame, Sparkles } from 'lucide-react';
+import { ArrowRight, Flame, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyOffer } from '@/admin/types/admin';
 import { api } from '@/lib/api';
 import DailyOfferCountdown from './DailyOfferCountdown';
@@ -26,6 +26,10 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 }) => {
   const router = useRouter();
   const [offers, setOffers] = useState<DailyOffer[]>(() => initialOffers || []);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeItemIndex, setActiveItemIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   const loadOffers = () => {
     api
@@ -41,6 +45,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   useEffect(() => {
     if (previewOffer) {
       setOffers([previewOffer]);
+      setActiveIndex(0);
+      setActiveItemIndex(0);
       return;
     }
 
@@ -66,11 +72,80 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
     };
   }, []);
 
-  const activeOffer = previewOffer || offers[0];
+  const totalOffers = offers.length;
+  const currentIndex = Math.min(activeIndex, Math.max(0, totalOffers - 1));
+  const activeOffer = previewOffer || offers[currentIndex] || offers[0];
 
   if (!activeOffer) {
     return null;
   }
+
+  // Multi-item / Multi-offer carousel detection
+  const isMultiOffer = totalOffers > 1;
+  const hasItems = Boolean(activeOffer.items && activeOffer.items.length > 1);
+  const isMultiItem = !isMultiOffer && hasItems;
+  const canNavigate = isMultiOffer || isMultiItem;
+  const slideItems = isMultiOffer ? offers : (activeOffer.items || []);
+  const currentSlideIndex = isMultiOffer ? currentIndex : activeItemIndex;
+
+  const goToPrev = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isMultiOffer) {
+      setActiveIndex((prev) => (prev > 0 ? prev - 1 : totalOffers - 1));
+      setActiveItemIndex(0);
+    } else if (isMultiItem && activeOffer.items) {
+      setActiveItemIndex((prev) => (prev > 0 ? prev - 1 : activeOffer.items!.length - 1));
+    }
+  };
+
+  const goToNext = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isMultiOffer) {
+      setActiveIndex((prev) => (prev < totalOffers - 1 ? prev + 1 : 0));
+      setActiveItemIndex(0);
+    } else if (isMultiItem && activeOffer.items) {
+      setActiveItemIndex((prev) => (prev < activeOffer.items!.length - 1 ? prev + 1 : 0));
+    }
+  };
+
+  const handleSlideSelect = (idx: number) => {
+    if (isMultiOffer) {
+      setActiveIndex(idx);
+      setActiveItemIndex(0);
+    } else {
+      setActiveItemIndex(idx);
+    }
+  };
+
+  // Autoplay rotation (6s) when multiple slides exist and not hovered / in studio preview
+  useEffect(() => {
+    if (isLivePreview || !canNavigate || isHovered) return;
+    const interval = setInterval(() => {
+      if (isMultiOffer) {
+        setActiveIndex((prev) => (prev < totalOffers - 1 ? prev + 1 : 0));
+      } else if (isMultiItem && activeOffer.items) {
+        setActiveItemIndex((prev) => (prev < activeOffer.items!.length - 1 ? prev + 1 : 0));
+      }
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [canNavigate, isMultiOffer, isMultiItem, totalOffers, activeOffer.items, isLivePreview, isHovered]);
+
+  // Touch handlers for mobile swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (diff > 50) {
+      goToNext();
+    } else if (diff < -50) {
+      goToPrev();
+    }
+    setTouchStart(null);
+  };
 
   // Theme & Color resolution (Default FAAZO Teal)
   const bgColor = activeOffer.bg_color || '#004D54';
@@ -87,8 +162,16 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   const countdownTextColor = activeOffer.countdown_text_color || '#FFFFFF';
 
   // Image & Layout configuration
-  const bannerImage = activeOffer.desktop_image_url || activeOffer.desktop_image || DEFAULT_BANNER_IMAGE;
-  const mobileBannerImage = activeOffer.mobile_image_url || activeOffer.mobile_image;
+  const currentItem = activeOffer.items?.[activeItemIndex] || null;
+  const bannerImage =
+    currentItem?.product_image ||
+    activeOffer.desktop_image_url ||
+    activeOffer.desktop_image ||
+    DEFAULT_BANNER_IMAGE;
+  const mobileBannerImage =
+    currentItem?.product_image ||
+    activeOffer.mobile_image_url ||
+    activeOffer.mobile_image;
   const imagePos = activeOffer.image_position || 'right'; // 'left' | 'right' | 'center'
   const isBackgroundMode = imagePos === 'center';
   const isImageLeft = imagePos === 'left';
@@ -164,6 +247,10 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   return (
     <section
       onClick={handleNavigate}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${
         !hasAnyDynamicOverlay && isBackgroundMode
           ? isMobilePreview
@@ -515,11 +602,90 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 {hasAnyDynamicOverlay && (
                   <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10 pointer-events-none" />
                 )}
+
+                {/* Inner side arrows on image card for multi-item offers */}
+                {hasItems && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveItemIndex((prev) =>
+                          prev > 0 ? prev - 1 : (activeOffer.items?.length || 1) - 1
+                        );
+                      }}
+                      aria-label="Previous item image"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-all duration-200 z-20 cursor-pointer shadow-md hover:scale-110 active:scale-95 border border-white/20"
+                    >
+                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveItemIndex((prev) =>
+                          prev < (activeOffer.items?.length || 1) - 1 ? prev + 1 : 0
+                        );
+                      }}
+                      aria-label="Next item image"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-all duration-200 z-20 cursor-pointer shadow-md hover:scale-110 active:scale-95 border border-white/20"
+                    >
+                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SIDE ARROWS & CAROUSEL CONTROLS (Left and Right Slide Navigation)
+      ───────────────────────────────────────────────────────────── */}
+      {canNavigate && (
+        <>
+          {/* Previous Slide Arrow Button */}
+          <button
+            type="button"
+            onClick={goToPrev}
+            aria-label="Previous Slide"
+            className="absolute left-2.5 sm:left-5 md:left-7 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-white/90 hover:bg-white text-slate-800 hover:text-[#004D54] shadow-lg hover:shadow-2xl border border-white/60 flex items-center justify-center transition-all duration-200 z-30 backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 group/arrow"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] text-slate-700 group-hover/arrow:text-[#004D54] group-hover/arrow:-translate-x-0.5 transition-transform" />
+          </button>
+
+          {/* Next Slide Arrow Button */}
+          <button
+            type="button"
+            onClick={goToNext}
+            aria-label="Next Slide"
+            className="absolute right-2.5 sm:right-5 md:right-7 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-white/90 hover:bg-white text-slate-800 hover:text-[#004D54] shadow-lg hover:shadow-2xl border border-white/60 flex items-center justify-center transition-all duration-200 z-30 backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 group/arrow"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] text-slate-700 group-hover/arrow:text-[#004D54] group-hover/arrow:translate-x-0.5 transition-transform" />
+          </button>
+
+          {/* Pagination Indicators / Dots */}
+          <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-30 bg-black/30 hover:bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full transition-all">
+            {slideItems.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSlideSelect(idx);
+                }}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  idx === currentSlideIndex
+                    ? 'w-6 sm:w-7 h-2 bg-white shadow-sm'
+                    : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 };
