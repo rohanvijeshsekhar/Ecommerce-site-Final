@@ -814,7 +814,7 @@ export const homepageService = {
   },
   async deleteDailyOffer(id: string): Promise<ServiceResponse<void>> {
     const res = await api.delete(`homepage/daily-offers/${id}/`);
-    return res.data;
+    return res.data && typeof res.data === 'object' ? res.data : { success: true };
   },
   async duplicateDailyOffer(id: string): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
     const res = await api.post(`homepage/daily-offers/${id}/duplicate/`);

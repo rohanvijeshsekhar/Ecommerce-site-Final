@@ -516,6 +516,11 @@ class DailyOfferViewSet(ReorderMixin, BaseModelViewSet):
         read_serializer = DailyOfferReadSerializer(instance, context={"request": request})
         return success_response(data=read_serializer.data, message="Daily offer updated successfully.")
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return success_response(message="Daily offer deleted successfully.")
+
     @action(detail=True, methods=["post"], url_path="duplicate")
     def duplicate(self, request, pk=None):
         original = self.get_object()

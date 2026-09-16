@@ -252,14 +252,15 @@ export const DailyOffersManager: React.FC = () => {
     setDeleting(true);
     try {
       const res = await homepageService.deleteDailyOffer(deleteTarget.id);
-      if (res.success) {
+      if (res && res.success === false) {
+        toast.error(res.message || 'Failed to delete offer');
+      } else {
         toast.success('Daily offer deleted successfully');
         loadData();
-      } else {
-        toast.error(res.message || 'Failed to delete offer');
       }
-    } catch {
-      toast.error('Failed to delete offer');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to delete offer';
+      toast.error(msg);
     } finally {
       setDeleting(false);
       setDeleteTarget(null);

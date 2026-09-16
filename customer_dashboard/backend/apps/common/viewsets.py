@@ -149,17 +149,17 @@ class BaseModelViewSet(FAAZOViewSetMixin, viewsets.ModelViewSet):
         # Prefer soft delete if the model supports it
         if hasattr(instance, "is_deleted"):
             instance.delete(deleted_by=request.user)
-            return Response(
-                {
-                    "success": True,
-                    "data": None,
-                    "message": "Deleted successfully.",
-                    "meta": None,
-                },
-                status=status.HTTP_200_OK,
-            )
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            self.perform_destroy(instance)
+        return Response(
+            {
+                "success": True,
+                "data": None,
+                "message": "Deleted successfully.",
+                "meta": None,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 # ============================================================
