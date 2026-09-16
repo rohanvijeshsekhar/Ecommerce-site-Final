@@ -65,6 +65,12 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
   const productBadgeColor = offer.product_badge_color || '#006670';
   const items = offer.items || [];
 
+  const stripEmojis = (str?: string | null) =>
+    str ? str.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, '').trim() : '';
+
+  const badgeText = stripEmojis(offer.badge_text);
+  const offerText = stripEmojis(offer.offer_text);
+
   return (
     <div className="min-h-screen bg-slate-50 pt-[100px] lg:pt-[124px] pb-20">
       {/* ============================================================
@@ -95,20 +101,18 @@ export default function DailyOfferClient({ initialOffer, offerId }: DailyOfferCl
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div>
               {/* Badges */}
-              <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                {offer.badge_text && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide bg-amber-100 text-amber-900 border border-amber-200 uppercase">
-                    <Flame className="w-3.5 h-3.5 fill-current text-amber-600 animate-bounce" />
-                    {offer.badge_text}
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                {badgeText && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[#005F63] text-white shadow-2xs">
+                    {badgeText}
                   </span>
                 )}
-                {offer.offer_text && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider bg-teal-50 text-[#006670] border border-teal-200 shadow-2xs">
-                    <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                    {offer.offer_text}
+                {offerText && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-teal-50 text-[#005F63] border border-[#005F63]/25">
+                    {offerText}
                   </span>
                 )}
-                <span className="text-xs font-bold text-[#006670] bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200/80">
                   {items.length} {items.length === 1 ? 'Product' : 'Products'} on Deal
                 </span>
               </div>
