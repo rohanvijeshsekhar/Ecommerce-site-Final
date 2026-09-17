@@ -47,4 +47,15 @@ export const supportService = {
     const res = await api.post(`support/faqs/${faqId}/feedback/`, { is_helpful: isHelpful });
     return res.data;
   },
+
+  // Create support ticket / contact inquiry
+  async createTicket(payload: {
+    subject: string;
+    category: string;
+    description: string;
+    priority?: string;
+  }) {
+    const res = await api.post('support/tickets/', payload);
+    return res.data;
+  },
 };

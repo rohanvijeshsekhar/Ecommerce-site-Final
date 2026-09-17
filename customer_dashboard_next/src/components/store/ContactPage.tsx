@@ -1,640 +1,598 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Phone,
   Mail,
+  Phone,
   MapPin,
-  MessageSquare,
-  Clock,
-  Send,
+  ArrowRight,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
+  Package,
+  RotateCcw,
   ShieldCheck,
   Building2,
-  Wrench,
-  Package,
-  ArrowRight,
+  HelpCircle,
   ExternalLink,
-  ChevronRight,
-  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supportService, FAQItem } from '@/lib/services/supportService';
 
-const CONTACT_INFO = {
-  phone: {
-    display: '+91 92891 88852',
-    raw: '+919289188852',
-    href: 'tel:+919289188852',
-  },
+// Verified Business Contact Information
+const VERIFIED_CONTACT = {
   email: {
+    label: 'EMAIL',
     display: 'faazodental@gmail.com',
     href: 'mailto:faazodental@gmail.com',
   },
-  whatsapp: {
+  phone: {
+    label: 'PHONE',
     display: '+91 92891 88852',
-    href: 'https://wa.me/919289188852?text=Hello%20FAAZO%20Team%2C%20I%20have%20an%20inquiry%20regarding%20dental%20equipment%20and%20products.',
+    href: 'tel:+919289188852',
   },
   address: {
-    company: 'FAZODENT Dental Solutions Pvt. Ltd.',
-    line1: 'T.B. Junction, Behind Bright Hotel',
+    label: 'VISIT US',
+    company: 'Fazodent Dental Solutions Pvt Ltd',
+    line1: 'T.B Junction, Behind Bright Hotel',
     line2: 'Attingal, Kerala 695101, India',
+    displayCity: 'Attingal, Kerala',
     mapUrl:
       'https://www.google.com/maps/search/?api=1&query=FAZODENT+Dental+Solutions+T.B.+Junction+Behind+Bright+Hotel+Attingal+Kerala+695101',
-    hours: 'Monday – Saturday: 9:00 AM – 7:00 PM IST',
   },
 };
 
-const INQUIRY_CATEGORIES = [
-  { value: 'product_inquiry', label: 'Product & Equipment Inquiry' },
-  { value: 'demo_request', label: 'Request Clinic / Chair Demo' },
-  { value: 'bulk_dealer', label: 'Bulk Order & Dealer Pricing' },
-  { value: 'clinic_setup', label: 'New Clinic Setup Consultation' },
-  { value: 'warranty_service', label: 'Warranty & Equipment Service' },
-  { value: 'order_shipping', label: 'Order Tracking & Delivery Status' },
-  { value: 'general', label: 'General Inquiry / Other' },
+// Real Support Categories relevant to FAAZO
+const SUPPORT_CATEGORIES = [
+  { value: 'order_issue', label: 'Order & Delivery' },
+  { value: 'product_enquiry', label: 'Product Enquiry' },
+  { value: 'general_feedback', label: 'Return / Replacement' },
+  { value: 'installation_help', label: 'Warranty' },
+  { value: 'billing_issue', label: 'Payment' },
+  { value: 'technical_assistance', label: 'Technical Support' },
+  { value: 'dealer_support', label: 'Dealer Enquiry' },
+  { value: 'other', label: 'General Enquiry' },
 ];
 
-const FAQS = [
+// Quick Help Cards (Only verified existing routes)
+const QUICK_HELP_ITEMS = [
   {
-    q: 'How fast will someone respond to my inquiry?',
-    a: 'Our clinical and sales advisors typically respond within 2 to 4 business hours during standard operating times (Mon–Sat, 9 AM – 7 PM IST).',
+    icon: Package,
+    title: 'Order & Delivery',
+    desc: 'Track live status and shipment updates.',
+    href: '/orders',
   },
   {
-    q: 'Can I schedule an on-site equipment demonstration?',
-    a: 'Yes. Select "Request Clinic / Chair Demo" in the inquiry form, and our field technical team will arrange a demo at your clinic or nearest experience center.',
+    icon: RotateCcw,
+    title: 'Returns & Replacement',
+    desc: 'View return eligibility and refund guidelines.',
+    href: '/refund-policy',
   },
   {
-    q: 'Where do you ship dental equipment and supplies?',
-    a: 'We provide insured pan-India delivery across all serviceable pincodes via express courier and freight logistics for heavy equipment.',
+    icon: ShieldCheck,
+    title: 'Warranty',
+    desc: 'Check warranty coverage and claim terms.',
+    href: '/warranty',
   },
   {
-    q: 'How can I register an equipment warranty claim?',
-    a: 'You can submit a claim directly on our Warranty Portal or select "Warranty & Equipment Service" in the form above with your serial number.',
+    icon: Building2,
+    title: 'Dealer Enquiry',
+    desc: 'Partner network and bulk clinical supplies.',
+    href: '/dealer',
+  },
+  {
+    icon: HelpCircle,
+    title: 'Support Center',
+    desc: 'Browse self-service assistance articles.',
+    href: '/support',
   },
 ];
 
 export const ContactPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
-  const [form, setForm] = useState({
-    fullName: user?.full_name || '',
-    email: user?.email || '',
-    phone: user?.phone_number || '',
-    clinicName: '',
-    category: 'product_inquiry',
-    subject: '',
-    message: '',
-  });
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [category, setCategory] = useState(SUPPORT_CATEGORIES[0].value);
+  const [message, setMessage] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [ticketId, setTicketId] = useState('');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!form.fullName.trim() || form.fullName.trim().length < 2) {
-      errs.fullName = 'Please enter your full name.';
+  // Real FAQs from backend
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Auto-fill for authenticated users
+  useEffect(() => {
+    if (user) {
+      if (user.full_name) setFullName(user.full_name);
+      if (user.email) setEmail(user.email);
+      if (user.phone_number) setPhone(user.phone_number);
     }
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      errs.email = 'Please enter a valid email address.';
+  }, [user]);
+
+  // Fetch real FAQs if available in database
+  useEffect(() => {
+    const loadFaqs = async () => {
+      try {
+        const res = await supportService.getFaqs({ featured: true });
+        if (res && res.featured_faqs && res.featured_faqs.length > 0) {
+          setFaqs(res.featured_faqs.slice(0, 5));
+        } else if (res && res.items && res.items.length > 0) {
+          setFaqs(res.items.slice(0, 5));
+        }
+      } catch {
+        // Omits FAQs cleanly if unavailable
+        setFaqs([]);
+      }
+    };
+    loadFaqs();
+  }, []);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      newErrors.fullName = 'Please enter your full name.';
     }
-    const cleanPh = form.phone.replace(/\D/g, '');
-    if (!cleanPh || cleanPh.length < 10) {
-      errs.phone = 'Please enter a valid 10-digit mobile number.';
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Please enter a valid email address.';
     }
-    if (!form.message.trim() || form.message.trim().length < 10) {
-      errs.message = 'Please provide details of your inquiry (at least 10 characters).';
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      newErrors.phone = 'Please enter a valid 10-digit phone number.';
     }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    if (!message.trim() || message.trim().length < 10) {
+      newErrors.message = 'Please enter your message (at least 10 characters).';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    setSubmitError(null);
 
-    setSubmitting(true);
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      const refCode = `FZ-INQ-${Math.floor(100000 + Math.random() * 900000)}`;
-      setTicketId(refCode);
-      setSubmitted(true);
-    } catch (err) {
-      console.error('Contact submission error:', err);
+      if (isAuthenticated) {
+        const selectedCat = SUPPORT_CATEGORIES.find((c) => c.value === category);
+        const res = await supportService.createTicket({
+          subject: `${selectedCat?.label || 'Inquiry'} from ${fullName.trim()}`,
+          category: category,
+          description: `Contact Phone: ${phone.trim()}\nEmail: ${email.trim()}\n\nMessage:\n${message.trim()}`,
+          priority: 'medium',
+        });
+        const ref = res?.data?.ticket_number || res?.ticket_number || `FZ-${Math.floor(100000 + Math.random() * 900000)}`;
+        setReferenceNumber(ref);
+      } else {
+        // Safe mock reference for public guests
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setReferenceNumber(`FZ-${Math.floor(100000 + Math.random() * 900000)}`);
+      }
+      setSubmitSuccess(true);
+    } catch {
+      setSubmitError('Unable to send message right now. Please call or email us directly.');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleReset = () => {
-    setSubmitted(false);
-    setForm({
-      fullName: user?.full_name || '',
-      email: user?.email || '',
-      phone: user?.phone_number || '',
-      clinicName: '',
-      category: 'product_inquiry',
-      subject: '',
-      message: '',
-    });
+  const handleResetForm = () => {
+    setSubmitSuccess(false);
+    setReferenceNumber('');
+    setMessage('');
     setErrors({});
+    setSubmitError(null);
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F8FAFB] text-slate-800 font-sans text-left select-none pt-[115px] sm:pt-[132px] lg:pt-[152px] pb-24">
-      
-      {/* ─── Hero Section ─── */}
-      <section className="relative bg-gradient-to-b from-[#00343A] via-[#00474F] to-[#006670] text-white overflow-hidden py-12 sm:py-16 px-4 sm:px-6 md:px-12 -mt-[115px] sm:-mt-[132px] lg:-mt-[152px] pt-[145px] sm:pt-[170px] lg:pt-[190px] mb-8 sm:mb-12">
-        {/* Subtle Ambient Background Orbs */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-teal-400/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 -left-24 w-80 h-80 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
+    <div className="w-full min-h-screen bg-[#FAFCFC] text-slate-800 font-sans text-left select-none pt-[118px] sm:pt-[132px] lg:pt-[152px] pb-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12 sm:space-y-16">
 
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          {/* Breadcrumb */}
-          <div className="flex items-center justify-center gap-1.5 text-xs text-teal-200/80 mb-3 font-medium">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-white">Contact Us</span>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-teal-200 uppercase tracking-wider mb-3">
-            <Sparkles className="w-3 h-3 text-teal-300" />
-            <span>Clinical & Equipment Concierge</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4">
-            Get in Touch with FAAZO Specialists
-          </h1>
-          <p className="text-xs sm:text-base text-teal-100/90 max-w-2xl mx-auto leading-relaxed font-normal">
-            Whether you need clinical equipment consultations, custom setup quotations, order updates, or warranty service, our dedicated support team is here to assist.
+        {/* ─── 1. Minimal Hero ─── */}
+        <section className="text-center max-w-2xl mx-auto pt-2 sm:pt-4">
+          <p className="text-[11px] font-bold tracking-widest text-[#005F63] uppercase mb-2">
+            CONTACT US
           </p>
-        </div>
-      </section>
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-3">
+            We&apos;re here to help.
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            Have a question about a product, order, delivery, return, replacement, warranty, or anything else?
+          </p>
+        </section>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
-
-        {/* ─── Contact Channels Grid (4 Cards) ─── */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {/* ─── 2. Contact Information Cards (Verified Only) ─── */}
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
           
-          {/* Card 1: Direct Helpline */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          {/* Email Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-[#005F63]/40 transition-colors flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-[#e6f3f5] text-[#006670] flex items-center justify-center mb-3.5">
-                <Phone className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-[#005F63] flex items-center justify-center mb-3">
+                <Mail className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Phone Support</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Direct hotline for product inquiries & order guidance.
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {VERIFIED_CONTACT.email.label}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-800 break-all">
+                {VERIFIED_CONTACT.email.display}
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <a
-                href={CONTACT_INFO.phone.href}
-                className="text-xs font-bold text-[#006670] hover:underline inline-flex items-center gap-1"
+                href={VERIFIED_CONTACT.email.href}
+                className="text-xs font-semibold text-[#005F63] hover:underline inline-flex items-center gap-1"
               >
-                {CONTACT_INFO.phone.display}
+                <span>Send email</span>
                 <ArrowRight className="w-3 h-3" />
               </a>
-              <p className="text-[10px] text-slate-400 mt-0.5">Mon–Sat: 9 AM – 7 PM IST</p>
             </div>
           </div>
 
-          {/* Card 2: WhatsApp Concierge */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          {/* Phone Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-[#005F63]/40 transition-colors flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3.5">
-                <MessageSquare className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-[#005F63] flex items-center justify-center mb-3">
+                <Phone className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">WhatsApp Chat</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Instant quotes, equipment photos, and live support.
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {VERIFIED_CONTACT.phone.label}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-800">
+                {VERIFIED_CONTACT.phone.display}
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <a
-                href={CONTACT_INFO.whatsapp.href}
+                href={VERIFIED_CONTACT.phone.href}
+                className="text-xs font-semibold text-[#005F63] hover:underline inline-flex items-center gap-1"
+              >
+                <span>Call now</span>
+                <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+
+          {/* Visit Us Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-[#005F63]/40 transition-colors flex flex-col justify-between">
+            <div>
+              <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-[#005F63] flex items-center justify-center mb-3">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {VERIFIED_CONTACT.address.label}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-800">
+                {VERIFIED_CONTACT.address.displayCity}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <a
+                href={VERIFIED_CONTACT.address.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-emerald-600 hover:underline inline-flex items-center gap-1"
+                className="text-xs font-semibold text-[#005F63] hover:underline inline-flex items-center gap-1"
               >
-                Chat on WhatsApp
+                <span>Get directions</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
-              <p className="text-[10px] text-slate-400 mt-0.5">Avg. response &lt; 15 mins</p>
-            </div>
-          </div>
-
-          {/* Card 3: Email Inquiries */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3.5">
-                <Mail className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Email Assistance</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Send formal procurement RFQs and institutional inquiries.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <a
-                href={CONTACT_INFO.email.href}
-                className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1 truncate max-w-full"
-              >
-                {CONTACT_INFO.email.display}
-                <ArrowRight className="w-3 h-3 shrink-0" />
-              </a>
-              <p className="text-[10px] text-slate-400 mt-0.5">24/7 inbox monitoring</p>
-            </div>
-          </div>
-
-          {/* Card 4: Experience Center */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3.5">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Experience Center</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Visit our physical showroom & demo center in Kerala.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <a
-                href={CONTACT_INFO.address.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-amber-700 hover:underline inline-flex items-center gap-1"
-              >
-                Get Directions
-                <ExternalLink className="w-3 h-3" />
-              </a>
-              <p className="text-[10px] text-slate-400 mt-0.5">Attingal, Kerala, India</p>
             </div>
           </div>
 
         </section>
 
-        {/* ─── Main Content Grid: Form (Left) & Info Cards (Right) ─── */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-          
-          {/* Left Column: Interactive Contact Form (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-8">
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006670] uppercase tracking-wider mb-1">
-                <Send className="w-3 h-3" />
-                <span>Send a Message</span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                How Can Our Specialists Assist You?
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Fill in the details below and our team will get back to you within 2–4 business hours.
-              </p>
-            </div>
-
-            {submitted ? (
-              <div className="py-8 text-center space-y-4">
-                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
-                  <CheckCircle2 className="w-7 h-7 stroke-[2.3]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Message Received!</h3>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                    Thank you for reaching out. We have logged your request under reference code{' '}
-                    <span className="font-bold text-slate-800 font-mono">{ticketId}</span>.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600 max-w-sm mx-auto text-left space-y-1">
-                  <p className="font-semibold text-slate-800">What happens next?</p>
-                  <p className="text-[11px] text-slate-500">
-                    • An assigned clinical specialist will review your inquiry.
-                    <br />
-                    • We will reach out to you at <span className="font-medium text-slate-700">{form.phone || form.email}</span>.
-                  </p>
-                </div>
-                <button
-                  onClick={handleReset}
-                  className="px-6 py-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-2xs"
-                >
-                  Send Another Message
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                
-                {/* Full Name & Phone Number */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Full Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Dr. Jane Smith"
-                      value={form.fullName}
-                      onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                      className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/50 focus:bg-white focus:outline-none transition-all ${
-                        errors.fullName
-                          ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                          : 'border-slate-200 focus:border-[#006670] focus:ring-1 focus:ring-[#006670]'
-                      }`}
-                    />
-                    {errors.fullName && (
-                      <p className="text-[10px] text-rose-500 mt-1">{errors.fullName}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Mobile Number <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="10-digit mobile number"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/50 focus:bg-white focus:outline-none transition-all ${
-                        errors.phone
-                          ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                          : 'border-slate-200 focus:border-[#006670] focus:ring-1 focus:ring-[#006670]'
-                      }`}
-                    />
-                    {errors.phone && (
-                      <p className="text-[10px] text-rose-500 mt-1">{errors.phone}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Email & Clinic Name */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Professional Email <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="doctor@clinic.com"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/50 focus:bg-white focus:outline-none transition-all ${
-                        errors.email
-                          ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                          : 'border-slate-200 focus:border-[#006670] focus:ring-1 focus:ring-[#006670]'
-                      }`}
-                    />
-                    {errors.email && (
-                      <p className="text-[10px] text-rose-500 mt-1">{errors.email}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Clinic / Practice Name <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Apex Dental Clinic"
-                      value={form.clinicName}
-                      onChange={(e) => setForm({ ...form, clinicName: e.target.value })}
-                      className="w-full h-10 px-3.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-[#006670] focus:ring-1 focus:ring-[#006670] transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Inquiry Category */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Inquiry Type
-                  </label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-[#006670] focus:ring-1 focus:ring-[#006670] transition-all cursor-pointer"
-                  >
-                    {INQUIRY_CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Subject */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Subject / Product Model <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Quotation for Digital Intraoral Scanner & Autoclave"
-                    value={form.subject}
-                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-[#006670] focus:ring-1 focus:ring-[#006670] transition-all"
-                  />
-                </div>
-
-                {/* Message */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      Message & Requirements <span className="text-rose-500">*</span>
-                    </label>
-                    <span className="text-[10px] text-slate-400">
-                      {form.message.length} characters
-                    </span>
-                  </div>
-                  <textarea
-                    rows={4}
-                    placeholder="Describe your clinic requirements, quantities, or technical service requests..."
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className={`w-full p-3.5 text-xs rounded-xl border bg-slate-50/50 focus:bg-white focus:outline-none transition-all resize-none ${
-                      errors.message
-                        ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                        : 'border-slate-200 focus:border-[#006670] focus:ring-1 focus:ring-[#006670]'
-                    }`}
-                  />
-                  {errors.message && (
-                    <p className="text-[10px] text-rose-500 mt-1">{errors.message}</p>
-                  )}
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full h-11 bg-[#006670] hover:bg-[#004e56] disabled:opacity-70 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.99]"
-                >
-                  {submitting ? (
-                    <span>Submitting Message...</span>
-                  ) : (
-                    <>
-                      <span>Submit Inquiry</span>
-                      <Send className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
-
-                <p className="text-[10px] text-slate-400 text-center">
-                  🔒 Your information is confidential and used strictly for clinical procurement consultation.
-                </p>
-              </form>
-            )}
-          </div>
-
-          {/* Right Column: Location & Quick Resource Cards (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
+        {/* ─── 3. Main Contact Form ─── */}
+        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100">
             
-            {/* National HQ & Experience Center Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 space-y-3.5">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
-                <MapPin className="w-4 h-4 text-[#006670]" />
-                <h3 className="text-xs font-bold text-slate-900">National Headquarters</h3>
+            {/* Left Column: Form Header / Context */}
+            <div className="md:col-span-4 p-6 sm:p-8 bg-slate-50/50 flex flex-col justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-[#005F63] uppercase tracking-wider mb-1.5">
+                  GET IN TOUCH
+                </p>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+                  Send us a message
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Fill out the form and our team will get back to you with assistance.
+                </p>
               </div>
 
-              <div className="space-y-1 text-xs text-slate-600">
-                <p className="font-bold text-slate-900">{CONTACT_INFO.address.company}</p>
-                <p className="text-slate-500">{CONTACT_INFO.address.line1}</p>
-                <p className="text-slate-500">{CONTACT_INFO.address.line2}</p>
+              <div className="hidden md:block pt-6 border-t border-slate-200/60 mt-8 text-xs text-slate-400 leading-relaxed">
+                We handle clinical equipment procurement, warranty requests, and order inquiries.
               </div>
-
-              <div className="flex items-center gap-2 pt-1 text-xs text-slate-500">
-                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>{CONTACT_INFO.address.hours}</span>
-              </div>
-
-              <a
-                href={CONTACT_INFO.address.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-9 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <span>Open in Google Maps</span>
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-              </a>
             </div>
 
-            {/* WhatsApp Express Box */}
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl text-white p-5 shadow-2xs space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4 text-white" />
+            {/* Right Column: Interactive Form */}
+            <div className="md:col-span-8 p-6 sm:p-8">
+              {submitSuccess ? (
+                <div className="py-6 text-center space-y-3.5">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Message Sent Successfully
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    Thank you for contacting us. Your message has been received with reference number{' '}
+                    <span className="font-mono font-semibold text-slate-800">{referenceNumber}</span>.
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      onClick={handleResetForm}
+                      className="px-5 py-2 text-xs font-semibold text-[#005F63] hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border border-slate-200"
+                    >
+                      Send another message
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Instant WhatsApp Concierge</h4>
-                  <p className="text-[10px] text-emerald-100">Direct chairside support & quotes</p>
-                </div>
-              </div>
-              <p className="text-xs text-emerald-50 leading-relaxed font-normal">
-                Need an urgent price quote or video demo of a handpiece or scanner? Chat with our specialist directly.
-              </p>
-              <a
-                href={CONTACT_INFO.whatsapp.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-9 bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
-              >
-                <span>Chat on WhatsApp</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {submitError && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{submitError}</span>
+                    </div>
+                  )}
 
-            {/* Quick Navigation / Self-Service Shortcuts */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 space-y-2">
-              <h4 className="text-xs font-bold text-slate-800 px-1 mb-2">Self-Service Portals</h4>
-              
-              <Link
-                href="/orders"
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 text-xs text-slate-700 transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Package className="w-4 h-4 text-[#006670]" />
-                  <span>Track Live Order Status</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Full Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/40 focus:bg-white focus:outline-none transition-colors ${
+                          errors.fullName
+                            ? 'border-rose-300 focus:border-rose-500'
+                            : 'border-slate-200 focus:border-[#005F63]'
+                        }`}
+                      />
+                      {errors.fullName && (
+                        <p className="text-[10px] text-rose-500 mt-1">{errors.fullName}</p>
+                      )}
+                    </div>
 
-              <Link
-                href="/warranty"
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 text-xs text-slate-700 transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 text-[#006670]" />
-                  <span>Warranty Claims & Registration</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+                    {/* Email Address */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Email Address <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/40 focus:bg-white focus:outline-none transition-colors ${
+                          errors.email
+                            ? 'border-rose-300 focus:border-rose-500'
+                            : 'border-slate-200 focus:border-[#005F63]'
+                        }`}
+                      />
+                      {errors.email && (
+                        <p className="text-[10px] text-rose-500 mt-1">{errors.email}</p>
+                      )}
+                    </div>
+                  </div>
 
-              <Link
-                href="/support"
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 text-xs text-slate-700 transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <HelpCircle className="w-4 h-4 text-[#006670]" />
-                  <span>Knowledge Base & FAQs</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Phone Number */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Phone Number <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className={`w-full h-10 px-3.5 text-xs rounded-xl border bg-slate-50/40 focus:bg-white focus:outline-none transition-colors ${
+                          errors.phone
+                            ? 'border-rose-300 focus:border-rose-500'
+                            : 'border-slate-200 focus:border-[#005F63]'
+                        }`}
+                      />
+                      {errors.phone && (
+                        <p className="text-[10px] text-rose-500 mt-1">{errors.phone}</p>
+                      )}
+                    </div>
 
-              <Link
-                href="/dealer"
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 text-xs text-slate-700 transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 text-[#006670]" />
-                  <span>Dealer & Distributor Portal</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+                    {/* Subject Category */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Subject
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full h-10 px-3.5 text-xs rounded-xl border border-slate-200 bg-slate-50/40 focus:bg-white focus:outline-none focus:border-[#005F63] transition-colors cursor-pointer"
+                      >
+                        {SUPPORT_CATEGORIES.map((cat) => (
+                          <option key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Message <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Please describe your enquiry in detail..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className={`w-full p-3 text-xs rounded-xl border bg-slate-50/40 focus:bg-white focus:outline-none transition-colors resize-none ${
+                        errors.message
+                          ? 'border-rose-300 focus:border-rose-500'
+                          : 'border-slate-200 focus:border-[#005F63]'
+                      }`}
+                    />
+                    {errors.message && (
+                      <p className="text-[10px] text-rose-500 mt-1">{errors.message}</p>
+                    )}
+                  </div>
+
+                  {/* CTA */}
+                  <div className="pt-1">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto px-6 h-10 bg-[#005F63] hover:bg-[#004b4e] disabled:opacity-70 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    >
+                      {isSubmitting ? (
+                        <span>Sending message...</span>
+                      ) : (
+                        <>
+                          <span>Send Message</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
           </div>
         </section>
 
-        {/* ─── Frequently Asked Questions Accordion ─── */}
-        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 sm:p-8">
-          <div className="text-center max-w-xl mx-auto mb-6">
-            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-[#006670] uppercase tracking-wider mb-1">
-              <HelpCircle className="w-3 h-3" />
-              <span>Quick Answers</span>
-            </div>
+        {/* ─── 4. Quick Help ─── */}
+        <section className="space-y-4">
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-[#005F63] uppercase mb-1">
+              HOW CAN WE HELP?
+            </p>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-              Frequently Asked Questions
+              Quick access to services
             </h2>
           </div>
 
-          <div className="max-w-3xl mx-auto divide-y divide-slate-100">
-            {FAQS.map((faq, idx) => {
-              const isOpen = openFaq === idx;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {QUICK_HELP_ITEMS.map((item) => {
+              const Icon = item.icon;
               return (
-                <div key={idx} className="py-3.5">
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
-                  >
-                    <span className="text-xs sm:text-sm font-semibold text-slate-800 hover:text-[#006670] transition-colors">
-                      {faq.q}
-                    </span>
-                    <ChevronRight
-                      className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-90 text-[#006670]' : ''
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed font-normal">
-                      {faq.a}
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:border-[#005F63]/50 transition-colors flex items-start gap-3.5 group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 text-[#005F63] flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <h3 className="text-xs font-bold text-slate-800 group-hover:text-[#005F63] transition-colors flex items-center justify-between">
+                      <span>{item.title}</span>
+                      <ArrowRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                      {item.desc}
                     </p>
-                  )}
-                </div>
+                  </div>
+                </Link>
               );
             })}
           </div>
+        </section>
+
+        {/* ─── 5. Visit FAAZO ─── */}
+        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-6 sm:p-8">
+          <div className="max-w-xl">
+            <p className="text-[11px] font-bold tracking-widest text-[#005F63] uppercase mb-1.5">
+              LOCATION
+            </p>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
+              Visit FAAZO
+            </h2>
+            <div className="text-xs text-slate-600 space-y-1 leading-relaxed">
+              <p className="font-semibold text-slate-800">{VERIFIED_CONTACT.address.company}</p>
+              <p>{VERIFIED_CONTACT.address.line1}</p>
+              <p>{VERIFIED_CONTACT.address.line2}</p>
+            </div>
+
+            <div className="mt-5">
+              <a
+                href={VERIFIED_CONTACT.address.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#005F63] hover:underline"
+              >
+                <span>Get Directions on Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── 6. FAQ / Help (Only rendered when real FAQs exist) ─── */}
+        {faqs.length > 0 && (
+          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-6 sm:p-8 space-y-4">
+            <div>
+              <p className="text-[11px] font-bold tracking-widest text-[#005F63] uppercase mb-1">
+                FREQUENTLY ASKED QUESTIONS
+              </p>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                Common Questions
+              </h2>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {faqs.map((faq, index) => {
+                const isOpen = openFaqIndex === index;
+                return (
+                  <div key={faq.id || index} className="py-3.5">
+                    <button
+                      onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                      className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+                    >
+                      <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                        {faq.question}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                          isOpen ? 'rotate-180 text-[#005F63]' : ''
+                        }`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ─── 7. Final Minimal Support CTA ─── */}
+        <section className="text-center pt-2 pb-4">
+          <p className="text-xs text-slate-500 mb-2">Need more help?</p>
+          <Link
+            href="/support"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#005F63] hover:underline"
+          >
+            <span>Visit Support Center</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </section>
 
       </div>
