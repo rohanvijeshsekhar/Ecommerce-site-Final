@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin, ArrowRight, MessageSquare } from 'lucide-react';
 
 // ── 1. Verified Real Business Configuration ───────────────────────────────────
 
@@ -85,6 +85,7 @@ const COMPANY_LINKS = [
 
 const SUPPORT_LINKS = [
   { label: 'Support Center', href: '/support' },
+  { label: 'Contact Us', href: '/contact' },
   { label: 'Shipping & Delivery', href: '/shipping-policy' },
   { label: 'Returns & Refunds', href: '/refund-policy' },
   { label: 'Warranty Claims', href: '/warranty' },
@@ -264,9 +265,21 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
 
           {/* Column 5: Contact & App Download */}
           <div className="col-span-3">
-            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-5 font-sans">
-              Contact Us
+            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-4 font-sans">
+              <Link href="/contact" className="hover:text-teal-400 transition-colors inline-flex items-center gap-1.5 group">
+                <span>Contact Us</span>
+                <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all" />
+              </Link>
             </h4>
+
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-white/10 hover:bg-[#006670] hover:border-[#006670] text-white text-xs font-semibold transition-all border border-white/10 mb-5 group"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-teal-400 group-hover:text-white" />
+              <span>Send an Inquiry</span>
+              <ArrowRight className="w-3 h-3 text-white/70 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
 
             <ul className="space-y-4 text-xs text-[#B8B8B8] mb-8">
               <li className="flex items-start gap-3 group">
@@ -425,7 +438,21 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
 
           {/* Contact Details */}
           <div className="border-t border-white/[0.08] pt-8">
-            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-4">Contact Us</h4>
+            <h4 className="text-xs font-bold text-white tracking-widest uppercase mb-3">
+              <Link href="/contact" className="hover:text-teal-400 transition-colors inline-flex items-center gap-1.5 group">
+                <span>Contact Us</span>
+                <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all" />
+              </Link>
+            </h4>
+
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-3.5 rounded-lg bg-white/10 hover:bg-[#006670] hover:border-[#006670] text-white text-xs font-semibold transition-all border border-white/10 mb-5 group"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-teal-400 group-hover:text-white" />
+              <span>Send an Inquiry / Contact Page</span>
+              <ArrowRight className="w-3 h-3 text-white/70 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
             <ul className="space-y-3 text-xs text-[#B8B8B8] mb-6">
               <li className="flex items-center gap-3 group">
                 <Phone className="w-4 h-4 text-slate-400 group-hover:text-[#0B7C80] shrink-0" />
