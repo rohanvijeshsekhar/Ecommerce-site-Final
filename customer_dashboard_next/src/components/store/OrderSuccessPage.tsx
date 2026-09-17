@@ -135,7 +135,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   // Show skeleton while waiting for sessionStorage hydration
   if (!mounted) {
     return (
-      <div className="w-full bg-[#F4F7F8] min-h-screen pt-[108px] lg:pt-[138px] pb-20 font-sans">
+      <div className="w-full bg-[#F4F7F8] min-h-screen pt-[118px] sm:pt-[132px] lg:pt-[152px] pb-20 font-sans">
         <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-5 animate-pulse">
           <div className="bg-white rounded-2xl h-64 border border-slate-200/70" />
           <div className="bg-white rounded-2xl h-20 border border-slate-200/70" />
@@ -154,7 +154,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   // Empty state (after hydration, still no order data)
   if (!activeOrder && mounted) {
     return (
-      <div className="w-full bg-[#F4F7F8] min-h-screen pt-[112px] lg:pt-[144px] pb-16 font-sans flex items-center justify-center">
+      <div className="w-full bg-[#F4F7F8] min-h-screen pt-[118px] sm:pt-[132px] lg:pt-[152px] pb-16 font-sans flex items-center justify-center">
         <div className="text-center max-w-xs mx-auto px-6">
           <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-slate-400" />
@@ -175,7 +175,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   }
 
   return (
-    <div className="w-full bg-[#F8FAFB] min-h-screen pt-[88px] sm:pt-[116px] pb-16 font-sans text-left">
+    <div className="w-full bg-[#F8FAFB] min-h-screen pt-[118px] sm:pt-[132px] lg:pt-[152px] pb-16 font-sans text-left">
       <div className="max-w-3xl mx-auto px-3.5 sm:px-6 space-y-3.5 sm:space-y-4">
 
         {/* ─── Hero Success Card ─── */}
