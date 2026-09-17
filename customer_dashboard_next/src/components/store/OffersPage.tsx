@@ -15,7 +15,6 @@ import {
   Sparkles,
   ShoppingBag,
   RotateCcw,
-  Building2,
   AlertTriangle,
   Zap
 } from 'lucide-react';
@@ -839,39 +838,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 4. PROMOTIONAL INSET BANNER */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        <section className="mb-16 rounded-3xl bg-gradient-to-r from-[#004D52] via-[#005F63] to-[#003B3E] p-8 lg:p-12 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-3xl space-y-4 relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[11px] font-extrabold uppercase tracking-wider">
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Clinic Setup Package</span>
-            </div>
-
-            <h3 className="text-2xl lg:text-3xl font-black tracking-tight font-display">
-              Complete Clinic Setup Offers
-            </h3>
-
-            <p className="text-xs lg:text-sm text-slate-200 font-medium leading-relaxed max-w-xl">
-              Save more when purchasing complete clinical operatory solutions. Customized B2B quotes with flexible payment plans & dedicated installation support.
-            </p>
-
-            <div className="pt-2">
-              <Link
-                href="/solutions/restorative-dentistry"
-                className="px-6 py-3 rounded-full bg-white hover:bg-slate-100 text-[#004D52] font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center gap-2 cursor-pointer"
-              >
-                <span>Explore Solutions</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* 5. WHY SHOP DURING OFFERS (TRUST CARDS) */}
+        {/* 4. WHY SHOP DURING OFFERS (TRUST CARDS) */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         <section className="mb-16">
           <div className="text-center max-w-xl mx-auto mb-8">
