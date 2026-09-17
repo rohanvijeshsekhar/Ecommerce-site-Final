@@ -175,101 +175,101 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
   }
 
   return (
-    <div className="w-full bg-[#F4F7F8] min-h-screen pt-[108px] lg:pt-[138px] pb-20 font-sans select-none text-left">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-5">
+    <div className="w-full bg-[#F8FAFB] min-h-screen pt-[88px] sm:pt-[116px] pb-16 font-sans text-left">
+      <div className="max-w-3xl mx-auto px-3.5 sm:px-6 space-y-3.5 sm:space-y-4">
 
         {/* ─── Hero Success Card ─── */}
-        <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-emerald-400 via-[#006670] to-emerald-400" />
-
-          <div className="p-6 md:p-8 text-center">
-            {/* Checkmark */}
-            <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200/60 flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600 stroke-[2]" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          <div className="p-5 sm:p-7 text-center">
+            {/* Checkmark Icon */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+              <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
             </div>
 
             {/* Badge */}
-            <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+            <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-medium px-2.5 py-0.5 rounded-full mb-2">
               <CheckCircle2 className="w-3 h-3" />
-              {isCod ? 'Cash on Delivery Confirmed' : 'Payment Confirmed'}
-            </span>
+              <span>{isCod ? 'Cash on Delivery Confirmed' : 'Payment Confirmed'}</span>
+            </div>
 
             {/* Headline */}
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-              Order Placed! 🎉
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Order Placed Successfully!
             </h1>
-            <p className="text-sm text-slate-500 font-sans mt-2 leading-relaxed max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
               {isCod
-                ? 'Your order is confirmed. Keep the payment ready for the courier.'
+                ? 'Your order is confirmed. Keep the cash ready at the time of delivery.'
                 : 'Your order is confirmed and will be dispatched shortly.'}
             </p>
 
-            {/* Order ID + Delivery row */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-5">
+            {/* Order Meta Cards */}
+            <div className="grid grid-cols-2 gap-2.5 max-w-md mx-auto mt-4 text-left">
               {shortId && (
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
-                  <ReceiptText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <div className="text-left">
-                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Order ID</p>
-                    <p className="text-[12px] font-black text-slate-800 font-mono">{shortId}…</p>
+                <div className="flex items-center justify-between bg-slate-50/90 border border-slate-200/70 rounded-xl p-2.5">
+                  <div className="min-w-0 pr-1">
+                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Order ID</p>
+                    <p className="text-xs font-semibold text-slate-800 font-mono truncate">{shortId}</p>
                   </div>
                   <button
                     onClick={handleCopyId}
-                    className="ml-1 text-slate-300 hover:text-[#006670] transition-colors cursor-pointer"
-                    title="Copy full order ID"
+                    className="p-1 text-slate-400 hover:text-[#006670] transition-colors cursor-pointer shrink-0"
+                    title="Copy order ID"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 bg-[#e6f3f5] border border-[#006670]/20 rounded-xl px-4 py-2.5">
-                <Clock className="w-3.5 h-3.5 text-[#006670] shrink-0" />
-                <div className="text-left">
-                  <p className="text-[9px] font-black uppercase text-[#006670]/60 tracking-wider">Est. Delivery</p>
-                  <p className="text-[12px] font-black text-[#006670]">3–5 Working Days</p>
+              <div className="flex items-center gap-2 bg-[#e6f3f5]/70 border border-[#006670]/15 rounded-xl p-2.5">
+                <Clock className="w-4 h-4 text-[#006670] shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium text-[#006670]/70 uppercase tracking-wider">Est. Delivery</p>
+                  <p className="text-xs font-semibold text-[#006670] truncate">3–5 Days</p>
                 </div>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 mt-6">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-4 max-w-md mx-auto">
               <button
                 onClick={handleTrackOrder}
-                className="px-6 py-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
+                className="w-full sm:flex-1 h-10 bg-[#006670] hover:bg-[#004e56] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-[0.99]"
               >
-                Track Order <ArrowRight className="w-3.5 h-3.5" />
+                <span>Track Order</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleDownloadInvoice}
-                className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-[#006670] text-[11px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2"
+                className="w-full sm:w-auto h-10 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.99]"
               >
-                <Download className="w-3.5 h-3.5" /> Invoice
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Invoice</span>
               </button>
               <button
                 onClick={() => setCurrentView('home')}
-                className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2"
+                className="w-full sm:w-auto h-10 px-4 bg-transparent hover:bg-slate-100/70 text-slate-600 text-xs font-medium rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Home className="w-3.5 h-3.5" /> Shop More
+                <Home className="w-3.5 h-3.5 text-slate-400" />
+                <span>Shop More</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* ─── Order Progress Strip ─── */}
-        <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm px-5 py-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-[#006670]" />
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Shipment Status</span>
+        {/* ─── Shipment Stepper ─── */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-[#006670]" />
+              <span className="text-xs font-bold text-slate-800">Shipment Status</span>
             </div>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
               Order Placed
             </span>
           </div>
 
-          {/* Step progress */}
-          <div className="flex items-start gap-0">
+          {/* Stepper Progress */}
+          <div className="flex items-start justify-between">
             {[
               { label: 'Placed', done: true },
               { label: 'Processing', done: false },
@@ -278,54 +278,54 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
               { label: 'Delivered', done: false },
             ].map((step, i, arr) => (
               <React.Fragment key={step.label}>
-                <div className="flex flex-col items-center shrink-0" style={{ minWidth: 44 }}>
+                <div className="flex flex-col items-center shrink-0 w-12 text-center">
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black border-2 transition-all
-                      ${step.done
-                        ? 'bg-emerald-500 border-emerald-500 text-white'
-                        : 'bg-white border-slate-200 text-slate-300'
-                      }`}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[8.5px] font-bold transition-colors ${
+                      step.done
+                        ? 'bg-[#006670] text-white'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}
                   >
                     {step.done ? '✓' : i + 1}
                   </div>
                   <span
-                    className={`text-[8.5px] font-bold mt-1.5 text-center leading-tight
-                      ${step.done ? 'text-emerald-600' : 'text-slate-300'}`}
-                    style={{ maxWidth: 44 }}
+                    className={`text-[9px] font-medium mt-1 leading-tight ${
+                      step.done ? 'text-slate-800 font-semibold' : 'text-slate-400'
+                    }`}
                   >
                     {step.label}
                   </span>
                 </div>
                 {i < arr.length - 1 && (
-                  <div className={`flex-1 h-0.5 mt-3 mx-0.5 ${step.done ? 'bg-emerald-300' : 'bg-slate-100'}`} />
+                  <div className={`flex-1 h-0.5 mt-2.5 mx-1 ${step.done ? 'bg-[#006670]' : 'bg-slate-100'}`} />
                 )}
               </React.Fragment>
             ))}
           </div>
         </div>
 
-        {/* ─── Main Grid: Items | Address + Payment ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* ─── Main Grid: Items | Address & Payment ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3.5 sm:gap-4">
 
           {/* Items Card (3 cols) */}
-          <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#006670]" />
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+          <div className="md:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+              <Package className="w-3.5 h-3.5 text-[#006670]" />
+              <h3 className="text-xs font-bold text-slate-800">
                 Items Ordered {items.length > 0 ? `(${items.length})` : ''}
               </h3>
             </div>
 
             {items.length === 0 ? (
-              <div className="px-5 py-10 text-center text-slate-400 text-xs font-sans">
+              <div className="px-4 py-8 text-center text-slate-400 text-xs">
                 Loading item details…
               </div>
             ) : (
               <>
-                <div className="divide-y divide-slate-50">
+                <div className="divide-y divide-slate-100">
                   {items.map((item) => (
-                    <div key={item.id} className="px-5 py-4 flex gap-3.5 items-center">
-                      <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl shrink-0 flex items-center justify-center p-1.5">
+                    <div key={item.id} className="p-3.5 sm:p-4 flex gap-3 items-center">
+                      <div className="w-13 h-13 sm:w-14 sm:h-14 bg-slate-50 border border-slate-100 rounded-xl shrink-0 flex items-center justify-center p-1.5 overflow-hidden">
                         <img
                           src={getAbsoluteImageUrl(item.image)}
                           alt={item.name}
@@ -336,18 +336,18 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
                         />
                       </div>
                       <div className="flex-grow min-w-0">
-                        <h4 className="text-[12px] font-bold text-slate-800 leading-snug line-clamp-2">{item.name}</h4>
-                        <p className="text-[10px] text-slate-400 font-sans mt-0.5">{item.category}</p>
-                        <span className="inline-block text-[9.5px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md mt-1.5">
+                        <h4 className="text-xs font-semibold text-slate-800 leading-snug line-clamp-2">{item.name}</h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{item.category}</p>
+                        <span className="inline-block text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.2 rounded mt-1">
                           Qty: {item.qty}
                         </span>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-sm font-black text-slate-900">
+                        <p className="text-xs sm:text-sm font-bold text-slate-900">
                           ₹{(item.price * item.qty).toLocaleString('en-IN')}
                         </p>
                         {item.originalPrice && item.originalPrice > item.price && (
-                          <p className="text-[10px] text-slate-300 line-through font-sans mt-0.5">
+                          <p className="text-[10px] text-slate-400 line-through mt-0.5">
                             ₹{item.originalPrice.toLocaleString('en-IN')}
                           </p>
                         )}
@@ -356,37 +356,37 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
                   ))}
                 </div>
 
-                {/* Price breakdown */}
+                {/* Price Breakdown */}
                 {pricing && (
-                  <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 space-y-2 text-xs font-sans text-slate-500">
+                  <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-2 text-xs text-slate-600">
                     <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span className="font-bold text-slate-700">₹{pricing.subtotal.toLocaleString('en-IN')}</span>
+                      <span>Item Total</span>
+                      <span className="font-semibold text-slate-800">₹{pricing.subtotal.toLocaleString('en-IN')}</span>
                     </div>
                     {pricing.discount > 0 && (
                       <div className="flex justify-between">
                         <span>Discount</span>
-                        <span className="font-bold text-emerald-600">–₹{pricing.discount.toLocaleString('en-IN')}</span>
+                        <span className="font-semibold text-emerald-600">–₹{pricing.discount.toLocaleString('en-IN')}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span>Delivery</span>
-                      <span className="font-bold text-emerald-600">
+                      <span className="font-semibold text-emerald-600">
                         {pricing.shipping === 0 ? 'FREE' : `₹${pricing.shipping.toLocaleString('en-IN')}`}
                       </span>
                     </div>
                     {isCod && pricing.cod_fee && pricing.cod_fee > 0 && (
                       <div className="flex justify-between">
-                        <span>COD Fee</span>
-                        <span className="font-bold text-slate-700">+₹{pricing.cod_fee.toLocaleString('en-IN')}</span>
+                        <span>COD Charge</span>
+                        <span className="font-semibold text-slate-800">+₹{pricing.cod_fee.toLocaleString('en-IN')}</span>
                       </div>
                     )}
-                    <div className="border-t border-slate-200 pt-2 flex justify-between font-black text-slate-900 text-sm">
-                      <span>{isCod ? 'Payable on Delivery' : 'Total Paid'}</span>
-                      <span className="text-[#006670]">₹{pricing.total.toLocaleString('en-IN')}</span>
+                    <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-slate-900 text-xs sm:text-sm">
+                      <span>{isCod ? 'Payable on Delivery' : 'Total Amount'}</span>
+                      <span className="text-[#006670] font-black">₹{pricing.total.toLocaleString('en-IN')}</span>
                     </div>
                     {pricing.savings > 0 && (
-                      <div className="bg-emerald-50 border border-emerald-200/70 rounded-lg px-3 py-2 text-emerald-700 text-[10px] font-bold text-center">
+                      <div className="bg-emerald-50 text-emerald-700 rounded-lg p-2 text-[11px] font-semibold text-center mt-1">
                         🎉 You saved ₹{pricing.savings.toLocaleString('en-IN')} on this order
                       </div>
                     )}
@@ -396,115 +396,99 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
             )}
           </div>
 
-          {/* Right column (2 cols) */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Right Column (2 cols) */}
+          <div className="md:col-span-2 space-y-3.5 sm:space-y-4">
 
             {/* Delivery Address */}
             {address && (
-              <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
-                <div className="px-4 py-3.5 border-b border-slate-100 flex items-center gap-2">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4">
+                <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-100 mb-2.5">
                   <MapPin className="w-3.5 h-3.5 text-[#006670]" />
-                  <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Delivery To</h4>
+                  <h4 className="text-xs font-bold text-slate-800">Delivery Address</h4>
                 </div>
-                <div className="px-4 py-4 space-y-1.5 text-[11px] font-sans">
+                <div className="space-y-1 text-xs text-slate-600">
                   {address.type && (
-                    <span className="inline-block text-[9px] font-black uppercase bg-[#e6f3f5] text-[#006670] px-2.5 py-0.5 rounded-full tracking-wide mb-0.5">
+                    <span className="inline-block text-[9px] font-semibold uppercase bg-[#e6f3f5] text-[#006670] px-2 py-0.5 rounded-full mb-1">
                       {address.type}
                     </span>
                   )}
-                  {address.clinic && <p className="font-bold text-slate-800 leading-snug">{address.clinic}</p>}
-                  {address.dentist && <p className="text-slate-500">{address.dentist}</p>}
-                  {address.street && <p className="text-slate-400 leading-relaxed">{address.street}</p>}
+                  {address.dentist && <p className="font-bold text-slate-800">{address.dentist}</p>}
+                  {address.clinic && <p className="text-slate-600">{address.clinic}</p>}
+                  {address.street && <p className="text-slate-500 leading-relaxed">{address.street}</p>}
                   {(address.city || address.pincode) && (
-                    <p className="text-slate-400">
+                    <p className="text-slate-500">
                       {address.city}
                       {address.city && address.pincode ? ' – ' : ''}
                       {address.pincode}
                     </p>
                   )}
                   {address.phone && (
-                    <p className="text-[#006670] font-bold mt-1.5">📱 {address.phone}</p>
+                    <p className="text-[#006670] font-medium pt-1">📞 {address.phone}</p>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Payment Info */}
-            <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
-              <div className="px-4 py-3.5 border-b border-slate-100 flex items-center gap-2">
+            {/* Payment Method Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4">
+              <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-100 mb-2.5">
                 {isCod ? (
                   <Banknote className="w-3.5 h-3.5 text-[#006670]" />
                 ) : (
                   <CreditCard className="w-3.5 h-3.5 text-[#006670]" />
                 )}
-                <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Payment</h4>
+                <h4 className="text-xs font-bold text-slate-800">Payment Details</h4>
               </div>
-              <div className="px-4 py-4">
+              <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <div
-                  className={`flex items-center gap-3 p-3 rounded-xl ${
-                    isCod ? 'bg-blue-50 border border-blue-100' : 'bg-emerald-50 border border-emerald-100'
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isCod ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
                   }`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      isCod ? 'bg-blue-100' : 'bg-emerald-100'
-                    }`}
-                  >
-                    {isCod ? (
-                      <Banknote className="w-4 h-4 text-blue-600" />
-                    ) : (
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-slate-800">
-                      {isCod ? 'Cash on Delivery' : activeOrder?.paymentMethod || 'Online Payment'}
-                    </p>
-                    <p className={`text-[9.5px] font-bold ${isCod ? 'text-blue-600' : 'text-emerald-600'}`}>
-                      {isCod ? 'Pay at doorstep' : 'Payment captured'}
-                    </p>
-                  </div>
+                  {isCod ? <Banknote className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                 </div>
-
-                {pricing && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between font-sans text-xs font-black text-slate-900">
-                    <span>{isCod ? 'Collect on Delivery' : 'Amount Paid'}</span>
-                    <span className="text-[#006670]">₹{pricing.total.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
+                <div>
+                  <p className="text-xs font-semibold text-slate-800">
+                    {isCod ? 'Cash on Delivery' : activeOrder?.paymentMethod || 'Online Payment'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {isCod ? 'Pay when you receive' : 'Payment successful & verified'}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Trust badges */}
-            <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 space-y-3">
+            {/* Trust Assurance */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-3.5 space-y-2.5">
               {[
-                { icon: ShieldCheck, label: '100% Genuine Products', sub: 'Manufacturer sealed' },
-                { icon: Truck, label: 'Insured Delivery', sub: 'Full transit coverage' },
-                { icon: Star, label: 'Quality Guaranteed', sub: '30-day returns' },
+                { icon: ShieldCheck, label: '100% Genuine Products', sub: 'Verified & authentic' },
+                { icon: Truck, label: 'Safe & Insured Delivery', sub: 'Transit guarantee' },
+                { icon: Star, label: 'Quality Assured', sub: 'Direct from brand' },
               ].map(({ icon: Icon, label, sub }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#e6f3f5] flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-[#006670]" />
+                <div key={label} className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md bg-[#e6f3f5] flex items-center justify-center shrink-0">
+                    <Icon className="w-3 h-3 text-[#006670]" />
                   </div>
                   <div>
-                    <p className="text-[10.5px] font-black text-slate-800">{label}</p>
-                    <p className="text-[9px] text-slate-400 font-sans">{sub}</p>
+                    <p className="text-[11px] font-semibold text-slate-800 leading-tight">{label}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-tight">{sub}</p>
                   </div>
                 </div>
               ))}
             </div>
+
           </div>
         </div>
 
-        {/* ─── Bottom CTA ─── */}
+        {/* ─── Bottom Navigation ─── */}
         <div className="text-center pt-2">
           <button
             onClick={() => setCurrentView('home')}
-            className="inline-flex items-center gap-2 px-7 py-3 rounded-xl border-2 border-[#006670] text-[#006670] hover:bg-[#006670] hover:text-white text-xs font-black uppercase tracking-widest transition-all duration-200 cursor-pointer group"
+            className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-[#006670] hover:text-[#004e56] transition-colors cursor-pointer"
           >
             <Home className="w-3.5 h-3.5" />
-            Continue Shopping
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <span>Back to Home</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
