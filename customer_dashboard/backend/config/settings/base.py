@@ -105,8 +105,6 @@ LOCAL_APPS = [
     "apps.reviews",
     # ── Returns & Refunds ────────────────────────────────────
     "apps.returns",
-    # ── Blog & Content Management CMS ────────────────────────
-    "apps.blog",
     # ── Google Analytics Integration ────────────────────────
     "apps.analytics",
 ]

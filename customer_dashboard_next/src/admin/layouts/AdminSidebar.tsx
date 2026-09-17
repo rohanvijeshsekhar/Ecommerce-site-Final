@@ -34,7 +34,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'bestsellers',  label: 'Best Sellers',     icon: 'Star',      path: '/admin/bestsellers'  },
       { id: 'reviews',      label: 'Reviews',          icon: 'MessageSquare', path: '/admin/reviews' },
       { id: 'solutions',    label: 'Explore Solutions',icon: 'Layers',    path: '/admin/solutions'    },
-      { id: 'blog',         label: 'Blog CMS',         icon: 'BookOpen',  path: '/admin/blog'         },
     ],
   },
   {

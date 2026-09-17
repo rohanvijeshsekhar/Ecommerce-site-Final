@@ -27,6 +27,22 @@ const nextConfig: NextConfig = {
     position: "bottom-right",
   },
 
+  // Redirect legacy /blog routes cleanly to homepage
+  async redirects() {
+    return [
+      {
+        source: '/blog',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/blog/:path*',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
+
   // Redirect /admin to Vite app during Phase 1
   async rewrites() {
     return [

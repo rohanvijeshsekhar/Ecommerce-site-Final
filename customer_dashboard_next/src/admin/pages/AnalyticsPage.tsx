@@ -82,7 +82,6 @@ export default function AnalyticsPage() {
     if (path === '/best-sellers') return 'Best Sellers';
     if (path.startsWith('/brands')) return 'Brands';
     if (path.startsWith('/combo-deals')) return 'Combo Deals';
-    if (path.startsWith('/blog')) return 'Blog';
     if (path.startsWith('/support')) return 'Support';
     if (path.startsWith('/warranty')) return 'Warranty';
     return title && title !== 'Page' && !title.includes('FAAZO') ? title : path;

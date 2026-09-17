@@ -103,7 +103,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 export type AdminSection =
   | 'dashboard'
   | 'homepage' | 'daily-offers'
-  | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews' | 'blog'
+  | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews'
   | 'inventory' | 'pricing'
   | 'orders' | 'returns' | 'fulfillment'
   | 'customers' | 'dealers'

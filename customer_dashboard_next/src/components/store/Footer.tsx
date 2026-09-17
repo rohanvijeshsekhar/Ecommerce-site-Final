@@ -78,7 +78,6 @@ const SHOP_LINKS = [
 
 const COMPANY_LINKS = [
   { label: 'Our Brands', href: '/brands' },
-  { label: 'Clinical Blog', href: '/blog' },
   { label: 'Dealer Portal', href: '/dealer' },
   { label: 'Contact Us', href: '/contact' },
 ];

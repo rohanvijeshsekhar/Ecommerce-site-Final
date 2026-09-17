@@ -98,8 +98,6 @@ urlpatterns = [
                 path("", include("apps.shipping.urls")),
                 # Phase 4 – Returns & Refunds
                 path("", include("apps.returns.urls")),
-                # Blog & Content Management CMS
-                path("blog/", include("apps.blog.urls")),
                 # Google Analytics Integration
                 path("analytics/", include("apps.analytics.urls")),
             ]
