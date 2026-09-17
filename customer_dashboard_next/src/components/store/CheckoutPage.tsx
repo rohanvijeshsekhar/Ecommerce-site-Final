@@ -606,48 +606,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
-  const validateContactSection = () => {
-    const errs: Record<string, string> = {};
-    if (!dentistName || dentistName.trim().length < 3) {
-      errs.dentistName = 'Dentist / Contact Name must be at least 3 characters.';
-    }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errs.email = 'Please enter a valid professional email address.';
-    }
-    const cleanPh = phone.replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(cleanPh)) {
-      errs.phone = 'Please enter a valid 10-digit mobile number.';
-    }
-    if (!clinicName || clinicName.trim().length < 2) {
-      errs.clinicName = 'Please enter your clinic / practice name.';
-    }
-    if (gstInvoice) {
-      const cleanGst = gstNumber.trim().toUpperCase();
-      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(cleanGst)) {
-        errs.gstNumber = 'Please enter a valid 15-character GSTIN (e.g. 27AAAAA1111A1Z1).';
-      }
-    }
-    setContactErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       showToast?.('Your Cart is empty!');
       return;
     }
-    if (!validateContactSection()) {
-      setIsEditingContact(true);
-      showToast?.('Please complete your contact & practice information.');
-      return;
-    }
     if (!selectedAddressId) {
       showToast?.('Please select or add a delivery address.');
+      setCurrentStep('address');
       return;
     }
     if (addressValidationError) {
       showToast?.(`Cannot proceed: ${addressValidationError}`);
       return;
+    }
+    if (gstInvoice) {
+      const cleanGst = gstNumber.trim().toUpperCase();
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(cleanGst)) {
+        showToast?.('Please enter a valid 15-character GSTIN (e.g. 27AAAAA1111A1Z1).');
+        return;
+      }
     }
 
     // Cash on Delivery (COD) order placement
@@ -781,9 +759,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           }
         },
         prefill: {
-          name: dentistName.trim(),
-          email: email.trim(),
-          contact: phone.replace(/\D/g, '').slice(-10),
+          name: (selectedAddress?.full_name || dentistName || user?.full_name || 'Customer').trim(),
+          email: (email || user?.email || '').trim(),
+          contact: (selectedAddress?.mobile || phone || user?.phone_number || '').replace(/\D/g, '').slice(-10),
         },
         notes: {
           payment_id: rzOrder.payment_id,
