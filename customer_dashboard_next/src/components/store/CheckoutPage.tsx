@@ -1472,64 +1472,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </div>
                   </div>
 
-                  {/* 4. Apply Coupon Code Card */}
-                  <div className="pt-2">
-                    {activeCoupon ? (
-                      <div className="p-3 rounded-xl bg-teal-50/80 border border-[#005F63]/20 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-3.5 h-3.5 text-[#005F63]" />
-                          <div>
-                            <span className="text-xs font-semibold text-[#005F63]">
-                              Coupon &apos;{activeCoupon.code}&apos; Applied
-                            </span>
-                            <span className="text-[11px] text-emerald-700 block font-medium">
-                              Saved ₹{couponDiscountVal.toLocaleString('en-IN')} on this order
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveCoupon(null);
-                            showToast?.('Coupon removed.');
-                          }}
-                          className="text-xs font-medium text-rose-600 hover:underline cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="p-2 sm:p-2.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-2 pl-1.5 flex-1 min-w-0">
-                          <Tag className="w-3.5 h-3.5 text-[#005F63] shrink-0" />
-                          <input
-                            type="text"
-                            value={couponInput}
-                            onChange={(e) => {
-                              setCouponInput(e.target.value.toUpperCase());
-                              if (couponError) setCouponError(null);
-                            }}
-                            placeholder="Enter Coupon Code"
-                            className="text-xs font-medium uppercase bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:normal-case placeholder:font-normal w-full"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleApplyCoupon}
-                          disabled={!couponInput.trim()}
-                          className="px-3.5 py-1.5 rounded-lg bg-[#005F63] hover:bg-[#0B7C80] disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-medium transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
-                        >
-                          Apply
-                        </button>
-                      </div>
-                    )}
-                    {couponError && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 px-1">{couponError}</p>
-                    )}
-                  </div>
-
-                  {/* 5. Price Details Breakdown */}
+                  {/* 4. Price Details Breakdown */}
                   <div className="pt-3.5 border-t border-slate-100 space-y-2 text-xs">
                     <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Price Details</h3>
                     
