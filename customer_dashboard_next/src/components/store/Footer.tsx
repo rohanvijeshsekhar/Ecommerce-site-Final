@@ -80,7 +80,7 @@ const COMPANY_LINKS = [
   { label: 'Our Brands', href: '/brands' },
   { label: 'Clinical Blog', href: '/blog' },
   { label: 'Dealer Portal', href: '/dealer' },
-  { label: 'Contact Us', href: '/support' },
+  { label: 'Contact Us', href: '/contact' },
 ];
 
 const SUPPORT_LINKS = [

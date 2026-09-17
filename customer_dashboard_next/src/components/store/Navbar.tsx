@@ -80,15 +80,15 @@ interface DropdownItem {
 const supportDropdown: DropdownItem[] = [
   { name: 'Support Center', desc: 'FAQs, order tracking, returns, and instant self-service.', href: '/support' },
   { name: 'Warranty Registration', desc: 'Register hardware and inspect active coverages.', href: '/warranty' },
-  { name: 'Service & Repairs', desc: 'Book direct on-site servicing and component repairs.', href: '/support' },
-  { name: 'Contact Support', desc: 'Emergency 24/7 technical hotline & WhatsApp support.', href: '/support' }
+  { name: 'Service & Repairs', desc: 'Book direct on-site servicing and component repairs.', href: '/contact' },
+  { name: 'Contact Support', desc: 'Emergency 24/7 technical hotline & WhatsApp support.', href: '/contact' }
 ];
 
 const aboutDropdown: DropdownItem[] = [
   { name: 'Our Story', desc: 'How we engineer clinical excellence.', href: '#about' },
   { name: 'Why FAAZO', desc: 'Uncompromising certifications and partner network.', href: '#about' },
-  { name: 'Careers', desc: 'Shape the next generation of med-tech systems.', href: '#careers' },
-  { name: 'Contact', desc: 'Global offices, agents, and distributor locations.', href: '#contact' }
+  { name: 'Dealer Portal', desc: 'Partner network, bulk procurement & dealership.', href: '/dealer' },
+  { name: 'Contact Us', desc: 'National headquarters, experience center & inquiries.', href: '/contact' }
 ];
 
 export interface MockCartItem {
