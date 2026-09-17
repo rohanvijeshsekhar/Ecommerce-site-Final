@@ -1,12 +1,21 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import {
+  Search,
+  Clock,
+  Calendar,
+  User,
+  ArrowRight,
+  ChevronRight,
+  BookOpen,
+} from 'lucide-react';
 import { fetchPublicBlogPosts, fetchPublicBlogCategories, type BlogPost } from '@/lib/blog-api';
 
 export const metadata: Metadata = {
-  title: 'Clinical Insights & Dental Technology Blog | FAAZO',
-  description: 'Stay updated with modern clinical workflows, equipment maintenance tips, 3D imaging guides, and dental practice optimization.',
-  keywords: ['dental blog', 'clinical insights', 'handpiece maintenance', 'CBCT imaging guide', 'FAAZO blog'],
+  title: 'Blog | FAAZO Dental Solutions',
+  description:
+    'Expert articles, clinical guides, and equipment insights on modern dental practice workflows and technology.',
 };
 
 interface Props {
@@ -15,6 +24,26 @@ interface Props {
     q?: string;
     page?: string;
   }>;
+}
+
+function getReadingTime(content?: string, excerpt?: string): string {
+  const text = (content || excerpt || '').replace(/<[^>]*>/g, ' ').trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  const minutes = Math.max(1, Math.ceil(words / 200));
+  return `${minutes} min read`;
+}
+
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return '';
+  }
 }
 
 export default async function BlogPage({ searchParams }: Props) {
@@ -32,58 +61,60 @@ export default async function BlogPage({ searchParams }: Props) {
   const meta = postsRes?.meta;
   const totalPages = meta?.total_pages || 1;
 
-  // Identify featured article (if any)
-  const featuredPost = posts.find((p) => p.is_featured) || (page === 1 && !category && !q ? posts[0] : null);
+  // Identify featured article (if any from backend)
+  const featuredPost =
+    posts.find((p) => p.is_featured) || (page === 1 && !category && !q ? posts[0] : null);
   const gridPosts = featuredPost ? posts.filter((p) => p.id !== featuredPost.id) : posts;
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-[112px] lg:pt-[144px] pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-10">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <span className="text-xs font-black tracking-widest text-[#006670] uppercase">
-            Clinical Intelligence
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-2 tracking-tight">
-            FAAZO Dental Technology Blog
+    <div className="w-full min-h-screen bg-[#FAFCFC] text-slate-800 font-sans text-left select-none pt-[118px] sm:pt-[132px] lg:pt-[152px] pb-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 sm:space-y-10">
+
+        {/* ─── 1. Page Header ─── */}
+        <div className="text-center max-w-2xl mx-auto pt-2 sm:pt-4">
+          <p className="text-[11px] font-bold tracking-widest text-[#005F63] uppercase mb-1.5">
+            EDITORIAL
+          </p>
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-2">
+            Blog
           </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto mt-3 text-sm sm:text-base leading-relaxed">
-            Expert articles on clinical equipment maintenance, practice workflows, and technological innovations.
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            Clinical guides, equipment maintenance protocols, and dental practice insights.
           </p>
         </div>
 
-        {/* Search & Category Filter Controls */}
-        <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <form method="GET" action="/blog" className="flex flex-col sm:flex-row items-center gap-3">
+        {/* ─── 2. Search + Categories Bar ─── */}
+        <div className="space-y-3.5">
+          {/* Search Form */}
+          <form method="GET" action="/blog" className="relative max-w-md mx-auto">
             {category && <input type="hidden" name="category" value={category} />}
-            <div className="relative flex-1 w-full">
-              <input
-                type="text"
-                name="q"
-                defaultValue={q}
-                placeholder="Search articles by keyword, equipment, or clinical topic..."
-                className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-900 focus:outline-none focus:border-[#006670] focus:bg-white transition-all"
-              />
-            </div>
+            <input
+              type="text"
+              name="q"
+              defaultValue={q}
+              placeholder="Search articles by title, topic, or keyword..."
+              className="w-full h-10 pl-10 pr-24 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#005F63] focus:ring-1 focus:ring-[#005F63] transition-all shadow-2xs"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-3 bg-[#006670] hover:bg-[#00555e] text-white font-bold text-xs rounded-2xl shadow-xs transition-colors shrink-0 cursor-pointer"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-3 h-8 bg-[#005F63] hover:bg-[#004d50] text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
             >
-              Search Articles
+              Search
             </button>
           </form>
 
-          {/* Category Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {/* Category Filter Pills */}
+          <div className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
             <Link
               href={q ? `/blog?q=${encodeURIComponent(q)}` : '/blog'}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors ${
                 !category
-                  ? 'bg-[#006670] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                  ? 'bg-[#005F63] text-white shadow-2xs font-semibold'
+                  : 'bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              All Categories
+              All
             </Link>
             {categories.map((cat) => {
               const isActive = category === cat.slug;
@@ -92,10 +123,10 @@ export default async function BlogPage({ searchParams }: Props) {
                 <Link
                   key={cat.id}
                   href={href}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`px-3.5 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors ${
                     isActive
-                      ? 'bg-[#006670] text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                      ? 'bg-[#005F63] text-white shadow-2xs font-semibold'
+                      : 'bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   {cat.name}
@@ -105,85 +136,188 @@ export default async function BlogPage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* Featured Article Card (Page 1 without filters) */}
+        {/* ─── 3. Featured Article (Editorial Hero) ─── */}
         {featuredPost && (
-          <div className="bg-gradient-to-br from-[#004D54] to-[#006670] rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row gap-8 items-center">
-            <div className="flex-1 space-y-4 z-10">
-              <div className="flex items-center gap-3 text-xs font-bold text-teal-200 uppercase tracking-wider">
-                <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-lg border border-white/20">
-                  Featured Article
-                </span>
-                {featuredPost.category && <span>• {featuredPost.category.name}</span>}
+          <article className="group bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
+              
+              {/* Image Column */}
+              <div className="md:col-span-6 lg:col-span-7 bg-slate-100 relative min-h-[220px] sm:min-h-[280px] md:min-h-full overflow-hidden">
+                {featuredPost.featured_image_display ? (
+                  <img
+                    src={featuredPost.featured_image_display}
+                    alt={featuredPost.title}
+                    className="w-full h-full object-cover object-center group-hover:scale-[1.02] transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full min-h-[220px] flex items-center justify-center bg-slate-100 text-slate-400">
+                    <BookOpen className="w-10 h-10 opacity-30" />
+                  </div>
+                )}
               </div>
-              <h2 className="text-2xl sm:text-4xl font-extrabold leading-tight">
-                <Link href={`/blog/${featuredPost.slug}`} className="hover:text-teal-200 transition-colors">
-                  {featuredPost.title}
-                </Link>
-              </h2>
-              <p className="text-teal-50 text-sm leading-relaxed max-w-2xl line-clamp-3">
-                {featuredPost.excerpt}
-              </p>
-              <div className="pt-2 flex items-center justify-between">
-                <span className="text-xs font-semibold text-teal-200">By {featuredPost.author_name}</span>
-                <Link
-                  href={`/blog/${featuredPost.slug}`}
-                  className="px-5 py-2.5 bg-white text-[#006670] font-extrabold text-xs rounded-xl hover:bg-teal-50 transition-colors shadow-xs"
-                >
-                  Read Full Article →
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Grid Articles */}
-        {gridPosts.length > 0 ? (
-          <div className="grid md:grid-cols-3 gap-8">
-            {gridPosts.map((art) => (
-              <article
-                key={art.id}
-                className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between hover:shadow-lg transition-all duration-300"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs text-[#006670] font-bold mb-3">
-                    <span>{art.category?.name || 'Clinical Article'}</span>
-                    <span className="text-slate-400 font-normal">
-                      {art.published_at ? new Date(art.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+              {/* Content Column */}
+              <div className="md:col-span-6 lg:col-span-5 p-5 sm:p-8 flex flex-col justify-between space-y-4">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold text-[#005F63] bg-teal-50 border border-teal-100/80 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      {featuredPost.category?.name || 'Featured'}
+                    </span>
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {getReadingTime(featuredPost.content, featuredPost.excerpt)}
                     </span>
                   </div>
-                  <h2 className="text-lg font-extrabold text-slate-900 hover:text-[#006670] transition-colors leading-snug">
-                    <Link href={`/blog/${art.slug}`}>{art.title}</Link>
+
+                  <h2 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug group-hover:text-[#005F63] transition-colors">
+                    <Link href={`/blog/${featuredPost.slug}`}>
+                      {featuredPost.title}
+                    </Link>
                   </h2>
-                  <p className="text-slate-600 text-xs mt-3 leading-relaxed line-clamp-3">
-                    {art.excerpt}
+
+                  <p className="text-xs sm:text-sm text-slate-500 line-clamp-3 leading-relaxed">
+                    {featuredPost.excerpt}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500">{art.author_name}</span>
-                  <Link href={`/blog/${art.slug}`} className="text-xs font-bold text-[#006670] hover:underline">
-                    Read Article →
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                    {featuredPost.author_name && (
+                      <span className="font-medium text-slate-700">{featuredPost.author_name}</span>
+                    )}
+                    {featuredPost.published_at && (
+                      <>
+                        <span>•</span>
+                        <span>{formatDate(featuredPost.published_at)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/blog/${featuredPost.slug}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#005F63] hover:underline"
+                  >
+                    <span>Read Article</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+          </article>
+        )}
+
+        {/* ─── 4. Article Grid ─── */}
+        {gridPosts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {gridPosts.map((art) => (
+              <article
+                key={art.id}
+                className="group bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-[#005F63]/40 transition-all flex flex-col justify-between overflow-hidden"
+              >
+                <div>
+                  {/* Article Thumbnail */}
+                  <Link href={`/blog/${art.slug}`} className="block relative aspect-[16/10] bg-slate-100 overflow-hidden">
+                    {art.featured_image_display ? (
+                      <img
+                        src={art.featured_image_display}
+                        alt={art.title}
+                        className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <BookOpen className="w-8 h-8 opacity-40" />
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* Body Content */}
+                  <div className="p-4 sm:p-5 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] gap-2">
+                      <span className="text-[10px] font-bold text-[#005F63] uppercase tracking-wider">
+                        {art.category?.name || 'General'}
+                      </span>
+                      <span className="text-slate-400 flex items-center gap-1 text-[10px]">
+                        <Clock className="w-2.5 h-2.5" />
+                        {getReadingTime(art.content, art.excerpt)}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-snug line-clamp-2 group-hover:text-[#005F63] transition-colors">
+                      <Link href={`/blog/${art.slug}`}>
+                        {art.title}
+                      </Link>
+                    </h3>
+
+                    {art.excerpt && (
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {art.excerpt}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Metadata */}
+                <div className="px-4 sm:px-5 pb-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <div className="text-slate-400 truncate pr-2">
+                    {art.author_name ? (
+                      <span className="font-medium text-slate-600">{art.author_name}</span>
+                    ) : null}
+                    {art.published_at && (
+                      <span className="text-slate-400 text-[10px] ml-1.5">
+                        {formatDate(art.published_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/blog/${art.slug}`}
+                    className="shrink-0 text-xs font-semibold text-[#005F63] group-hover:underline inline-flex items-center gap-0.5"
+                  >
+                    <span>Read</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
               </article>
             ))}
           </div>
         ) : !featuredPost ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-500">
-            <p className="font-extrabold text-base text-slate-800">No blog articles match your criteria</p>
-            <p className="text-xs text-slate-500 mt-1">Try clearing your search query or selecting a different category.</p>
-            <Link
-              href="/blog"
-              className="inline-block mt-4 text-xs font-bold text-[#006670] hover:underline"
-            >
-              ← Back to All Articles
-            </Link>
+          /* Empty Search/Filter State */
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-10 sm:p-14 text-center max-w-md mx-auto space-y-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+              <Search className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">No articles found</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              We couldn&apos;t find any blog posts matching your search criteria. Try a different query or category.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/blog"
+                className="inline-block px-4 py-2 text-xs font-semibold text-[#005F63] border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Clear all filters
+              </Link>
+            </div>
           </div>
         ) : null}
 
-        {/* Pagination */}
+        {/* ─── 5. Pagination ─── */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-6">
+          <div className="flex items-center justify-center gap-1.5 pt-4">
+            {page > 1 && (
+              <Link
+                href={`/blog?${new URLSearchParams({
+                  ...(category ? { category } : {}),
+                  ...(q ? { q } : {}),
+                  page: String(page - 1),
+                }).toString()}`}
+                className="px-3 h-9 rounded-xl flex items-center justify-center text-xs font-semibold bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Previous
+              </Link>
+            )}
+
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
               const query = new URLSearchParams();
               if (category) query.set('category', category);
@@ -194,18 +328,32 @@ export default async function BlogPage({ searchParams }: Props) {
                 <Link
                   key={p}
                   href={`/blog?${query.toString()}`}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition-all ${
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${
                     isActive
-                      ? 'bg-[#006670] text-white shadow-xs'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-[#005F63] text-white shadow-2xs'
+                      : 'bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   {p}
                 </Link>
               );
             })}
+
+            {page < totalPages && (
+              <Link
+                href={`/blog?${new URLSearchParams({
+                  ...(category ? { category } : {}),
+                  ...(q ? { q } : {}),
+                  page: String(page + 1),
+                }).toString()}`}
+                className="px-3 h-9 rounded-xl flex items-center justify-center text-xs font-semibold bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Next
+              </Link>
+            )}
           </div>
         )}
+
       </div>
     </div>
   );
