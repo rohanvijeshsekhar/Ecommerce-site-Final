@@ -220,9 +220,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     stage: 'verifying',
   });
 
-  // Selected Payment Method Subtype ('upi' | 'card' | 'netbanking')
-  const [selectedPaymentSubtype, setSelectedPaymentSubtype] = useState<'upi' | 'card' | 'netbanking'>('upi');
-  const paymentMethod = 'razorpay'; // Authoritative backend identifier
+  // Selected Payment Method ('razorpay' | 'cod')
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
 
   // Dynamic pricing overrides from backend preview
   const [previewPricing, setPreviewPricing] = useState<CheckoutPreview | null>(null);
@@ -651,6 +650,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    // Cash on Delivery (COD) order placement
+    if (paymentMethod === 'cod') {
+      setIsPlacing(true);
+      try {
+        const { cartService } = await import('../../lib/services/cart');
+        const itemsPayload =
+          cartItems && cartItems.length > 0
+            ? cartItems.map((item) => ({ product_id: item.id, quantity: item.qty }))
+            : undefined;
+
+        const res = await cartService.placeOrder(
+          selectedAddressId,
+          'standard',
+          'cod',
+          gstInvoice ? gstNumber.trim().toUpperCase() : undefined,
+          itemsPayload
+        );
+
+        if (res.success && res.data) {
+          onPlaceOrderSuccess(res.data);
+        } else {
+          showToast?.(res.message || 'Failed to place COD order.');
+        }
+      } catch (err: any) {
+        const errMsg =
+          err?.response?.data?.error?.message ||
+          err?.response?.data?.message ||
+          'Failed to place Cash on Delivery order.';
+        showToast?.(errMsg);
+      } finally {
+        setIsPlacing(false);
+      }
+      return;
+    }
+
     // Online Payment via Razorpay
     setIsPlacing(true);
 
@@ -840,7 +874,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const selectedServ = selectedAddressId ? serviceabilityMap[selectedAddressId]?.data : undefined;
 
   return (
-    <div className="w-full bg-[#F2FBFB]/60 min-h-screen pt-20 sm:pt-24 lg:pt-28 pb-28 font-sans select-none text-left">
+    <div className="w-full bg-[#F2FBFB]/60 min-h-screen pt-[116px] sm:pt-[132px] lg:pt-[152px] pb-28 font-sans select-none text-left">
       <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8">
         
         {/* ========================================================================= */}
@@ -868,12 +902,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </span>
               <span className="sm:hidden font-semibold">Back</span>
             </button>
-
-            {/* Brand Logo & Subtitle */}
-            <div className="text-center">
-              <div className="text-sm font-black tracking-widest text-[#005F63] font-serif">FAAZO</div>
-              <div className="text-[9px] font-medium text-slate-400 tracking-tight">Dental Essentials, Delivered.</div>
-            </div>
 
             {/* Secure Badge */}
             <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
@@ -1206,136 +1234,94 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             )}
 
             {/* ===================================================================== */}
-            {/* STEP 2: PAYMENT METHOD (Screen 2 Reference Design)                    */}
+            {/* STEP 2: PAYMENT METHOD                                                */}
             {/* ===================================================================== */}
             {currentStep === 'payment' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Payment Method</h2>
-                  <p className="text-xs text-slate-500 mt-0.5 font-medium">Choose how you want to pay</p>
+                <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">
+                  <div className="mb-4">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Payment Method</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Select how you would like to complete your order</p>
+                  </div>
 
-                  {/* Payment Options List */}
-                  <div className="mt-4 space-y-3">
-                    {/* 1. UPI */}
+                  {/* Payment Options (Minimal & Classy) */}
+                  <div className="space-y-2.5">
+                    {/* Option 1: Pay Online */}
                     <div
-                      onClick={() => setSelectedPaymentSubtype('upi')}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                        selectedPaymentSubtype === 'upi'
-                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                      onClick={() => setPaymentMethod('razorpay')}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
+                        paymentMethod === 'razorpay'
+                          ? 'border-[#005F63] bg-[#005F63]/[0.03] ring-1 ring-[#005F63]'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              selectedPaymentSubtype === 'upi'
-                                ? 'border-[#005F63] bg-[#005F63]'
-                                : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {selectedPaymentSubtype === 'upi' && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-900">UPI</span>
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-700">
-                                Recommended
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Pay with any UPI app (GPay, PhonePe, Paytm)</p>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        {/* Radio */}
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                            paymentMethod === 'razorpay'
+                              ? 'border-[#005F63] bg-[#005F63]'
+                              : 'border-slate-300 bg-white'
+                          }`}
+                        >
+                          {paymentMethod === 'razorpay' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
 
-                        {/* UPI Icons Strip */}
-                        <div className="flex items-center gap-1.5 opacity-85">
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-bold text-slate-600">GPay</span>
-                          <span className="px-1.5 py-0.5 rounded bg-purple-50 text-[9px] font-bold text-purple-600">PhonePe</span>
-                          <span className="px-1.5 py-0.5 rounded bg-sky-50 text-[9px] font-bold text-sky-600">Paytm</span>
-                          <ChevronRight className="w-4 h-4 text-slate-400 ml-1" />
+                        {/* Text */}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-semibold text-slate-900">Pay Online</span>
+                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              Recommended
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Secure payment via Razorpay (UPI, Cards, Net Banking)
+                          </p>
                         </div>
                       </div>
+
+                      <CreditCard className={`w-4 h-4 shrink-0 transition-colors ${paymentMethod === 'razorpay' ? 'text-[#005F63]' : 'text-slate-400'}`} />
                     </div>
 
-                    {/* 2. Credit / Debit Card */}
+                    {/* Option 2: Cash on Delivery */}
                     <div
-                      onClick={() => setSelectedPaymentSubtype('card')}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                        selectedPaymentSubtype === 'card'
-                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
+                      onClick={() => setPaymentMethod('cod')}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
+                        paymentMethod === 'cod'
+                          ? 'border-[#005F63] bg-[#005F63]/[0.03] ring-1 ring-[#005F63]'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              selectedPaymentSubtype === 'card'
-                                ? 'border-[#005F63] bg-[#005F63]'
-                                : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {selectedPaymentSubtype === 'card' && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-
-                          <div>
-                            <span className="text-xs font-bold text-slate-900">Credit / Debit Card</span>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Visa, Mastercard, RuPay & more</p>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        {/* Radio */}
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                            paymentMethod === 'cod'
+                              ? 'border-[#005F63] bg-[#005F63]'
+                              : 'border-slate-300 bg-white'
+                          }`}
+                        >
+                          {paymentMethod === 'cod' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
 
-                        {/* Card Icons Strip */}
-                        <div className="flex items-center gap-1.5 opacity-85">
-                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[9px] font-bold text-blue-700">VISA</span>
-                          <span className="px-1.5 py-0.5 rounded bg-amber-50 text-[9px] font-bold text-amber-700">Mastercard</span>
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-[9px] font-bold text-emerald-700">RuPay</span>
-                          <ChevronRight className="w-4 h-4 text-slate-400 ml-1" />
+                        {/* Text */}
+                        <div>
+                          <span className="text-xs sm:text-sm font-semibold text-slate-900">Cash on Delivery</span>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Pay when you receive
+                          </p>
                         </div>
                       </div>
-                    </div>
 
-                    {/* 3. Net Banking */}
-                    <div
-                      onClick={() => setSelectedPaymentSubtype('netbanking')}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                        selectedPaymentSubtype === 'netbanking'
-                          ? 'border-[#005F63] bg-[#F2FBFB] ring-1 ring-[#005F63]/30 shadow-xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              selectedPaymentSubtype === 'netbanking'
-                                ? 'border-[#005F63] bg-[#005F63]'
-                                : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {selectedPaymentSubtype === 'netbanking' && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-
-                          <div>
-                            <span className="text-xs font-bold text-slate-900">Net Banking</span>
-                            <p className="text-[11px] text-slate-500 mt-0.5">All major Indian banks supported</p>
-                          </div>
-                        </div>
-
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
-                      </div>
+                      <Banknote className={`w-4 h-4 shrink-0 transition-colors ${paymentMethod === 'cod' ? 'text-[#005F63]' : 'text-slate-400'}`} />
                     </div>
                   </div>
 
-                  {/* 100% Secure Trust Card */}
-                  <div className="mt-5 p-3.5 rounded-xl bg-teal-50/60 border border-[#005F63]/20 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#005F63] text-white flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-[#005F63]">100% Secure Payments</div>
-                      <div className="text-[11px] text-slate-500">Your payment information is end-to-end encrypted with Razorpay.</div>
-                    </div>
+                  {/* Subtle Minimal Trust Line */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-700" />
+                    <span>100% Encrypted & Safe Payments with Razorpay</span>
                   </div>
                 </div>
 
@@ -1344,7 +1330,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setCurrentStep('address')}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                   >
                     ← Change Address
                   </button>
@@ -1352,10 +1338,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setCurrentStep('review')}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                    className="w-full sm:w-auto px-7 py-3 rounded-xl bg-[#005F63] hover:bg-[#0B7C80] text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
                   >
                     <span>Review Order</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -1410,16 +1396,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-[#F2FBFB] text-[#005F63] flex items-center justify-center shrink-0 mt-0.5">
-                        <CreditCard className="w-4 h-4" />
+                        {paymentMethod === 'cod' ? <Banknote className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
                       </div>
                       <div>
                         <div className="text-xs font-bold text-slate-900">Payment Method</div>
                         <p className="text-xs font-semibold text-slate-700 mt-1">
-                          {selectedPaymentSubtype === 'upi' && 'UPI (Google Pay / PhonePe / Paytm)'}
-                          {selectedPaymentSubtype === 'card' && 'Credit / Debit Card (Razorpay)'}
-                          {selectedPaymentSubtype === 'netbanking' && 'Net Banking (All Banks)'}
+                          {paymentMethod === 'cod'
+                            ? 'Cash on Delivery – Pay when you receive'
+                            : 'Pay Online – Secure payment via Razorpay'}
                         </p>
-                        <p className="text-[11px] text-emerald-700 font-medium mt-0.5">100% Encrypted & Verified</p>
+                        <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
+                          {paymentMethod === 'cod' ? 'Pay upon delivery' : '100% Encrypted & Verified'}
+                        </p>
                       </div>
                     </div>
 
