@@ -51,6 +51,10 @@ class HomepagePromoBannerSerializer(serializers.ModelSerializer):
             "subtitle",
             "link_url",
             "is_active",
+            "bg_color",
+            "tagline_color",
+            "text_color",
+            "border_color",
             "created_at",
             "updated_at",
         ]

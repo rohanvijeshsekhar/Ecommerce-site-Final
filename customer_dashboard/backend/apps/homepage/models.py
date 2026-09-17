@@ -56,6 +56,34 @@ class HomepagePromoBanner(BaseModel):
         default=True,
         verbose_name="Is Active / Visible",
     )
+    bg_color = models.CharField(
+        max_length=50,
+        default="#005F63",
+        blank=True,
+        verbose_name="Banner Background Color",
+        help_text="Hex color or CSS color string for background, e.g. #005F63",
+    )
+    tagline_color = models.CharField(
+        max_length=50,
+        default="#BFE8E8",
+        blank=True,
+        verbose_name="Tagline Text Color",
+        help_text="Hex color for top accent text, e.g. #BFE8E8",
+    )
+    text_color = models.CharField(
+        max_length=50,
+        default="#FFFFFF",
+        blank=True,
+        verbose_name="Main Text Color",
+        help_text="Hex color for main offer text, e.g. #FFFFFF",
+    )
+    border_color = models.CharField(
+        max_length=50,
+        default="#005F63",
+        blank=True,
+        verbose_name="Border Color",
+        help_text="Hex color for optional border, e.g. #005F63",
+    )
 
     @classmethod
     def get_instance(cls):
@@ -66,6 +94,10 @@ class HomepagePromoBanner(BaseModel):
                 subtitle="UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS",
                 link_url="/offers",
                 is_active=True,
+                bg_color="#005F63",
+                tagline_color="#BFE8E8",
+                text_color="#FFFFFF",
+                border_color="#005F63",
             )
         return instance
 

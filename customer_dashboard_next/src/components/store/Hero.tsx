@@ -25,6 +25,10 @@ interface PromoBannerData {
   subtitle: string;
   link_url?: string;
   is_active: boolean;
+  bg_color?: string;
+  tagline_color?: string;
+  text_color?: string;
+  border_color?: string;
 }
 
 interface HeroProps {
@@ -38,6 +42,10 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
     subtitle: 'UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS',
     link_url: '',
     is_active: true,
+    bg_color: '#005F63',
+    tagline_color: '#BFE8E8',
+    text_color: '#FFFFFF',
+    border_color: '#005F63',
   });
 
   useEffect(() => {
@@ -51,6 +59,10 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
             subtitle: data.subtitle || '',
             link_url: data.link_url || '',
             is_active: data.is_active !== undefined ? Boolean(data.is_active) : true,
+            bg_color: data.bg_color || '#005F63',
+            tagline_color: data.tagline_color || '#BFE8E8',
+            text_color: data.text_color || '#FFFFFF',
+            border_color: data.border_color || '#005F63',
           });
         }
       })
@@ -92,12 +104,18 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
   const renderPromoContent = () => (
     <>
       {promoBanner.title && (
-        <span className="text-[9px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
+        <span
+          className="text-[9px] md:text-[11px] font-bold tracking-widest uppercase mb-0.5 font-sans"
+          style={{ color: promoBanner.tagline_color || '#BFE8E8' }}
+        >
           {promoBanner.title}
         </span>
       )}
       {promoBanner.subtitle && (
-        <span className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
+        <span
+          className="text-[11px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans"
+          style={{ color: promoBanner.text_color || '#FFFFFF' }}
+        >
           {promoBanner.subtitle}
         </span>
       )}
@@ -112,12 +130,22 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
           promoBanner.link_url ? (
             <a
               href={promoBanner.link_url}
-              className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10 hover:brightness-105 transition-all group block"
+              style={{
+                backgroundColor: promoBanner.bg_color || '#005F63',
+                borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
+              }}
+              className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b hover:brightness-105 transition-all group block"
             >
               {renderPromoContent()}
             </a>
           ) : (
-            <div className="w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b border-black/10">
+            <div
+              style={{
+                backgroundColor: promoBanner.bg_color || '#005F63',
+                borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
+              }}
+              className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b"
+            >
               {renderPromoContent()}
             </div>
           )

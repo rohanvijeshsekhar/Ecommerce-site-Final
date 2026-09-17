@@ -331,6 +331,10 @@ class HomepagePromoBannerTestCase(TestCase):
         data = res.json().get("data", res.json())
         self.assertIn("title", data)
         self.assertIn("subtitle", data)
+        self.assertIn("bg_color", data)
+        self.assertIn("tagline_color", data)
+        self.assertIn("text_color", data)
+        self.assertIn("border_color", data)
         self.assertTrue(data.get("is_active"))
 
     def test_update_promo_banner_admin(self):
@@ -340,12 +344,20 @@ class HomepagePromoBannerTestCase(TestCase):
             "subtitle": "FLAT 25% OFF ON ALL DENTAL HANDPIECES",
             "link_url": "/products?category=handpieces",
             "is_active": True,
+            "bg_color": "#1A365D",
+            "tagline_color": "#90CDF4",
+            "text_color": "#FFFFFF",
+            "border_color": "#2B6CB0",
         })
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         data = res.json().get("data", res.json())
         self.assertEqual(data["title"], "FLASH SALE TODAY:")
         self.assertEqual(data["subtitle"], "FLAT 25% OFF ON ALL DENTAL HANDPIECES")
         self.assertEqual(data["link_url"], "/products?category=handpieces")
+        self.assertEqual(data["bg_color"], "#1A365D")
+        self.assertEqual(data["tagline_color"], "#90CDF4")
+        self.assertEqual(data["text_color"], "#FFFFFF")
+        self.assertEqual(data["border_color"], "#2B6CB0")
         self.assertTrue(data["is_active"])
 
     def test_update_promo_banner_unauthenticated_fails(self):

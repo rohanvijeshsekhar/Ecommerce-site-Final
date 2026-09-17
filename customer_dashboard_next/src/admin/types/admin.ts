@@ -400,6 +400,10 @@ export interface HomepagePromoBanner {
   subtitle: string;
   link_url: string;
   is_active: boolean;
+  bg_color?: string;
+  tagline_color?: string;
+  text_color?: string;
+  border_color?: string;
   updated_at?: string;
 }
 

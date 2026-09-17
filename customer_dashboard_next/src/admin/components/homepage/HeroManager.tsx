@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check, Palette, RotateCcw } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { HeroSlide, HomepagePromoBanner } from '../../types/admin';
@@ -11,6 +11,26 @@ import ImageUploader from '../ImageUploader';
 // ─────────────────────────────────────────────────────────────────────────────
 // HeroManager – CRUD for homepage promo banner & hero slides
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const DEFAULT_BANNER_COLORS = {
+  bg_color: '#005F63',
+  tagline_color: '#BFE8E8',
+  text_color: '#FFFFFF',
+  border_color: '#005F63',
+};
+
+const normalizeHex = (val: string) => {
+  let cleaned = val.trim();
+  if (cleaned && !cleaned.startsWith('#')) {
+    cleaned = '#' + cleaned;
+  }
+  return cleaned;
+};
+
+const getValidPickerHex = (val: string | undefined, fallback: string) => {
+  if (val && /^#[0-9A-Fa-f]{6}$/.test(val)) return val;
+  return fallback;
+};
 
 const BLANK_FORM = {
   heading: '',
@@ -38,6 +58,10 @@ const HeroManager: React.FC = () => {
     subtitle: 'UP TO 50% OFF + EXTRA 10% OFF ON PREMIUM DENTAL BRANDS',
     link_url: '',
     is_active: true,
+    bg_color: DEFAULT_BANNER_COLORS.bg_color,
+    tagline_color: DEFAULT_BANNER_COLORS.tagline_color,
+    text_color: DEFAULT_BANNER_COLORS.text_color,
+    border_color: DEFAULT_BANNER_COLORS.border_color,
   });
   const [savingPromo, setSavingPromo] = useState(false);
   const [promoSaved, setPromoSaved] = useState(false);
@@ -56,6 +80,10 @@ const HeroManager: React.FC = () => {
           subtitle: promoRes.data.subtitle || '',
           link_url: promoRes.data.link_url || '',
           is_active: promoRes.data.is_active !== undefined ? promoRes.data.is_active : true,
+          bg_color: promoRes.data.bg_color || DEFAULT_BANNER_COLORS.bg_color,
+          tagline_color: promoRes.data.tagline_color || DEFAULT_BANNER_COLORS.tagline_color,
+          text_color: promoRes.data.text_color || DEFAULT_BANNER_COLORS.text_color,
+          border_color: promoRes.data.border_color || DEFAULT_BANNER_COLORS.border_color,
         });
       }
     } finally {
@@ -64,6 +92,18 @@ const HeroManager: React.FC = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleResetColors = () => {
+    setPromoSaved(false);
+    setPromoForm(prev => ({
+      ...prev,
+      bg_color: DEFAULT_BANNER_COLORS.bg_color,
+      tagline_color: DEFAULT_BANNER_COLORS.tagline_color,
+      text_color: DEFAULT_BANNER_COLORS.text_color,
+      border_color: DEFAULT_BANNER_COLORS.border_color,
+    }));
+    showToast({ variant: 'info', title: 'Colors reset', message: 'Restored default banner colors.' });
+  };
 
   const handleSavePromo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -196,11 +236,23 @@ const HeroManager: React.FC = () => {
               <span className="text-slate-400 font-normal">Real-time preview of headline & offer</span>
             </div>
 
-            <div className={`w-full bg-gradient-to-r from-[#005F63] via-[#0B7C80] to-[#005F63] text-white text-center py-3 px-4 flex flex-col items-center justify-center rounded-xl border border-teal-700 shadow-inner transition-opacity ${!promoForm.is_active ? 'opacity-40 grayscale-[50%]' : ''}`}>
-              <span className="text-[10px] md:text-[11px] font-bold tracking-widest text-teal-100/90 uppercase mb-0.5 font-sans">
+            <div
+              style={{
+                backgroundColor: promoForm.bg_color || DEFAULT_BANNER_COLORS.bg_color,
+                borderColor: promoForm.border_color || promoForm.bg_color || DEFAULT_BANNER_COLORS.border_color,
+              }}
+              className={`w-full text-center py-3 px-4 flex flex-col items-center justify-center rounded-xl border shadow-inner transition-all duration-200 ${!promoForm.is_active ? 'opacity-40 grayscale-[50%]' : ''}`}
+            >
+              <span
+                className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase mb-0.5 font-sans"
+                style={{ color: promoForm.tagline_color || DEFAULT_BANNER_COLORS.tagline_color }}
+              >
                 {promoForm.title || '(Enter tagline above)'}
               </span>
-              <span className="text-[12px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans">
+              <span
+                className="text-[12px] md:text-[14px] font-extrabold tracking-wide uppercase font-sans"
+                style={{ color: promoForm.text_color || DEFAULT_BANNER_COLORS.text_color }}
+              >
                 {promoForm.subtitle || '(Enter main promotion text)'}
               </span>
             </div>
@@ -210,7 +262,7 @@ const HeroManager: React.FC = () => {
           </div>
 
           {/* Form Fields */}
-          <form onSubmit={handleSavePromo} className="space-y-4">
+          <form onSubmit={handleSavePromo} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -226,7 +278,7 @@ const HeroManager: React.FC = () => {
                   placeholder="e.g. FAAZO SUPER DEALS ARE LIVE:"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all"
                 />
-                <span className="text-[11px] text-slate-400 mt-1 block">Displayed in light teal small capital letters above the main offer.</span>
+                <span className="text-[11px] text-slate-400 mt-1 block">Displayed in small capital letters above the main offer.</span>
               </div>
 
               <div>
@@ -244,6 +296,130 @@ const HeroManager: React.FC = () => {
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670] transition-all font-medium"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">Main promotional message in bold capital letters.</span>
+              </div>
+            </div>
+
+            {/* ── Banner Appearance / Colors Section ── */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-[#006670]" />
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Banner Appearance & Colors</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetColors}
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#006670] hover:underline font-medium transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset to Default Colors
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/70">
+                {/* Background Color */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700">Background Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={getValidPickerHex(promoForm.bg_color, DEFAULT_BANNER_COLORS.bg_color)}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, bg_color: e.target.value }));
+                      }}
+                      className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={promoForm.bg_color}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, bg_color: normalizeHex(e.target.value) }));
+                      }}
+                      placeholder="#005F63"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-medium text-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-[#006670]"
+                    />
+                  </div>
+                </div>
+
+                {/* Tagline Color */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700">Tagline / Accent Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={getValidPickerHex(promoForm.tagline_color, DEFAULT_BANNER_COLORS.tagline_color)}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, tagline_color: e.target.value }));
+                      }}
+                      className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={promoForm.tagline_color}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, tagline_color: normalizeHex(e.target.value) }));
+                      }}
+                      placeholder="#BFE8E8"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-medium text-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-[#006670]"
+                    />
+                  </div>
+                </div>
+
+                {/* Main Text Color */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700">Main Offer Text Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={getValidPickerHex(promoForm.text_color, DEFAULT_BANNER_COLORS.text_color)}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, text_color: e.target.value }));
+                      }}
+                      className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={promoForm.text_color}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, text_color: normalizeHex(e.target.value) }));
+                      }}
+                      placeholder="#FFFFFF"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-medium text-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-[#006670]"
+                    />
+                  </div>
+                </div>
+
+                {/* Border Color */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700">Optional Border Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={getValidPickerHex(promoForm.border_color, DEFAULT_BANNER_COLORS.border_color)}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, border_color: e.target.value }));
+                      }}
+                      className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={promoForm.border_color}
+                      onChange={(e) => {
+                        setPromoSaved(false);
+                        setPromoForm(prev => ({ ...prev, border_color: normalizeHex(e.target.value) }));
+                      }}
+                      placeholder="#005F63"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-medium text-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-[#006670]"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
