@@ -66,7 +66,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
 
   // Calculations
   const totalOriginalPrice = backendCart ? backendCart.mrp_subtotal : cartItems.reduce((acc, item) => {
-    const orig = item.originalPrice || Math.round(item.price * 1.3);
+    const orig = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
     return acc + orig * item.qty;
   }, 0);
 
@@ -228,8 +228,8 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
 
                   {/* Individual Product Cards (FAAZO Style) */}
                   {cartItems.map((item) => {
-                    const originalPrice = item.originalPrice || Math.round(item.price * 1.3);
-                    const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+                    const originalPrice = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
+                    const discountPercent = originalPrice > item.price ? Math.round(((originalPrice - item.price) / originalPrice) * 100) : 0;
 
                     // Cross-reference with live backend cart item
                     const backendItem = backendCart?.items?.find((bi: any) => 

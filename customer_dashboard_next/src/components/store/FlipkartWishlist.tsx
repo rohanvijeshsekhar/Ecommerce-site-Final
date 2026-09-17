@@ -79,8 +79,8 @@ const FlipkartWishlist: React.FC<FlipkartWishlistProps> = ({
       ) : (
         <div className="divide-y divide-slate-100">
           {wishlistItems.map((item) => {
-            const originalPrice = item.originalPrice || Math.round(item.price * 1.2);
-            const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+            const originalPrice = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
+            const discountPercent = originalPrice > item.price ? Math.round(((originalPrice - item.price) / originalPrice) * 100) : 0;
             const rating = item.rating;
             const reviews = item.total_reviews || (item as any).reviews;
 

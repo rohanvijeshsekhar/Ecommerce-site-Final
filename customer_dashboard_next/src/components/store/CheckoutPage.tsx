@@ -300,7 +300,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const gstAmount = Math.round(subtotal - subtotal / 1.18);
 
   const totalOriginalPrice = cartItems.reduce((acc, item) => {
-    const orig = item.originalPrice || Math.round(item.price * 1.2);
+    const orig = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
     return acc + orig * item.qty;
   }, 0);
 
