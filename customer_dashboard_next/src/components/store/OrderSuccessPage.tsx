@@ -181,25 +181,19 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
         {/* ─── Hero Success Card ─── */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <div className="p-5 sm:p-7 text-center">
-            {/* Checkmark Icon */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
-              <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-            </div>
-
-            {/* Badge */}
-            <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-medium px-2.5 py-0.5 rounded-full mb-2">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>{isCod ? 'Cash on Delivery Confirmed' : 'Payment Confirmed'}</span>
+            {/* Standard Success Checkmark */}
+            <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-3.5 shadow-sm shadow-emerald-500/20 ring-4 ring-emerald-50">
+              <Check className="w-6 h-6 stroke-[2.5]" />
             </div>
 
             {/* Headline */}
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Order Placed Successfully!
+              Order Confirmed!
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
               {isCod
-                ? 'Your order is confirmed. Keep the cash ready at the time of delivery.'
-                : 'Your order is confirmed and will be dispatched shortly.'}
+                ? 'Your order has been placed. Please keep cash ready at the time of delivery.'
+                : 'Thank you for your purchase! Your order is confirmed and will be dispatched shortly.'}
             </p>
 
             {/* Order Meta Cards */}
