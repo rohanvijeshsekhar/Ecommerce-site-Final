@@ -85,7 +85,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
     return () => window.removeEventListener('featured-collections-updated', handleUpdate);
   }, []);
 
-  // Carousel auto-play timer (cycles every 6s if more than 1 banner and not paused)
+  // Carousel auto-play timer (cycles every 3s if more than 1 banner and not paused)
   useEffect(() => {
     if (collections.length <= 1 || isPaused) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -94,7 +94,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
     timerRef.current = setInterval(() => {
       setActiveIndex(prev => (prev + 1) % collections.length);
-    }, 6000);
+    }, 3000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
