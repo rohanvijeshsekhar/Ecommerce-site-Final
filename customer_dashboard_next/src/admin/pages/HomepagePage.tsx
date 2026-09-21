@@ -9,6 +9,7 @@ import BrandShowcaseManager from '../components/homepage/BrandShowcaseManager';
 import BestSellersManager from '../components/homepage/BestSellersManager';
 import FeaturedCollectionsManager from '../components/homepage/FeaturedCollectionsManager';
 import DailyOffersManager from '../components/homepage/DailyOffersManager';
+import BrandDealsManager from '../components/homepage/BrandDealsManager';
 import ExploreSolutionsAdmin from '../components/ExploreSolutionsAdmin';
 import TestimonialsManager from '../components/homepage/TestimonialsManager';
 import RecommendedManager from '../components/homepage/RecommendedManager';
@@ -21,6 +22,7 @@ type TabId =
   | 'hero'
   | 'categories'
   | 'daily-offers'
+  | 'brand-deals'
   | 'brands'
   | 'bestsellers'
   | 'collections'
@@ -38,6 +40,7 @@ const TABS: Tab[] = [
   { id: 'hero', label: 'Hero', icon: <Image className="w-4 h-4" /> },
   { id: 'categories', label: 'Shop By Category', icon: <Tag className="w-4 h-4" /> },
   { id: 'daily-offers', label: '🔥 Daily Offers / Deals', icon: <Flame className="w-4 h-4 text-red-500 fill-current" /> },
+  { id: 'brand-deals', label: '🏷️ Brand Deals & Offers', icon: <Award className="w-4 h-4 text-[#006670]" /> },
   { id: 'brands', label: 'Brand Logos', icon: <Award className="w-4 h-4" /> },
   { id: 'bestsellers', label: 'Best Sellers', icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'collections', label: 'Collections', icon: <Layers className="w-4 h-4" /> },
@@ -58,6 +61,7 @@ const HomepagePage: React.FC = () => {
       case 'hero': return <HeroManager />;
       case 'categories': return <CategoryShowcaseManager />;
       case 'daily-offers': return <DailyOffersManager />;
+      case 'brand-deals': return <BrandDealsManager />;
       case 'brands': return <BrandShowcaseManager />;
       case 'bestsellers': return <BestSellersManager />;
       case 'collections': return <FeaturedCollectionsManager />;

@@ -26,6 +26,8 @@ from .models import (
     SpecialOffersPageContent,
     DailyOffer,
     DailyOfferProduct,
+    BrandDeal,
+    BrandDealProduct,
 )
 
 
@@ -957,4 +959,395 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
                 )
             except Product.DoesNotExist:
                 continue
+
+
+# ============================================================
+# 8. Brand Deal Campaign Serializers
+# ============================================================
+
+class BrandDealProductReadSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(source="product.id", read_only=True)
+    product_id = serializers.CharField(source="product.id", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_image = serializers.SerializerMethodField()
+    product_image_url = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source="product.category.name", read_only=True)
+    brand_name = serializers.CharField(source="product.brand.name", read_only=True)
+    mrp = serializers.SerializerMethodField()
+    product_mrp = serializers.SerializerMethodField()
+    regular_selling_price = serializers.SerializerMethodField()
+    product_selling_price = serializers.SerializerMethodField()
+    deal_price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    discount_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    in_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BrandDealProduct
+        fields = [
+            "id",
+            "product",
+            "product_id",
+            "product_name",
+            "product_slug",
+            "product_sku",
+            "product_image",
+            "product_image_url",
+            "category_name",
+            "brand_name",
+            "mrp",
+            "product_mrp",
+            "regular_selling_price",
+            "product_selling_price",
+            "deal_price",
+            "discount_percentage",
+            "in_stock",
+            "is_active",
+            "sort_order",
+            "created_at",
+        ]
+
+    def get_product_image(self, obj):
+        if not obj.product:
+            return None
+        primary = obj.product.images.filter(is_primary=True).first()
+        if primary and primary.image:
+            return abs_image_url(self.context.get("request"), primary.image)
+        first = obj.product.images.first()
+        if first and first.image:
+            return abs_image_url(self.context.get("request"), first.image)
+        return None
+
+    def get_product_image_url(self, obj):
+        return self.get_product_image(obj)
+
+    def get_mrp(self, obj):
+        pricing = getattr(obj.product, "pricing", None)
+        return float(pricing.mrp) if pricing and pricing.mrp else 0.0
+
+    def get_product_mrp(self, obj):
+        return self.get_mrp(obj)
+
+    def get_regular_selling_price(self, obj):
+        pricing = getattr(obj.product, "pricing", None)
+        return float(pricing.selling_price) if pricing and pricing.selling_price else 0.0
+
+    def get_product_selling_price(self, obj):
+        return self.get_regular_selling_price(obj)
+
+    def get_in_stock(self, obj):
+        inv = getattr(obj.product, "inventory", None)
+        if not inv:
+            return True
+        return getattr(inv, "available_stock", getattr(inv, "current_stock", 0)) > 0
+
+
+class BrandDealProductWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BrandDealProduct
+        fields = [
+            "id",
+            "brand_deal",
+            "product",
+            "deal_price",
+            "discount_percentage",
+            "is_active",
+            "sort_order",
+        ]
+
+
+class BrandDealReadSerializer(serializers.ModelSerializer):
+    brand_id = serializers.CharField(source="brand.id", read_only=True)
+    brand_name = serializers.CharField(source="brand.name", read_only=True)
+    brand_slug = serializers.CharField(source="brand.slug", read_only=True)
+    brand_logo_url = serializers.SerializerMethodField()
+    desktop_image_url = serializers.SerializerMethodField()
+    mobile_image_url = serializers.SerializerMethodField()
+    banner_desktop = serializers.SerializerMethodField()
+    banner_mobile = serializers.SerializerMethodField()
+    deal_products = serializers.SerializerMethodField()
+    product_count = serializers.SerializerMethodField()
+    max_discount_percentage = serializers.SerializerMethodField()
+    is_currently_valid = serializers.BooleanField(read_only=True)
+    is_homepage_eligible = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = BrandDeal
+        fields = [
+            "id",
+            "brand",
+            "brand_id",
+            "brand_name",
+            "brand_slug",
+            "brand_logo_url",
+            "name",
+            "slug",
+            "title",
+            "subtitle",
+            "description",
+            "promotional_tag",
+            "offer_text",
+            "cta_text",
+            "desktop_image",
+            "desktop_image_url",
+            "mobile_image",
+            "mobile_image_url",
+            "banner_desktop",
+            "banner_mobile",
+            "bg_color",
+            "text_color",
+            "accent_color",
+            "show_on_homepage",
+            "status",
+            "start_datetime",
+            "end_datetime",
+            "is_active",
+            "is_currently_valid",
+            "is_homepage_eligible",
+            "sort_order",
+            "is_all_brand_products",
+            "deal_products",
+            "product_count",
+            "max_discount_percentage",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_brand_logo_url(self, obj):
+        if obj.brand and getattr(obj.brand, "logo", None):
+            return abs_image_url(self.context.get("request"), obj.brand.logo)
+        return None
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
+    def get_banner_desktop(self, obj):
+        return self.get_desktop_image_url(obj)
+
+    def get_banner_mobile(self, obj):
+        return self.get_mobile_image_url(obj)
+
+    def get_deal_products(self, obj):
+        explicit_deals = list(
+            obj.deal_products.all()
+            .select_related("product", "product__pricing", "product__brand", "product__category")
+            .prefetch_related("product__images")
+        )
+        if explicit_deals:
+            return BrandDealProductReadSerializer(explicit_deals, many=True, context=self.context).data
+        if obj.is_all_brand_products and obj.brand:
+            from apps.products.models import Product
+            products = (
+                Product.objects.filter(brand=obj.brand, status="active", is_deleted=False)
+                .select_related("pricing", "category")
+                .prefetch_related("images")
+            )
+            items = []
+            for p in products:
+                pricing = getattr(p, "pricing", None)
+                mrp = float(pricing.mrp) if pricing and pricing.mrp else 0.0
+                effective = float(pricing.effective_price) if pricing and pricing.effective_price else mrp
+                disc = round(((mrp - effective) / mrp) * 100) if mrp > effective > 0 else 0
+                items.append({
+                    "id": str(p.id),
+                    "brand_deal": str(obj.id),
+                    "product": str(p.id),
+                    "product_id": str(p.id),
+                    "product_name": p.name,
+                    "product_slug": p.slug,
+                    "product_sku": p.sku or "",
+                    "product_image_url": abs_image_url(self.context.get("request"), p.primary_image.image) if p.primary_image and p.primary_image.image else None,
+                    "product_mrp": mrp,
+                    "product_selling_price": effective,
+                    "deal_price": effective,
+                    "discount_percentage": disc,
+                    "is_active": True,
+                    "sort_order": 0,
+                })
+            return items
+        return []
+
+    def get_product_count(self, obj):
+        count = obj.deal_products.count()
+        if count == 0 and obj.is_all_brand_products and obj.brand:
+            from apps.products.models import Product
+            return Product.objects.filter(brand=obj.brand, status="active", is_deleted=False).count()
+        return count
+
+    def get_max_discount_percentage(self, obj):
+        discounts = [p.discount_percentage for p in obj.deal_products.all() if p.discount_percentage]
+        return float(max(discounts)) if discounts else 0.0
+
+
+class ProductsDataField(serializers.Field):
+    """
+    Handles products_data arriving as JSON string, parsed list/dict, or empty/null.
+    Prevents DRF's JSONField in MultiPartParser from casting Python lists to single-quoted strings.
+    """
+    def to_internal_value(self, data):
+        import json
+        if not data or data in ("", "null", "[]"):
+            return []
+        if isinstance(data, list):
+            return data
+        if isinstance(data, str):
+            try:
+                parsed = json.loads(data)
+                if isinstance(parsed, list):
+                    return parsed
+                return []
+            except (json.JSONDecodeError, ValueError):
+                raise serializers.ValidationError("Invalid JSON format for products_data.")
+        return []
+
+    def to_representation(self, value):
+        return value
+
+
+class BrandDealWriteSerializer(serializers.ModelSerializer):
+    desktop_image_url = serializers.SerializerMethodField()
+    mobile_image_url = serializers.SerializerMethodField()
+    banner_desktop = serializers.SerializerMethodField()
+    banner_mobile = serializers.SerializerMethodField()
+    products_data = ProductsDataField(required=False, write_only=True)
+
+    class Meta:
+        model = BrandDeal
+        fields = [
+            "id",
+            "brand",
+            "name",
+            "slug",
+            "title",
+            "subtitle",
+            "description",
+            "promotional_tag",
+            "offer_text",
+            "cta_text",
+            "desktop_image",
+            "mobile_image",
+            "desktop_image_url",
+            "mobile_image_url",
+            "banner_desktop",
+            "banner_mobile",
+            "bg_color",
+            "text_color",
+            "accent_color",
+            "show_on_homepage",
+            "status",
+            "start_datetime",
+            "end_datetime",
+            "is_active",
+            "sort_order",
+            "is_all_brand_products",
+            "products_data",
+        ]
+        read_only_fields = ["id", "desktop_image_url", "mobile_image_url", "banner_desktop", "banner_mobile"]
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
+    def get_banner_desktop(self, obj):
+        return self.get_desktop_image_url(obj)
+
+    def get_banner_mobile(self, obj):
+        return self.get_mobile_image_url(obj)
+
+    def to_internal_value(self, data):
+        if hasattr(data, "copy"):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = dict(data)
+
+        # Image fields: if an existing URL string is sent (not a new file), remove the field
+        # so the existing image is preserved. If empty/null, set to None to clear.
+        for field in ("desktop_image", "mobile_image"):
+            if field in data:
+                val = data[field]
+                if val in ("", "null", False, None):
+                    data[field] = None
+                elif isinstance(val, str) and not hasattr(val, "read"):
+                    # It's an existing URL string, not a new File — preserve existing image
+                    del data[field]
+
+        # Datetime fields: if empty/null, set to None; valid ISO strings are passed through
+        for field in ("start_datetime", "end_datetime"):
+            if field in data:
+                val = data[field]
+                if val in ("", "null", False, None):
+                    data[field] = None
+
+        return super().to_internal_value(data)
+
+    def create(self, validated_data):
+        products_data = validated_data.pop("products_data", None)
+        instance = super().create(validated_data)
+        if products_data is not None:
+            self._sync_products(instance, products_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        products_data = validated_data.pop("products_data", None)
+        instance = super().update(instance, validated_data)
+        if products_data is not None:
+            self._sync_products(instance, products_data)
+        return instance
+
+    def _sync_products(self, instance, products_data):
+        import json
+        from decimal import Decimal
+        from apps.products.models import Product
+
+        if isinstance(products_data, str):
+            try:
+                products_data = json.loads(products_data)
+            except Exception:
+                products_data = []
+
+        instance.deal_products.all().delete()
+        for idx, item in enumerate(products_data):
+            prod_id = item.get("product_id") or item.get("product")
+            if not prod_id:
+                continue
+            try:
+                product = Product.objects.get(id=prod_id)
+                pricing = getattr(product, "pricing", None)
+                mrp = pricing.mrp if pricing and pricing.mrp else Decimal("0.00")
+
+                dp = item.get("deal_price")
+                disc_pct = item.get("discount_percentage")
+
+                if dp not in ("", "null", None):
+                    dp = Decimal(str(dp))
+                    if mrp > Decimal("0.00") and dp < mrp:
+                        calculated_disc = Decimal(str(round(float((mrp - dp) / mrp * 100), 2)))
+                    else:
+                        calculated_disc = Decimal("0.00")
+                elif disc_pct not in ("", "null", None) and mrp > Decimal("0.00"):
+                    disc_pct_dec = Decimal(str(disc_pct))
+                    dp = mrp * (Decimal("1.00") - (disc_pct_dec / Decimal("100.00")))
+                    calculated_disc = disc_pct_dec
+                else:
+                    dp = pricing.effective_price if pricing else Decimal("0.00")
+                    calculated_disc = Decimal("0.00")
+
+                BrandDealProduct.objects.create(
+                    brand_deal=instance,
+                    product=product,
+                    deal_price=dp,
+                    discount_percentage=calculated_disc,
+                    is_active=item.get("is_active", True),
+                    sort_order=item.get("sort_order", idx),
+                )
+            except Product.DoesNotExist:
+                continue
+
+
 

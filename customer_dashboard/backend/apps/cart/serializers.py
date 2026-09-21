@@ -53,6 +53,10 @@ class CartItemSerializer(serializers.ModelSerializer):
         pricing = getattr(obj.product, 'pricing', None)
         if not pricing:
             return 0.0
+        from apps.homepage.models import get_active_brand_deal_price
+        deal_price = get_active_brand_deal_price(obj.product)
+        if deal_price is not None:
+            return float(deal_price)
         # Check B2B dealer pricing
         if user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved':
             if pricing.dealer_price is not None:
@@ -230,16 +234,20 @@ class CartSerializer(serializers.ModelSerializer):
 
     def _calculate_tax_summary(self, obj):
         from apps.common.tax_engine import calculate_order_tax_summary, get_warehouse_state
+        from apps.homepage.models import get_active_brand_deal_price
         user = self.context['request'].user
         line_items = []
         for item in self._get_active_items(obj):
             pricing = getattr(item.product, 'pricing', None)
             if pricing:
-                price = (
-                    pricing.dealer_price
-                    if (user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None)
-                    else pricing.effective_price
-                )
+                deal_price = get_active_brand_deal_price(item.product)
+                if deal_price is not None:
+                    price = deal_price
+                elif user.is_authenticated and user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None:
+                    price = pricing.dealer_price
+                else:
+                    price = pricing.effective_price
+
                 line_items.append({
                     "inclusive_price": price,
                     "gst_rate": pricing.gst_percentage,

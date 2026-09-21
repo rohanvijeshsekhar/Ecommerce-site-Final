@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
-import { api } from '../../lib/api';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { api, getAbsoluteImageUrl } from '../../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** Shape returned by /api/v1/homepage/brands/ that this component cares about. */
-interface HomepageShowcaseBrand {
-  /** HomepageBrand record ID */
+interface BrandItem {
   id: string;
-  /** Display name of the brand */
   name: string;
+  slug: string;
+  logo_url: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -23,179 +22,255 @@ interface HomepageShowcaseBrand {
 
 const BrandLogos: React.FC = () => {
   const [mounted, setMounted] = useState(false);
-  const [brands, setBrands] = useState<HomepageShowcaseBrand[]>([]);
+  const [brands, setBrands] = useState<BrandItem[]>([]);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check scroll position to toggle navigation arrow visibility
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  }, []);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(280, Math.floor(el.clientWidth * 0.75));
+    el.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   useEffect(() => {
     setMounted(true);
-
     let isMounted = true;
 
-    api
-      .get('homepage/brands/')
-      .then(res => {
-        if (!isMounted) return;
-        const data: unknown[] =
-          res.data?.data ?? res.data?.results ?? res.data ?? [];
-        if (Array.isArray(data) && data.length > 0) {
-          setBrands(
-            data.map((b: any) => ({
-              id: String(b.id || b.brand || b.brand_slug || b.brand_name),
-              name: String(b.brand_name || b.name || ''),
-            }))
-          );
+    async function fetchBrands() {
+      try {
+        // 1. Fetch curated homepage showcase brands
+        const hpRes = await api.get('homepage/brands/').catch(() => null);
+        const hpRaw: unknown[] =
+          hpRes?.data?.data ?? hpRes?.data?.results ?? hpRes?.data ?? [];
+
+        const hpBrands: BrandItem[] = Array.isArray(hpRaw)
+          ? hpRaw
+              .filter((b: any) => b.is_visible !== false)
+              .map((b: any) => ({
+                id: String(b.id || b.brand || b.brand_slug || b.brand_name),
+                name: String(b.brand_name || b.name || '').trim(),
+                slug: String(b.brand_slug || b.slug || '').trim(),
+                logo_url: b.logo_url || null,
+              }))
+              .filter((b: BrandItem) => b.name && b.slug)
+          : [];
+
+        // 2. Fetch active catalog brands from existing database to ensure a complete set
+        const catalogRes = await api
+          .get('brands/', { params: { page_size: 24 } })
+          .catch(() => null);
+        const catalogRaw: unknown[] =
+          catalogRes?.data?.data ?? catalogRes?.data?.results ?? catalogRes?.data ?? [];
+
+        const catalogBrands: BrandItem[] = Array.isArray(catalogRaw)
+          ? catalogRaw
+              .filter((b: any) => b.is_active !== false)
+              .map((b: any) => ({
+                id: String(b.id || b.slug),
+                name: String(b.name || '').trim(),
+                slug: String(b.slug || '').trim(),
+                logo_url: b.logo_url || b.logo || null,
+              }))
+              .filter((b: BrandItem) => b.name && b.slug)
+          : [];
+
+        // Merge: showcase brands first, followed by active catalog brands (deduped by slug)
+        const seenSlugs = new Set<string>();
+        const merged: BrandItem[] = [];
+
+        for (const brand of [...hpBrands, ...catalogBrands]) {
+          const key = brand.slug.toLowerCase();
+          if (!seenSlugs.has(key)) {
+            seenSlugs.add(key);
+            merged.push(brand);
+          }
         }
-        // If the API returns an empty list, we render nothing (rule 11).
-      })
-      .catch(() => {
-        // Silently swallow – the section will simply not render.
-      });
+
+        if (isMounted) {
+          setBrands(merged);
+        }
+      } catch {
+        // Silently swallow – section will hide if no brands available
+      }
+    }
+
+    fetchBrands();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Repeat the list enough times so the seamless marquee never runs out of
-  // content. We target ≥ 14 visible slots; if fewer brands exist, repeat more.
-  const marqueeItems = useMemo(() => {
-    if (brands.length === 0) return [];
-    const repeat = Math.max(2, Math.ceil(14 / brands.length));
-    const result: HomepageShowcaseBrand[] = [];
-    for (let i = 0; i < repeat; i++) {
-      result.push(...brands);
-    }
-    return result;
-  }, [brands]);
+  // Update scroll arrow states when brands change or window resizes
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [brands, checkScroll]);
 
-  // Avoid SSR / hydration mismatch; also hides the section when no brands are
-  // configured in Admin → Homepage → Brand Logos.
+  // If unmounted or no real brands exist in database, render nothing
   if (!mounted || brands.length === 0) {
     return null;
   }
 
+  const isGrid = brands.length <= 6;
+
   return (
-    <>
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes marquee-glass-anim {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .glass-marquee-track-desktop {
-          display: flex;
-          width: max-content;
-          animation: marquee-glass-anim 35s linear infinite;
-        }
-        .glass-marquee-track-desktop:hover {
-          animation-play-state: paused;
-        }
-        .glass-marquee-track-mobile {
-          display: flex;
-          width: max-content;
-          animation: marquee-glass-anim 45s linear infinite;
-        }
-        .glass-marquee-mask {
-          mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
-        }
-      `}} />
+    <section className="w-full bg-slate-50/60 py-10 md:py-14 border-y border-slate-200/60 select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      {/* ── Desktop View ─────────────────────────────────────────────────── */}
-      <section className="hidden md:block w-full bg-transparent py-12 select-none">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-white/85 via-white/60 to-white/40 backdrop-blur-2xl p-9 border border-white/95 shadow-[0_20px_50px_-12px_rgba(0,90,100,0.14),0_6px_16px_0_rgba(0,0,0,0.04)] ring-1 ring-black/5">
-
-            {/* Ambient Glass Glow Orbs */}
-            <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#006670]/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-teal-400/25 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-32 bg-[#008C99]/15 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header */}
-            <div className="relative z-10 flex justify-between items-center mb-8 px-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#006670]/10 backdrop-blur-md flex items-center justify-center border border-[#006670]/20 shadow-inner">
-                  <Sparkles className="w-4 h-4 text-[#006670]" />
-                </div>
-                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-display">
-                  Trusted by Leading Global Brands
-                </h2>
-              </div>
-
-              <Link
-                href="/brands"
-                className="group inline-flex items-center gap-2 text-sm font-bold text-[#006670] hover:text-[#004e56] px-4 py-2 rounded-full bg-white/60 hover:bg-white/90 border border-slate-200/60 hover:border-[#006670]/30 shadow-sm transition-all duration-300 backdrop-blur-md"
-              >
-                <span>View All Brands</span>
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-
-            {/* Seamless Text Marquee */}
-            <div className="relative z-10 w-full overflow-hidden py-1 glass-marquee-mask">
-              <div className="glass-marquee-track-desktop flex items-center gap-12 md:gap-16 py-2">
-                {[...marqueeItems, ...marqueeItems].map((brand, idx) => (
-                  <div
-                    key={`desk-brand-${brand.id}-${idx}`}
-                    className="group flex items-center justify-center flex-shrink-0 cursor-default px-4 py-2 transition-all duration-300"
-                  >
-                    <span className="text-[18px] md:text-[20px] font-extrabold text-slate-700/80 group-hover:text-[#006670] transition-colors duration-300 tracking-tight select-none font-display whitespace-nowrap">
-                      {brand.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+        {/* ── Section Header ─────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 md:mb-8">
+          <div>
+            <span className="text-[11px] font-extrabold tracking-[0.2em] text-[#005F63] uppercase block font-sans mb-1">
+              SHOP BY BRAND
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
+              Shop Leading Dental Brands
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl font-normal">
+              Explore authentic dental equipment, instruments, and clinical supplies from top global manufacturers.
+            </p>
           </div>
+
+          <Link
+            href="/brands"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#005F63] hover:text-[#00474a] transition-colors group shrink-0"
+          >
+            <span>View All Brands</span>
+            <ArrowRight className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-1" />
+          </Link>
         </div>
-      </section>
 
-      {/* ── Mobile View ──────────────────────────────────────────────────── */}
-      <section className="block md:hidden w-full bg-transparent px-4 py-6 select-none" id="brands-mobile">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/85 via-white/55 to-white/35 backdrop-blur-xl p-6 border border-white/95 shadow-[0_16px_36px_-8px_rgba(0,90,100,0.12)] ring-1 ring-black/5">
-
-          {/* Mobile Ambient Glows */}
-          <div className="absolute -top-16 -left-16 w-48 h-48 bg-[#006670]/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-teal-400/25 rounded-full blur-2xl pointer-events-none" />
-
-          {/* Header */}
-          <div className="relative z-10 flex flex-col items-start gap-2.5 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#006670]/10 flex items-center justify-center border border-[#006670]/20">
-                <Sparkles className="w-3.5 h-3.5 text-[#006670]" />
-              </div>
-              <h2 className="text-[21px] font-black text-slate-900 tracking-tight font-display leading-tight text-left">
-                Trusted by Leading Global Brands
-              </h2>
-            </div>
-
-            <Link
-              href="/brands"
-              className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#006670] hover:text-[#004e56] px-3 py-1.5 rounded-full bg-white/70 border border-slate-200/60 shadow-xs"
-            >
-              <span>View All Brands</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {/* Seamless Text Marquee */}
-          <div className="relative z-10 w-full overflow-hidden py-1 glass-marquee-mask">
-            <div className="glass-marquee-track-mobile flex items-center gap-8 py-1">
-              {[...marqueeItems, ...marqueeItems].map((brand, idx) => (
-                <div
-                  key={`mob-brand-${brand.id}-${idx}`}
-                  className="group flex items-center justify-center flex-shrink-0 px-2 py-1"
-                >
-                  <span className="text-[15px] font-extrabold text-slate-700/80 group-hover:text-[#006670] transition-colors duration-300 tracking-tight select-none font-display whitespace-nowrap">
+        {/* ── Brand Tiles Display ────────────────────────────────────── */}
+        {isGrid ? (
+          /* Compact Logo Grid (When 6 or fewer brands available) */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            {brands.map((brand) => (
+              <Link
+                key={brand.id}
+                href={`/brands/${brand.slug}`}
+                className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[116px] sm:h-[126px]"
+              >
+                {/* Brand Logo / Wordmark */}
+                <div className="h-11 w-full flex items-center justify-center relative">
+                  {brand.logo_url ? (
+                    <img
+                      src={getAbsoluteImageUrl(brand.logo_url)}
+                      alt={brand.name}
+                      loading="lazy"
+                      className="max-h-9 max-w-[85%] object-contain filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-200 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                        const fallback = e.currentTarget.parentElement?.querySelector('.brand-text-fallback');
+                        if (fallback) (fallback as HTMLElement).style.display = 'block';
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${
+                      brand.logo_url ? 'hidden' : 'block'
+                    }`}
+                  >
                     {brand.name}
                   </span>
                 </div>
+
+                {/* Brand Name */}
+                <span className="text-[11px] font-semibold text-slate-600 truncate max-w-full group-hover:text-[#005F63] transition-colors mt-2">
+                  {brand.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          /* Clean Horizontal Carousel (When more than 6 brands available) */
+          <div className="relative group/carousel">
+            {/* Scroll Button Left */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => handleScroll('left')}
+                aria-label="Previous brands"
+                className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-slate-200/90 shadow-md items-center justify-center text-slate-600 hover:text-[#005F63] hover:border-[#005F63]/35 transition-all duration-150 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Scrollable Track */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-none py-1 scroll-smooth snap-x snap-mandatory"
+            >
+              {brands.map((brand) => (
+                <Link
+                  key={brand.id}
+                  href={`/brands/${brand.slug}`}
+                  className="flex-shrink-0 w-[148px] sm:w-[168px] md:w-[184px] snap-start group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[116px] sm:h-[126px]"
+                >
+                  {/* Brand Logo / Wordmark */}
+                  <div className="h-11 w-full flex items-center justify-center relative">
+                    {brand.logo_url ? (
+                      <img
+                        src={getAbsoluteImageUrl(brand.logo_url)}
+                        alt={brand.name}
+                        loading="lazy"
+                        className="max-h-9 max-w-[85%] object-contain filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-200 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('.brand-text-fallback');
+                          if (fallback) (fallback as HTMLElement).style.display = 'block';
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${
+                        brand.logo_url ? 'hidden' : 'block'
+                      }`}
+                    >
+                      {brand.name}
+                    </span>
+                  </div>
+
+                  {/* Brand Name */}
+                  <span className="text-[11px] font-semibold text-slate-600 truncate max-w-full group-hover:text-[#005F63] transition-colors mt-2">
+                    {brand.name}
+                  </span>
+                </Link>
               ))}
             </div>
-          </div>
 
-        </div>
-      </section>
-    </>
+            {/* Scroll Button Right */}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => handleScroll('right')}
+                aria-label="Next brands"
+                className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-slate-200/90 shadow-md items-center justify-center text-slate-600 hover:text-[#005F63] hover:border-[#005F63]/35 transition-all duration-150 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+      </div>
+    </section>
   );
 };
 

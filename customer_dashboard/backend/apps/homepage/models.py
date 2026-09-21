@@ -12,8 +12,10 @@ Design decisions:
   existing Product records which carry their own status.
 """
 
+from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.common.image_optimizer import OptimizedImageField
 from apps.common.mixins import BaseModel
@@ -1361,5 +1363,274 @@ class DailyOfferProduct(BaseModel):
 
     def __str__(self):
         return f"{self.product.name} in {self.daily_offer.title}"
+
+
+# ============================================================
+# 8. Brand Deal Campaigns
+# ============================================================
+
+class BrandDealStatus(models.TextChoices):
+    DRAFT     = "draft",     "Draft"
+    SCHEDULED = "scheduled", "Scheduled"
+    ACTIVE    = "active",    "Active"
+    EXPIRED   = "expired",   "Expired"
+    DISABLED  = "disabled",  "Disabled"
+
+
+class BrandDeal(BaseModel):
+    """
+    Dedicated promotional campaign for a specific brand, shown as a premium
+    visual banner on the homepage and directing to /brand-deals/[slug].
+    """
+
+    class Meta:
+        verbose_name = "Brand Deal Campaign"
+        verbose_name_plural = "Brand Deal Campaigns"
+        ordering = ["sort_order", "-created_at"]
+
+    brand = models.ForeignKey(
+        "brands.Brand",
+        on_delete=models.CASCADE,
+        related_name="deal_campaigns",
+        verbose_name="Brand",
+    )
+    name = models.CharField(
+        max_length=200,
+        verbose_name="Campaign Name",
+        help_text="Internal campaign name e.g. 'Woodpecker Super Deal Week'.",
+    )
+    slug = models.SlugField(
+        max_length=220,
+        unique=True,
+        db_index=True,
+        verbose_name="Campaign Slug",
+        help_text="Unique URL slug e.g. 'woodpecker-special-offer'.",
+    )
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Promotional Headline",
+        help_text="Main banner headline e.g. 'Woodpecker Special Offer'.",
+    )
+    subtitle = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        verbose_name="Subtitle / Offer Subheading",
+        help_text="e.g. 'Special prices on selected clinical products'.",
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Campaign Description",
+        help_text="Detailed campaign description shown on the campaign landing page.",
+    )
+    promotional_tag = models.CharField(
+        max_length=100,
+        blank=True,
+        default="EXCLUSIVE BRAND OFFER",
+        verbose_name="Promotional Label / Badge",
+        help_text="e.g. 'EXCLUSIVE BRAND OFFER', 'LIMITED BRAND DEAL'.",
+    )
+    offer_text = models.CharField(
+        max_length=100,
+        blank=True,
+        default="UP TO 40% OFF",
+        verbose_name="Offer / Discount Callout",
+        help_text="e.g. 'UP TO 50% OFF', 'SPECIAL INTRODUCTORY PRICES'.",
+    )
+    cta_text = models.CharField(
+        max_length=100,
+        blank=True,
+        default="Shop the Offer →",
+        verbose_name="CTA Button Text",
+    )
+
+    # ── Artwork & Media ──
+    desktop_image = OptimizedImageField(
+        upload_to="homepage/brand_deals/",
+        null=True,
+        blank=True,
+        verbose_name="Desktop Banner Image",
+        help_text="Promotional banner artwork for desktop display.",
+    )
+    mobile_image = OptimizedImageField(
+        upload_to="homepage/brand_deals/mobile/",
+        null=True,
+        blank=True,
+        verbose_name="Mobile Banner Image",
+        help_text="Optional mobile artwork.",
+    )
+    bg_color = models.CharField(
+        max_length=50,
+        default="#005F63",
+        blank=True,
+        verbose_name="Banner Background Color",
+        help_text="Hex color code for background e.g. #005F63.",
+    )
+    text_color = models.CharField(
+        max_length=50,
+        default="#FFFFFF",
+        blank=True,
+        verbose_name="Banner Text Color",
+        help_text="Hex color code for headline and main text e.g. #FFFFFF.",
+    )
+    accent_color = models.CharField(
+        max_length=50,
+        default="#BFE8E8",
+        blank=True,
+        verbose_name="Banner Accent / Tag Color",
+        help_text="Hex color code for promotional tag and accents e.g. #BFE8E8.",
+    )
+
+    # ── Visibility & Schedule ──
+    show_on_homepage = models.BooleanField(
+        default=True,
+        verbose_name="Show on Homepage",
+        help_text="If disabled, banner will not appear on homepage but landing page remains active.",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=BrandDealStatus.choices,
+        default=BrandDealStatus.ACTIVE,
+        verbose_name="Campaign Status",
+        db_index=True,
+    )
+    start_datetime = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Start Date & Time",
+        help_text="When the campaign automatically goes live.",
+    )
+    end_datetime = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="End Date & Time",
+        help_text="When the campaign and its pricing automatically expire.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Is Active",
+        help_text="Master toggle to enable/disable the campaign.",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Sort Order",
+    )
+    is_all_brand_products = models.BooleanField(
+        default=False,
+        verbose_name="Include All Brand Products",
+        help_text="If true, all active products of this brand participate.",
+    )
+
+    @property
+    def is_currently_valid(self) -> bool:
+        """True if the campaign is active, not disabled/draft, and within date window."""
+        if not self.is_active:
+            return False
+        if self.status in [BrandDealStatus.DRAFT, BrandDealStatus.DISABLED, BrandDealStatus.EXPIRED]:
+            return False
+        now = timezone.now()
+        if self.start_datetime and now < self.start_datetime:
+            return False
+        if self.end_datetime and now > self.end_datetime:
+            return False
+        return True
+
+    @property
+    def is_homepage_eligible(self) -> bool:
+        """True if valid and configured to display on homepage."""
+        return self.is_currently_valid and self.show_on_homepage
+
+    def __str__(self):
+        return f"{self.name} ({self.brand.name})"
+
+
+class BrandDealProduct(BaseModel):
+    """
+    A specific product assigned to a Brand Deal with its custom campaign price.
+    """
+
+    class Meta:
+        verbose_name = "Brand Deal Product"
+        verbose_name_plural = "Brand Deal Products"
+        ordering = ["sort_order", "created_at"]
+        unique_together = [("brand_deal", "product")]
+
+    brand_deal = models.ForeignKey(
+        BrandDeal,
+        on_delete=models.CASCADE,
+        related_name="deal_products",
+        verbose_name="Brand Deal Campaign",
+    )
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="brand_deal_entries",
+        verbose_name="Product",
+    )
+    deal_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Campaign Deal Price (GST Inclusive)",
+        help_text="Authoritative promotional selling price for this product during the campaign.",
+    )
+    discount_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Discount Percentage",
+        help_text="Calculated automatically vs MRP or entered directly.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Is Active in Deal",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Sort Order",
+    )
+
+    def save(self, *args, **kwargs):
+        # Auto-compute discount percentage against product MRP if available
+        pricing = getattr(self.product, "pricing", None)
+        if pricing and pricing.mrp and pricing.mrp > Decimal("0.00") and self.deal_price:
+            if self.deal_price < pricing.mrp:
+                self.discount_percentage = Decimal(
+                    str(round(float((pricing.mrp - self.deal_price) / pricing.mrp * 100), 2))
+                )
+            else:
+                self.discount_percentage = Decimal("0.00")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} @ ₹{self.deal_price} in {self.brand_deal.name}"
+
+
+def get_active_brand_deal_price(product):
+    """
+    Returns Decimal deal_price if product is in an active, published BrandDeal
+    with current datetime within start_datetime and end_datetime.
+    Otherwise returns None.
+    """
+    if not product:
+        return None
+    from django.utils import timezone
+    now = timezone.now()
+    deal_item = BrandDealProduct.objects.filter(
+        product=product,
+        is_active=True,
+        brand_deal__is_active=True,
+        brand_deal__status="active",
+        brand_deal__start_datetime__lte=now,
+        brand_deal__end_datetime__gte=now,
+    ).order_by("-discount_percentage", "deal_price").first()
+    if deal_item and deal_item.deal_price is not None:
+        return deal_item.deal_price
+    return None
+
+
 
 

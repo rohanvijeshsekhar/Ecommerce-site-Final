@@ -34,6 +34,9 @@ from .models import (
     SpecialOffersPageContent,
     DailyOffer,
     DailyOfferProduct,
+    BrandDeal,
+    BrandDealProduct,
+    BrandDealStatus,
 )
 from .serializers import (
     HomepagePromoBannerSerializer,
@@ -51,6 +54,8 @@ from .serializers import (
     SpecialOffersPageContentSerializer,
     DailyOfferReadSerializer, DailyOfferWriteSerializer,
     DailyOfferProductReadSerializer, DailyOfferProductWriteSerializer,
+    BrandDealReadSerializer, BrandDealWriteSerializer,
+    BrandDealProductReadSerializer, BrandDealProductWriteSerializer,
 )
 
 
@@ -575,5 +580,158 @@ class DailyOfferViewSet(ReorderMixin, BaseModelViewSet):
             )
         serializer = DailyOfferReadSerializer(cloned, context={"request": request})
         return success_response(data=serializer.data, message="Daily offer duplicated successfully.")
+
+
+# ============================================================
+# 8. Brand Deals
+# ============================================================
+
+class BrandDealViewSet(ReorderMixin, BaseModelViewSet):
+    """
+    CRUD + Storefront endpoints for Brand Deal campaigns.
+
+    GET  /api/v1/homepage/brand-deals/           → Public list (active + homepage eligible)
+    GET  /api/v1/homepage/brand-deals/<id>/      → Public / Admin detail
+    GET  /api/v1/homepage/brand-deals/by-slug/<slug>/ → Public campaign landing page by slug
+    POST /api/v1/homepage/brand-deals/           → Admin create
+    PATCH/DELETE /api/v1/homepage/brand-deals/<id>/ → Admin update / delete
+    POST /api/v1/homepage/brand-deals/<id>/duplicate/ → Admin clone
+    PATCH /api/v1/homepage/brand-deals/reorder/   → Admin reorder
+    """
+    queryset = BrandDeal.objects.all().select_related("brand").prefetch_related(
+        "deal_products__product",
+        "deal_products__product__pricing",
+        "deal_products__product__images",
+        "deal_products__product__category",
+        "deal_products__product__brand",
+    )
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve", "by_slug"):
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return BrandDealWriteSerializer
+        return BrandDealReadSerializer
+
+    def list(self, request, *args, **kwargs):
+        is_admin = bool(request.user and request.user.is_authenticated and IsAdmin._is_admin(request.user))
+        if is_admin and request.query_params.get("all") == "true":
+            qs = self.queryset
+        elif is_admin and not request.query_params.get("public_only"):
+            qs = self.queryset
+        else:
+            # Public storefront view: must be valid and enabled for homepage
+            qs = [d for d in self.queryset if d.is_homepage_eligible]
+            serializer = BrandDealReadSerializer(qs, many=True, context={"request": request})
+            return success_response(data=serializer.data)
+
+        serializer = BrandDealReadSerializer(qs, many=True, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = BrandDealReadSerializer(instance, context={"request": request})
+        return success_response(data=serializer.data)
+
+    @action(detail=False, methods=["get"], url_path=r"by-slug/(?P<slug>[-\w]+)")
+    def by_slug(self, request, slug=None):
+        instance = BrandDeal.objects.filter(slug=slug).select_related("brand").prefetch_related(
+            "deal_products__product",
+            "deal_products__product__pricing",
+            "deal_products__product__images",
+            "deal_products__product__category",
+            "deal_products__product__brand",
+        ).first()
+        if not instance:
+            return error_response(f"Brand deal campaign '{slug}' not found.", status_code=status.HTTP_404_NOT_FOUND)
+
+        is_admin = bool(request.user and request.user.is_authenticated and IsAdmin._is_admin(request.user))
+        if not is_admin and not instance.is_currently_valid:
+            return error_response("This brand deal campaign is currently unavailable or has expired.", status_code=status.HTTP_404_NOT_FOUND)
+
+        serializer = BrandDealReadSerializer(instance, context={"request": request})
+        return success_response(data=serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        write_serializer = self.get_serializer(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+        instance = write_serializer.save()
+        read_serializer = BrandDealReadSerializer(instance, context={"request": request})
+        return success_response(
+            data=read_serializer.data,
+            message="Brand deal campaign created successfully.",
+            status_code=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        write_serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        write_serializer.is_valid(raise_exception=True)
+        instance = write_serializer.save()
+        read_serializer = BrandDealReadSerializer(instance, context={"request": request})
+        return success_response(data=read_serializer.data, message="Brand deal campaign updated successfully.")
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return success_response(message="Brand deal campaign deleted successfully.")
+
+    @action(detail=True, methods=["post"], url_path="duplicate")
+    def duplicate(self, request, pk=None):
+        original = self.get_object()
+        import uuid
+        cloned = BrandDeal.objects.create(
+            brand=original.brand,
+            name=f"{original.name} (Copy)",
+            slug=f"{original.slug}-copy-{uuid.uuid4().hex[:4]}",
+            title=original.title,
+            subtitle=original.subtitle,
+            description=original.description,
+            promotional_tag=original.promotional_tag,
+            offer_text=original.offer_text,
+            cta_text=original.cta_text,
+            bg_color=original.bg_color,
+            text_color=original.text_color,
+            accent_color=original.accent_color,
+            desktop_image=original.desktop_image,
+            mobile_image=original.mobile_image,
+            show_on_homepage=original.show_on_homepage,
+            status=BrandDealStatus.DRAFT,
+            start_datetime=original.start_datetime,
+            end_datetime=original.end_datetime,
+            is_active=False,
+            sort_order=original.sort_order + 1,
+            is_all_brand_products=original.is_all_brand_products,
+        )
+        for item in original.deal_products.all():
+            BrandDealProduct.objects.create(
+                brand_deal=cloned,
+                product=item.product,
+                deal_price=item.deal_price,
+                discount_percentage=item.discount_percentage,
+                is_active=item.is_active,
+                sort_order=item.sort_order,
+            )
+        serializer = BrandDealReadSerializer(cloned, context={"request": request})
+        return success_response(data=serializer.data, message="Brand deal campaign duplicated successfully.")
+
+
+class BrandDealProductViewSet(BaseModelViewSet):
+    """
+    CRUD on individual items within Brand Deals.
+    """
+    queryset = BrandDealProduct.objects.all().select_related("brand_deal", "product", "product__pricing")
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return BrandDealProductWriteSerializer
+        return BrandDealProductReadSerializer
+
 
 

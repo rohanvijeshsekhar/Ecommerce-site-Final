@@ -37,6 +37,8 @@ from .views import (
     SpecialOffersPageContentView,
     HomepagePromoBannerView,
     DailyOfferViewSet,
+    BrandDealViewSet,
+    BrandDealProductViewSet,
 )
 
 router = DefaultRouter()
@@ -46,6 +48,8 @@ router.register(r"homepage/brands",               HomepageBrandViewSet,         
 router.register(r"homepage/best-sellers",         BestSellerViewSet,             basename="homepage-best-sellers")
 router.register(r"homepage/featured-collections", FeaturedCollectionViewSet,     basename="homepage-featured-collections")
 router.register(r"homepage/daily-offers",         DailyOfferViewSet,             basename="homepage-daily-offers")
+router.register(r"homepage/brand-deals",          BrandDealViewSet,              basename="homepage-brand-deals")
+router.register(r"homepage/brand-deal-products",  BrandDealProductViewSet,       basename="homepage-brand-deal-products")
 router.register(r"homepage/collection-items",     FeaturedCollectionItemViewSet, basename="homepage-collection-items")
 router.register(r"homepage/offers",               LimitedTimeOfferViewSet,       basename="homepage-offers")
 router.register(r"homepage/explore-solutions",    ExploreSolutionViewSet,        basename="homepage-explore-solutions")

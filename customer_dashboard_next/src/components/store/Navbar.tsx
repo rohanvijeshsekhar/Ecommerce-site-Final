@@ -505,89 +505,206 @@ const Navbar: React.FC<NavbarProps> = ({
                   }
                 }}
               >
-                <button className="flex flex-col items-center justify-center text-slate-800 hover:text-[#006670] transition-colors cursor-pointer select-none">
-                  {isAuthenticated && user ? (
-                    <div className="w-[20px] h-[20px] rounded-full bg-[#006670] text-white text-[9px] font-black flex items-center justify-center shrink-0 mb-0.5">
+                {isAuthenticated && user ? (
+                  <button
+                    type="button"
+                    aria-label={`Account menu for ${user.full_name || 'User'}`}
+                    aria-expanded={isAccountOpen}
+                    className={`group flex items-center gap-2.5 pl-1.5 pr-2.5 py-1 rounded-xl transition-all duration-150 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[#006670] focus-visible:ring-offset-1 border border-slate-200/80 bg-white hover:bg-slate-50/90 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
+                      isAccountOpen ? 'bg-slate-50 border-[#006670]/40 ring-1 ring-[#006670]/20' : ''
+                    }`}
+                  >
+                    {/* 36px circular avatar with subtle FAAZO teal background, clean white initials, subtle border, soft shadow */}
+                    <div className="w-[36px] h-[36px] rounded-full bg-[#005B63] text-white font-bold text-xs tracking-wider flex items-center justify-center shrink-0 border border-[#005B63]/20 shadow-[0_1px_3px_rgba(0,91,99,0.18)] transition-transform duration-150 group-hover:scale-[1.02]">
                       {avatarInitials}
                     </div>
-                  ) : (
+
+                    {/* User Name & Role: beside the avatar, proper vertical alignment */}
+                    <div className="text-left min-w-0 max-w-[120px] sm:max-w-[140px] flex flex-col justify-center leading-tight">
+                      <p
+                        title={user.full_name || 'User'}
+                        className="text-[12px] font-bold text-slate-800 truncate leading-snug tracking-tight group-hover:text-slate-900 transition-colors"
+                      >
+                        {user.full_name || displayFirstName}
+                      </p>
+                      <p className="text-[10px] font-medium text-slate-400 truncate leading-tight mt-0.5 capitalize">
+                        {user.role === 'dealer'
+                          ? 'B2B Dealer'
+                          : user.role === 'admin'
+                          ? 'Administrator'
+                          : 'Clinic Account'}
+                      </p>
+                    </div>
+
+                    {/* Small dropdown indicator icon */}
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-150 shrink-0 ${
+                        isAccountOpen ? 'rotate-180 text-[#006670]' : ''
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex flex-col items-center justify-center text-slate-800 hover:text-[#006670] transition-colors cursor-pointer select-none"
+                  >
                     <User className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
-                  )}
-                  <span className="text-[10px] font-bold tracking-wider uppercase leading-none mt-0.5">
-                    {isAuthenticated && user ? displayFirstName : 'LOG IN'}
-                  </span>
-                </button>
+                    <span className="text-[10px] font-bold tracking-wider uppercase leading-none mt-0.5">
+                      LOG IN
+                    </span>
+                  </button>
+                )}
 
                 {/* Authenticated Dropdown */}
                 {isAuthenticated && isAccountOpen && user && (
                   <div
-                    className="absolute right-0 top-[56px] w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.08)] p-5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 top-[52px] w-72 bg-white rounded-2xl border border-slate-200/80 shadow-[0_16px_36px_rgba(15,23,42,0.10),0_2px_8px_rgba(15,23,42,0.04)] p-3.5 z-50 text-left select-none animate-in fade-in slide-in-from-top-2 duration-150"
                     onMouseLeave={() => setIsAccountOpen(false)}
                   >
-                    <div className="border-b border-slate-100 pb-3 mb-3">
-                      <span className="text-[10px] font-extrabold tracking-widest text-[#006670] uppercase block mb-1">
-                        {user.role === 'dealer' ? 'Dealer Portal' : 'Clinic Portal'}
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-800">{user.full_name}</h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{user.email}</p>
-                      {user.role === 'dealer' && (
-                        <span className="inline-block bg-orange-100 text-orange-800 text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5">
-                          B2B Dealer
-                        </span>
-                      )}
+                    {/* User Header Summary Card */}
+                    <div className="px-3 py-2.5 bg-slate-50/80 rounded-xl border border-slate-100 mb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-[#005B63] text-white font-bold text-xs tracking-wider flex items-center justify-center shrink-0 border border-[#005B63]/25 shadow-xs">
+                          {avatarInitials}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-bold text-slate-800 truncate leading-snug">
+                            {user.full_name}
+                          </h4>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-[#005B63]/10 text-[#005B63] leading-none mt-0.5">
+                            {user.role === 'dealer'
+                              ? 'B2B Dealer'
+                              : user.role === 'admin'
+                              ? 'Administrator'
+                              : 'Clinic Account'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate mt-2 font-normal">
+                        {user.email}
+                      </p>
                     </div>
-                    <ul className="space-y-1">
+
+                    <ul className="space-y-0.5">
                       {/* Dealer Portal link — only visible to dealer accounts */}
                       {user.role === 'dealer' && (
                         <li>
-                          <a href="#dealer-portal" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('dealer-portal'); window.scrollTo(0, 0); }}
-                            className="group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-2 shadow-2xs cursor-pointer">
+                          <a
+                            href="#dealer-portal"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setIsAccountOpen(false);
+                              setCurrentView('dealer-portal');
+                              window.scrollTo(0, 0);
+                            }}
+                            className="group flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#005B63] bg-teal-50/70 hover:bg-teal-100/90 hover:translate-x-1 transition-all duration-150 border border-teal-200/80 hover:border-teal-300 mb-1.5 shadow-2xs cursor-pointer"
+                          >
                             <div className="flex items-center gap-2.5">
                               <Handshake className="w-4 h-4 text-[#005B63] group-hover:scale-110 transition-transform duration-150" />
-                              Dealer Portal
+                              <span>Dealer Portal</span>
                             </div>
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                              user.dealer_status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                              user.dealer_status === 'rejected' ? 'bg-rose-100 text-rose-800' :
-                              'bg-amber-100 text-amber-800'
-                            }`}>{user.dealer_status ?? 'pending'}</span>
+                            <span
+                              className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                user.dealer_status === 'approved'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : user.dealer_status === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {user.dealer_status ?? 'pending'}
+                            </span>
                           </a>
                         </li>
                       )}
                       <li>
-                        <a href="#dashboard" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('dashboard'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                          <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Clinical Dashboard
+                        <a
+                          href="#dashboard"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsAccountOpen(false);
+                            setDashboardSection?.('dashboard');
+                            setCurrentView('my-orders');
+                            window.scrollTo(0, 0);
+                          }}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-[#006670] hover:bg-slate-50 transition-all duration-150 cursor-pointer w-full text-left"
+                        >
+                          <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#006670] transition-colors" />
+                          <span>Clinical Dashboard</span>
                         </a>
                       </li>
                       <li>
-                        <a href="#orders" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('orders'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                          <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> My Orders
+                        <a
+                          href="#orders"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsAccountOpen(false);
+                            setDashboardSection?.('orders');
+                            setCurrentView('my-orders');
+                            window.scrollTo(0, 0);
+                          }}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-[#006670] hover:bg-slate-50 transition-all duration-150 cursor-pointer w-full text-left"
+                        >
+                          <Package className="w-4 h-4 text-slate-400 group-hover:text-[#006670] transition-colors" />
+                          <span>My Orders</span>
                         </a>
                       </li>
                       <li>
-                        <a href="#wishlist" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('wishlist'); window.scrollTo(0, 0); }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                          <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:scale-110 transition-all duration-150" /> Wishlist
+                        <a
+                          href="#wishlist"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsAccountOpen(false);
+                            setCurrentView('wishlist');
+                            window.scrollTo(0, 0);
+                          }}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-[#006670] hover:bg-slate-50 transition-all duration-150 cursor-pointer w-full text-left"
+                        >
+                          <Heart className="w-4 h-4 text-slate-400 group-hover:text-rose-500 transition-colors" />
+                          <span>Wishlist</span>
                         </a>
                       </li>
                       <li>
-                        <a href="#cart" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setCurrentView('cart'); window.scrollTo(0, 0); }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                          <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Cart
+                        <a
+                          href="#cart"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsAccountOpen(false);
+                            setCurrentView('cart');
+                            window.scrollTo(0, 0);
+                          }}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-[#006670] hover:bg-slate-50 transition-all duration-150 cursor-pointer w-full text-left"
+                        >
+                          <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-[#006670] transition-colors" />
+                          <span>Cart</span>
                         </a>
                       </li>
                       <li>
-                        <a href="#warranty" onClick={(e) => { e.preventDefault(); setIsAccountOpen(false); setDashboardSection?.('warranty'); setCurrentView('my-orders'); window.scrollTo(0, 0); }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:text-[#006670] bg-transparent hover:bg-teal-50 hover:border-teal-200/60 border border-transparent active:bg-teal-100 hover:translate-x-1 transition-all duration-150 cursor-pointer w-full text-left">
-                          <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] group-hover:scale-110 transition-all duration-150" /> Warranty
+                        <a
+                          href="#warranty"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsAccountOpen(false);
+                            setDashboardSection?.('warranty');
+                            setCurrentView('my-orders');
+                            window.scrollTo(0, 0);
+                          }}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-[#006670] hover:bg-slate-50 transition-all duration-150 cursor-pointer w-full text-left"
+                        >
+                          <Shield className="w-4 h-4 text-slate-400 group-hover:text-[#006670] transition-colors" />
+                          <span>Warranty</span>
                         </a>
                       </li>
-                      <li className="border-t border-slate-100 pt-2 mt-2">
-                        <button onClick={() => { setIsAccountOpen(false); logout(); }}
-                          className="group flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-200/60 border border-transparent active:bg-rose-100 hover:translate-x-1 transition-all duration-150 cursor-pointer text-left">
-                          <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-150" /> Sign Out
+                      <li className="border-t border-slate-100 pt-1.5 mt-1.5">
+                        <button
+                          onClick={() => {
+                            setIsAccountOpen(false);
+                            logout();
+                          }}
+                          className="group flex items-center w-full gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50/80 transition-colors cursor-pointer text-left"
+                        >
+                          <LogOut className="w-4 h-4 text-rose-500 group-hover:text-rose-600 transition-colors" />
+                          <span>Sign Out</span>
                         </button>
                       </li>
                     </ul>
@@ -713,10 +830,10 @@ const Navbar: React.FC<NavbarProps> = ({
                       setDashboardSection?.('dashboard');
                       router.push('/profile');
                     }}
-                    className="p-1 sm:hidden rounded-full transition-all duration-300 hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-[#006670] flex items-center justify-center"
+                    className="p-1 sm:hidden rounded-full transition-all duration-150 hover:bg-slate-50 cursor-pointer text-slate-700 flex items-center justify-center"
                     aria-label="My Account"
                   >
-                    <span className="w-6 h-6 rounded-full bg-[#006670] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-[#005B63] text-white text-[10px] font-bold flex items-center justify-center shrink-0 border border-[#005B63]/20 shadow-xs">
                       {avatarInitials}
                     </span>
                   </button>
@@ -729,13 +846,13 @@ const Navbar: React.FC<NavbarProps> = ({
                       setDashboardSection?.('dashboard');
                       router.push('/profile');
                     }}
-                    className="hidden sm:flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-[#006670] hover:text-[#006670] transition-all duration-200 cursor-pointer select-none"
+                    className="hidden sm:flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-xl border border-slate-200/80 bg-white text-slate-700 hover:border-[#006670] transition-all duration-150 cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                     aria-label="My Account"
                   >
-                    <span className="w-6 h-6 rounded-full bg-[#006670] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-[#005B63] text-white text-[10px] font-bold flex items-center justify-center shrink-0 border border-[#005B63]/20 shadow-xs">
                       {avatarInitials}
                     </span>
-                    <span className="text-[10px] font-bold tracking-wider uppercase">{displayFirstName}</span>
+                    <span className="text-[11px] font-semibold text-slate-800 tracking-tight">{displayFirstName}</span>
                   </button>
                 </>
               ) : (

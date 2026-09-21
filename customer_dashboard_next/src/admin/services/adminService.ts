@@ -390,6 +390,10 @@ export const adminService = {
     const res = await api.get('brands/dropdown/');
     return res.data;
   },
+  async getProductsDropdown(): Promise<ServiceResponse<any[]>> {
+    const res = await api.get('products/', { params: { page_size: 500, status: 'active' } });
+    return res.data;
+  },
   async createBrand(data: any): Promise<ServiceResponse<Brand>> {
     const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined;
     const res = await api.post('brands/', data, config);
@@ -825,6 +829,52 @@ export const homepageService = {
     return res.data;
   },
 
+  // Brand Deals
+  async getBrandDeals(params?: { all?: boolean; public_only?: boolean }): Promise<ServiceResponse<import('../types/admin').BrandDeal[]>> {
+    const res = await api.get('homepage/brand-deals/', { params: { all: params?.all ?? true, ...params } });
+    return res.data;
+  },
+  async getBrandDealDetail(id: string): Promise<ServiceResponse<import('../types/admin').BrandDeal>> {
+    const res = await api.get(`homepage/brand-deals/${id}/`);
+    return res.data;
+  },
+  async getBrandDealBySlug(slug: string): Promise<ServiceResponse<import('../types/admin').BrandDeal>> {
+    const res = await api.get(`homepage/brand-deals/by-slug/${slug}/`);
+    return res.data;
+  },
+  async createBrandDeal(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').BrandDeal>> {
+    const res = await api.post('homepage/brand-deals/', data);
+    return res.data;
+  },
+  async updateBrandDeal(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').BrandDeal>> {
+    const res = await api.patch(`homepage/brand-deals/${id}/`, data);
+    return res.data;
+  },
+  async deleteBrandDeal(id: string): Promise<ServiceResponse<void>> {
+    const res = await api.delete(`homepage/brand-deals/${id}/`);
+    return res.data;
+  },
+  async duplicateBrandDeal(id: string): Promise<ServiceResponse<import('../types/admin').BrandDeal>> {
+    const res = await api.post(`homepage/brand-deals/${id}/duplicate/`);
+    return res.data;
+  },
+  async reorderBrandDeals(order: { id: string; sort_order: number }[]): Promise<ServiceResponse<void>> {
+    const res = await api.patch('homepage/brand-deals/reorder/', order);
+    return res.data;
+  },
+  async addBrandDealProduct(data: any): Promise<ServiceResponse<import('../types/admin').BrandDealProduct>> {
+    const res = await api.post('homepage/brand-deal-products/', data);
+    return res.data;
+  },
+  async updateBrandDealProduct(id: string, data: any): Promise<ServiceResponse<import('../types/admin').BrandDealProduct>> {
+    const res = await api.patch(`homepage/brand-deal-products/${id}/`, data);
+    return res.data;
+  },
+  async deleteBrandDealProduct(id: string): Promise<ServiceResponse<void>> {
+    const res = await api.delete(`homepage/brand-deal-products/${id}/`);
+    return res.data;
+  },
+
   async getOffers(): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer[]>> {
     const res = await api.get('homepage/offers/');
     return res.data;
@@ -942,3 +992,18 @@ export const adminOrdersService = {
     document.body.removeChild(link);
   },
 };
+
+export const brandDealsService = {
+  getAll: (params?: { all?: boolean; public_only?: boolean }) => homepageService.getBrandDeals(params),
+  getDetail: (id: string) => homepageService.getBrandDealDetail(id),
+  getBySlug: (slug: string) => homepageService.getBrandDealBySlug(slug),
+  create: (data: FormData | Record<string, any>) => homepageService.createBrandDeal(data),
+  update: (id: string, data: FormData | Record<string, any>) => homepageService.updateBrandDeal(id, data),
+  delete: (id: string) => homepageService.deleteBrandDeal(id),
+  duplicate: (id: string) => homepageService.duplicateBrandDeal(id),
+  reorder: (order: { id: string; sort_order: number }[]) => homepageService.reorderBrandDeals(order),
+  addProduct: (data: any) => homepageService.addBrandDealProduct(data),
+  updateProduct: (id: string, data: any) => homepageService.updateBrandDealProduct(id, data),
+  deleteProduct: (id: string) => homepageService.deleteBrandDealProduct(id),
+};
+

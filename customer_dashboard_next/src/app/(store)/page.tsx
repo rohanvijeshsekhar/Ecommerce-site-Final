@@ -24,6 +24,7 @@ export default async function HomePage() {
     collectionsRes,
     solutionsRes,
     dailyOffersRes,
+    brandDealsRes,
   ] = await Promise.all([
     serverFetch<any[]>('homepage/hero/', { revalidate }),
     serverFetch<any[]>('homepage/categories/', { revalidate }),
@@ -33,6 +34,7 @@ export default async function HomePage() {
     serverFetch<any[]>('homepage/featured-collections/', { revalidate }),
     serverFetch<any[]>('solutions/', { revalidate, params: { homepage: 'true', limit: 12 } }),
     serverFetch<any[]>('homepage/daily-offers/', { revalidate }),
+    serverFetch<any[]>('homepage/brand-deals/', { revalidate }),
   ]);
 
   const initialSlides = heroRes.data || [];
@@ -43,6 +45,7 @@ export default async function HomePage() {
   const initialCollections = collectionsRes.data || [];
   const initialSolutions = solutionsRes.data || [];
   const initialDailyOffers = dailyOffersRes.data || [];
+  const initialBrandDeals = brandDealsRes.data || [];
 
   return (
     <HomeClient
@@ -54,6 +57,7 @@ export default async function HomePage() {
       initialCollections={initialCollections}
       initialSolutions={initialSolutions}
       initialDailyOffers={initialDailyOffers}
+      initialBrandDeals={initialBrandDeals}
     />
   );
 }

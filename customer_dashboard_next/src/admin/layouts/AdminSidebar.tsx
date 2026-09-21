@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Package, Tag, Award, Layers, DollarSign,
   ShoppingCart, Users, Handshake, Shield, HeadphonesIcon,
@@ -26,6 +26,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'homepage',   label: 'Homepage',      icon: 'LayoutTemplate',   path: '/admin/homepage'   },
       { id: 'daily-offers', label: 'Daily Offers & Deals', icon: 'Flame',   path: '/admin/daily-offers' },
+      { id: 'brand-deals',  label: 'Brand Deals & Offers', icon: 'Award',   path: '/admin/brand-deals' },
       { id: 'products',   label: 'Products',      icon: 'Package',          path: '/admin/products'   },
       { id: 'categories', label: 'Categories',    icon: 'Tag',              path: '/admin/categories' },
       { id: 'brands',     label: 'Brands',        icon: 'Award',            path: '/admin/brands'     },
@@ -106,6 +107,7 @@ const AdminSidebar: React.FC = () => {
     : 'A';
 
   const userName = activeAdmin ? activeAdmin.full_name?.trim() || activeAdmin.email : 'Admin User';
+  const userRole = ROLE_LABELS[adminRole] || 'Administrator';
 
   const NavItem = ({ item }: { item: NavGroup['items'][0] }) => {
     const Icon = ICON_MAP[item.icon];
@@ -162,7 +164,7 @@ const AdminSidebar: React.FC = () => {
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white/85 backdrop-blur-2xl border-r border-slate-200/80 shadow-[4px_0_30px_rgba(0,0,0,0.02)] select-none relative overflow-hidden">
+    <div className="flex flex-col h-full bg-white/85 backdrop-blur-2xl border-r border-slate-200/80 shadow-[4px_0_30px_rgba(0,0,0,0.02)] select-none relative">
       <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-[#005F63]/[0.04] to-transparent pointer-events-none" />
 
       <div className={`flex items-center px-6 py-6 border-b border-slate-200/60 bg-white/40 backdrop-blur-md shrink-0 relative z-10
@@ -225,42 +227,48 @@ const AdminSidebar: React.FC = () => {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-200/70 bg-gradient-to-br from-slate-50/90 via-white/70 to-slate-50/90 backdrop-blur-xl shrink-0 relative z-10">
+      <div className={`border-t border-slate-200/80 bg-white shrink-0 relative z-20 ${isSidebarCollapsed ? 'p-2 flex justify-center' : 'p-2.5'}`}>
         {!isSidebarCollapsed ? (
-          <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-white/90 transition-all duration-200 border border-slate-200/50 hover:border-slate-300 shadow-2xs">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#005F63]/15 to-[#0B7C80]/10 text-[#005F63] flex items-center justify-center font-black text-sm shrink-0 border border-[#005F63]/20 shadow-2xs">
+          <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200/70 hover:border-slate-300/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-150 group">
+            {/* 40-44px circular avatar with subtle FAAZO teal background, clean white initials, subtle border, soft shadow */}
+            <div className="w-[42px] h-[42px] rounded-full bg-[#005F63] text-white font-bold text-xs tracking-wider flex items-center justify-center shrink-0 border border-[#005F63]/20 shadow-[0_1px_3px_rgba(0,95,99,0.18)] select-none">
               {userInitials}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-extrabold text-slate-800 truncate leading-tight">{userName}</p>
-              <p className="text-[10px] text-slate-400 truncate mt-0.5 font-semibold">
-                {ROLE_LABELS[adminRole] || 'Administrator'}
+
+            {/* User Name & Role: beside the avatar, proper vertical alignment */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <p title={userName} className="text-[13px] font-semibold text-slate-800 truncate leading-snug tracking-tight group-hover:text-slate-900 transition-colors">
+                {userName}
+              </p>
+              <p title={userRole} className="text-[11px] font-normal text-slate-400 truncate leading-tight mt-0.5">
+                {userRole}
               </p>
             </div>
+
+            {/* Sign out button */}
             <button
               onClick={handleLogout}
               title="Sign out"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50/50 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50/70 transition-colors shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative group/avatar">
-              <button
-                onClick={handleLogout}
-                className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#005F63]/15 to-[#0B7C80]/10 text-[#005F63] flex items-center justify-center font-black text-sm border border-[#005F63]/20 hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50/50 transition-all duration-250 group"
-              >
-                <span className="group-hover:hidden">{userInitials}</span>
-                <LogOut className="w-3.5 h-3.5 hidden group-hover:block" />
-              </button>
-              
-              <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200">
-                <div className="bg-slate-900 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
-                  {userName} (Logout)
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
-                </div>
+          <div className="relative group/avatar flex justify-center">
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="w-[42px] h-[42px] rounded-full bg-[#005F63] text-white font-bold text-xs tracking-wider flex items-center justify-center border border-[#005F63]/20 hover:border-rose-400 hover:bg-rose-600 shadow-[0_1px_3px_rgba(0,95,99,0.18)] transition-all duration-150 group"
+            >
+              <span className="group-hover:hidden select-none">{userInitials}</span>
+              <LogOut className="w-4 h-4 hidden group-hover:block text-white" />
+            </button>
+
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-150">
+              <div className="bg-slate-900 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                {userName} (Logout)
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
               </div>
             </div>
           </div>

@@ -25,6 +25,8 @@ def calculate_checkout_pricing(user, cart_items, delivery_method, address=None, 
     from apps.common.tax_engine import calculate_order_tax_summary, determine_is_intra_state, get_warehouse_state
     from .cod import calculate_cod_fee, check_cod_eligibility
 
+    from apps.homepage.models import get_active_brand_deal_price
+
     mrp_subtotal = Decimal("0.00")
     line_items = []
 
@@ -32,7 +34,14 @@ def calculate_checkout_pricing(user, cart_items, delivery_method, address=None, 
         pricing = getattr(item.product, 'pricing', None)
         if pricing:
             mrp_subtotal += pricing.mrp * item.quantity
-            price = pricing.dealer_price if (user.role == 'dealer' and user.dealer_status == 'approved' and pricing.dealer_price is not None) else pricing.effective_price
+            deal_price = get_active_brand_deal_price(item.product)
+            if deal_price is not None:
+                price = deal_price
+            elif user.role == 'dealer' and getattr(user, 'dealer_status', '') == 'approved' and pricing.dealer_price is not None:
+                price = pricing.dealer_price
+            else:
+                price = pricing.effective_price
+
             gst_rate = pricing.gst_percentage
             hsn_code = getattr(pricing, 'hsn_code', '') or ''
             line_items.append({

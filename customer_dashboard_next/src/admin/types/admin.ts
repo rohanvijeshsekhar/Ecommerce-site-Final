@@ -102,7 +102,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 
 export type AdminSection =
   | 'dashboard'
-  | 'homepage' | 'daily-offers'
+  | 'homepage' | 'daily-offers' | 'brand-deals'
   | 'products' | 'categories' | 'brands' | 'combos' | 'offers' | 'solutions' | 'bestsellers' | 'reviews'
   | 'inventory' | 'pricing'
   | 'orders' | 'returns' | 'fulfillment'
@@ -778,3 +778,65 @@ export interface DealerStats {
   rejected: number;
   approval_rate: number;
 }
+
+// ── Brand Deals Module ────────────────────────────────────────────────────────
+
+export interface BrandDealProduct {
+  id: string;
+  brand_deal: string;
+  product: string;
+  product_id?: string;
+  product_name: string;
+  product_slug: string;
+  product_sku: string;
+  product_image_url: string | null;
+  product_mrp: number;
+  product_selling_price: number;
+  deal_price: number;
+  discount_percentage: number;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BrandDeal {
+  id: string;
+  brand: string;
+  brand_id?: string;
+  brand_name: string;
+  brand_slug: string;
+  brand_logo_url: string | null;
+  name: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  description?: string;
+  promotional_tag?: string;
+  offer_text?: string;
+  badge_text: string;
+  cta_text: string;
+  discount_percentage: number | null;
+  banner_desktop: string | null;
+  banner_mobile: string | null;
+  desktop_image_url?: string | null;
+  mobile_image_url?: string | null;
+  bg_color: string;
+  text_color: string;
+  accent_color: string;
+  start_datetime: string;
+  end_datetime: string;
+  status: 'draft' | 'scheduled' | 'active' | 'expired' | 'paused';
+  status_display?: string;
+  is_active: boolean;
+  show_on_homepage: boolean;
+  is_all_brand_products?: boolean;
+  sort_order: number;
+  product_count?: number;
+  deal_products?: BrandDealProduct[];
+  is_currently_valid?: boolean;
+  is_homepage_eligible?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+

@@ -13,6 +13,7 @@ import WhyChooseBanner from '@/components/store/WhyChooseBanner';
 const FeaturedCombos = dynamic(() => import('@/components/store/FeaturedCombos'), { ssr: true });
 const ExploreSolutions = dynamic(() => import('@/components/store/ExploreSolutions'), { ssr: true });
 import WhyChoosePanel from '@/components/store/WhyChoosePanel';
+import BrandDealsSection from '@/components/store/BrandDealsSection';
 const Testimonials = dynamic(() => import('@/components/store/Testimonials'), { ssr: true });
 const Recommended = dynamic(() => import('@/components/store/Recommended'), { ssr: true });
 import ProfessionalsChoice from '@/components/store/ProfessionalsChoice';
@@ -27,6 +28,7 @@ interface HomeClientProps {
   initialCollections?: any[];
   initialSolutions?: any[];
   initialDailyOffers?: any[];
+  initialBrandDeals?: any[];
 }
 
 export default function HomeClient({
@@ -38,6 +40,7 @@ export default function HomeClient({
   initialCollections,
   initialSolutions,
   initialDailyOffers,
+  initialBrandDeals,
 }: HomeClientProps) {
   const router = useRouter();
   const store = useStore();
@@ -151,6 +154,7 @@ export default function HomeClient({
       />
       <ExploreSolutions initialSolutions={initialSolutions} />
       <WhyChoosePanel />
+      <BrandDealsSection initialBrandDeals={initialBrandDeals} />
       <Testimonials />
       <Recommended
         onProductClick={handleProductClick}
