@@ -627,4 +627,12 @@ GA4_SERVICE_ACCOUNT_JSON = env("GA4_SERVICE_ACCOUNT_JSON", default=None)
 GOOGLE_APPLICATION_CREDENTIALS = env("GOOGLE_APPLICATION_CREDENTIALS", default=None)
 
 
-
+# ============================================================
+# Cache Configuration
+# ============================================================
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "faazo-default-locmem",
+    }
+}

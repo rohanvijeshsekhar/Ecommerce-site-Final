@@ -116,9 +116,10 @@ class RegisterView(APIView):
     """
     POST /api/v1/auth/register/
 
-    Register a new customer account.
-    Sends a welcome + email verification email on success.
-    Returns JWT tokens immediately — email verification is needed only for ordering.
+    Customer registration endpoint.
+    Direct account creation without phone OTP verification is prohibited.
+    If otp_code is provided along with valid registration details, verifies OTP and creates account.
+    Otherwise, directs client to initiate OTP verification via /api/v1/auth/pre-register/.
     """
 
     permission_classes = [AllowAny]
@@ -130,47 +131,18 @@ class RegisterView(APIView):
         request=RegisterSerializer,
         responses={
             201: OpenApiResponse(description="Account created. Verification email sent."),
-            400: OpenApiResponse(description="Validation error."),
+            400: OpenApiResponse(description="Validation error or unverified OTP."),
         },
     )
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if not serializer.is_valid():
-            return _error("Registration failed.", errors=serializer.errors, status_code=400)
+        otp_code = request.data.get("otp_code", "").strip()
+        if not otp_code:
+            return _error(
+                "Phone verification is mandatory. Direct account creation without SMS OTP is not permitted. Please use /api/v1/auth/pre-register/ to receive an OTP and /api/v1/auth/verify-and-register/ to complete registration.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
-        data = serializer.validated_data
-        phone = data.get("phone_number") or None
-
-        user = User.objects.create_user(
-            email=data["email"],
-            full_name=data["full_name"],
-            password=data["password"],
-            phone_number=phone,
-            role=UserRole.CUSTOMER,
-        )
-
-        # Generate tokens — user can browse immediately
-        tokens = JWTService.generate_tokens_for_user(user)
-
-        # Send welcome + verify email
-        raw_token = TokenService.generate_email_verification_token(user)
-        EmailService.send_welcome_verify(user, raw_token)
-
-        logger.info(
-            "[REGISTER] Customer %s registered from IP %s.",
-            user.email,
-            _get_client_ip(request),
-        )
-
-        return _ok(
-            data={
-                "access": tokens["access"],
-                "refresh": tokens["refresh"],
-                "user": UserMinimalSerializer(user).data,
-            },
-            message="Account created successfully. Please check your email to verify your address.",
-            status_code=status.HTTP_201_CREATED,
-        )
+        return VerifyAndRegisterView().post(request)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -204,26 +176,10 @@ class PreRegisterView(APIView):
         phone = data.get("phone_number") or None
 
         if not phone:
-            # No phone number — create account immediately (no OTP needed)
-            user = User.objects.create_user(
-                email=data["email"],
-                full_name=data["full_name"],
-                password=data["password"],
-                role=UserRole.CUSTOMER,
-            )
-            tokens = JWTService.generate_tokens_for_user(user)
-            raw_token = TokenService.generate_email_verification_token(user)
-            EmailService.send_welcome_verify(user, raw_token)
-            logger.info("[PRE-REGISTER] No phone — account created directly for %s.", user.email)
-            return _ok(
-                data={
-                    "otp_required": False,
-                    "access": tokens["access"],
-                    "refresh": tokens["refresh"],
-                    "user": UserMinimalSerializer(user).data,
-                },
-                message="Account created successfully.",
-                status_code=status.HTTP_201_CREATED,
+            return _error(
+                "Registration failed.",
+                errors={"phone_number": ["Phone number is required."]},
+                status_code=400,
             )
 
         # Check email uniqueness before sending OTP
@@ -234,25 +190,40 @@ class PreRegisterView(APIView):
         if User.objects.filter(phone_number=phone).exists():
             return _error("Registration failed.", errors={"phone_number": ["This phone number is already registered."]}, status_code=400)
 
-        # Store pending registration data in cache (15 min TTL)
-        cache_key = f"pending_reg_{phone}"
-        cache.set(cache_key, {
+        # Store pending registration data in cache (30 min TTL)
+        from apps.common.utils import normalize_phone_number
+        try:
+            norm_phone = normalize_phone_number(phone, allow_empty=False)
+        except Exception:
+            norm_phone = phone
+
+        pending_data = {
             "email": data["email"],
             "full_name": data["full_name"],
             "password": data["password"],
-            "phone_number": phone,
-        }, timeout=900)  # 15 minutes
+            "phone_number": norm_phone,
+        }
+        cache_key = f"pending_reg_{norm_phone}"
+        cache.set(cache_key, pending_data, timeout=1800)  # 30 minutes
+        if phone != norm_phone:
+            cache.set(f"pending_reg_{phone}", pending_data, timeout=1800)
 
         # Send OTP
-        success, msg = OTPService.send_otp(phone, "registration", ip_address=_get_client_ip(request))
+        success, msg = OTPService.send_otp(norm_phone, "registration", ip_address=_get_client_ip(request))
         if not success:
             cache.delete(cache_key)
-            return _error(f"Failed to send OTP: {msg}", status_code=500)
+            if phone != norm_phone:
+                cache.delete(f"pending_reg_{phone}")
+            # Distinguish cooldown/rate-limit failures (client error) from unexpected errors
+            lower_msg = msg.lower()
+            if "wait" in lower_msg or "rate" in lower_msg or "limit" in lower_msg or "too many" in lower_msg:
+                return _error(f"Failed to send OTP: {msg}", status_code=status.HTTP_429_TOO_MANY_REQUESTS)
+            return _error(f"Failed to send OTP: {msg}", status_code=status.HTTP_400_BAD_REQUEST)
 
-        logger.info("[PRE-REGISTER] OTP sent to %s for email %s.", phone, data["email"])
+        logger.info("[PRE-REGISTER] OTP sent to %s for email %s.", norm_phone, data["email"])
         return _ok(
-            data={"otp_required": True, "phone": phone},
-            message=f"OTP sent to {phone}. Please verify to complete registration.",
+            data={"otp_required": True, "phone": norm_phone},
+            message=f"OTP sent to {norm_phone}. Please verify to complete registration.",
             status_code=status.HTTP_200_OK,
         )
 
@@ -268,7 +239,7 @@ class VerifyAndRegisterView(APIView):
 
     Step 2 of OTP-first registration.
     Verifies the OTP and creates the user account only on success.
-    Body: { phone_number, otp_code }
+    Body: { phone_number, otp_code, email?, full_name?, password? }
     """
 
     permission_classes = [AllowAny]
@@ -307,6 +278,20 @@ class VerifyAndRegisterView(APIView):
         if not pending and phone != norm_phone:
             # Fallback check for unnormalized cache key if any
             pending = cache.get(f"pending_reg_{phone}")
+
+        if not pending:
+            # Fallback for cache misses across workers/restarts/deployments:
+            # If the client provided the registration payload directly alongside the verified OTP
+            fb_email = request.data.get("email")
+            fb_full_name = request.data.get("full_name")
+            fb_password = request.data.get("password")
+            if fb_email and fb_password and fb_full_name:
+                pending = {
+                    "email": str(fb_email).strip().lower(),
+                    "full_name": str(fb_full_name).strip(),
+                    "password": fb_password,
+                    "phone_number": norm_phone,
+                }
 
         if pending:
             # Final uniqueness check (race condition guard)

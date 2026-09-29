@@ -156,9 +156,13 @@ class RegisterSerializer(serializers.Serializer):
     )
     phone_number = serializers.CharField(
         max_length=15,
-        required=False,
-        allow_blank=True,
-        help_text="E.164 format recommended. Optional.",
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "Phone number is required.",
+            "blank": "Phone number cannot be blank.",
+        },
+        help_text="E.164 format (+91XXXXXXXXXX) required.",
     )
     password = serializers.CharField(
         write_only=True,
@@ -178,16 +182,16 @@ class RegisterSerializer(serializers.Serializer):
         return email
 
     def validate_phone_number(self, value: str) -> str:
-        if not value:
-            return value
+        if not value or not str(value).strip():
+            raise serializers.ValidationError("Phone number is required.")
         from apps.common.utils import normalize_phone_number
         try:
-            value = normalize_phone_number(value, allow_empty=True)
+            value = normalize_phone_number(str(value).strip(), allow_empty=False)
         except DjangoValidationError as exc:
             raise serializers.ValidationError(list(exc.messages) if hasattr(exc, "messages") else str(exc)) from exc
 
         if not value:
-            return value
+            raise serializers.ValidationError("Please provide a valid phone number.")
 
         if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError(

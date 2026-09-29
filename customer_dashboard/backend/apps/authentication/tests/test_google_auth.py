@@ -42,7 +42,7 @@ class GoogleAuthV2Tests(APITestCase):
         """Verify automatic account creation for new Google users."""
         mock_verify.return_value = self.valid_google_payload
 
-        response = self.client.post(self.url, {"id_token": "valid-dummy-id-token"}, format="json")
+        response = self.client.post(self.url, {"id_token": "valid-dummy-id-token", "mode": "signup"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["success"])

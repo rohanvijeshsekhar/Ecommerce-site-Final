@@ -136,3 +136,15 @@ LOGGING = {
 # There is no fallback. Missing Redis = visible failure.
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = False
+
+# ============================================================
+# Cache – Shared Redis in Production (Multi-Worker Safe)
+# ============================================================
+_redis_url = env("REDIS_URL", default="")
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _redis_url,
+        }
+    }
