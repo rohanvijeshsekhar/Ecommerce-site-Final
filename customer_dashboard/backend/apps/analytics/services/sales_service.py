@@ -74,8 +74,13 @@ class SalesAnalyticsService:
         """
         cur_start, cur_end, prev_start, prev_end, interval = cls._get_date_ranges(period)
 
-        # Base valid orders filter (non-cancelled)
-        valid_orders_q = ~Q(status=OrderStatus.CANCELLED)
+        # Base valid orders filter (paid/confirmed lifecycle only — excludes cancelled, failed, pending_payment)
+        valid_orders_q = Q(status__in=[
+            OrderStatus.PROCESSING,
+            OrderStatus.PACKED,
+            OrderStatus.SHIPPED,
+            OrderStatus.DELIVERED,
+        ])
 
         # Query orders in current period
         cur_orders = (
@@ -147,7 +152,8 @@ class SalesAnalyticsService:
                 })
         else:
             # Daily buckets for 7d or 30d
-            num_days = 30 if period in ("30d", "30days", "month") else 7
+            p_norm = (period or "7d").lower().strip()
+            num_days = 30 if p_norm in ("30d", "30days", "month") else 7
             daily_buckets: Dict[str, Dict[str, Any]] = {}
 
             for d in range(num_days):

@@ -395,13 +395,11 @@ export const adminService = {
     return res.data;
   },
   async createBrand(data: any): Promise<ServiceResponse<Brand>> {
-    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined;
-    const res = await api.post('brands/', data, config);
+    const res = await api.post('brands/', data);
     return res.data;
   },
   async updateBrand(slug: string, data: any): Promise<ServiceResponse<Brand>> {
-    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined;
-    const res = await api.patch(`brands/${slug}/`, data, config);
+    const res = await api.patch(`brands/${slug}/`, data);
     return res.data;
   },
   async deleteBrand(slug: string): Promise<ServiceResponse<void>> {
@@ -433,13 +431,11 @@ export const adminService = {
     return res.data;
   },
   async createCategory(data: any): Promise<ServiceResponse<Category>> {
-    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined;
-    const res = await api.post('categories/', data, config);
+    const res = await api.post('categories/', data);
     return res.data;
   },
   async updateCategory(slug: string, data: any): Promise<ServiceResponse<Category>> {
-    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined;
-    const res = await api.patch(`categories/${slug}/`, data, config);
+    const res = await api.patch(`categories/${slug}/`, data);
     return res.data;
   },
   async deleteCategory(slug: string): Promise<ServiceResponse<void>> {
@@ -683,11 +679,11 @@ export const homepageService = {
     return res.data;
   },
   async createHeroSlide(data: FormData): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
-    const res = await api.post('homepage/hero/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/hero/', data);
     return res.data;
   },
   async updateHeroSlide(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
-    const res = await api.patch(`homepage/hero/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/hero/${id}/`, data);
     return res.data;
   },
   async deleteHeroSlide(id: string): Promise<ServiceResponse<void>> {
@@ -704,11 +700,11 @@ export const homepageService = {
     return res.data;
   },
   async createHomepageCategory(data: FormData): Promise<ServiceResponse<import('../types/admin').HomepageCategory>> {
-    const res = await api.post('homepage/categories/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/categories/', data);
     return res.data;
   },
   async updateHomepageCategory(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').HomepageCategory>> {
-    const res = await api.patch(`homepage/categories/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/categories/${id}/`, data);
     return res.data;
   },
   async deleteHomepageCategory(id: string): Promise<ServiceResponse<void>> {
@@ -725,11 +721,11 @@ export const homepageService = {
     return res.data;
   },
   async createHomepageBrand(data: FormData): Promise<ServiceResponse<import('../types/admin').HomepageBrand>> {
-    const res = await api.post('homepage/brands/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/brands/', data);
     return res.data;
   },
   async updateHomepageBrand(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').HomepageBrand>> {
-    const res = await api.patch(`homepage/brands/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/brands/${id}/`, data);
     return res.data;
   },
   async deleteHomepageBrand(id: string): Promise<ServiceResponse<void>> {
@@ -746,11 +742,11 @@ export const homepageService = {
     return res.data;
   },
   async createBestSeller(data: FormData): Promise<ServiceResponse<import('../types/admin').BestSeller>> {
-    const res = await api.post('homepage/best-sellers/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/best-sellers/', data);
     return res.data;
   },
   async updateBestSeller(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').BestSeller>> {
-    const res = await api.patch(`homepage/best-sellers/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/best-sellers/${id}/`, data);
     return res.data;
   },
   async deleteBestSeller(id: string): Promise<ServiceResponse<void>> {
@@ -768,12 +764,12 @@ export const homepageService = {
   },
   async createFeaturedCollection(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
     const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
-    const res = await api.post('homepage/featured-collections/', data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    const res = await api.post('homepage/featured-collections/', data);
     return res.data;
   },
   async updateFeaturedCollection(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').FeaturedCollection>> {
     const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
-    const res = await api.patch(`homepage/featured-collections/${id}/`, data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    const res = await api.patch(`homepage/featured-collections/${id}/`, data);
     return res.data;
   },
   async deleteFeaturedCollection(id: string): Promise<ServiceResponse<void>> {
@@ -808,12 +804,12 @@ export const homepageService = {
   },
   async createDailyOffer(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
     const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
-    const res = await api.post('homepage/daily-offers/', data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    const res = await api.post('homepage/daily-offers/', data);
     return res.data;
   },
   async updateDailyOffer(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').DailyOffer>> {
     const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
-    const res = await api.patch(`homepage/daily-offers/${id}/`, data, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    const res = await api.patch(`homepage/daily-offers/${id}/`, data);
     return res.data;
   },
   async deleteDailyOffer(id: string): Promise<ServiceResponse<void>> {
@@ -880,11 +876,11 @@ export const homepageService = {
     return res.data;
   },
   async createOffer(data: FormData): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
-    const res = await api.post('homepage/offers/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/offers/', data);
     return res.data;
   },
   async updateOffer(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
-    const res = await api.patch(`homepage/offers/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/offers/${id}/`, data);
     return res.data;
   },
   async deleteOffer(id: string): Promise<ServiceResponse<void>> {
@@ -897,11 +893,11 @@ export const homepageService = {
     return res.data;
   },
   async createExploreSolution(data: FormData): Promise<ServiceResponse<import('../types/admin').ExploreSolution>> {
-    const res = await api.post('homepage/explore-solutions/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/explore-solutions/', data);
     return res.data;
   },
   async updateExploreSolution(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').ExploreSolution>> {
-    const res = await api.patch(`homepage/explore-solutions/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/explore-solutions/${id}/`, data);
     return res.data;
   },
   async deleteExploreSolution(id: string): Promise<ServiceResponse<void>> {
@@ -918,11 +914,11 @@ export const homepageService = {
     return res.data;
   },
   async createTestimonial(data: FormData): Promise<ServiceResponse<import('../types/admin').Testimonial>> {
-    const res = await api.post('homepage/testimonials/', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.post('homepage/testimonials/', data);
     return res.data;
   },
   async updateTestimonial(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').Testimonial>> {
-    const res = await api.patch(`homepage/testimonials/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const res = await api.patch(`homepage/testimonials/${id}/`, data);
     return res.data;
   },
   async deleteTestimonial(id: string): Promise<ServiceResponse<void>> {

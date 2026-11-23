@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { CartItem } from '../types/pendingAction';
@@ -51,7 +51,9 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const router = useRouter();
-  const { isAuthenticated, user, pendingAction, setPendingAction } = useAuth();
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
+  const { isAuthenticated, isLoading: authLoading, user, pendingAction, setPendingAction } = useAuth();
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('dashboard');
@@ -171,8 +173,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Sync cart from backend or local storage
+  // Sync cart from backend or local storage (skip on /admin routes & wait for auth resolution)
   useEffect(() => {
+    if (isAdminRoute || authLoading) return;
     if (isAuthenticated) {
       const loadCart = async () => {
         setCartLoading(true);
@@ -202,7 +205,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       setCartItemsState(localCart);
     }
-  }, [isAuthenticated, localCart]);
+  }, [isAuthenticated, authLoading, isAdminRoute, localCart]);
 
   // Login sync: guest cart to backend cart
   useEffect(() => {
@@ -319,8 +322,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Load order history from backend when authenticated
+  // Load order history from backend when authenticated (skip on /admin routes & wait for auth resolution)
   useEffect(() => {
+    if (isAdminRoute || authLoading) return;
     if (isAuthenticated) {
       const loadOrders = async () => {
         try {
@@ -357,7 +361,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       setOrders([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isAdminRoute]);
 
   const addItemToCart = (item: CartItem) => {
     setCartItems((prev) => {

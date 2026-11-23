@@ -37,8 +37,17 @@ class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         is_allowed = bool(request.user and request.user.is_authenticated and self._is_admin(request.user))
         if not is_allowed:
+            from django.conf import settings
             from apps.authentication.services.audit_service import AuditService
-            ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR")
+
+            xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
+            trusted_proxies = getattr(settings, "TRUSTED_PROXY_COUNT", 0)
+            if xff and trusted_proxies > 0:
+                ips = [p.strip() for p in xff.split(",") if p.strip()]
+                idx = max(0, len(ips) - trusted_proxies)
+                ip = ips[idx] if ips else request.META.get("REMOTE_ADDR")
+            else:
+                ip = request.META.get("REMOTE_ADDR")
             ua = request.META.get("HTTP_USER_AGENT", "")
             user = request.user if getattr(request.user, "is_authenticated", False) else None
             user_id = str(user.id) if user else "anonymous"

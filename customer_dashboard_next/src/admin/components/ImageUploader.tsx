@@ -47,9 +47,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const processFile = (file: File) => {
     setError(null);
     // Validation
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      setError("Unsupported file format. Please upload JPG, PNG, WEBP or GIF.");
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml', 'image/bmp', 'image/tiff'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type)) {
+      setError("Unsupported file format. Please upload JPG, PNG, WEBP, AVIF, or GIF.");
       return;
     }
     const maxSize = 5 * 1024 * 1024; // 5MB
@@ -161,7 +161,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-700">Drag image here or click to browse</p>
-            <p className="text-[10px] text-slate-400 mt-1">Supports JPG, PNG, WEBP, GIF (Max 5MB)</p>
+            <p className="text-[10px] text-slate-400 mt-1">Supports JPG, PNG, WEBP, AVIF, GIF (Max 5MB)</p>
           </div>
         </div>
       )}
@@ -174,7 +174,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*"
         className="hidden"
       />
 
@@ -185,6 +185,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           onClose={() => setIsCropModalOpen(false)}
           imageSrc={cropImageSrc}
           aspectRatio={finalAspectRatio}
+          originalFile={originalFile}
           onCropSave={handleCropSave}
         />
       )}

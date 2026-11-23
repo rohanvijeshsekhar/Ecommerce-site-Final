@@ -33,6 +33,7 @@ interface AdminContextType {
 }
 
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '../components/Toast';
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
@@ -46,6 +47,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
   initialRole = 'administrator',
 }) => {
   const { user } = useAuth();
+  const globalToast = useToast();
   const actualRole: AdminRole = user?.role === 'admin' ? 'administrator' : 'viewer';
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -70,13 +72,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({
   }, []);
 
   const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const full: ToastMessage = { ...toast, id, duration: toast.duration ?? 4000 };
-    setToasts((prev) => [...prev, full]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, full.duration);
-  }, []);
+    // Forward directly to the visible ToastProvider so all legacy useAdmin().showToast callers render visibly
+    globalToast.show(toast);
+  }, [globalToast]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

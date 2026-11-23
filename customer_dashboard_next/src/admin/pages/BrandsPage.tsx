@@ -204,6 +204,11 @@ const BrandsPage: React.FC = () => {
         }
       }
 
+      if (!res?.success) {
+        toast.error(res?.message || 'Failed to save brand.');
+        return false;
+      }
+
       fetchBrands();
       if (nextTab) {
         setActiveTab(nextTab);

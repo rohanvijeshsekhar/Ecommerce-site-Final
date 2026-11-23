@@ -344,23 +344,34 @@ const WarrantyClaimDetailPage: React.FC = () => {
                 />
               </div>
 
-              {/* Approve / Reject buttons */}
-              {claim.status === 'submitted' && (
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button
-                    disabled={submittingAction}
-                    onClick={() => handleAction('approve')}
-                    className="py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
-                  >
-                    Approve Claim
-                  </button>
-                  <button
-                    disabled={submittingAction}
-                    onClick={() => handleAction('reject')}
-                    className="py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
-                  >
-                    Reject Claim
-                  </button>
+              {/* Approve / Reject / Request Info buttons (all reviewable pre-decision states) */}
+              {(claim.status === 'submitted' || claim.status === 'under_review' || claim.status === 'need_more_info') && (
+                <div className="space-y-2 pt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      disabled={submittingAction}
+                      onClick={() => handleAction('approve')}
+                      className="py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                    >
+                      Approve Claim
+                    </button>
+                    <button
+                      disabled={submittingAction}
+                      onClick={() => handleAction('reject')}
+                      className="py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                    >
+                      Reject Claim
+                    </button>
+                  </div>
+                  {claim.status !== 'need_more_info' && (
+                    <button
+                      disabled={submittingAction}
+                      onClick={() => handleAction('request_info')}
+                      className="w-full py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 disabled:opacity-50 text-amber-800 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                    >
+                      Request More Info
+                    </button>
+                  )}
                 </div>
               )}
 

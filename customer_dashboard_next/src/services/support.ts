@@ -131,7 +131,7 @@ export const notificationService = {
   },
 
   async markAllRead(): Promise<ApiResponse<any>> {
-    const response = await api.post('notifications/mark-all-read/');
+    const response = await api.post('notifications/read-all/');
     return response.data;
   },
 };

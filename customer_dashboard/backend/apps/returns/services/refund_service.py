@@ -82,8 +82,15 @@ class RefundService:
                 .get(pk=return_request.id)
             )
 
-            # Find captured payment for the order
+            # Reject Razorpay refund initiation for COD orders (handled manually / offline)
+            if getattr(return_req.order, "payment_method", "").lower() == "cod":
+                raise ValidationError(
+                    f"Order #{return_req.order.order_number or return_req.order.id} was paid via COD and cannot be refunded through Razorpay."
+                )
+
+            # Find captured payment strictly belonging to THIS order
             payment = Payment.objects.filter(
+                order=return_req.order,
                 user=return_req.customer,
                 status__in=[PaymentStatus.CAPTURED, PaymentStatus.REFUNDED],
             ).order_by("-created_at").first()

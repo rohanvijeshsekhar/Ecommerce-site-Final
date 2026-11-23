@@ -11,8 +11,23 @@ from rest_framework.permissions import IsAuthenticated
 from apps.common.responses import success_response, error_response
 from apps.common.permissions import IsAdmin
 from apps.inventory.models import ProductInventory
+from apps.notifications.models import NotificationType, DeliveryChannel
+from apps.notifications.services.notification_service import NotificationService
 from .models import Order, OrderItem, OrderStatus, OrderStatusHistory
 from .serializers import OrderSerializer
+
+
+def _parse_pagination(request, default_page_size: int = 10, max_page_size: int = 100):
+    try:
+        page = max(1, int(request.query_params.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        page_size = int(request.query_params.get("page_size", default_page_size))
+        page_size = max(1, min(page_size, max_page_size))
+    except (ValueError, TypeError):
+        page_size = default_page_size
+    return page, page_size
 
 
 def _get_order_by_pk_or_number(pk_str, user=None, is_admin=False):
@@ -199,12 +214,20 @@ class AdminOrderListView(APIView):
             "shipped": orders.filter(status=OrderStatus.SHIPPED).count(),
             "delivered": orders.filter(status=OrderStatus.DELIVERED).count(),
             "cancelled": orders.filter(status=OrderStatus.CANCELLED).count(),
-            "total_sales": float(orders.exclude(status=OrderStatus.CANCELLED).aggregate(total=Sum('total_amount'))['total'] or 0.0)
+            "total_sales": float(
+                orders.filter(
+                    status__in=[
+                        OrderStatus.PROCESSING,
+                        OrderStatus.PACKED,
+                        OrderStatus.SHIPPED,
+                        OrderStatus.DELIVERED,
+                    ]
+                ).aggregate(total=Sum('total_amount'))['total'] or 0.0
+            )
         }
 
         # Pagination
-        page = int(request.query_params.get('page', 1))
-        page_size = int(request.query_params.get('page_size', 10))
+        page, page_size = _parse_pagination(request, default_page_size=10, max_page_size=100)
         total = orders.count()
 
         start = (page - 1) * page_size
@@ -231,14 +254,8 @@ class AdminOrderDetailView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request, pk):
-        try:
-            order = Order.objects.prefetch_related(
-                'items__product__images', 
-                'shipping_address',
-                'status_history__changed_by',
-                'user'
-            ).get(pk=pk)
-        except Order.DoesNotExist:
+        order = _get_order_by_pk_or_number(pk, user=request.user, is_admin=True)
+        if not order:
             return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
 
         serializer = OrderSerializer(order)
@@ -258,9 +275,13 @@ class AdminOrderDetailView(APIView):
         if new_status not in OrderStatus.values:
             return error_response(f"Invalid status: {new_status}.", status_code=status.HTTP_400_BAD_REQUEST)
 
+        target = _get_order_by_pk_or_number(pk, user=request.user, is_admin=True)
+        if not target:
+            return error_response("Order not found.", status_code=status.HTTP_404_NOT_FOUND)
+
         try:
             with transaction.atomic():
-                order = Order.objects.select_for_update().get(pk=pk)
+                order = Order.objects.select_for_update().get(pk=target.pk)
                 old_status = order.status
 
                 if old_status == new_status:

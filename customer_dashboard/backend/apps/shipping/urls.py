@@ -107,6 +107,11 @@ urlpatterns = [
         name="admin-shipment-update-packing",
     ),
     path(
+        "shipping/admin/shipments/<uuid:pk>/packing/",
+        AdminUpdatePackingStatusView.as_view(),
+        name="admin-shipment-packing",
+    ),
+    path(
         "shipping/admin/shipments/<uuid:pk>/create-courier/",
         AdminCreateCourierShipmentView.as_view(),
         name="admin-shipment-create-courier",

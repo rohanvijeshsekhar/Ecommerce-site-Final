@@ -29,16 +29,18 @@ const AdminHeader: React.FC = () => {
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) setSearchOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [setSearchOpen]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -90,14 +92,30 @@ const AdminHeader: React.FC = () => {
   }, [setUnreadNotifCount]);
 
   const handleMarkAllRead = async () => {
-    await notificationsService.markAllAsRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadNotifCount(0);
+    const res = await notificationsService.markAllAsRead();
+    if (res.success) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadNotifCount(0);
+    }
+  };
+
+  const handleNotificationClick = async (n: AdminNotification) => {
+    if (!n.isRead) {
+      const res = await notificationsService.markAsRead(n.id);
+      if (res.success) {
+        setNotifications((prev) => prev.map((item) => (item.id === n.id ? { ...item, isRead: true } : item)));
+        setUnreadNotifCount(Math.max(0, unreadNotifCount - 1));
+      }
+    }
+    setNotifOpen(false);
+    if (n.actionPath) {
+      router.push(n.actionPath);
+    }
   };
 
   const handleLogout = async () => {
     await logout();
-    router.push('/admin/login');
+    router.replace('/admin/login');
   };
 
   const handleResultClick = (link: string) => {
@@ -123,11 +141,11 @@ const AdminHeader: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          <nav className="hidden md:flex items-center gap-1.5 text-[12px] text-slate-450 truncate">
+          <nav className="hidden md:flex items-center gap-1.5 text-[12px] text-slate-400 truncate">
             <span className="font-semibold text-slate-800">FAAZO</span>
             {breadcrumbs.map((crumb, i) => (
               <React.Fragment key={i}>
-                <span className="text-slate-350 mx-0.5">/</span>
+                <span className="text-slate-300 mx-0.5">/</span>
                 {crumb.path && i < breadcrumbs.length - 1 ? (
                   <Link href={crumb.path} className="hover:text-[#005F63] font-medium transition-colors truncate">
                     {crumb.label}
@@ -141,7 +159,7 @@ const AdminHeader: React.FC = () => {
         </div>
 
         {/* Centre: global search bar */}
-        <div className="hidden md:flex flex-1 max-w-md relative">
+        <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-md relative">
           <div
             onClick={() => { setSearchOpen(true); searchRef.current?.focus(); }}
             className={`flex items-center w-full gap-2.5 px-3.5 py-2 rounded-xl border transition-all duration-200 cursor-text
@@ -338,6 +356,7 @@ const AdminHeader: React.FC = () => {
                     notifications.map((n) => (
                       <div
                         key={n.id}
+                        onClick={() => handleNotificationClick(n)}
                         className={`px-3 py-2.5 hover:bg-slate-50/60 rounded-xl transition-all duration-200 cursor-pointer
                           ${!n.isRead ? 'bg-[#005F63]/[0.02]' : ''}`}
                       >
@@ -350,7 +369,7 @@ const AdminHeader: React.FC = () => {
                               {n.title}
                             </p>
                             <p className="text-[11px] text-slate-400 mt-0.5 font-medium line-clamp-2">{n.message}</p>
-                            <p className="text-[9px] text-slate-350 mt-1 font-semibold">
+                            <p className="text-[9px] text-slate-400 mt-1 font-semibold">
                               {new Date(n.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -360,7 +379,7 @@ const AdminHeader: React.FC = () => {
                   )}
                 </div>
 
-                <div className="px-3 py-2 border-t border-slate-55 mt-1">
+                <div className="px-3 py-2 border-t border-slate-100 mt-1">
                   <Link
                     href="/admin/notifications"
                     onClick={() => setNotifOpen(false)}

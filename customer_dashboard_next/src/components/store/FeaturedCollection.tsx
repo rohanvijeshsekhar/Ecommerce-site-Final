@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 
 export interface FeaturedCollectionData {
@@ -169,8 +169,10 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
     bottom: 'justify-end pt-20 pb-10 sm:pb-14',
   }[vAlign];
 
-  const desktopImage = activeCollection.image_url || activeCollection.image || '/images/hero_equipment.png';
-  const mobileImage = activeCollection.mobile_image_url || activeCollection.mobile_image || desktopImage;
+  const rawDesktop = activeCollection.image_url || activeCollection.image;
+  const desktopImage = rawDesktop ? getAbsoluteImageUrl(rawDesktop) : '/images/hero_equipment.png';
+  const rawMobile = activeCollection.mobile_image_url || activeCollection.mobile_image;
+  const mobileImage = rawMobile ? getAbsoluteImageUrl(rawMobile) : null;
 
   // Background gradient overlay for full-background mode
   const getOverlayStyle = () => {
@@ -199,7 +201,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
   // CTA button style builder
   const renderCtaButton = () => {
-    const ctaText = activeCollection.cta_text || 'Explore Collection';
+    const ctaText = activeCollection.cta_text?.trim();
+    if (!ctaText) return null;
     const ctaUrl = activeCollection.cta_url || '/offers';
     const ctaStyle = activeCollection.cta_style || 'filled';
     const targetBlank = activeCollection.cta_open_in_new_tab;
@@ -367,10 +370,12 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           >
             {imgFit === 'cover' ? (
               <picture className="w-full h-full absolute inset-0">
-                <source media="(max-width: 768px)" srcSet={mobileImage} />
+                {mobileImage && mobileImage !== desktopImage && (
+                  <source media="(max-width: 768px)" srcSet={mobileImage} />
+                )}
                 <img
                   src={desktopImage}
-                  alt={activeCollection.title}
+                  alt={activeCollection.title || 'Featured Collection'}
                   className="w-full h-full object-cover object-center transform scale-100 hover:scale-105 transition-transform duration-700 ease-out"
                 />
               </picture>
@@ -379,10 +384,12 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
                 {/* Soft backdrop radial glow */}
                 <div className="absolute w-[80%] aspect-square rounded-full bg-white/60 blur-3xl -z-10 pointer-events-none" />
                 <picture className="max-w-[560px] w-full flex items-center justify-center">
-                  <source media="(max-width: 768px)" srcSet={mobileImage} />
+                  {mobileImage && mobileImage !== desktopImage && (
+                    <source media="(max-width: 768px)" srcSet={mobileImage} />
+                  )}
                   <img
                     src={desktopImage}
-                    alt={activeCollection.title}
+                    alt={activeCollection.title || 'Featured Collection'}
                     className="w-full max-h-[440px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.12)] transform hover:scale-[1.02] transition-transform duration-500"
                   />
                 </picture>
@@ -399,10 +406,12 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
         <div className="w-full min-h-[480px] sm:min-h-[540px] lg:min-h-[600px] relative flex flex-col justify-stretch">
           {/* Full bleed background picture */}
           <picture className="absolute inset-0 w-full h-full">
-            <source media="(max-width: 768px)" srcSet={mobileImage} />
+            {mobileImage && mobileImage !== desktopImage && (
+              <source media="(max-width: 768px)" srcSet={mobileImage} />
+            )}
             <img
               src={desktopImage}
-              alt={activeCollection.title}
+              alt={activeCollection.title || 'Featured Collection'}
               className="w-full h-full object-cover object-center"
             />
           </picture>
@@ -437,12 +446,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{activeCollection.badge_text}</span>
                   </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur-md text-white text-xs font-black tracking-wider uppercase">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>FEATURED COLLECTION</span>
-                  </div>
-                )}
+                ) : null}
 
                 {activeCollection.offer_text && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-md">
@@ -452,14 +456,16 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               </div>
 
               {/* Main Headline */}
-              <h2
-                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm ${
-                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                }`}
-                style={{ color: activeCollection.heading_color || '#FFFFFF' }}
-              >
-                {activeCollection.title}
-              </h2>
+              {activeCollection.title && activeCollection.title.trim().length > 0 && (
+                <h2
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm ${
+                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                  }`}
+                  style={{ color: activeCollection.heading_color || '#FFFFFF' }}
+                >
+                  {activeCollection.title}
+                </h2>
+              )}
 
               {/* Description */}
               {activeCollection.description && (
@@ -474,18 +480,20 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               )}
 
               {/* CTA */}
-              <div
-                className={`flex flex-col gap-2 ${
-                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
-                }`}
-              >
-                {renderCtaButton()}
-                {activeCollection.secondary_text && (
-                  <span className="text-xs text-white/80 font-medium pl-1 mt-1 drop-shadow-sm">
-                    {activeCollection.secondary_text}
-                  </span>
-                )}
-              </div>
+              {(activeCollection.cta_text?.trim() || activeCollection.secondary_text?.trim()) && (
+                <div
+                  className={`flex flex-col gap-2 ${
+                    hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                  }`}
+                >
+                  {renderCtaButton()}
+                  {activeCollection.secondary_text && (
+                    <span className="text-xs text-white/80 font-medium pl-1 mt-1 drop-shadow-sm">
+                      {activeCollection.secondary_text}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -528,14 +536,16 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               </div>
 
               {/* Headline */}
-              <h2
-                className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
-                  hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                }`}
-                style={{ color: activeCollection.heading_color || '#0F172A' }}
-              >
-                {activeCollection.title}
-              </h2>
+              {activeCollection.title && activeCollection.title.trim().length > 0 && (
+                <h2
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
+                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                  }`}
+                  style={{ color: activeCollection.heading_color || '#0F172A' }}
+                >
+                  {activeCollection.title}
+                </h2>
+              )}
 
               {/* Description */}
               {activeCollection.description && (
@@ -550,18 +560,20 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               )}
 
               {/* CTA */}
-              <div
-                className={`flex flex-col gap-2 ${
-                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
-                }`}
-              >
-                {renderCtaButton()}
-                {activeCollection.secondary_text && (
-                  <span className="text-xs text-slate-500 font-medium pl-1 mt-1">
-                    {activeCollection.secondary_text}
-                  </span>
-                )}
-              </div>
+              {(activeCollection.cta_text?.trim() || activeCollection.secondary_text?.trim()) && (
+                <div
+                  className={`flex flex-col gap-2 ${
+                    hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                  }`}
+                >
+                  {renderCtaButton()}
+                  {activeCollection.secondary_text && (
+                    <span className="text-xs text-slate-500 font-medium pl-1 mt-1">
+                      {activeCollection.secondary_text}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -424,7 +424,11 @@ export default function AdminReturnsPage() {
             <div className="p-5 overflow-y-auto space-y-6 flex-1 text-xs">
               
               {actionMessage && (
-                <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
+                <div className={`p-3 rounded-xl text-xs font-bold border ${
+                  /error|fail|invalid|cannot/i.test(actionMessage)
+                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                    : 'bg-teal-50 border-teal-200 text-teal-800'
+                }`}>
                   {actionMessage}
                 </div>
               )}
@@ -671,7 +675,7 @@ export default function AdminReturnsPage() {
 
       {/* REJECTION REASON DIALOG */}
       {showRejectDialog && selectedReturn && (
-        <div className="fixed inset-0 z-60 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-5 text-left font-sans space-y-4">
             <h3 className="text-sm font-black text-slate-900 uppercase">Reject Return Request</h3>
             <p className="text-xs text-slate-600">Please provide a valid rejection reason. This will be audited and communicated to the customer.</p>
@@ -706,7 +710,7 @@ export default function AdminReturnsPage() {
 
       {/* RECORD VERIFICATION DIALOG */}
       {showVerificationDialog && selectedReturn && (
-        <div className="fixed inset-0 z-60 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-5 text-left font-sans space-y-4">
             <h3 className="text-sm font-black text-slate-900 uppercase">Record Doorstep / Hub Verification</h3>
             <p className="text-xs text-slate-600">Record the inspection outcome before unlocking financial refund or replacement fulfillment.</p>

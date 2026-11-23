@@ -90,10 +90,8 @@ const SpecsEditor: React.FC<SpecsEditorProps> = ({
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newSpecs.length) return;
 
-    // Swap sort_order
-    const temp = newSpecs[index].sort_order;
-    newSpecs[index].sort_order = newSpecs[targetIndex].sort_order;
-    newSpecs[targetIndex].sort_order = temp;
+    // Swap array positions first so serial sort_order reflects the new order
+    [newSpecs[index], newSpecs[targetIndex]] = [newSpecs[targetIndex], newSpecs[index]];
 
     // Reassign serial sort order to avoid duplicates
     const reordered = newSpecs.map((item, idx) => ({

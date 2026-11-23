@@ -32,7 +32,7 @@ from apps.common.permissions import IsAdmin
 from apps.orders.models import Order, OrderStatus, OrderStatusHistory
 
 import uuid
-from .models import Shipment, ShipmentStatus, PackingStatus, ShipmentEvent, DelhiveryWebhookLog, ShiprocketWebhookLog
+from .models import Shipment, ShipmentStatus, PackingStatus, PickupStatus, ShipmentEvent, DelhiveryWebhookLog, ShiprocketWebhookLog
 from .serializers import ShipmentSerializer, ShipmentListSerializer
 from .services import ShiprocketService, DelhiveryService, ShiprocketAPIError, ShiprocketValidationError, DelhiveryAPIError, DelhiveryValidationError
 from .shiprocket_client import circuit_breaker, ShiprocketAPIClient
@@ -337,7 +337,7 @@ class AdminCreateCourierShipmentView(APIView):
             # Post-commit operational action: Auto-schedule pickup.
             # Shiprocket arranges pickup as part of the standard shipment lifecycle.
             # If a specific pickup_date is provided, use it; otherwise schedule for next business day.
-            if shipment.pickup_status not in [PackingStatus.READY_FOR_PICKUP, "scheduled"]:
+            if shipment.pickup_status not in [PickupStatus.SCHEDULED, PickupStatus.PICKED_UP]:
                 pickup_date_str = request.data.get("pickup_date")
                 try:
                     from django.utils.dateparse import parse_date
@@ -1011,18 +1011,23 @@ class ShiprocketWebhookView(APIView):
         if not isinstance(payload, dict):
             payload = {}
 
-        # HMAC Signature Verification if configured
+        # HMAC Signature Verification — fail closed when configured or in production
         secret = getattr(settings, "SHIPROCKET_WEBHOOK_SECRET", "")
         if secret and secret.strip():
             header_sig = request.headers.get("X-Api-HMAC-SHA256") or request.headers.get("X-Shiprocket-Signature")
-            if header_sig:
-                import hmac
-                import hashlib
-                import json
-                expected_sig = hmac.new(secret.encode("utf-8"), json.dumps(payload).encode("utf-8"), hashlib.sha256).hexdigest()
-                if not hmac.compare_digest(header_sig, expected_sig):
-                    logger.warning("[SHIPROCKET_WEBHOOK_REJECTED] Invalid HMAC signature.")
-                    return error_response("Invalid webhook signature.", status_code=status.HTTP_401_UNAUTHORIZED)
+            if not header_sig:
+                logger.warning("[SHIPROCKET_WEBHOOK_REJECTED] Missing HMAC signature header.")
+                return error_response("Missing webhook signature.", status_code=status.HTTP_401_UNAUTHORIZED)
+            import hmac
+            import hashlib
+            raw_body = request.body if request.body else b""
+            expected_sig = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(header_sig, expected_sig):
+                logger.warning("[SHIPROCKET_WEBHOOK_REJECTED] Invalid HMAC signature.")
+                return error_response("Invalid webhook signature.", status_code=status.HTTP_401_UNAUTHORIZED)
+        elif not getattr(settings, "DEBUG", False):
+            logger.error("[SHIPROCKET_WEBHOOK_REJECTED] SHIPROCKET_WEBHOOK_SECRET not configured in production.")
+            return error_response("Webhook verification is not configured.", status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         awb_code = payload.get("awb") or payload.get("awb_code") or payload.get("waybill")
         sr_shipment_id = payload.get("shipment_id") or payload.get("order_id")
@@ -1208,7 +1213,7 @@ DelhiveryWebhookView = ShiprocketWebhookView
 
 class AdminProviderHealthCheckView(APIView):
     """GET /api/v1/shipping/admin/health/"""
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
         from .providers import ShippingConfigValidator, get_shipping_provider
@@ -1335,7 +1340,7 @@ class AdminShipmentRetryView(APIView):
     Body:
       action (str): 'create_courier', 'schedule_pickup', 'generate_label', or 'generate_manifest'
     """
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
         try:

@@ -12,8 +12,34 @@ const nextConfig: NextConfig = {
         pathname: "/media/**",
       },
       {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/media/**",
+      },
+      {
         protocol: "https",
         hostname: "api.faazo.com",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "faazo.cloud",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.faazo.cloud",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.faazo.cloud",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "faazo.cloud",
         pathname: "/media/**",
       },
     ],
@@ -43,11 +69,13 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Redirect /admin to Vite app during Phase 1
+  // Proxy media uploads directly to backend Django server
   async rewrites() {
     return [
-      // Admin panel is NOT migrated in Phase 1 — proxy to Vite dev server
-      // Remove this rewrite after Phase 2 admin migration
+      {
+        source: '/media/:path*',
+        destination: 'http://127.0.0.1:8000/media/:path*',
+      },
     ];
   },
 };

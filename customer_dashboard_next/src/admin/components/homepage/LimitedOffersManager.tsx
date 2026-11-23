@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, Eye, EyeOff, X, Save, Calendar, Zap } from 'lucide
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { LimitedTimeOffer } from '../../types/admin';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
@@ -35,17 +36,16 @@ const LimitedOffersManager: React.FC = () => {
       cta_text: item.cta_text,
       cta_link: item.cta_link,
       is_active: item.is_active,
-      banner_image: item.banner_image_url || null,
+      banner_image: item.banner_image_url || (item as any).banner_image || (item as any).image || null,
     });
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!form.heading) { showToast({ variant: 'error', title: 'Heading is required' }); return; }
     setSaving(true);
     try {
       const fd = new FormData();
-      ['heading', 'description', 'offer_text', 'cta_text', 'cta_link'].forEach(k => fd.append(k, (form as any)[k]));
+      ['heading', 'description', 'offer_text', 'cta_text', 'cta_link'].forEach(k => fd.append(k, (form as any)[k] || ''));
       if (form.start_date) fd.append('start_date', form.start_date);
       if (form.end_date) fd.append('end_date', form.end_date);
       fd.append('is_active', String(form.is_active));
@@ -93,7 +93,7 @@ const LimitedOffersManager: React.FC = () => {
           {items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group">
               <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
-                {item.banner_image_url ? <img src={item.banner_image_url} className="w-full h-full object-cover" alt={item.heading} /> : <div className="w-full h-full flex items-center justify-center"><Calendar className="w-5 h-5 text-slate-400" /></div>}
+                {item.banner_image_url || (item as any).banner_image || (item as any).image ? <img src={getAbsoluteImageUrl(item.banner_image_url || (item as any).banner_image || (item as any).image)} className="w-full h-full object-cover" alt={item.heading} /> : <div className="w-full h-full flex items-center justify-center"><Calendar className="w-5 h-5 text-slate-400" /></div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm truncate">{item.heading}</p>
@@ -124,13 +124,13 @@ const LimitedOffersManager: React.FC = () => {
                 <ImageUploader
                   label="Banner Image"
                   aspectRatio={16 / 9}
-                  currentUrl={form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : form.banner_image}
+                  currentUrl={form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : (form.banner_image ? getAbsoluteImageUrl(form.banner_image) : null)}
                   onUpload={(file) => setForm(f => ({ ...f, banner_image: file }))}
                   onRemove={() => setForm(f => ({ ...f, banner_image: null }))}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Heading *</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Heading (Optional)</label>
                 <input type="text" value={form.heading} onChange={e => setForm(f => ({ ...f, heading: e.target.value }))} placeholder="e.g. Summer Sale" className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30" />
               </div>
               <div>

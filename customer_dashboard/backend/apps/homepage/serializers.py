@@ -33,11 +33,49 @@ from .models import (
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+from rest_framework.fields import SkipField
+
+
 def abs_image_url(request, field):
     """Return absolute URL for an ImageField value, or None."""
     if field and hasattr(field, 'url'):
         return request.build_absolute_uri(field.url) if request else field.url
     return None
+
+
+class FlexibleImageField(serializers.FileField):
+    """
+    Robust File/Image field that handles all real-world CMS upload scenarios:
+    1. UploadedFile: standard file upload validated (JPEG, PNG, WEBP, AVIF, GIF, SVG, BMP, TIFF).
+    2. String URL or path (e.g. 'http://...', '/media/...', 'homepage/...'):
+       Treated as existing image — raises SkipField so DRF preserves instance image.
+    3. Empty string (''), 'null', 'undefined', False, or None:
+       Clears the image by returning None if nullable, or skips if not.
+    """
+    def to_internal_value(self, data):
+        if data in ('', 'null', 'undefined', None, False):
+            if self.allow_null:
+                return None
+            raise SkipField()
+        if isinstance(data, str) and not hasattr(data, 'read'):
+            raise SkipField()
+        
+        file_obj = super().to_internal_value(data)
+        try:
+            from apps.common.image_optimizer import validate_image_file
+            validate_image_file(file_obj)
+        except Exception as exc:
+            raise serializers.ValidationError(str(exc))
+        return file_obj
+
+    def run_validation(self, data=serializers.empty):
+        if data in ('', 'null', 'undefined', None, False):
+            if self.allow_null:
+                return None
+            raise SkipField()
+        if isinstance(data, str) and not hasattr(data, 'read'):
+            raise SkipField()
+        return super().run_validation(data)
 
 
 # ============================================================
@@ -87,6 +125,13 @@ class HeroSlideReadSerializer(serializers.ModelSerializer):
 
 
 class HeroSlideWriteSerializer(serializers.ModelSerializer):
+    heading = serializers.CharField(required=False, allow_blank=True)
+    subheading = serializers.CharField(required=False, allow_blank=True)
+    cta_text = serializers.CharField(required=False, allow_blank=True)
+    cta_link = serializers.CharField(required=False, allow_blank=True)
+    desktop_image = FlexibleImageField(required=False, allow_null=True)
+    mobile_image  = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = HeroSlide
         fields = [
@@ -127,6 +172,8 @@ class HomepageCategoryReadSerializer(serializers.ModelSerializer):
 
 
 class HomepageCategoryWriteSerializer(serializers.ModelSerializer):
+    card_image = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = HomepageCategory
         fields = [
@@ -162,6 +209,8 @@ class HomepageBrandReadSerializer(serializers.ModelSerializer):
 
 
 class HomepageBrandWriteSerializer(serializers.ModelSerializer):
+    logo_override = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = HomepageBrand
         fields = ["id", "brand", "logo_override", "sort_order", "is_visible"]
@@ -224,6 +273,8 @@ class BestSellerReadSerializer(serializers.ModelSerializer):
 
 
 class BestSellerWriteSerializer(serializers.ModelSerializer):
+    display_image = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = BestSeller
         fields = [
@@ -298,10 +349,16 @@ class FeaturedCollectionItemWriteSerializer(serializers.ModelSerializer):
 
 class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
     title = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    badge_text = serializers.CharField(required=False, allow_blank=True)
+    offer_text = serializers.CharField(required=False, allow_blank=True)
+    secondary_text = serializers.CharField(required=False, allow_blank=True)
+    cta_text = serializers.CharField(required=False, allow_blank=True)
+    cta_url = serializers.CharField(required=False, allow_blank=True)
     font_family = serializers.CharField(required=False, allow_blank=True)
-    image = serializers.ImageField(required=False, allow_null=True)
+    image = FlexibleImageField(required=False, allow_null=True)
     image_url = serializers.SerializerMethodField(read_only=True)
-    mobile_image = serializers.ImageField(required=False, allow_null=True)
+    mobile_image = FlexibleImageField(required=False, allow_null=True)
     mobile_image_url = serializers.SerializerMethodField(read_only=True)
     start_date = serializers.DateTimeField(required=False, allow_null=True)
     end_date = serializers.DateTimeField(required=False, allow_null=True)
@@ -510,7 +567,9 @@ class LimitedTimeOfferWriteSerializer(serializers.ModelSerializer):
     If the offer is deactivated, ProductPricing offer fields are cleared ONLY when
     no other active LimitedTimeOffer for that product exists.
     """
-    title = serializers.CharField(source="heading", required=False)
+    heading = serializers.CharField(required=False, allow_blank=True)
+    title = serializers.CharField(source="heading", required=False, allow_blank=True)
+    banner_image = FlexibleImageField(required=False, allow_null=True)
     start_date = NullableDateTimeField(allow_null=True, required=False)
     end_date = NullableDateTimeField(allow_null=True, required=False)
 
@@ -643,6 +702,8 @@ class ExploreSolutionReadSerializer(serializers.ModelSerializer):
 
 
 class ExploreSolutionWriteSerializer(serializers.ModelSerializer):
+    image = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = ExploreSolution
         fields = ["id", "category", "image", "heading", "sort_order", "is_visible"]
@@ -672,6 +733,8 @@ class TestimonialReadSerializer(serializers.ModelSerializer):
 
 
 class TestimonialWriteSerializer(serializers.ModelSerializer):
+    photo = FlexibleImageField(required=False, allow_null=True)
+
     class Meta:
         model  = Testimonial
         fields = [
@@ -853,13 +916,22 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
     offer_text = serializers.CharField(required=False, allow_blank=True)
     secondary_text = serializers.CharField(required=False, allow_blank=True)
     font_family = serializers.CharField(required=False, allow_blank=True)
+    theme = serializers.CharField(required=False, allow_blank=True, default="teal_premium")
+    offer_type = serializers.CharField(required=False, allow_blank=True, default="percentage")
+    image_position = serializers.CharField(required=False, allow_blank=True, default="center")
+    image_fit = serializers.CharField(required=False, allow_blank=True, default="cover")
+    overlay_gradient = serializers.CharField(required=False, allow_blank=True, default="none")
+    horizontal_alignment = serializers.CharField(required=False, allow_blank=True, default="center")
+    vertical_alignment = serializers.CharField(required=False, allow_blank=True, default="center")
+    content_width = serializers.CharField(required=False, allow_blank=True, default="large")
+    status = serializers.CharField(required=False, allow_blank=True, default="live")
     countdown_position = serializers.CharField(required=False, allow_blank=True)
     cta_enabled = serializers.BooleanField(required=False, default=True)
     cta_position = serializers.CharField(required=False, allow_blank=True)
     cta_text = serializers.CharField(required=False, allow_blank=True)
-    desktop_image = serializers.ImageField(required=False, allow_null=True)
+    desktop_image = FlexibleImageField(required=False, allow_null=True)
     desktop_image_url = serializers.SerializerMethodField(read_only=True)
-    mobile_image = serializers.ImageField(required=False, allow_null=True)
+    mobile_image = FlexibleImageField(required=False, allow_null=True)
     mobile_image_url = serializers.SerializerMethodField(read_only=True)
     start_date = serializers.DateTimeField(required=False, allow_null=True)
     end_date = serializers.DateTimeField(required=False, allow_null=True)
@@ -1209,6 +1281,14 @@ class ProductsDataField(serializers.Field):
 
 
 class BrandDealWriteSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    subtitle = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    promotional_tag = serializers.CharField(required=False, allow_blank=True)
+    offer_text = serializers.CharField(required=False, allow_blank=True)
+    cta_text = serializers.CharField(required=False, allow_blank=True)
+    desktop_image = FlexibleImageField(required=False, allow_null=True)
+    mobile_image  = FlexibleImageField(required=False, allow_null=True)
     desktop_image_url = serializers.SerializerMethodField()
     mobile_image_url = serializers.SerializerMethodField()
     banner_desktop = serializers.SerializerMethodField()

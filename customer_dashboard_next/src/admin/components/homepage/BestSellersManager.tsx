@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, TrendingUp } f
 import { homepageService, adminService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { BestSeller } from '../../types/admin';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
@@ -41,7 +42,7 @@ const BestSellersManager: React.FC = () => {
       custom_heading: item.display_heading === item.product_name ? '' : item.display_heading,
       short_description: item.display_short_description,
       is_visible: item.is_visible,
-      display_image: item.display_image_url || null,
+      display_image: item.display_image_url || (item as any).display_image || null,
     });
     setShowForm(true);
   };
@@ -105,8 +106,8 @@ const BestSellersManager: React.FC = () => {
             <div key={item.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group">
               <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
               <div className="w-14 h-14 bg-slate-200 rounded-xl overflow-hidden flex-shrink-0">
-                {item.display_image_url
-                  ? <img src={item.display_image_url} className="w-full h-full object-cover" alt={item.display_heading} />
+                {item.display_image_url || (item as any).display_image
+                  ? <img src={getAbsoluteImageUrl(item.display_image_url || (item as any).display_image)} className="w-full h-full object-cover" alt={item.display_heading} />
                   : <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px] text-center px-1">No Image</div>
                 }
               </div>
@@ -146,7 +147,7 @@ const BestSellersManager: React.FC = () => {
                 <ImageUploader
                   label="Display Image (override)"
                   aspectRatio={1}
-                  currentUrl={form.display_image instanceof File ? URL.createObjectURL(form.display_image) : form.display_image}
+                  currentUrl={form.display_image instanceof File ? URL.createObjectURL(form.display_image) : (form.display_image ? getAbsoluteImageUrl(form.display_image) : null)}
                   onUpload={(file) => setForm(f => ({ ...f, display_image: file }))}
                   onRemove={() => setForm(f => ({ ...f, display_image: null }))}
                 />

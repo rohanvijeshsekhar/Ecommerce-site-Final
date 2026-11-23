@@ -1144,13 +1144,16 @@ class DailyOffer(BaseModel):
 
     # ── Themes & Color Customization ──
     theme = models.CharField(
-        max_length=30,
-        default="red_hot",
+        max_length=50,
+        default="teal_premium",
         choices=[
             ("dark_premium", "Dark Premium"),
             ("red_hot", "Red Hot Deal"),
             ("orange_sale", "Orange Sale"),
             ("teal_premium", "Teal Premium"),
+            ("emerald_clinic", "Clinical Emerald"),
+            ("navy_pro", "Deep Navy Pro"),
+            ("amber_sunset", "Amber Special"),
             ("minimal_light", "Minimal Light"),
             ("custom", "Custom"),
         ],

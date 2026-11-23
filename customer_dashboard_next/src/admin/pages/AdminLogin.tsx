@@ -41,12 +41,8 @@ const AdminLogin: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    const rawEmail = email.trim().toLowerCase();
-
-    // Map dev shortcuts ('faazo', 'admin', 'faazo_admin') -> admin@faazo.com
-    const isShortcutEmail = rawEmail === 'faazo' || rawEmail === 'admin' || rawEmail === 'faazo_admin';
-    const loginEmail = isShortcutEmail ? 'admin@faazo.com' : email.trim();
-    const loginPassword = isShortcutEmail ? 'Admin@faazo123' : password;
+    const loginEmail = email.trim().toLowerCase();
+    const loginPassword = password;
 
     if (!loginEmail.includes('@')) {
       setError('Please enter a valid email address.');
@@ -55,22 +51,12 @@ const AdminLogin: React.FC = () => {
     }
 
     try {
-      await login({ email: loginEmail, password: loginPassword, remember_me: rememberMe });
+      const loggedUser = await login({ email: loginEmail, password: loginPassword, remember_me: rememberMe });
 
-      // Read role from AuthContext user state. AuthContext.login() calls handleAuthSuccess()
-      // which calls setUser(data.user) synchronously before this line executes.
-      // We use a state snapshot from the closure. If user is not yet updated in React state
-      // (React batches state updates), we fall back to allowing the router to redirect and
-      // letting AdminLayout enforce the role guard — which it already does.
-      //
-      // Do NOT read from localStorage. The user object in localStorage (faazo_user) is the
-      // non-sensitive identity record; the access token is never in localStorage.
-      const loggedUser = user;
       if (loggedUser && loggedUser.role !== 'admin') {
         setAccessDenied(true);
         setLoading(false);
       } else {
-        // Either confirmed admin, or user state not yet flushed — AdminLayout will enforce.
         router.replace('/admin');
       }
     } catch (err: any) {

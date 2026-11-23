@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import { api } from '../../lib/api';
+import { api, getAbsoluteImageUrl } from '../../lib/api';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -180,8 +180,8 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                     <>
                       {/* Mobile view image (exact 3:3.7 ratio from admin panel) */}
                       <Image
-                        src={slide.mobile_image_url}
-                        alt={slide.heading}
+                        src={getAbsoluteImageUrl(slide.mobile_image_url)}
+                        alt={slide.heading || 'FAAZO Hero Slide'}
                         fill
                         priority={idx === 0}
                         sizes="100vw"
@@ -189,8 +189,8 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                       />
                       {/* Desktop view image */}
                       <Image
-                        src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
-                        alt={slide.heading}
+                        src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
+                        alt={slide.heading || 'FAAZO Hero Slide'}
                         fill
                         priority={idx === 0}
                         sizes="100vw"
@@ -199,8 +199,8 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                     </>
                   ) : (
                     <Image
-                      src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
-                      alt={slide.heading}
+                      src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
+                      alt={slide.heading || 'FAAZO Hero Slide'}
                       fill
                       priority={idx === 0}
                       sizes="100vw"

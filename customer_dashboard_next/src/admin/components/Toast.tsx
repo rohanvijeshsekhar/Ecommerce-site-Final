@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -74,11 +76,10 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
       {/* Progress bar */}
       <div
-        className={`absolute bottom-0 left-0 h-0.5 rounded-b-2xl ${
-          toast.variant === 'success' ? 'bg-emerald-400' :
+        className={`absolute bottom-0 left-0 h-0.5 rounded-b-2xl ${toast.variant === 'success' ? 'bg-emerald-400' :
           toast.variant === 'error' ? 'bg-rose-400' :
-          toast.variant === 'warning' ? 'bg-amber-400' : 'bg-blue-400'
-        }`}
+            toast.variant === 'warning' ? 'bg-amber-400' : 'bg-blue-400'
+          }`}
         style={{
           animation: `shrinkWidth ${duration}ms linear forwards`,
           width: '100%',
@@ -119,7 +120,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const show = useCallback((toast: Omit<ToastMessage, 'id'>) => {
-    const id = `toast-${Date.now()}`;
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const full: ToastMessage = { ...toast, id, duration: toast.duration ?? 4000 };
     setToasts((prev) => [...prev.slice(-4), full]); // max 5 at once
     setTimeout(() => dismiss(id), full.duration);
@@ -134,7 +135,14 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const info = useCallback((title: string, message?: string) =>
     show({ variant: 'info', title, message }), [show]);
   const addToast = useCallback((message: string, type?: string) => {
-    const variant: ToastVariant = (type === 'danger' || type === 'error') ? 'error' : (type === 'warning' ? 'warning' : 'success');
+    const variant: ToastVariant =
+      type === 'danger' || type === 'error'
+        ? 'error'
+        : type === 'warning'
+          ? 'warning'
+          : type === 'info'
+            ? 'info'
+            : 'success';
     show({ variant, title: message });
   }, [show]);
 

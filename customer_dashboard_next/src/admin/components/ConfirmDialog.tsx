@@ -43,11 +43,17 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   }, [mounted, isOpen]);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter' && !loading) onConfirm();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+      if (e.key === 'Enter' && !loading) {
+        // Prevent double-fire when the focused confirm button would also receive a native click
+        e.preventDefault();
+        onConfirm();
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);

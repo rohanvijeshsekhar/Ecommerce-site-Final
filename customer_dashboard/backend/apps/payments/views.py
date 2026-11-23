@@ -162,9 +162,13 @@ class CreatePaymentOrderView(APIView):
         # Calculate pricing using existing checkout logic
         pricing = calculate_checkout_pricing(user, cart_items, delivery_method, address)
         total_amount = Decimal(str(pricing["total_amount"]))
+        amount_paise = int(round(total_amount * 100))
 
-        if total_amount <= 0:
-            return error_response("Invalid order total.", status_code=status.HTTP_400_BAD_REQUEST)
+        if amount_paise < 100:
+            return error_response(
+                "Minimum order amount for online payment is ₹1.00 (100 paise).",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Snapshot delivery address details to guarantee address fidelity even if original Address row is deleted later
         address_snapshot = {
@@ -226,17 +230,19 @@ class CreatePaymentOrderView(APIView):
             except Exception as e:
                 logger.error("Razorpay order creation failed (supersede path): %s", e)
                 logger.error(traceback.format_exc())
+                err_str = str(e)
+                is_auth_err = "authentication" in err_str.lower() or "unauthorized" in err_str.lower()
                 return Response(
                     {
                         "success": False,
-                        "message": f"Razorpay Gateway Error: {str(e)}",
+                        "message": "Payment gateway authentication failed." if is_auth_err else f"Razorpay Gateway Error: {err_str}",
                         "error": {
-                            "code": "PAYMENT_GATEWAY_ERROR",
-                            "message": f"Razorpay Gateway Error: {str(e)}",
+                            "code": "PAYMENT_AUTH_ERROR" if is_auth_err else "PAYMENT_GATEWAY_ERROR",
+                            "message": "Payment gateway authentication failed." if is_auth_err else f"Razorpay Gateway Error: {err_str}",
                             "details": None,
                         }
                     },
-                    status=status.HTTP_502_BAD_GATEWAY
+                    status=status.HTTP_401_UNAUTHORIZED if is_auth_err else status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
             checkout_snapshot = {
@@ -312,17 +318,19 @@ class CreatePaymentOrderView(APIView):
         except Exception as e:
             logger.error("Razorpay order creation failed: %s", e)
             logger.error(traceback.format_exc())
+            err_str = str(e)
+            is_auth_err = "authentication" in err_str.lower() or "unauthorized" in err_str.lower()
             return Response(
                 {
                     "success": False,
-                    "message": f"Razorpay Gateway Error: {str(e)}",
+                    "message": "Payment gateway authentication failed." if is_auth_err else f"Razorpay Gateway Error: {err_str}",
                     "error": {
-                        "code": "PAYMENT_GATEWAY_ERROR",
-                        "message": f"Razorpay Gateway Error: {str(e)}",
+                        "code": "PAYMENT_AUTH_ERROR" if is_auth_err else "PAYMENT_GATEWAY_ERROR",
+                        "message": "Payment gateway authentication failed." if is_auth_err else f"Razorpay Gateway Error: {err_str}",
                         "details": None,
                     }
                 },
-                status=status.HTTP_502_BAD_GATEWAY
+                status=status.HTTP_401_UNAUTHORIZED if is_auth_err else status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         # Snapshot checkout data & address for later order creation

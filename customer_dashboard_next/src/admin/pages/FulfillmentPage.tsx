@@ -605,6 +605,9 @@ const FulfillmentPage: React.FC = () => {
             <DataTable
               columns={columns}
               data={shipments}
+              selectable
+              selectedIds={new Set(selectedIds)}
+              onSelectionChange={(nextSet) => setSelectedIds(Array.from(nextSet).map(String))}
               onRowClick={(row) => handleOpenDrawer(row.id)}
             />
             {/* Pagination Controls */}
@@ -650,7 +653,19 @@ const FulfillmentPage: React.FC = () => {
         shipment={selectedShipment}
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        onRefresh={fetchData}
+        onRefresh={async () => {
+          await fetchData();
+          if (selectedShipment?.id) {
+            try {
+              const detailRes = await adminShippingService.getShipment(selectedShipment.id);
+              if (detailRes.success && detailRes.data) {
+                setSelectedShipment(detailRes.data);
+              }
+            } catch {
+              // ignore refresh error
+            }
+          }
+        }}
       />
     </div>
   );

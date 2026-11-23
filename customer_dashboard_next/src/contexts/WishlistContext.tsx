@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { wishlistService, WishlistItemData } from '@/lib/services/wishlistService';
 import { useStore } from '@/contexts/StoreContext';
@@ -38,6 +39,8 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { addItemToCart } = useStore();
 
@@ -133,9 +136,9 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // On auth state change, fetch or sync
+  // On auth state change, fetch or sync (skip on /admin routes)
   useEffect(() => {
-    if (authLoading) return; // Wait until initial authentication check completes
+    if (authLoading || isAdminRoute) return; // Wait until initial authentication check completes
 
     if (isAuthenticated) {
       // Sync guest wishlist items to database upon login
@@ -162,7 +165,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       fetchWishlist();
     }
-  }, [isAuthenticated, authLoading, user?.id]);
+  }, [isAuthenticated, authLoading, isAdminRoute, user?.id]);
 
   // Save guest wishlist to localStorage whenever it changes (if not authenticated)
   const updateGuestStorage = (items: any[]) => {

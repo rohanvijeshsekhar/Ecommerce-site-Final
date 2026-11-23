@@ -40,11 +40,11 @@ const Drawer: React.FC<DrawerProps> = ({
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !isOpen) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [mounted, onClose]);
+  }, [mounted, isOpen, onClose]);
 
   // Prevent body scroll when open
   useEffect(() => {

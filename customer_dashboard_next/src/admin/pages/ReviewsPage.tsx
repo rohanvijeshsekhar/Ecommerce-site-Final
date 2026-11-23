@@ -21,8 +21,12 @@ import {
 } from 'lucide-react';
 import { reviewsService, ReviewItem } from '@/lib/services/reviewsService';
 import { ReviewMediaLightbox } from '@/components/store/ReviewMediaLightbox';
+import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
+import { useToast } from '../components/Toast';
 
 export const ReviewsPage: React.FC = () => {
+  useBreadcrumbSync([{ label: 'Catalogue' }, { label: 'Reviews', path: '/admin/reviews' }]);
+  const toast = useToast();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0, hidden: 0 });
   const [pagination, setPagination] = useState({ page: 1, total_pages: 1, total: 0 });
@@ -63,8 +67,9 @@ export const ReviewsPage: React.FC = () => {
           total: res.data.pagination.total,
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to load admin reviews:', e);
+      toast.error('Failed to load reviews', e?.response?.data?.message || e?.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -76,16 +81,22 @@ export const ReviewsPage: React.FC = () => {
 
   const handleModerationSubmit = async () => {
     if (!selectedReview || !actionType) return;
+    if (actionType === 'rejected' && !rejectionReason.trim()) {
+      toast.warning('Rejection reason required', 'Please enter a reason before rejecting this review.');
+      return;
+    }
     setSubmittingAction(true);
     try {
-      await reviewsService.updateAdminStatus(selectedReview.id, actionType, rejectionReason);
+      await reviewsService.updateAdminStatus(selectedReview.id, actionType, rejectionReason.trim());
+      toast.success('Review updated', `Review marked as ${actionType}.`);
       setSubmittingAction(false);
       setSelectedReview(null);
       setActionType(null);
       setRejectionReason('');
       fetchAdminReviews(pagination.page);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to moderate review:', e);
+      toast.error('Moderation failed', e?.response?.data?.message || e?.message || 'Could not update review status.');
       setSubmittingAction(false);
     }
   };
@@ -340,6 +351,31 @@ export const ReviewsPage: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && pagination.total_pages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3">
+          <span className="text-xs font-semibold text-slate-500">
+            Page {pagination.page} of {pagination.total_pages} ({pagination.total} reviews)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={pagination.page <= 1}
+              onClick={() => fetchAdminReviews(pagination.page - 1)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+            <button
+              disabled={pagination.page >= pagination.total_pages}
+              onClick={() => fetchAdminReviews(pagination.page + 1)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 

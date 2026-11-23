@@ -28,6 +28,7 @@ import {
 import { useToast } from '../components/Toast';
 import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import StatusBadge from '../components/StatusBadge';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import { adminOrdersService } from '../services/adminService';
 import { ordersService, OrderDetail } from '../../lib/services/ordersService';
 import {
@@ -925,7 +926,7 @@ const AdminOrderDetailPage: React.FC = () => {
                   <div className="flex items-start gap-3.5">
                     {item.image_url ? (
                       <img
-                        src={`http://localhost:8000${item.image_url}`}
+                        src={getAbsoluteImageUrl(item.image_url)}
                         alt={item.product_name}
                         className="w-14 h-14 object-contain bg-slate-50 border border-slate-100 p-1.5 rounded-xl shrink-0"
                       />

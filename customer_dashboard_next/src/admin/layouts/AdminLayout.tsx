@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { useAdmin } from '../contexts/AdminContext';
-import { ToastProvider } from '../components/Toast';
 
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
@@ -25,12 +24,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   // Hook must be called unconditionally (before any returns)
   React.useEffect(() => {
     if (!isLoading && !user && !isLoginPage) {
-      router.push('/admin/login');
+      router.replace('/admin/login');
     }
   }, [isLoading, user, isLoginPage, router]);
 
   if (isLoginPage) {
-    return <ToastProvider>{children}</ToastProvider>;
+    return <>{children}</>;
   }
 
   // Loading state
@@ -83,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <Store className="h-4 w-4" /> Go to Storefront
             </Link>
             <button
-              onClick={() => logout().then(() => router.push('/admin/login'))}
+              onClick={() => logout().then(() => router.replace('/admin/login'))}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-all shadow-lg shadow-red-900/20"
             >
               <LogOut className="h-4 w-4" /> Admin Login
@@ -95,19 +94,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }
 
   return (
-    <ToastProvider>
-      <div className="flex h-screen bg-slate-50/80 overflow-hidden">
-        <AdminSidebar />
-        <div className={`flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-300`}>
-          <AdminHeader />
-          <main id="admin-content" className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="min-h-full p-4 md:p-6">
-              {children}
-            </div>
-          </main>
-        </div>
+    <div className="flex h-screen bg-slate-50/80 overflow-hidden">
+      <AdminSidebar />
+      <div className={`flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-300`}>
+        <AdminHeader />
+        <main id="admin-content" className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="min-h-full p-4 md:p-6">
+            {children}
+          </div>
+        </main>
       </div>
-    </ToastProvider>
+    </div>
   );
 };
 

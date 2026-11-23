@@ -195,7 +195,7 @@ const WarrantyPage: React.FC = () => {
         subtitle="Verify manual customer registration submissions and resolve equipment trouble tickets."
         actions={
           <button
-            onClick={() => { fetchStats(); fetchData(); toast.success('Sync complete.'); }}
+            onClick={async () => { await Promise.all([fetchStats(), fetchData()]); toast.success('Sync complete.'); }}
             className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all cursor-pointer bg-white"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard

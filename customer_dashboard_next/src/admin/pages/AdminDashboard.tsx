@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -22,25 +22,21 @@ const AdminDashboard: React.FC = () => {
 
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
+  const [greeting, setGreeting] = useState('Welcome back');
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'7 Days' | '30 Days' | '90 Days' | '1 Year'>('7 Days');
   const [analyticsMetric, setAnalyticsMetric] = useState<'Revenue' | 'Orders'>('Revenue');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overviewData, setOverviewData] = useState<any | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<any | null>(null);
+  const requestSeqRef = useRef(0);
 
-  // Time of Day Greeting helper
-  const getGreeting = () => {
-    const hrs = new Date().getHours();
-    if (hrs < 12) return 'Good morning';
-    if (hrs < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  // Live Date & Time clock
+  // Live Date, Time & Greeting (client-only inside effect to avoid SSR hydration mismatch)
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
+      const hrs = now.getHours();
+      setGreeting(hrs < 12 ? 'Good morning' : hrs < 17 ? 'Good afternoon' : 'Good evening');
       setTimeStr(now.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
@@ -60,25 +56,35 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const loadData = async (period: string) => {
+    const reqId = ++requestSeqRef.current;
     setLoading(true);
     setError(null);
+    setHoveredPoint(null);
     try {
       const res = await dashboardService.getOverview(period);
+      if (reqId !== requestSeqRef.current) return;
       if (res.success && res.data) {
         setOverviewData(res.data);
       } else {
         setError(res.message || 'Failed to fetch dashboard data.');
       }
     } catch (err: any) {
+      if (reqId !== requestSeqRef.current) return;
       setError(err?.message || 'Failed to load dashboard overview.');
     } finally {
-      setLoading(false);
+      if (reqId === requestSeqRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadData(analyticsPeriod);
   }, [analyticsPeriod]);
+
+  useEffect(() => {
+    setHoveredPoint(null);
+  }, [analyticsMetric]);
 
   const adminName = user?.full_name?.split(' ')[0] || 'Admin';
 
@@ -93,9 +99,12 @@ const AdminDashboard: React.FC = () => {
   const chartWidth = svgWidth - paddingX * 2;
 
   const chartValues: number[] = currentChart.values || [];
+  const hasChartData = chartValues.length > 0 && chartValues.some((v) => Number(v) > 0);
   const maxVal = Math.max(...(chartValues.length ? chartValues : [100])) * 1.15 || 100;
   const points = chartValues.map((v, i) => {
-    const x = paddingX + (i / Math.max(1, chartValues.length - 1)) * chartWidth;
+    const x = chartValues.length === 1
+      ? paddingX + chartWidth / 2
+      : paddingX + (i / Math.max(1, chartValues.length - 1)) * chartWidth;
     const y = paddingY + chartHeight - (v / maxVal) * chartHeight;
     return { x, y, value: v, label: currentChart.labels?.[i] || '', date: currentChart.dates?.[i] || '' };
   });
@@ -120,7 +129,7 @@ const AdminDashboard: React.FC = () => {
             Platform control center
           </span>
           <h1 className="text-[36px] md:text-[40px] font-extrabold text-[#0F172A] tracking-tight leading-none pt-1">
-            {getGreeting()}, <span className="text-[#005F63]">{adminName}</span>
+            {greeting}, <span className="text-[#005F63]">{adminName}</span>
           </h1>
           <p className="text-[13px] text-[#475569] font-medium flex items-center gap-2">
             <Calendar className="w-4 h-4 text-[#0F766E]" />
@@ -129,9 +138,15 @@ const AdminDashboard: React.FC = () => {
             <Clock className="w-4 h-4 text-[#0F766E]" />
             <span className="font-bold text-slate-800">{timeStr}</span>
           </p>
-          <p className="text-[12px] text-[#004D51] font-semibold bg-[#005F63]/10 border border-[#005F63]/20 px-4 py-2 rounded-xl inline-block mt-1 shadow-2xs">
-            System status operational • You have <strong className="font-extrabold">{overviewData?.summary_counts?.stock_alerts ?? 0}</strong> stock alerts and <strong className="font-extrabold">{overviewData?.summary_counts?.pending_orders ?? 0}</strong> pending orders.
-          </p>
+          {error ? (
+            <p className="text-[12px] text-amber-900 font-semibold bg-amber-100/80 border border-amber-300 px-4 py-2 rounded-xl inline-block mt-1 shadow-2xs">
+              Live analytics temporarily unavailable — check connection or retry below.
+            </p>
+          ) : (
+            <p className="text-[12px] text-[#004D51] font-semibold bg-[#005F63]/10 border border-[#005F63]/20 px-4 py-2 rounded-xl inline-block mt-1 shadow-2xs">
+              System status operational • You have <strong className="font-extrabold">{overviewData?.summary_counts?.stock_alerts ?? 0}</strong> stock alerts and <strong className="font-extrabold">{overviewData?.summary_counts?.pending_orders ?? 0}</strong> pending orders.
+            </p>
+          )}
         </div>
       </div>
 
@@ -211,8 +226,12 @@ const AdminDashboard: React.FC = () => {
                 <div className={`w-9.5 h-9.5 rounded-full flex items-center justify-center ${kpi.iconColor}`}>
                   <Icon className="w-4.5 h-4.5" />
                 </div>
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-0.5 leading-none ${kpi.trendColor}`}>
-                  {kpi.trend} {kpi.trendType === 'up' ? '↗' : '↘'}
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-0.5 leading-none ${
+                  kpi.trendType === 'down'
+                    ? 'text-rose-700 bg-rose-500/15 border border-rose-500/30 font-bold'
+                    : kpi.trendColor
+                }`}>
+                  {kpi.trend} {kpi.trendType === 'down' ? '↘' : (kpi.title === 'Revenue' || kpi.title === 'Orders' ? '↗' : '')}
                 </span>
               </div>
 
@@ -221,10 +240,14 @@ const AdminDashboard: React.FC = () => {
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                   {kpi.title}
                 </span>
-                <h4 className="text-[29px] font-black text-slate-900 tracking-tight leading-none mt-2">
-                  {kpi.value}
-                </h4>
-                <span className="text-[11px] font-semibold text-slate-450 mt-1.5 leading-none">
+                {loading && !overviewData ? (
+                  <div className="h-8 w-28 bg-slate-200/70 rounded-lg animate-pulse mt-2" />
+                ) : (
+                  <h4 className="text-[29px] font-black text-slate-900 tracking-tight leading-none mt-2">
+                    {kpi.value}
+                  </h4>
+                )}
+                <span className="text-[11px] font-semibold text-slate-500 mt-1.5 leading-none">
                   {kpi.desc}
                 </span>
               </div>
@@ -287,13 +310,13 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Analytics Content */}
-            {points.length === 0 ? (
+            {!hasChartData ? (
               <div className="h-[220px] border border-dashed border-slate-200 rounded-[20px] flex flex-col items-center justify-center bg-slate-50/50 p-6 text-center">
                 <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200/50">
                   <Layers className="w-5 h-5" />
                 </div>
                 <h4 className="text-[14px] font-bold text-slate-800">No transactional records</h4>
-                <p className="text-[13px] text-slate-450 max-w-[320px] mt-1 leading-relaxed">
+                <p className="text-[13px] text-slate-500 max-w-[320px] mt-1 leading-relaxed">
                   No orders recorded for the selected period ({analyticsPeriod}).
                 </p>
               </div>
@@ -308,20 +331,35 @@ const AdminDashboard: React.FC = () => {
                     </linearGradient>
                   </defs>
 
-                  {/* Y Axis Gridlines */}
+                  {/* Y Axis Gridlines + Scale Labels */}
                   {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
                     const y = paddingY + chartHeight * ratio;
+                    const val = Math.round(maxVal * (1 - ratio));
+                    const labelVal = analyticsMetric === 'Revenue'
+                      ? (val >= 1000 ? `₹${(val / 1000).toFixed(val >= 10000 ? 0 : 1)}k` : `₹${val}`)
+                      : `${val}`;
                     return (
-                      <line 
-                        key={idx} 
-                        x1={paddingX} 
-                        y1={y} 
-                        x2={svgWidth - paddingX} 
-                        y2={y} 
-                        stroke="#EEF3F7" 
-                        strokeWidth={1} 
-                        strokeDasharray="4 4"
-                      />
+                      <g key={idx}>
+                        <line
+                          x1={paddingX}
+                          y1={y}
+                          x2={svgWidth - paddingX}
+                          y2={y}
+                          stroke="#EEF3F7"
+                          strokeWidth={1}
+                          strokeDasharray="4 4"
+                        />
+                        <text
+                          x={paddingX - 6}
+                          y={y + 3}
+                          textAnchor="end"
+                          fill="#94A3B8"
+                          fontSize="9"
+                          fontWeight="600"
+                        >
+                          {labelVal}
+                        </text>
+                      </g>
                     );
                   })}
 
@@ -362,13 +400,13 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Interactive Tooltip Card */}
+                {/* Interactive Tooltip Card (clamped within bounds) */}
                 {hoveredPoint && (
                   <div 
                     className="absolute bg-slate-900/95 backdrop-blur-xs text-white rounded-xl p-2.5 shadow-xl border border-slate-800 z-10 flex flex-col pointer-events-none transition-all duration-100"
                     style={{ 
-                      left: `${(hoveredPoint.x / svgWidth) * 100}%`, 
-                      top: `${(hoveredPoint.y / svgHeight) * 100 - 32}%`,
+                      left: `${Math.min(88, Math.max(12, (hoveredPoint.x / svgWidth) * 100))}%`, 
+                      top: `${Math.max(4, (hoveredPoint.y / svgHeight) * 100 - 24)}%`,
                       transform: 'translateX(-50%)'
                     }}
                   >
@@ -432,7 +470,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   Recent orders
                 </h3>
-                <p className="text-[12.5px] text-slate-450 font-medium mt-1">The latest live orders processed through the platform</p>
+                <p className="text-[12.5px] text-slate-500 font-medium mt-1">The latest live orders processed through the platform</p>
               </div>
               <button 
                 onClick={() => navigate('/admin/orders')}
@@ -442,7 +480,7 @@ const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-hidden border border-teal-500/15 rounded-2xl bg-white/80 backdrop-blur-md shadow-2xs relative z-10">
+            <div className="overflow-x-auto border border-teal-500/15 rounded-2xl bg-white/80 backdrop-blur-md shadow-2xs relative z-10">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-indigo-100/60 text-[11px] font-extrabold text-slate-600 uppercase tracking-wider bg-[#F1F0FA]">
@@ -480,25 +518,34 @@ const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="py-3.5 px-4.5 text-right font-black text-slate-900">{ord.amount}</td>
                         <td className="py-3.5 px-4.5 text-center">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-bold shadow-2xs transition-all ${
-                            ord.status === 'Completed' || ord.status === 'Delivered'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' 
-                              : ord.status === 'Processing' || ord.status === 'Packed' 
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200/80' 
-                              : ord.status === 'Shipped' 
-                              ? 'bg-sky-50 text-sky-700 border border-sky-200/80' 
-                              : 'bg-rose-50 text-rose-700 border border-rose-200/80'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              ord.status === 'Completed' || ord.status === 'Delivered' ? 'bg-emerald-500' :
-                              ord.status === 'Processing' || ord.status === 'Packed' ? 'bg-amber-500' :
-                              ord.status === 'Shipped' ? 'bg-sky-500' :
-                              'bg-rose-500'
-                            }`} />
-                            {ord.status}
-                          </span>
+                          {(() => {
+                            const s = String(ord.status || '').toLowerCase();
+                            const isSuccess = s.includes('deliver') || s.includes('complet');
+                            const isInfo = s.includes('ship');
+                            const isDanger = s.includes('cancel') || s.includes('fail') || s.includes('refund');
+                            const pillClass = isSuccess
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                              : isInfo
+                              ? 'bg-sky-50 text-sky-700 border border-sky-200/80'
+                              : isDanger
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200/80';
+                            const dotClass = isSuccess
+                              ? 'bg-emerald-500'
+                              : isInfo
+                              ? 'bg-sky-500'
+                              : isDanger
+                              ? 'bg-rose-500'
+                              : 'bg-amber-500';
+                            return (
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-bold shadow-2xs transition-all ${pillClass}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                                {ord.status}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td className="py-3.5 px-4.5 text-slate-450 font-medium whitespace-nowrap">{ord.date}</td>
+                        <td className="py-3.5 px-4.5 text-slate-500 font-medium whitespace-nowrap">{ord.date}</td>
                       </tr>
                     ))
                   )}
@@ -537,24 +584,24 @@ const AdminDashboard: React.FC = () => {
               {[
                 { 
                   label: 'In stock', 
-                  count: (overviewData?.inventory_health) ? overviewData.inventory_health.in_stock.count : 0, 
-                  pct: (overviewData?.inventory_health) ? overviewData.inventory_health.in_stock.pct : 0, 
+                  count: overviewData?.inventory_health?.in_stock?.count ?? 0, 
+                  pct: overviewData?.inventory_health?.in_stock?.pct ?? 0, 
                   color: 'from-[#005F63] to-teal-500',
                   bgColor: 'bg-teal-50/80 text-teal-700 border-teal-200/60',
                   icon: CheckCircle2
                 },
                 { 
                   label: 'Low stock', 
-                  count: (overviewData?.inventory_health) ? overviewData.inventory_health.low_stock.count : 0, 
-                  pct: (overviewData?.inventory_health) ? overviewData.inventory_health.low_stock.pct : 0, 
+                  count: overviewData?.inventory_health?.low_stock?.count ?? 0, 
+                  pct: overviewData?.inventory_health?.low_stock?.pct ?? 0, 
                   color: 'from-amber-400 to-orange-400',
                   bgColor: 'bg-amber-50/80 text-amber-700 border-amber-200/60',
                   icon: AlertTriangle
                 },
                 { 
                   label: 'Out of stock', 
-                  count: (overviewData?.inventory_health) ? overviewData.inventory_health.out_of_stock.count : 0, 
-                  pct: (overviewData?.inventory_health) ? overviewData.inventory_health.out_of_stock.pct : 0, 
+                  count: overviewData?.inventory_health?.out_of_stock?.count ?? 0, 
+                  pct: overviewData?.inventory_health?.out_of_stock?.pct ?? 0, 
                   color: 'from-rose-500 to-red-500',
                   bgColor: 'bg-rose-50/80 text-rose-700 border-rose-200/60',
                   icon: XCircle
@@ -744,10 +791,11 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 (overviewData?.recent_dealers || []).map((dealer: any, idx: number) => {
                   const isApproved = dealer.status === 'Approved';
+                  const isRejected = dealer.status === 'Rejected';
                   return (
                     <div 
-                      key={idx} 
-                      onClick={() => navigate('/admin/dealers')}
+                      key={dealer.id || idx} 
+                      onClick={() => navigate(dealer.id ? `/admin/dealers/${dealer.id}` : '/admin/dealers')}
                       className="p-3.5 rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-md hover:bg-white hover:border-sky-500/40 hover:shadow-md hover:scale-[1.015] transition-all duration-300 space-y-2.5 cursor-pointer group"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -758,13 +806,15 @@ const AdminDashboard: React.FC = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-bold text-slate-900 truncate group-hover:text-sky-800 transition-colors">{dealer.company_name}</p>
-                            <p className="text-[10.5px] text-slate-450 font-medium mt-0.5 truncate">{dealer.applicant_name}</p>
+                            <p className="text-[10.5px] text-slate-500 font-medium mt-0.5 truncate">{dealer.applicant_name}</p>
                           </div>
                         </div>
 
                         <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border shrink-0 shadow-2xs ${
                           isApproved 
                             ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/80' 
+                            : isRejected
+                            ? 'bg-rose-50/90 text-rose-700 border-rose-200/80'
                             : 'bg-amber-50/90 text-amber-700 border-amber-200/80'
                         }`}>
                           {dealer.status}

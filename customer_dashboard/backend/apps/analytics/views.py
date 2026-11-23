@@ -13,15 +13,17 @@ REST API Endpoints:
 """
 
 import csv
+import re
 from datetime import datetime
 from typing import Any, Dict
 
 from django.http import HttpResponse
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.permissions import IsAdmin
 from .services.ga4_service import GA4AnalyticsService
 from .services.presence_service import PresenceService
 from .services.sales_service import SalesAnalyticsService
@@ -29,7 +31,7 @@ from .services.sales_service import SalesAnalyticsService
 
 class AnalyticsBaseView(APIView):
     """Base class enforcing Admin Authentication."""
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
 
 class HeartbeatView(APIView):
@@ -187,7 +189,8 @@ class AnalyticsExportCSVView(AnalyticsBaseView):
         period = request.query_params.get("period", "today")
         sales_data = SalesAnalyticsService.get_sales_over_time(period=period)
 
-        filename = f"faazo_sales_analytics_{period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        safe_period = re.sub(r"[^a-zA-Z0-9_-]", "", str(period)) or "report"
+        filename = f"faazo_sales_analytics_{safe_period}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
 

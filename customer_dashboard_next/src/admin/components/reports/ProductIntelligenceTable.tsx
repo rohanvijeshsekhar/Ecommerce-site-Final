@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, TrendingUp, AlertCircle } from 'lucide-react';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import type { ProductIntelligenceItem } from '../../services/reportsService';
 
 interface ProductIntelligenceTableProps {
@@ -13,12 +14,7 @@ const ProductImageThumbnail: React.FC<{ src?: string | null; name: string }> = (
     return <Package className="w-5 h-5 text-slate-400" />;
   }
 
-  // Format URL: if relative path like "/media/...", prepend Django backend URL
-  const imageUrl = src.startsWith('http://') || src.startsWith('https://')
-    ? src
-    : src.startsWith('/')
-    ? `http://localhost:8000${src}`
-    : `http://localhost:8000/${src}`;
+  const imageUrl = getAbsoluteImageUrl(src);
 
   return (
     <img

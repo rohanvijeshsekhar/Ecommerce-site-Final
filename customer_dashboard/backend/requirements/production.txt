@@ -9,6 +9,7 @@ psycopg2-binary>=2.9,<3.0
 # Production WSGI Server
 gunicorn>=21.2,<24.0
 
-# Cloud Storage (Amazon S3 / Cloudflare R2)
-django-storages[boto3]>=1.14,<2.0
-boto3>=1.28,<2.0
+# Storage: Persistent local VPS disk uses Django built-in FileSystemStorage (no extra packages needed)
+# Cloud Storage (Optional - only required if S3/R2 is configured in the future):
+# django-storages[boto3]>=1.14,<2.0
+# boto3>=1.28,<2.0

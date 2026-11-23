@@ -7,6 +7,7 @@ interface ImageCropModalProps {
   onClose: () => void;
   imageSrc: string;
   aspectRatio: number; // e.g. 1 for 1:1, 16/9 for 16:9
+  originalFile?: File | null;
   onCropSave: (croppedBlob: Blob) => void;
 }
 
@@ -15,6 +16,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   onClose,
   imageSrc,
   aspectRatio,
+  originalFile,
   onCropSave,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -291,14 +293,26 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
               </button>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
+              {originalFile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCropSave(originalFile);
+                  }}
+                  className="px-3.5 py-2 border border-teal-600 text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  title="Keep the original full image without any crop"
+                >
+                  Use Original (No Crop)
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSave}

@@ -2,8 +2,10 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/';
-const MEDIA_BASE_URL = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:8000';
+const _rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/';
+const API_BASE_URL = _rawApiBase.endsWith('/') ? _rawApiBase : `${_rawApiBase}/`;
+const _rawMediaBase = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:8000';
+const MEDIA_BASE_URL = _rawMediaBase.endsWith('/') ? _rawMediaBase.slice(0, -1) : _rawMediaBase;
 
 // C1: withCredentials must be true so the browser sends the HttpOnly
 // refresh token cookie (faazo_refresh) on every request to the same origin.
@@ -98,12 +100,22 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // When sending FormData, delete Content-Type so Axios/browser automatically sets multipart/form-data with boundary
-    if (config.data instanceof FormData) {
-      if (config.headers) {
-        delete config.headers['Content-Type'];
-        delete (config.headers as any)['content-type'];
+    // When sending FormData, ensure Content-Type is completely unset so Axios & the browser
+    // automatically generate multipart/form-data with the correct multi-part boundary string
+    const isFormData =
+      config.data instanceof FormData ||
+      (config.data && typeof config.data === 'object' && (
+        config.data.constructor?.name === 'FormData' ||
+        typeof (config.data as any).append === 'function'
+      ));
+
+    if (isFormData && config.headers) {
+      if (typeof (config.headers as any).delete === 'function') {
+        (config.headers as any).delete('Content-Type');
+        (config.headers as any).delete('content-type');
       }
+      delete config.headers['Content-Type'];
+      delete (config.headers as any)['content-type'];
     }
 
     return config;
@@ -136,35 +148,29 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle blocked or soft-deleted user — no retry
+    // Only force-logout when the error is about the CURRENT user's own account (401 or explicit account block/delete),
+    // NOT when an admin receives a 403/400 mentioning a blocked/deleted customer or soft-deleted entity.
     const errorData = error.response?.data;
-    const detail = errorData?.detail || errorData?.message || '';
-    const isBlockedOrDeleted =
-      (error.response?.status === 401 || error.response?.status === 403) &&
-      (detail.toLowerCase().includes('blocked') || detail.toLowerCase().includes('deleted'));
+    const detail = String(errorData?.detail || errorData?.message || '');
+    const lowerDetail = detail.toLowerCase();
+    const isAdminPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    const isSelfAccountBlocked =
+      (error.response?.status === 401 || (error.response?.status === 403 && !isAdminPage)) &&
+      (lowerDetail.includes('account is blocked') ||
+        lowerDetail.includes('account has been blocked') ||
+        lowerDetail.includes('account is deleted') ||
+        lowerDetail.includes('account is deactivated') ||
+        lowerDetail.includes('account is blocked or deleted') ||
+        (!isAdminPage && (lowerDetail.includes('blocked') || lowerDetail.includes('deleted'))));
 
-    if (isBlockedOrDeleted) {
-      const userStr = typeof window !== 'undefined' ? localStorage.getItem('faazo_user') : null;
-      let shouldClear = true;
-      if (userStr) {
-        try {
-          const storedUser = JSON.parse(userStr);
-          if (storedUser.role === 'admin') {
-            shouldClear = false;
-          }
-        } catch {
-          // ignore parse error
-        }
-      }
-
-      // Clear in-memory token — no localStorage key to remove for access token
+    if (isSelfAccountBlocked) {
       setAccessToken(null);
-      if (shouldClear && typeof window !== 'undefined') {
-        localStorage.removeItem('faazo_user');
-      }
-      window.dispatchEvent(new Event('faazo_auth_expired'));
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('faazo_user');
+        window.dispatchEvent(new Event('faazo_auth_expired'));
+        const target = isAdminPage ? '/admin/login' : '/';
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = target;
         }, 0);
       }
       return Promise.reject(error);
@@ -244,10 +250,34 @@ api.interceptors.response.use(
 
 export const getAbsoluteImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/images/') || url.startsWith('/brand/') || url.startsWith('/category/') || url.startsWith('/assets/') || url.startsWith('/placeholders/')) return url;
-  if (url.startsWith('/')) return `${MEDIA_BASE_URL}${url}`;
-  return `${MEDIA_BASE_URL}/${url}`;
+  // Blob and Data URLs are local client-side objects and must never be prefixed with backend URL
+  if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+
+  // Normalize localhost/127.0.0.1 loopback URLs generated by backend serializers during internal SSR
+  let cleanUrl = url;
+  if (cleanUrl.startsWith('http://127.0.0.1:8000')) {
+    cleanUrl = cleanUrl.replace('http://127.0.0.1:8000', '');
+  } else if (cleanUrl.startsWith('http://localhost:8000')) {
+    cleanUrl = cleanUrl.replace('http://localhost:8000', '');
+  } else if (cleanUrl.startsWith('https://127.0.0.1:8000')) {
+    cleanUrl = cleanUrl.replace('https://127.0.0.1:8000', '');
+  } else if (cleanUrl.startsWith('https://localhost:8000')) {
+    cleanUrl = cleanUrl.replace('https://localhost:8000', '');
+  }
+
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  if (cleanUrl.startsWith('/images/') || cleanUrl.startsWith('/brand/') || cleanUrl.startsWith('/category/') || cleanUrl.startsWith('/assets/') || cleanUrl.startsWith('/placeholders/')) return cleanUrl;
+
+  // On client browser, if MEDIA_BASE_URL points to localhost/loopback or is empty,
+  // return relative path so the browser loads directly from the current origin (e.g. https://faazo.cloud/media/...)
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalMediaBase = !MEDIA_BASE_URL || MEDIA_BASE_URL.includes('localhost') || MEDIA_BASE_URL.includes('127.0.0.1');
+  if (isBrowser && isLocalMediaBase) {
+    return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
+  }
+
+  if (cleanUrl.startsWith('/')) return `${MEDIA_BASE_URL}${cleanUrl}`;
+  return `${MEDIA_BASE_URL}/${cleanUrl}`;
 };
 
 export const getMediaUrl = getAbsoluteImageUrl;

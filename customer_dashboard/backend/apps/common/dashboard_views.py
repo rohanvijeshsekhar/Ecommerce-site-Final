@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
+from apps.common.permissions import IsAdmin
 from apps.orders.models import Order, OrderItem, OrderStatus
 from apps.users.models import User, UserRole, UserProfile
 from apps.products.models import Product, ProductStatus
@@ -24,20 +25,22 @@ from apps.payments.models import Payment, PaymentStatus
 from apps.warranty.models import WarrantyRegistration, WarrantyRegistrationStatus
 from apps.support.models import SupportTicket, TicketStatus
 
+VALID_ORDER_STATUSES = [
+    OrderStatus.PROCESSING,
+    OrderStatus.PACKED,
+    OrderStatus.SHIPPED,
+    OrderStatus.DELIVERED,
+]
 
-class IsAdminUserPermission(permissions.BasePermission):
-    """Allows access to superusers, staff, or users with role='admin'."""
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        return user.is_staff or user.is_superuser or user.role == UserRole.ADMIN or getattr(user, 'is_admin_user', False)
+
+class IsAdminUserPermission(IsAdmin):
+    """Canonical admin permission delegating to apps.common.permissions.IsAdmin."""
+    pass
 
 
 def get_date_range(period_str):
-    """Helper to return start_date and previous_start_date based on period string."""
-    now = timezone.now()
-    today = now.date()
+    """Helper to return start_date and previous_start_date based on period string (in local TZ)."""
+    now = timezone.localtime()
     
     if period_str == '30 Days' or period_str == '30d':
         days = 30
@@ -87,9 +90,9 @@ class DashboardOverviewView(APIView):
         total_alltime_rev_res = Order.objects.filter(valid_orders_q).aggregate(total=Sum('total_amount'))
         total_alltime_rev = float(total_alltime_rev_res['total'] or 0)
 
-        # Orders Count
-        current_orders_count = Order.objects.filter(created_at__gte=start_date).count()
-        prev_orders_count = Order.objects.filter(created_at__gte=prev_start_date, created_at__lt=start_date).count()
+        # Orders Count (consistent with valid revenue orders — excludes cancelled & abandoned pending_payment)
+        current_orders_count = Order.objects.filter(valid_orders_q, created_at__gte=start_date).count()
+        prev_orders_count = Order.objects.filter(valid_orders_q, created_at__gte=prev_start_date, created_at__lt=start_date).count()
         orders_growth = round(((current_orders_count - prev_orders_count) / prev_orders_count * 100), 2) if prev_orders_count > 0 else (100.0 if current_orders_count > 0 else 0.0)
 
         # Customers Count
@@ -118,7 +121,7 @@ class DashboardOverviewView(APIView):
                 chart_dates.append(day.strftime('%b %d'))
 
                 r_val = Order.objects.filter(valid_orders_q, created_at__range=(day_start, day_end)).aggregate(t=Sum('total_amount'))['t'] or 0
-                o_val = Order.objects.filter(created_at__range=(day_start, day_end)).count()
+                o_val = Order.objects.filter(valid_orders_q, created_at__range=(day_start, day_end)).count()
 
                 revenue_values.append(float(r_val))
                 orders_values.append(o_val)
@@ -131,14 +134,16 @@ class DashboardOverviewView(APIView):
                 chart_dates.append(f"{w_start.strftime('%b %d')} - {w_end.strftime('%b %d')}")
 
                 r_val = Order.objects.filter(valid_orders_q, created_at__range=(w_start, w_end)).aggregate(t=Sum('total_amount'))['t'] or 0
-                o_val = Order.objects.filter(created_at__range=(w_start, w_end)).count()
+                o_val = Order.objects.filter(valid_orders_q, created_at__range=(w_start, w_end)).count()
 
                 revenue_values.append(float(r_val))
                 orders_values.append(o_val)
         elif days_count == 90:
             for m in range(2, -1, -1):
-                m_date = now - timedelta(days=m*30)
-                m_start = m_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                # Calendar-safe month subtraction (never skips/duplicates months on the 31st)
+                target_month_idx = (now.year * 12 + (now.month - 1)) - m
+                target_year, target_month_zero = divmod(target_month_idx, 12)
+                m_start = now.replace(year=target_year, month=target_month_zero + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
                 next_m = (m_start + timedelta(days=32)).replace(day=1)
                 m_end = next_m - timedelta(microseconds=1)
 
@@ -146,7 +151,7 @@ class DashboardOverviewView(APIView):
                 chart_dates.append(m_start.strftime('%B %Y'))
 
                 r_val = Order.objects.filter(valid_orders_q, created_at__range=(m_start, m_end)).aggregate(t=Sum('total_amount'))['t'] or 0
-                o_val = Order.objects.filter(created_at__range=(m_start, m_end)).count()
+                o_val = Order.objects.filter(valid_orders_q, created_at__range=(m_start, m_end)).count()
 
                 revenue_values.append(float(r_val))
                 orders_values.append(o_val)
@@ -159,7 +164,7 @@ class DashboardOverviewView(APIView):
                 chart_dates.append(f"Q{4-q} {q_start.strftime('%Y')}")
 
                 r_val = Order.objects.filter(valid_orders_q, created_at__range=(q_start, q_end)).aggregate(t=Sum('total_amount'))['t'] or 0
-                o_val = Order.objects.filter(created_at__range=(q_start, q_end)).count()
+                o_val = Order.objects.filter(valid_orders_q, created_at__range=(q_start, q_end)).count()
 
                 revenue_values.append(float(r_val))
                 orders_values.append(o_val)
@@ -298,7 +303,10 @@ class DashboardOverviewView(APIView):
         # 7. Top Selling Products / Best Sellers
         # ---------------------------------------------------------------------
         top_products_data = []
-        top_items_qs = OrderItem.objects.values(
+        top_items_qs = OrderItem.objects.filter(
+            order__status__in=VALID_ORDER_STATUSES,
+            order__created_at__gte=start_date,
+        ).values(
             'product__id', 'product__name', 'product__sku', 'product__category__name'
         ).annotate(
             total_qty=Sum('quantity'),
@@ -306,8 +314,12 @@ class DashboardOverviewView(APIView):
         ).order_by('-total_rev')[:4]
 
         if top_items_qs.exists():
+            prod_ids = [item['product__id'] for item in top_items_qs if item['product__id']]
+            prod_map = {
+                p.id: p for p in Product.objects.filter(id__in=prod_ids).select_related('inventory')
+            }
             for item in top_items_qs:
-                prod_obj = Product.objects.filter(id=item['product__id']).first()
+                prod_obj = prod_map.get(item['product__id'])
                 inv_obj = getattr(prod_obj, 'inventory', None) if prod_obj else None
                 avail = inv_obj.available_stock if inv_obj else 0
                 top_products_data.append({
@@ -324,7 +336,7 @@ class DashboardOverviewView(APIView):
             for prod_obj in Product.objects.filter(is_deleted=False).select_related('inventory', 'category')[:4]:
                 inv_obj = getattr(prod_obj, 'inventory', None)
                 avail = inv_obj.available_stock if inv_obj else 0
-                items_qs = OrderItem.objects.filter(product=prod_obj)
+                items_qs = OrderItem.objects.filter(product=prod_obj, order__status__in=VALID_ORDER_STATUSES)
                 units_cnt = items_qs.aggregate(t=Sum('quantity'))['t'] or 0
                 rev_calc = items_qs.aggregate(t=Sum(F('quantity') * F('price')))['t'] or 0
 
@@ -429,11 +441,12 @@ class DashboardOverviewView(APIView):
 class DashboardRevenueView(APIView):
     permission_classes = [IsAdminUserPermission]
     def get(self, request):
-        valid_orders_q = Q(status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
+        valid_orders_q = Q(status__in=VALID_ORDER_STATUSES)
+        now_local = timezone.localtime()
         total_rev = Order.objects.filter(valid_orders_q).aggregate(t=Sum('total_amount'))['t'] or 0
-        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
         today_rev = Order.objects.filter(valid_orders_q, created_at__gte=today_start).aggregate(t=Sum('total_amount'))['t'] or 0
-        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_start = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         month_rev = Order.objects.filter(valid_orders_q, created_at__gte=month_start).aggregate(t=Sum('total_amount'))['t'] or 0
 
         return Response({
@@ -484,7 +497,10 @@ class DashboardProductsView(APIView):
         total_prod = Product.objects.filter(is_deleted=False).count()
         active_prod = Product.objects.filter(is_deleted=False, status=ProductStatus.ACTIVE).count()
         
-        best_sellers_qs = OrderItem.objects.values('product__id', 'product__name', 'product__sku') \
+        best_sellers_qs = OrderItem.objects.filter(
+            order__status__in=VALID_ORDER_STATUSES,
+            product__is_deleted=False,
+        ).values('product__id', 'product__name', 'product__sku') \
             .annotate(units_sold=Sum('quantity'), revenue=Sum(F('quantity') * F('price'))) \
             .order_by('-units_sold')[:5]
 
@@ -513,8 +529,9 @@ class DashboardDealersView(APIView):
     def get(self, request):
         total_dealers = User.objects.filter(role=UserRole.DEALER).count()
         pending_apps = DealerApplication.objects.filter(status=DealerStatus.PENDING).count()
-        dealer_orders_cnt = Order.objects.filter(user__role=UserRole.DEALER).count()
-        dealer_rev = Order.objects.filter(user__role=UserRole.DEALER).aggregate(t=Sum('total_amount'))['t'] or 0
+        valid_dealer_orders = Order.objects.filter(user__role=UserRole.DEALER, status__in=VALID_ORDER_STATUSES)
+        dealer_orders_cnt = valid_dealer_orders.count()
+        dealer_rev = valid_dealer_orders.aggregate(t=Sum('total_amount'))['t'] or 0
 
         return Response({
             'success': True,
@@ -530,7 +547,7 @@ class DashboardDealersView(APIView):
 class DashboardInventoryView(APIView):
     permission_classes = [IsAdminUserPermission]
     def get(self, request):
-        inventories = ProductInventory.objects.all()
+        inventories = ProductInventory.objects.filter(product__is_deleted=False)
         in_stock = 0
         low_stock = 0
         out_of_stock = 0

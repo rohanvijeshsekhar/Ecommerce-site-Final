@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import AdminLayout from '@/admin/layouts/AdminLayout';
 import { AdminProvider } from '@/admin/contexts/AdminContext';
 import { BreadcrumbProvider } from '@/admin/contexts/BreadcrumbContext';
+import { ToastProvider } from '@/admin/components/Toast';
 
 export const metadata: Metadata = {
   title: 'FAAZO Admin Portal | Enterprise Business Operating System',
@@ -11,10 +12,12 @@ export const metadata: Metadata = {
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminProvider>
-      <BreadcrumbProvider>
-        <AdminLayout>{children}</AdminLayout>
-      </BreadcrumbProvider>
-    </AdminProvider>
+    <ToastProvider>
+      <AdminProvider>
+        <BreadcrumbProvider>
+          <AdminLayout>{children}</AdminLayout>
+        </BreadcrumbProvider>
+      </AdminProvider>
+    </ToastProvider>
   );
 }

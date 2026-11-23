@@ -64,7 +64,9 @@ from .serializers import (
 class ReorderMixin:
     """
     Adds a PATCH /reorder/ action that accepts [{id, sort_order}] and bulk-updates.
+    Also ensures MultiPartParser, FormParser, and JSONParser are enabled on all viewsets.
     """
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @action(detail=False, methods=["patch"], url_path="reorder",
             permission_classes=[IsAuthenticated, IsAdmin])

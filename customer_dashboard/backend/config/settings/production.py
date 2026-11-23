@@ -1,6 +1,6 @@
 """
 FAAZO Backend – Production Settings
-Uses PostgreSQL. Debug disabled. Strict CORS. Secure cookies. S3 Media.
+Uses PostgreSQL. Debug disabled. Strict CORS. Secure cookies. Persistent Local VPS Media.
 """
 
 from .base import *  # noqa: F401, F403
@@ -64,21 +64,17 @@ REFRESH_COOKIE_SAMESITE = "Strict"
 
 
 # ============================================================
-# Amazon S3 / Cloudflare R2 Media Storage
+# Persistent Local VPS Disk Storage
+# Inherits MEDIA_URL and MEDIA_ROOT (env-configurable) from base.py
 # ============================================================
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
-
-AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")  # noqa: F405
-AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")  # noqa: F405
-AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")  # noqa: F405
-AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="ap-south-1")  # noqa: F405
-AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")  # noqa: F405
-AWS_DEFAULT_ACL = None
-AWS_S3_FILE_OVERWRITE = False
-AWS_QUERYSTRING_AUTH = True  # Private files require signed URLs
-
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/" if AWS_S3_CUSTOM_DOMAIN else "/media/"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+    },
+}
 
 
 # ============================================================

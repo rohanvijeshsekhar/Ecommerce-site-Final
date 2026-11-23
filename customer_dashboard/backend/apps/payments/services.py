@@ -62,9 +62,13 @@ def _get_client():
 def create_razorpay_order(amount_paise: int, receipt: str, notes: dict = None):
     """
     Create a Razorpay order.
+    Validates minimum amount >= 100 paise (₹1.00).
     If credentials are placeholders, returns a mock order structure.
     On API failure, logs the full error and re-raises (callers decide fallback strategy).
     """
+    if not isinstance(amount_paise, int) or amount_paise < 100:
+        raise ValueError("Minimum order amount is 100 paise (₹1.00).")
+
     if is_sandbox_mode():
         mock_id = f"order_mock_{uuid.uuid4().hex[:14]}"
         logger.info("[SANDBOX MODE] Simulating Razorpay order creation: receipt=%s, id=%s", receipt, mock_id)
@@ -98,6 +102,22 @@ def create_razorpay_order(amount_paise: int, receipt: str, notes: dict = None):
             getattr(settings, "RAZORPAY_KEY_ID", "")[:16],
             e,
         )
+        # If in local DEBUG mode and authentication failed on Razorpay's server (e.g. revoked/expired test keys),
+        # gracefully fallback to sandbox simulation so the developer is not blocked.
+        if getattr(settings, "DEBUG", False) and ("authentication" in str(e).lower() or "unauthorized" in str(e).lower()):
+            mock_id = f"order_mock_{uuid.uuid4().hex[:14]}"
+            logger.warning(
+                "[Razorpay Auth Failed] Credentials rejected by Razorpay. Falling back to local sandbox simulator in DEBUG mode: id=%s",
+                mock_id,
+            )
+            return {
+                "id": mock_id,
+                "amount": amount_paise,
+                "currency": "INR",
+                "receipt": receipt,
+                "status": "created",
+                "notes": notes or {},
+            }
         raise
 
 
@@ -107,7 +127,7 @@ def verify_payment_signature(razorpay_order_id: str, razorpay_payment_id: str, r
     Verify the Razorpay payment signature using HMAC-SHA256.
     If sandbox mode, simulates validation for mock signatures.
     """
-    if razorpay_order_id.startswith("order_mock_") or is_sandbox_mode():
+    if is_sandbox_mode() or (getattr(settings, "DEBUG", False) and razorpay_order_id.startswith("order_mock_")):
         logger.info("[SANDBOX MODE] Simulating signature verification: order=%s payment=%s", razorpay_order_id, razorpay_payment_id)
         # Sandbox signature checks standard pattern or dummy matches
         expected_sig = f"sig_mock_{razorpay_order_id}_{razorpay_payment_id}"

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Flame, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyOffer } from '@/admin/types/admin';
-import { api } from '@/lib/api';
+import { api, getAbsoluteImageUrl } from '@/lib/api';
 import DailyOfferCountdown from './DailyOfferCountdown';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 
@@ -39,7 +39,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
           setOffers(res.data.data);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   useEffect(() => {
@@ -163,15 +163,17 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
   // Image & Layout configuration
   const currentItem = activeOffer.items?.[activeItemIndex] || null;
-  const bannerImage =
+  const rawBannerImage =
     currentItem?.product_image ||
     activeOffer.desktop_image_url ||
     activeOffer.desktop_image ||
     DEFAULT_BANNER_IMAGE;
-  const mobileBannerImage =
+  const bannerImage = rawBannerImage ? getAbsoluteImageUrl(rawBannerImage) : rawBannerImage;
+  const rawMobileBannerImage =
     currentItem?.product_image ||
     activeOffer.mobile_image_url ||
     activeOffer.mobile_image;
+  const mobileBannerImage = rawMobileBannerImage ? getAbsoluteImageUrl(rawMobileBannerImage) : null;
   const imagePos = activeOffer.image_position || 'right'; // 'left' | 'right' | 'center'
   const isBackgroundMode = imagePos === 'center';
   const isImageLeft = imagePos === 'left';
@@ -251,17 +253,15 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${
-        !hasAnyDynamicOverlay && isBackgroundMode
+      className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${!hasAnyDynamicOverlay && isBackgroundMode
           ? isMobilePreview
             ? 'h-[220px]'
             : 'h-[280px] sm:h-[380px] md:h-[460px] lg:h-[520px]'
           : 'min-h-[320px]'
-      } ${
-        isLivePreview
+        } ${isLivePreview
           ? 'rounded-2xl border border-slate-200 cursor-default'
           : 'cursor-pointer group hover:shadow-[0_20px_50px_rgba(0,102,112,0.22)]'
-      }`}
+        }`}
       style={{
         background: bgGradient || bgColor,
         fontFamily: bannerFontFamily,
@@ -275,24 +275,28 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
         <>
           <div className="absolute inset-0 z-0 pointer-events-none">
             {isLivePreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={effectivePreviewImage}
-                alt={activeOffer.title || 'Daily Offer Banner'}
-                className={`w-full h-full object-${imageFit} object-center`}
-              />
-            ) : (
-              <picture className="absolute inset-0 w-full h-full">
-                {mobileBannerImage && (
-                  <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
-                )}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+              effectivePreviewImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={bannerImage}
+                  src={effectivePreviewImage}
                   alt={activeOffer.title || 'Daily Offer Banner'}
                   className={`w-full h-full object-${imageFit} object-center`}
                 />
-              </picture>
+              ) : null
+            ) : (
+              bannerImage ? (
+                <picture className="absolute inset-0 w-full h-full">
+                  {mobileBannerImage && mobileBannerImage !== bannerImage && (
+                    <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={bannerImage}
+                    alt={activeOffer.title || 'Daily Offer Banner'}
+                    className={`w-full h-full object-${imageFit} object-center`}
+                  />
+                </picture>
+              ) : null
             )}
 
             {/* Gradient overlay only rendered if text/countdown/cta overlay is active */}
@@ -320,15 +324,13 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
           BANNER INNER CONTENT
          ============================================================ */}
       <div
-        className={`relative z-10 max-w-[1440px] mx-auto ${
-          isBackgroundMode && hasAnyDynamicOverlay
+        className={`relative z-10 max-w-[1440px] mx-auto ${isBackgroundMode && hasAnyDynamicOverlay
             ? isMobilePreview
               ? 'min-h-[220px] flex flex-col ' + vAlignClass
               : 'min-h-[340px] sm:min-h-[420px] md:min-h-[480px] flex flex-col ' + vAlignClass
             : ''
-        } ${
-          isMobilePreview ? 'px-4 py-8' : 'px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-16'
-        } ${!hasAnyDynamicOverlay && isBackgroundMode ? 'pointer-events-none' : ''}`}
+          } ${isMobilePreview ? 'px-4 py-8' : 'px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-16'
+          } ${!hasAnyDynamicOverlay && isBackgroundMode ? 'pointer-events-none' : ''}`}
       >
         {isBackgroundMode ? (
           /* Background Mode: Centered / Configurable Content Stack */
@@ -337,9 +339,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               {/* Badge & Offer Tag Row */}
               {(hasBadge || hasOfferText) && (
                 <div
-                  className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${
-                    hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                  }`}
+                  className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                    }`}
                 >
                   {hasBadge && (
                     <span
@@ -364,9 +365,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               {/* Title */}
               {hasTitle && (
                 <h2
-                  className={`${
-                    isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
-                  } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
+                  className={`${isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
+                    } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
                   style={{ color: headingColor }}
                 >
                   {activeOffer.title}
@@ -386,9 +386,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               {/* Countdown & CTA */}
               {(hasCountdown || hasCta) && (
                 <div
-                  className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${
-                    hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                  }`}
+                  className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                    }`}
                 >
                   {hasCountdown && (
                     <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
@@ -439,23 +438,20 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
              MODE 2: SPLIT LAYOUT (Content + High-Impact Promotional Image)
              ============================================================ */
           <div
-            className={`grid grid-cols-1 ${
-              isMobilePreview || !hasAnyDynamicOverlay ? 'gap-6' : 'lg:grid-cols-12 gap-8 lg:gap-12'
-            } items-center`}
+            className={`grid grid-cols-1 ${isMobilePreview || !hasAnyDynamicOverlay ? 'gap-6' : 'lg:grid-cols-12 gap-8 lg:gap-12'
+              } items-center`}
           >
             {/* Content Column (Only rendered when dynamic text or CTA exists) */}
             {hasAnyDynamicOverlay && (
               <div
-                className={`flex flex-col ${textAlignClass} ${
-                  isMobilePreview ? 'w-full' : 'lg:col-span-7'
-                } ${isImageLeft && !isMobilePreview ? 'lg:order-2' : 'lg:order-1'}`}
+                className={`flex flex-col ${textAlignClass} ${isMobilePreview ? 'w-full' : 'lg:col-span-7'
+                  } ${isImageLeft && !isMobilePreview ? 'lg:order-2' : 'lg:order-1'}`}
               >
                 {/* Badges */}
                 {(hasBadge || hasOfferText) && (
                   <div
-                    className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${
-                      hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                    }`}
+                    className={`flex items-center gap-2.5 flex-wrap mb-3.5 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                      }`}
                   >
                     {hasBadge && (
                       <span
@@ -480,9 +476,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 {/* Title */}
                 {hasTitle && (
                   <h2
-                    className={`${
-                      isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
-                    } font-black tracking-tight leading-[1.12] mb-3.5`}
+                    className={`${isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
+                      } font-black tracking-tight leading-[1.12] mb-3.5`}
                     style={{ color: headingColor }}
                   >
                     {activeOffer.title}
@@ -502,9 +497,8 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 {/* Countdown & CTA */}
                 {(hasCountdown || hasCta) && (
                   <div
-                    className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${
-                      hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                    }`}
+                    className={`flex items-center gap-5 sm:gap-7 flex-wrap pt-1 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                      }`}
                   >
                     {hasCountdown && (
                       <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
@@ -553,46 +547,45 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
             {/* Promotional Image Column */}
             <div
-              className={`${
-                !hasAnyDynamicOverlay
+              className={`${!hasAnyDynamicOverlay
                   ? 'w-full h-[320px] sm:h-[420px] lg:h-[500px]'
                   : isMobilePreview
-                  ? 'w-full h-[220px]'
-                  : 'lg:col-span-5 h-[280px] sm:h-[340px] lg:h-[400px]'
-              } relative w-full flex items-center justify-center ${
-                isImageLeft && hasAnyDynamicOverlay && !isMobilePreview ? 'lg:order-1' : 'lg:order-2'
-              }`}
+                    ? 'w-full h-[220px]'
+                    : 'lg:col-span-5 h-[280px] sm:h-[340px] lg:h-[400px]'
+                } relative w-full flex items-center justify-center ${isImageLeft && hasAnyDynamicOverlay && !isMobilePreview ? 'lg:order-1' : 'lg:order-2'
+                }`}
             >
               <div
-                className={`relative w-full h-full rounded-2xl overflow-hidden ${
-                  !hasAnyDynamicOverlay
+                className={`relative w-full h-full rounded-2xl overflow-hidden ${!hasAnyDynamicOverlay
                     ? 'shadow-xl'
                     : 'shadow-2xl border border-white/15 bg-white/5 backdrop-blur-xs'
-                }`}
+                  }`}
               >
                 {isLivePreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={effectivePreviewImage}
-                    alt={activeOffer.title || 'Daily Offer Banner'}
-                    className={`w-full h-full object-${imageFit} object-center ${
-                      !hasAnyDynamicOverlay ? '' : 'p-2'
-                    }`}
-                  />
-                ) : (
-                  <picture className="w-full h-full flex items-center justify-center">
-                    {mobileBannerImage && (
-                      <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
-                    )}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                  effectivePreviewImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={bannerImage}
+                      src={effectivePreviewImage}
                       alt={activeOffer.title || 'Daily Offer Banner'}
-                      className={`w-full h-full object-${imageFit} object-center ${
-                        !hasAnyDynamicOverlay ? '' : 'p-2'
-                      }`}
+                      className={`w-full h-full object-${imageFit} object-center ${!hasAnyDynamicOverlay ? '' : 'p-2'
+                        }`}
                     />
-                  </picture>
+                  ) : null
+                ) : (
+                  bannerImage ? (
+                    <picture className="w-full h-full flex items-center justify-center">
+                      {mobileBannerImage && mobileBannerImage !== bannerImage && (
+                        <source media="(max-width: 639px)" srcSet={mobileBannerImage} />
+                      )}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={bannerImage}
+                        alt={activeOffer.title || 'Daily Offer Banner'}
+                        className={`w-full h-full object-${imageFit} object-center ${!hasAnyDynamicOverlay ? '' : 'p-2'
+                          }`}
+                      />
+                    </picture>
+                  ) : null
                 )}
                 {/* Subtle sheen highlight only when overlay exists */}
                 {hasAnyDynamicOverlay && (
@@ -672,11 +665,10 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                   handleSlideSelect(idx);
                 }}
                 aria-label={`Go to slide ${idx + 1}`}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  idx === currentSlideIndex
+                className={`transition-all duration-300 rounded-full cursor-pointer ${idx === currentSlideIndex
                     ? 'w-6 sm:w-7 h-2 bg-white shadow-sm'
                     : 'w-2 h-2 bg-white/50 hover:bg-white/80'
-                }`}
+                  }`}
               />
             ))}
           </div>

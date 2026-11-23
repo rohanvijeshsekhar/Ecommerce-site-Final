@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { HeroSlide, HomepagePromoBanner } from '../../types/admin';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
@@ -532,8 +533,8 @@ const HeroManager: React.FC = () => {
 
               {/* Desktop preview */}
               <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
-                {slide.desktop_image_url ? (
-                  <img src={slide.desktop_image_url} alt={slide.heading} className="w-full h-full object-cover" />
+                {slide.desktop_image_url || (slide as any).desktop_image ? (
+                  <img src={getAbsoluteImageUrl(slide.desktop_image_url || (slide as any).desktop_image)} alt={slide.heading} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Monitor className="w-5 h-5 text-slate-400" />
@@ -597,8 +598,8 @@ const HeroManager: React.FC = () => {
                 {/* Desktop Image */}
                 <ImageUploader
                   label="Desktop Image"
-                  aspectRatio={3}
-                  currentUrl={form.desktop_image instanceof File ? URL.createObjectURL(form.desktop_image) : form.desktop_image}
+                  aspectRatio={16 / 9}
+                  currentUrl={form.desktop_image instanceof File ? URL.createObjectURL(form.desktop_image) : (form.desktop_image ? getAbsoluteImageUrl(form.desktop_image) : null)}
                   onUpload={(file) => setForm(f => ({ ...f, desktop_image: file }))}
                   onRemove={() => setForm(f => ({ ...f, desktop_image: null }))}
                 />
@@ -606,8 +607,8 @@ const HeroManager: React.FC = () => {
                 {/* Mobile Image */}
                 <ImageUploader
                   label="Mobile Image"
-                  aspectRatio={3 / 3.7}
-                  currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : form.mobile_image}
+                  aspectRatio={3 / 4}
+                  currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : null)}
                   onUpload={(file) => setForm(f => ({ ...f, mobile_image: file }))}
                   onRemove={() => setForm(f => ({ ...f, mobile_image: null }))}
                 />
@@ -615,24 +616,24 @@ const HeroManager: React.FC = () => {
 
               {/* Heading */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Heading</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Heading (Optional)</label>
                 <input
                   type="text"
                   value={form.heading}
                   onChange={e => setForm(f => ({ ...f, heading: e.target.value }))}
-                  placeholder="e.g. Precision Performance Perfection"
+                  placeholder="e.g. Precision Performance Perfection (leave blank for clean artwork)"
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670]"
                 />
               </div>
 
               {/* Subheading */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sub Heading</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sub Heading (Optional)</label>
                 <input
                   type="text"
                   value={form.subheading}
                   onChange={e => setForm(f => ({ ...f, subheading: e.target.value }))}
-                  placeholder="Supporting text"
+                  placeholder="Supporting text (or leave blank)"
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670]"
                 />
               </div>
@@ -640,11 +641,12 @@ const HeroManager: React.FC = () => {
               {/* CTA */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">CTA Button Text</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">CTA Button Text (Optional)</label>
                   <input
                     type="text"
                     value={form.cta_text}
                     onChange={e => setForm(f => ({ ...f, cta_text: e.target.value }))}
+                    placeholder="Leave blank for no button"
                     className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#006670]/30 focus:border-[#006670]"
                   />
                 </div>

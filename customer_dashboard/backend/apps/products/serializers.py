@@ -175,9 +175,11 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         return value.upper()
 
     def validate_status(self, value):
-        # We always force status to active so that products created in the admin panel
-        # are immediately visible on the customer storefront.
-        return ProductStatus.ACTIVE
+        if not value:
+            return ProductStatus.ACTIVE
+        if value not in ProductStatus.values:
+            raise serializers.ValidationError(f"Invalid status '{value}'. Allowed: {', '.join(ProductStatus.values)}.")
+        return value
 
 
 # ── Admin Stats ───────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Star, MessageSquare } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import type { Testimonial } from '../../types/admin';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
@@ -34,7 +35,7 @@ const TestimonialsManager: React.FC = () => {
       review: item.review,
       sort_order: item.sort_order,
       is_active: item.is_active,
-      photo: item.photo_url || null,
+      photo: item.photo_url || (item as any).photo || null,
     });
     setShowForm(true);
   };
@@ -52,7 +53,7 @@ const TestimonialsManager: React.FC = () => {
       fd.append('is_active', String(form.is_active));
       if (form.photo instanceof File) {
         fd.append('photo', form.photo);
-      } else if (form.photo === null) {
+      } else if (form.photo === null || form.photo === '') {
         fd.append('photo', ''); // Clear photo
       }
       const res = editItem ? await homepageService.updateTestimonial(editItem.id, fd) : await homepageService.createTestimonial(fd);
@@ -92,7 +93,11 @@ const TestimonialsManager: React.FC = () => {
             <div key={item.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group">
               <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
               <div className="w-11 h-11 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-cover" alt={item.customer_name} /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-sm">{item.customer_name[0]}</div>}
+                {item.photo_url ? (
+                  <img src={getAbsoluteImageUrl(item.photo_url)} className="w-full h-full object-cover" alt={item.customer_name} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-sm">{item.customer_name[0]}</div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{item.customer_name}</p>
@@ -126,7 +131,7 @@ const TestimonialsManager: React.FC = () => {
                   label="Photo"
                   aspectRatio={1}
                   className="flex-shrink-0"
-                  currentUrl={form.photo instanceof File ? URL.createObjectURL(form.photo) : form.photo}
+                  currentUrl={form.photo instanceof File ? URL.createObjectURL(form.photo) : (form.photo ? getAbsoluteImageUrl(form.photo) : undefined)}
                   onUpload={(file) => setForm(f => ({ ...f, photo: file }))}
                   onRemove={() => setForm(f => ({ ...f, photo: null }))}
                 />

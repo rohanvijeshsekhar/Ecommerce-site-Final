@@ -8,6 +8,7 @@ display order, pricing, and image resolution.
 import io
 from decimal import Decimal
 from PIL import Image as PILImage
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -18,11 +19,26 @@ from apps.categories.models import Category
 from apps.pricing.models import ProductPricing
 from apps.inventory.models import ProductInventory
 from apps.solutions.models import ClinicalSolution, ClinicalSolutionProduct
+from apps.users.models import UserRole
+
+User = get_user_model()
 
 
 class ClinicalSolutionsAPITests(APITestCase):
 
     def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            email="sol_admin@faazo.com",
+            password="AdminPassword123!",
+            full_name="Solutions Admin",
+            role=UserRole.ADMIN,
+        )
+        self.customer_user = User.objects.create_user(
+            email="sol_customer@faazo.com",
+            password="Password123!",
+            full_name="Solutions Customer",
+            role=UserRole.CUSTOMER,
+        )
         self.brand = Brand.objects.create(name="FAAZO Pro", slug="faazo-pro", is_active=True)
         self.category = Category.objects.create(name="Endodontics", slug="endodontics", is_active=True)
 
@@ -190,6 +206,7 @@ class ClinicalSolutionsAPITests(APITestCase):
 
     def test_09_detached_products_disappear(self):
         """9. When products are detached via admin update, they disappear from public detail."""
+        self.client.force_authenticate(user=self.admin_user)
         # Detach product2, keep only product1
         payload = {
             "title": self.solution_endo.title,
@@ -201,6 +218,7 @@ class ClinicalSolutionsAPITests(APITestCase):
         self.assertEqual(update_res.status_code, status.HTTP_200_OK)
 
         # Check public detail page
+        self.client.force_authenticate(user=None)
         public_url = f"/api/v1/solutions/{self.solution_endo.slug}/"
         res = self.client.get(public_url)
         products = res.data["data"]["products"]
@@ -374,6 +392,7 @@ class ClinicalSolutionsAPITests(APITestCase):
 
     def test_21_multipart_image_upload_saves_files_and_updates_urls(self):
         """21. Admin can upload real banner and thumbnail image files via multipart/form-data."""
+        self.client.force_authenticate(user=self.admin_user)
         banner_file = self._generate_test_image(name="panoramic_banner.png", color="teal")
         thumbnail_file = self._generate_test_image(name="square_thumbnail.png", color="orange")
 
@@ -406,6 +425,7 @@ class ClinicalSolutionsAPITests(APITestCase):
 
     def test_22_updating_solution_a_image_does_not_affect_solution_b(self):
         """22. Updating Solution A's image file does not alter Solution B's image or fallback."""
+        self.client.force_authenticate(user=self.admin_user)
         banner_file = self._generate_test_image(name="solution_a_banner.png", color="purple")
 
         data = {
@@ -438,6 +458,7 @@ class ClinicalSolutionsAPITests(APITestCase):
 
     def test_24_card_image_upload_and_homepage_serialization(self):
         """24. Admin can upload a dedicated card_image specifically for Homepage procedure workflow cards."""
+        self.client.force_authenticate(user=self.admin_user)
         card_file = self._generate_test_image(name="homepage_procedure_card.png", color="green")
 
         data = {

@@ -31,6 +31,16 @@ class MockSMSProvider(BaseOTPProvider):
         logger.info(
             f"[MockSMSProvider] MOCK SMS dispatched to {target} | Code: {otp_code} | Purpose: {purpose}"
         )
+        try:
+            from django.core.cache import cache
+            clean_target = str(target).strip()
+            cache.set(f"dev_latest_otp_{clean_target}", otp_code, timeout=900)
+            if clean_target.startswith("+91"):
+                cache.set(f"dev_latest_otp_{clean_target[3:]}", otp_code, timeout=900)
+            elif clean_target.startswith("91") and len(clean_target) == 12:
+                cache.set(f"dev_latest_otp_{clean_target[2:]}", otp_code, timeout=900)
+        except Exception:
+            pass
         return True
 
 
@@ -41,9 +51,10 @@ class MSG91SMSProvider(BaseOTPProvider):
     """
 
     def __init__(self):
-        self.authkey = getattr(settings, "MSG91_AUTHKEY", "") or getattr(settings, "SANGAMAM_API_KEY", "")
+        self.authkey = getattr(settings, "MSG91_AUTHKEY", "") or getattr(settings, "SANGAMAM_ACCESS_TOKEN_KEY", "") or getattr(settings, "SANGAMAM_API_KEY", "")
         self.sender_id = getattr(settings, "MSG91_SENDER_ID", "FAAZO")
         self.route = getattr(settings, "MSG91_ROUTE", "4")
+        self.last_error = None
         if not self.authkey:
             raise ImproperlyConfigured(
                 "MSG91_AUTHKEY (or SANGAMAM_API_KEY) is not configured for SMS delivery."
@@ -54,6 +65,7 @@ class MSG91SMSProvider(BaseOTPProvider):
             f"Your FAAZO verification code is {otp_code}. "
             "Valid for 10 minutes. Do not share with anyone."
         )
+        self.last_error = None
         
         # Format phone with Indian country code '91' if 10 digits
         raw_phone = target.lstrip("+").strip()
@@ -83,8 +95,12 @@ class MSG91SMSProvider(BaseOTPProvider):
                         f"[MSG91SMSProvider v5] OTP SMS dispatched successfully to {target} (phone={phone}). "
                         f"Response: {res_body}"
                     )
+                    self.last_error = None
                     return True
+                else:
+                    self.last_error = res_body
         except Exception as exc:
+            self.last_error = str(exc)
             logger.warning(f"[MSG91SMSProvider v5] OTP API warning for {target}: {exc}. Trying v2 fallback...")
 
         # Fallback: MSG91 v2 GET API with country=91
@@ -110,14 +126,17 @@ class MSG91SMSProvider(BaseOTPProvider):
                         f"[MSG91SMSProvider v2] SMS dispatched successfully to {target}. "
                         f"Response ID: {res_body}"
                     )
+                    self.last_error = None
                     return True
                 else:
+                    self.last_error = res_body[:200] if res_body else f"HTTP {http_status}"
                     logger.error(
                         f"[MSG91SMSProvider Error] Gateway rejected SMS. "
                         f"HTTP Status: {http_status}, Gateway Response: {res_body[:200]}"
                     )
                     return False
         except Exception as exc:
+            self.last_error = str(exc)
             logger.error(f"[MSG91SMSProvider Error] Failed to send SMS to {target}: {exc}", exc_info=True)
             return False
 
@@ -204,9 +223,29 @@ class SangamamSMSProvider(BaseOTPProvider):
         self.return_template_id = getattr(settings, "SANGAMAM_RETURN_TEMPLATE_ID", "1777178496718140338") or "1777178496718140338"
         self.shipped_template_id = getattr(settings, "SANGAMAM_SHIPPED_TEMPLATE_ID", "1777178496710209320") or "1777178496710209320"
 
+        self.last_error = None
+
+        # Auto-correct swapped credentials (accessToken is 15-char ID, accessTokenKey is 32-char secret)
+        tok_clean = self.access_token.strip()
+        key_clean = self.access_token_key.strip()
+        if len(tok_clean) > len(key_clean) and len(key_clean) == 15:
+            self.access_token = key_clean
+            self.access_token_key = tok_clean
+        elif tok_clean.lower() == "faazo" and len(key_clean) >= 10:
+            self.access_token = key_clean
+            self.access_token_key = tok_clean
+        else:
+            self.access_token = tok_clean
+            self.access_token_key = key_clean
+
         if not self.access_token or not self.access_token_key:
             raise ImproperlyConfigured(
                 "SANGAMAM_ACCESS_TOKEN and SANGAMAM_ACCESS_TOKEN_KEY must be configured in environment."
+            )
+        if self.access_token.strip() in ("your_sangamam_access_token", "your_access_token_here") or \
+           self.access_token_key.strip() in ("your_sangamam_access_token_key", "your_access_token_key_here"):
+            raise ImproperlyConfigured(
+                "SANGAMAM_ACCESS_TOKEN and SANGAMAM_ACCESS_TOKEN_KEY are currently placeholder values. Please replace them in .env with your real Sangamam API tokens."
             )
 
     @staticmethod
@@ -524,12 +563,17 @@ class SangamamSMSProvider(BaseOTPProvider):
         phone = self.normalize_phone_number(target)
         if not otp_code or not str(otp_code).strip():
             logger.warning("[SangamamSMSProvider] Cannot send OTP: missing otp_code.")
+            self.last_error = "Missing otp_code"
             return False
 
         spec = SangamamDLTRegistry.get_template("OTP")
         message = spec.text_template.format(otp_code=str(otp_code).strip())
         res = self.send_sms_detailed(target=phone, message=message, template_id=spec.template_id)
-        return res.get("success", False)
+        if not res.get("success", False):
+            self.last_error = res.get("error", "Gateway rejected SMS")
+            return False
+        self.last_error = None
+        return True
 
 
 
@@ -540,16 +584,10 @@ def get_sms_provider() -> BaseOTPProvider:
     """
     provider_type = getattr(settings, "SMS_PROVIDER", "mock").lower()
 
-    if provider_type in ["msg91", "sangamam"]:
-        authkey = getattr(settings, "MSG91_AUTHKEY", "") or getattr(settings, "SANGAMAM_API_KEY", "")
-        # Automatically use MSG91 provider when an MSG91 key (15 alphanumeric chars) is configured
-        if provider_type == "msg91" or len(authkey) == 15:
-            try:
-                return MSG91SMSProvider()
-            except Exception as e:
-                logger.warning(f"Failed to initialize MSG91SMSProvider: {e}")
-        if provider_type == "sangamam":
-            return SangamamSMSProvider()
+    if provider_type == "msg91":
+        return MSG91SMSProvider()
+    elif provider_type == "sangamam":
+        return SangamamSMSProvider()
 
     # Warn loudly if mock is used in non-debug (production) environments
     if not getattr(settings, "DEBUG", False) and provider_type == "mock":

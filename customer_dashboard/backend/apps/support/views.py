@@ -139,6 +139,15 @@ class SupportTicketListView(APIView):
         if priority not in TicketPriority.values:
             return error_response(f"Invalid priority: {priority}.", status_code=status.HTTP_400_BAD_REQUEST)
 
+        # Verify related_order ownership (prevents IDOR linking to another customer's order)
+        if related_order_id and not is_user_admin(user):
+            from apps.orders.models import Order
+            try:
+                if not Order.objects.filter(pk=related_order_id, user=user).exists():
+                    return error_response("Invalid or unauthorized related order.", status_code=status.HTTP_403_FORBIDDEN)
+            except Exception:
+                return error_response("Invalid related_order ID.", status_code=status.HTTP_400_BAD_REQUEST)
+
         try:
             with transaction.atomic():
                 ticket = SupportTicket.objects.create(
@@ -296,7 +305,15 @@ class AdminSupportTicketActionView(APIView):
                 assigned_admin_id = request.data.get("assigned_admin")
                 if not assigned_admin_id:
                     return error_response("assigned_admin is required.", status_code=status.HTTP_400_BAD_REQUEST)
-                ticket.assigned_admin_id = assigned_admin_id
+                from django.contrib.auth import get_user_model
+                UserModel = get_user_model()
+                try:
+                    target_admin = UserModel.objects.get(pk=assigned_admin_id)
+                except Exception:
+                    return error_response("Assigned admin user not found.", status_code=status.HTTP_400_BAD_REQUEST)
+                if not is_user_admin(target_admin):
+                    return error_response("Ticket can only be assigned to an administrator.", status_code=status.HTTP_400_BAD_REQUEST)
+                ticket.assigned_admin = target_admin
                 ticket.status = TicketStatus.IN_PROGRESS
                 ticket.save(update_fields=["assigned_admin", "status"])
 

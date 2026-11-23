@@ -86,7 +86,29 @@ export async function serverFetch<T>(
  */
 export function getServerImageUrl(url: string | null | undefined): string {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/')) return `${MEDIA_BASE_URL}${url}`;
-  return `${MEDIA_BASE_URL}/${url}`;
+
+  // Normalize localhost/127.0.0.1 loopback URLs from internal Django serializer responses
+  let cleanUrl = url;
+  if (cleanUrl.startsWith('http://127.0.0.1:8000')) {
+    cleanUrl = cleanUrl.replace('http://127.0.0.1:8000', '');
+  } else if (cleanUrl.startsWith('http://localhost:8000')) {
+    cleanUrl = cleanUrl.replace('http://localhost:8000', '');
+  } else if (cleanUrl.startsWith('https://127.0.0.1:8000')) {
+    cleanUrl = cleanUrl.replace('https://127.0.0.1:8000', '');
+  } else if (cleanUrl.startsWith('https://localhost:8000')) {
+    cleanUrl = cleanUrl.replace('https://localhost:8000', '');
+  }
+
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  if (cleanUrl.startsWith('/images/') || cleanUrl.startsWith('/brand/') || cleanUrl.startsWith('/category/') || cleanUrl.startsWith('/assets/') || cleanUrl.startsWith('/placeholders/')) return cleanUrl;
+
+  // On the server side during SSR, if MEDIA_BASE_URL is localhost or empty,
+  // return a relative path so HTML rendered for mobile/desktop clients loads from their host
+  const isLocalMediaBase = !MEDIA_BASE_URL || MEDIA_BASE_URL.includes('localhost') || MEDIA_BASE_URL.includes('127.0.0.1');
+  if (isLocalMediaBase) {
+    return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
+  }
+
+  if (cleanUrl.startsWith('/')) return `${MEDIA_BASE_URL}${cleanUrl}`;
+  return `${MEDIA_BASE_URL}/${cleanUrl}`;
 }

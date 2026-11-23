@@ -59,6 +59,7 @@ const CustomerDetailPage: React.FC = () => {
       const res = await adminCustomersService.getOne(id);
       if (res.success && res.data) {
         setCustomer(res.data);
+        setNotesInput(res.data.admin_notes || '');
       } else {
         toast.error('Customer not found.');
         router.push('/admin/customers');
@@ -539,7 +540,7 @@ const CustomerDetailPage: React.FC = () => {
                 </h4>
                 {!isEditingNotes && (
                   <button
-                    onClick={() => setIsEditingNotes(true)}
+                    onClick={() => { setNotesInput(customer.admin_notes || ''); setIsEditingNotes(true); }}
                     className="text-xs text-[#005B63] hover:underline font-semibold"
                   >
                     Edit Notes

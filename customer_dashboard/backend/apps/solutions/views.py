@@ -1,15 +1,32 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.common.permissions import IsAdmin
 from .models import ClinicalSolution, ClinicalSolutionProduct
 from .serializers import (
     ClinicalSolutionCreateUpdateSerializer,
     ClinicalSolutionDetailSerializer,
     ClinicalSolutionListSerializer,
 )
+
+ALLOWED_SOLUTION_ORDERINGS = {
+    "id", "-id",
+    "title", "-title",
+    "display_order", "-display_order",
+    "created_at", "-created_at",
+    "updated_at", "-updated_at",
+}
+
+
+def _apply_safe_ordering(qs, ordering_param):
+    if ordering_param:
+        fields = [f.strip() for f in str(ordering_param).split(",") if f.strip() in ALLOWED_SOLUTION_ORDERINGS]
+        if fields:
+            return qs.order_by(*fields)
+    return qs.order_by("-created_at", "-id")
 
 
 class ClinicalSolutionViewSet(viewsets.ModelViewSet):
@@ -18,7 +35,9 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_permissions(self):
-        return [AllowAny()]
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -29,22 +48,27 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = ClinicalSolution.objects.all()
-        if not self.request.path.startswith("/api/v1/solutions/admin") and "admin" not in self.request.query_params:
+        user = getattr(self.request, "user", None)
+        is_admin = bool(user and user.is_authenticated and IsAdmin._is_admin(user))
+        if not (is_admin and (self.request.path.startswith("/api/v1/solutions/admin") or "admin" in self.request.query_params)):
             qs = qs.filter(is_active=True)
             if self.request.query_params.get("homepage") == "true":
                 qs = qs.filter(show_on_homepage=True)
         ordering_param = self.request.query_params.get("ordering")
         if ordering_param:
-            return qs.order_by(ordering_param)
+            return _apply_safe_ordering(qs, ordering_param)
         return qs.order_by("-created_at", "-id")
 
     def retrieve(self, request, *args, **kwargs):
         lookup = kwargs.get("slug")
+        user = getattr(request, "user", None)
+        is_admin = bool(user and user.is_authenticated and IsAdmin._is_admin(user))
+        base_qs = ClinicalSolution.objects.all() if is_admin else ClinicalSolution.objects.filter(is_active=True)
         solution = None
         if str(lookup).isdigit():
-            solution = ClinicalSolution.objects.filter(pk=lookup).first()
+            solution = base_qs.filter(pk=lookup).first()
         if not solution:
-            solution = ClinicalSolution.objects.filter(slug=lookup).first()
+            solution = base_qs.filter(slug=lookup).first()
         if not solution:
             return Response({"detail": "Clinical solution not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -81,7 +105,7 @@ class ClinicalSolutionViewSet(viewsets.ModelViewSet):
 
 @api_view(["GET", "POST"])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_solutions_list_create(request):
     if request.method == "GET":
         qs = ClinicalSolution.objects.all()
@@ -97,10 +121,7 @@ def admin_solutions_list_create(request):
             qs = qs.filter(title__icontains=search)
 
         ordering_param = request.query_params.get("ordering")
-        if ordering_param:
-            qs = qs.order_by(ordering_param)
-        else:
-            qs = qs.order_by("-created_at", "-id")
+        qs = _apply_safe_ordering(qs, ordering_param) if ordering_param else qs.order_by("-created_at", "-id")
         serializer = ClinicalSolutionListSerializer(qs, many=True, context={"request": request})
         return Response({"success": True, "count": qs.count(), "data": serializer.data})
 
@@ -118,7 +139,7 @@ def admin_solutions_list_create(request):
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_solution_detail_update_delete(request, pk):
     solution = None
     if str(pk).isdigit():
@@ -149,7 +170,7 @@ def admin_solution_detail_update_delete(request, pk):
 
 
 @api_view(["PATCH"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_solution_toggle_status(request, pk):
     solution = None
     if str(pk).isdigit():
@@ -169,7 +190,7 @@ def admin_solution_toggle_status(request, pk):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated, IsAdmin])
 def admin_solutions_reorder(request):
     orders = request.data.get("orders", [])
     if not isinstance(orders, list):

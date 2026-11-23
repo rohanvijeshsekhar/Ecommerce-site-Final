@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, GripVertical, Eye, EyeOff, Package, Sparkles } from 'lucide-react';
 import { homepageService, adminService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import type { RecommendedProduct } from '../../types/admin';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
@@ -90,7 +91,7 @@ const RecommendedManager: React.FC = () => {
               <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
               <div className="w-12 h-12 bg-slate-200 rounded-xl overflow-hidden flex-shrink-0">
                 {item.primary_image
-                  ? <img src={item.primary_image} className="w-full h-full object-cover" alt={item.product_name} />
+                  ? <img src={getAbsoluteImageUrl(item.primary_image)} className="w-full h-full object-cover" alt={item.product_name} />
                   : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-slate-400" /></div>}
               </div>
               <div className="flex-1 min-w-0">

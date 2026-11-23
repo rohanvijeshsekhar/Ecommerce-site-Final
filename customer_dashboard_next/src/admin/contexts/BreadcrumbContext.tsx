@@ -52,6 +52,8 @@ export const useBreadcrumb = (): BreadcrumbContextType => {
 
 export const useBreadcrumbSync = (items: BreadcrumbItem[]) => {
   const { setBreadcrumbs } = useBreadcrumb();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setBreadcrumbs(items); }, []);
+  const serialized = JSON.stringify(items);
+  useEffect(() => {
+    setBreadcrumbs(JSON.parse(serialized) as BreadcrumbItem[]);
+  }, [serialized, setBreadcrumbs]);
 };

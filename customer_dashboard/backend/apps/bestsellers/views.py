@@ -213,7 +213,7 @@ class AdminBestSellerBannerView(APIView):
     POST /api/v1/bestsellers/admin/banner/   — create
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsAdmin]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
@@ -245,7 +245,7 @@ class AdminBestSellerBannerDetailView(APIView):
     DELETE /api/v1/bestsellers/admin/banner/<pk>/
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsAdmin]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_object(self, pk):
@@ -278,7 +278,7 @@ class AdminBestSellerProductListView(APIView):
     POST /api/v1/bestsellers/admin/products/  — add a product
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
         qs = (
@@ -304,7 +304,7 @@ class AdminBestSellerProductDetailView(APIView):
     DELETE /api/v1/bestsellers/admin/products/<pk>/  — remove
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get_object(self, pk):
         try:

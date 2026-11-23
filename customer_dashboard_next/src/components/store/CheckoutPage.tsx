@@ -319,16 +319,27 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const overallSavings = overallDiscount;
 
   // Pricing values with backend preview fallback
-  const subtotalVal = previewPricing ? previewPricing.selling_subtotal : subtotal;
+  const subtotalVal =
+    previewPricing && previewPricing.selling_subtotal > 0
+      ? previewPricing.selling_subtotal
+      : subtotal;
   const deliveryFeeVal = previewPricing ? previewPricing.shipping_fee : deliveryFee;
-  const totalOriginalPriceVal = previewPricing ? previewPricing.mrp_subtotal : totalOriginalPrice;
-  const baseProductDiscountVal = previewPricing
-    ? previewPricing.mrp_subtotal - previewPricing.selling_subtotal
-    : baseProductDiscount;
-  const orderTotalVal = previewPricing
-    ? previewPricing.total_amount
-    : orderTotal;
-  const overallSavingsVal = previewPricing ? previewPricing.savings : overallSavings;
+  const totalOriginalPriceVal =
+    previewPricing && previewPricing.mrp_subtotal > 0
+      ? previewPricing.mrp_subtotal
+      : totalOriginalPrice;
+  const baseProductDiscountVal =
+    previewPricing && previewPricing.mrp_subtotal > 0
+      ? previewPricing.mrp_subtotal - previewPricing.selling_subtotal
+      : baseProductDiscount;
+  const orderTotalVal =
+    previewPricing && previewPricing.total_amount > 0
+      ? previewPricing.total_amount
+      : orderTotal;
+  const overallSavingsVal =
+    previewPricing && previewPricing.savings > 0
+      ? previewPricing.savings
+      : overallSavings;
   const couponDiscountVal = couponDiscount;
 
   // --- BACKEND CHECKOUT PREVIEW ---
@@ -694,9 +705,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       }
 
       const rzOrder = createRes.data;
+      const razorpayKeyId = rzOrder.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '';
 
       const options = {
-        key: rzOrder.key_id,
+        key: razorpayKeyId,
         amount: rzOrder.amount,
         currency: rzOrder.currency,
         name: 'FAAZO Dental Solutions',
@@ -782,9 +794,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const isSandbox =
         isDev && (
           rzOrder.razorpay_order_id.startsWith('order_mock_') ||
-          !rzOrder.key_id ||
-          rzOrder.key_id.includes('REPLACE') ||
-          rzOrder.key_id === ''
+          !razorpayKeyId ||
+          razorpayKeyId.includes('REPLACE') ||
+          razorpayKeyId === ''
         );
 
       if (isSandbox) {
@@ -801,7 +813,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         return;
       }
 
-      if (!rzOrder.key_id && !isDev) {
+      if (!razorpayKeyId && !isDev) {
         setIsPlacing(false);
         showToast?.('Payment gateway error: Razorpay key is not configured.');
         return;
@@ -824,7 +836,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         setIsPlacing(false);
       }
     } catch (err: any) {
-      showToast?.(err.response?.data?.error?.message || 'Failed to initialize payment gateway.');
+      showToast?.(
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to initialize payment gateway.'
+      );
       setIsPlacing(false);
     }
   };
@@ -854,7 +871,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   return (
     <div className="w-full bg-[#F2FBFB]/60 min-h-screen pt-[116px] sm:pt-[132px] lg:pt-[152px] pb-28 font-sans select-none text-left">
       <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8">
-        
+
         {/* ========================================================================= */}
         {/* TOP BRAND & STEP PROGRESS HEADER (Screen 1, 2, 3 Reference Design)        */}
         {/* ========================================================================= */}
@@ -897,11 +914,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               className="flex items-center gap-1.5 group cursor-pointer"
             >
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${
-                  currentStep === 'address'
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${currentStep === 'address'
                     ? 'bg-[#005F63] text-white'
                     : 'bg-emerald-600 text-white'
-                }`}
+                  }`}
               >
                 {currentStep === 'payment' || currentStep === 'review' ? (
                   <Check className="w-3 h-3 stroke-[2.5]" />
@@ -910,9 +926,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 )}
               </div>
               <span
-                className={`text-[11px] font-medium transition-colors ${
-                  currentStep === 'address' ? 'text-[#005F63] font-semibold' : 'text-slate-600'
-                }`}
+                className={`text-[11px] font-medium transition-colors ${currentStep === 'address' ? 'text-[#005F63] font-semibold' : 'text-slate-600'
+                  }`}
               >
                 Address
               </span>
@@ -920,9 +935,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
             {/* Line 1 */}
             <div
-              className={`flex-1 h-px mx-2 sm:mx-3 transition-colors ${
-                currentStep === 'payment' || currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
-              }`}
+              className={`flex-1 h-px mx-2 sm:mx-3 transition-colors ${currentStep === 'payment' || currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
+                }`}
             />
 
             {/* Step 2: Payment */}
@@ -935,13 +949,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               className="flex items-center gap-1.5 group cursor-pointer"
             >
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${
-                  currentStep === 'payment'
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${currentStep === 'payment'
                     ? 'bg-[#005F63] text-white'
                     : currentStep === 'review'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-400 border border-slate-200'
-                }`}
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200'
+                  }`}
               >
                 {currentStep === 'review' ? (
                   <Check className="w-3 h-3 stroke-[2.5]" />
@@ -950,9 +963,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 )}
               </div>
               <span
-                className={`text-[11px] font-medium transition-colors ${
-                  currentStep === 'payment' ? 'text-[#005F63] font-semibold' : 'text-slate-500'
-                }`}
+                className={`text-[11px] font-medium transition-colors ${currentStep === 'payment' ? 'text-[#005F63] font-semibold' : 'text-slate-500'
+                  }`}
               >
                 Payment
               </span>
@@ -960,9 +972,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
             {/* Line 2 */}
             <div
-              className={`flex-1 h-px mx-2 sm:mx-3 transition-colors ${
-                currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
-              }`}
+              className={`flex-1 h-px mx-2 sm:mx-3 transition-colors ${currentStep === 'review' ? 'bg-[#005F63]' : 'bg-slate-200'
+                }`}
             />
 
             {/* Step 3: Review */}
@@ -975,18 +986,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               className="flex items-center gap-1.5 group cursor-pointer"
             >
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${
-                  currentStep === 'review'
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${currentStep === 'review'
                     ? 'bg-[#005F63] text-white'
                     : 'bg-slate-100 text-slate-400 border border-slate-200'
-                }`}
+                  }`}
               >
                 3
               </div>
               <span
-                className={`text-[11px] font-medium transition-colors ${
-                  currentStep === 'review' ? 'text-[#005F63] font-semibold' : 'text-slate-400'
-                }`}
+                className={`text-[11px] font-medium transition-colors ${currentStep === 'review' ? 'text-[#005F63] font-semibold' : 'text-slate-400'
+                  }`}
               >
                 Review
               </span>
@@ -998,10 +1007,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         {/* MAIN CHECKOUT CONTENT AREA (Mobile Vertical + Desktop 2-Column Responsive) */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          
+
           {/* Left Column / Mobile Primary Flow */}
           <div className="lg:col-span-8 space-y-4">
-            
+
             {/* ===================================================================== */}
             {/* STEP 1: DELIVERY ADDRESS (Screen 1 Reference Design)                  */}
             {/* ===================================================================== */}
@@ -1039,21 +1048,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               setSelectedAddressId(addr.id);
                               if (addressValidationError) setAddressValidationError(null);
                             }}
-                            className={`relative p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer ${
-                              isSelected
+                            className={`relative p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer ${isSelected
                                 ? 'border-[#005F63] bg-[#005F63]/[0.03] ring-1 ring-[#005F63]'
                                 : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               {/* Custom Radio Button */}
                               <div className="mt-0.5 shrink-0">
                                 <div
-                                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                                    isSelected
+                                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${isSelected
                                       ? 'border-[#005F63] bg-[#005F63]'
                                       : 'border-slate-300 bg-white'
-                                  }`}
+                                    }`}
                                 >
                                   {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                 </div>
@@ -1229,20 +1236,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     {/* Option 1: Pay Online */}
                     <div
                       onClick={() => setPaymentMethod('razorpay')}
-                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
-                        paymentMethod === 'razorpay'
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${paymentMethod === 'razorpay'
                           ? 'border-[#005F63] bg-[#005F63]/[0.03] ring-1 ring-[#005F63]'
                           : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         {/* Radio */}
                         <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                            paymentMethod === 'razorpay'
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${paymentMethod === 'razorpay'
                               ? 'border-[#005F63] bg-[#005F63]'
                               : 'border-slate-300 bg-white'
-                          }`}
+                            }`}
                         >
                           {paymentMethod === 'razorpay' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
@@ -1267,20 +1272,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     {/* Option 2: Cash on Delivery */}
                     <div
                       onClick={() => setPaymentMethod('cod')}
-                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
-                        paymentMethod === 'cod'
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${paymentMethod === 'cod'
                           ? 'border-[#005F63] bg-[#005F63]/[0.03] ring-1 ring-[#005F63]'
                           : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         {/* Radio */}
                         <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                            paymentMethod === 'cod'
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${paymentMethod === 'cod'
                               ? 'border-[#005F63] bg-[#005F63]'
                               : 'border-slate-300 bg-white'
-                          }`}
+                            }`}
                         >
                           {paymentMethod === 'cod' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
@@ -1453,7 +1456,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   {/* 4. Price Details Breakdown */}
                   <div className="pt-3.5 border-t border-slate-100 space-y-2 text-xs">
                     <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Price Details</h3>
-                    
+
                     <div className="flex justify-between text-slate-600">
                       <span>Item Total ({cartItems.length} items)</span>
                       <span className="font-medium text-slate-800">₹{subtotalVal.toLocaleString('en-IN')}</span>
@@ -1793,14 +1796,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setModalForm({ ...modalForm, is_default: !modalForm.is_default })}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                    modalForm.is_default ? 'bg-[#005F63]' : 'bg-slate-300'
-                  }`}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${modalForm.is_default ? 'bg-[#005F63]' : 'bg-slate-300'
+                    }`}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${
-                      modalForm.is_default ? 'translate-x-5.5' : 'translate-x-0.5'
-                    }`}
+                    className={`w-5 h-5 rounded-full bg-white transition-transform shadow-xs absolute top-0.5 ${modalForm.is_default ? 'translate-x-5.5' : 'translate-x-0.5'
+                      }`}
                   />
                 </button>
               </div>
@@ -1857,7 +1858,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div className="absolute inset-4 rounded-full bg-[#005F63]/15 animate-pulse" />
                 {/* Inner circle */}
                 <div className="absolute inset-10 rounded-full bg-[#005F63]/20" />
-                
+
                 {/* Center Map Pin Pinpoint */}
                 <div className="relative z-10 w-12 h-12 rounded-full bg-[#005F63] text-white flex items-center justify-center shadow-lg">
                   {isDetectingLocation ? (

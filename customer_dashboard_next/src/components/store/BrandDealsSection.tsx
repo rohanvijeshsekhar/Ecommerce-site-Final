@@ -155,13 +155,13 @@ export default function BrandDealsSection({ initialBrandDeals = [] }: BrandDeals
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={getAbsoluteImageUrl(currentDeal.banner_mobile || currentDeal.mobile_image_url || currentDeal.mobile_image || currentDeal.banner_desktop || currentDeal.desktop_image_url || currentDeal.desktop_image)}
-                alt={currentDeal.title || currentDeal.name}
-                className="w-full h-full object-cover opacity-40"
+                alt={currentDeal.title || currentDeal.name || 'Brand Deal'}
+                className="w-full h-full object-cover opacity-65"
               />
               <div
                 className="absolute inset-0"
                 style={{
-                  background: `linear-gradient(to top, ${currentDeal.bg_color || '#005F63'} 70%, transparent 100%)`,
+                  background: `linear-gradient(to top, ${currentDeal.bg_color || '#005F63'} 45%, transparent 100%)`,
                 }}
               />
             </div>

@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Initialise django-environ and read .env file
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
+environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
 
 
 # ============================================================
@@ -197,7 +197,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
 
 # ============================================================
@@ -518,7 +518,7 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
 # OTP Provider Settings
 # ============================================================
 # SMS_PROVIDER options: 'sangamam' | 'mock'
-SMS_PROVIDER = env("SMS_PROVIDER", default="mock").lower()
+SMS_PROVIDER = env("SMS_PROVIDER", default=env("SANGAMAM_SMS_PROVIDER", default="mock")).lower()
 
 # Sangamam Online SMS Transactional API credentials & Approved DLT Template IDs
 SANGAMAM_API_BASE_URL       = env("SANGAMAM_API_BASE_URL", default="https://fastsms.sangamamonline.in/api/sms/v1.0/send-sms")
@@ -549,6 +549,7 @@ OTP_MAX_ATTEMPTS = env.int("OTP_MAX_ATTEMPTS", default=3)
 # ============================================================
 # Razorpay Payment Gateway
 # ============================================================
+# Live Razorpay configuration active
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
 RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
@@ -569,6 +570,7 @@ COD_MAX_ORDER_VALUE = Decimal(str(env("COD_MAX_ORDER_VALUE", default="500000.00"
 # Shiprocket Shipping Integration & Provider Settings
 # ============================================================
 # SHIPPING_PROVIDER options: 'offline' | 'shiprocket'
+# Shiprocket live provider active: warehouse (Attingal 695101)
 SHIPPING_PROVIDER = env("SHIPPING_PROVIDER", default="offline").lower()
 SHIPROCKET_BASE_URL = env("SHIPROCKET_BASE_URL", default="https://apiv2.shiprocket.in")
 SHIPROCKET_EMAIL = env("SHIPROCKET_EMAIL", default="")

@@ -116,6 +116,7 @@ const DealersPage: React.FC = () => {
 
   // Filters
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -147,7 +148,7 @@ const DealersPage: React.FC = () => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page, page_size: pageSize };
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (statusFilter !== 'all') params.status = statusFilter;
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
@@ -162,21 +163,24 @@ const DealersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, startDate, endDate]);
+  }, [page, pageSize, debouncedSearch, statusFilter, startDate, endDate]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { fetchApplications(); }, [fetchApplications]);
 
-  // Debounced search
+  // Debounced search (single API request after 400ms pause)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (v: string) => {
     setSearch(v);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => { setPage(1); }, 400);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(v);
+      setPage(1);
+    }, 400);
   };
 
   const clearFilters = () => {
-    setSearch(''); setStartDate(''); setEndDate(''); setStatusFilter('all'); setPage(1);
+    setSearch(''); setDebouncedSearch(''); setStartDate(''); setEndDate(''); setStatusFilter('all'); setPage(1);
   };
   const hasFilters = search || startDate || endDate || statusFilter !== 'all';
 

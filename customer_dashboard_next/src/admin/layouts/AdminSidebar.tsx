@@ -93,13 +93,14 @@ const AdminSidebar: React.FC = () => {
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
 
   const isActive = (path: string) => {
+    if (!pathname) return false;
     if (path === '/admin') return pathname === '/admin' || pathname === '/admin/dashboard';
     return pathname === path || pathname.startsWith(path + '/');
   };
 
   const handleLogout = async () => {
     await logout();
-    router.push('/admin/login');
+    router.replace('/admin/login');
   };
 
   const userInitials = activeAdmin

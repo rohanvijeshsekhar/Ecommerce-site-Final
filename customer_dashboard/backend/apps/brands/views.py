@@ -31,11 +31,15 @@ class BrandPageBannerView(APIView):
     """
     Public and Admin endpoint for managing the main Brands page hero banner.
     GET  /api/v1/brands/banner/       — retrieve active banner (or default)
-    POST /api/v1/brands/admin/banner/ — create / update banner
+    POST /api/v1/brands/admin/banner/ — create / update banner (Admin only)
     """
 
-    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
 
     def get(self, request):
         banner = BrandPageBanner.objects.filter(is_active=True).first()

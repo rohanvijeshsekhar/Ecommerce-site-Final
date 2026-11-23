@@ -11,7 +11,7 @@ const defaultAuthContext: AuthContextType = {
   isLoading: false,
   pendingAction: null,
   setPendingAction: () => {},
-  login: async () => {},
+  login: async () => undefined,
   register: async () => {},
   dealerRegister: async () => {},
   logout: async () => {},

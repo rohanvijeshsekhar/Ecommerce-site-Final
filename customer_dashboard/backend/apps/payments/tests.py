@@ -1,5 +1,8 @@
 from decimal import Decimal
+import hashlib
+import hmac
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,6 +11,7 @@ from apps.cart.models import Cart, CartItem
 from apps.inventory.models import ProductInventory
 from apps.orders.models import Order, OrderItem
 from apps.payments.models import Payment, PaymentStatus
+from apps.payments import services as razorpay_service
 from apps.products.models import Product
 from apps.pricing.models import ProductPricing
 from apps.users.models import Address
@@ -16,6 +20,8 @@ from apps.brands.models import Brand
 
 User = get_user_model()
 
+
+@override_settings(RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="")
 class PaymentModuleTests(APITestCase):
     def setUp(self):
         # Create standard test category & brand

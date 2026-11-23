@@ -70,6 +70,7 @@ export const ReportsPage: React.FC = () => {
         ]);
         if (revRes.data) setRevenueData(revRes.data);
         if (prodRes.data) setProductsData(prodRes.data);
+        if (!revRes.success || !prodRes.success) setError(revRes.message || prodRes.message || 'Failed to load sales report.');
       } else if (tab === 'products') {
         const [prodRes, catRes] = await Promise.all([
           reportsService.getProducts(selectedPeriod),
@@ -77,18 +78,23 @@ export const ReportsPage: React.FC = () => {
         ]);
         if (prodRes.data) setProductsData(prodRes.data);
         if (catRes.data) setCategoriesData(catRes.data);
+        if (!prodRes.success || !catRes.success) setError(prodRes.message || catRes.message || 'Failed to load product analytics.');
       } else if (tab === 'customers') {
         const res = await reportsService.getCustomers(selectedPeriod);
         if (res.data) setCustomersData(res.data);
+        else setError(res.message || 'Failed to load customer analytics.');
       } else if (tab === 'dealers') {
         const res = await reportsService.getDealers(selectedPeriod);
         if (res.data) setDealersData(res.data);
+        else setError(res.message || 'Failed to load dealer analytics.');
       } else if (tab === 'inventory') {
         const res = await reportsService.getInventory();
         if (res.data) setInventoryData(res.data);
+        else setError(res.message || 'Failed to load inventory analytics.');
       } else if (tab === 'finance') {
         const res = await reportsService.getPayments(selectedPeriod);
         if (res.data) setPaymentData(res.data);
+        else setError(res.message || 'Failed to load payment analytics.');
       } else if (tab === 'operations') {
         const [warrRes, suppRes, actRes] = await Promise.all([
           reportsService.getWarranty(),
@@ -98,6 +104,7 @@ export const ReportsPage: React.FC = () => {
         if (warrRes.data) setWarrantyData(warrRes.data);
         if (suppRes.data) setSupportData(suppRes.data);
         if (actRes.data) setActivitiesData(actRes.data);
+        if (!warrRes.success || !suppRes.success) setError(warrRes.message || suppRes.message || 'Failed to load operations analytics.');
       }
     } catch (err: any) {
       setError('Connection error fetching tab analytics data.');

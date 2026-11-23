@@ -37,7 +37,26 @@ from django.db import models
 logger = logging.getLogger("faazo.image_optimizer")
 
 # Supported input image formats
-SUPPORTED_INPUT_FORMATS = {"JPEG", "JPG", "PNG", "WEBP", "GIF", "BMP", "TIFF"}
+SUPPORTED_INPUT_FORMATS = {"JPEG", "JPG", "PNG", "WEBP", "GIF", "BMP", "TIFF", "AVIF", "SVG", "HEIC", "HEIF"}
+
+
+def is_avif_format(raw_bytes: bytes) -> bool:
+    """Detect if binary payload represents an AVIF or AVIS image."""
+    if len(raw_bytes) >= 12 and raw_bytes[4:8] == b"ftyp":
+        brand = raw_bytes[8:12].lower()
+        if brand in (b"avif", b"avis", b"mif1", b"msf1"):
+            return True
+        ftyp_len = int.from_bytes(raw_bytes[0:4], byteorder="big")
+        ftyp_box = raw_bytes[8:min(ftyp_len, 128)].lower()
+        if b"avif" in ftyp_box or b"avis" in ftyp_box:
+            return True
+    return False
+
+
+def is_svg_format(raw_bytes: bytes) -> bool:
+    """Detect if binary payload represents an SVG vector image."""
+    prefix = raw_bytes[:512].lstrip().lower()
+    return prefix.startswith(b"<?xml") or prefix.startswith(b"<svg") or b"<svg" in prefix
 
 
 def get_optimizer_setting(name: str, default: Union[int, bool]) -> Union[int, bool]:
@@ -115,6 +134,12 @@ def validate_image_file(
         if not raw_bytes or len(raw_bytes) == 0:
             raise ValidationError("Uploaded file is empty.")
 
+        # Fast path for AVIF and SVG image formats
+        if is_avif_format(raw_bytes):
+            return "AVIF", (0, 0)
+        if is_svg_format(raw_bytes):
+            return "SVG", (0, 0)
+
         byte_stream = io.BytesIO(raw_bytes)
         with Image.open(byte_stream) as img:
             img_format = (img.format or "").upper()
@@ -131,6 +156,11 @@ def validate_image_file(
         return img_format, dimensions
 
     except UnidentifiedImageError:
+        # Fallback check for AVIF or SVG if Pillow lacks native decoder
+        if is_avif_format(raw_bytes):
+            return "AVIF", (0, 0)
+        if is_svg_format(raw_bytes):
+            return "SVG", (0, 0)
         raise ValidationError(
             "Uploaded file is not a recognized or valid image format."
         )
@@ -177,74 +207,111 @@ def optimize_image_to_webp(
         file_obj.seek(0)
 
     # Validate image first
-    validate_image_file(raw_bytes)
+    img_format, _ = validate_image_file(raw_bytes)
 
     # Derive filename
     orig_name = getattr(file_obj, "name", None) or target_filename or "image.jpg"
+
+    # 1. SVG Vector Handling - preserve directly without rasterizing
+    if img_format == "SVG" or is_svg_format(raw_bytes):
+        safe_svg_name = sanitize_image_filename(orig_name, extension=".svg")
+        cf = ContentFile(raw_bytes, name=safe_svg_name)
+        cf.content_type = "image/svg+xml"
+        cf._is_webp_optimized = True
+        return cf
+
+    # 2. AVIF Handling - Attempt WebP transcode if Pillow supports AVIF; otherwise preserve as .avif
+    if img_format == "AVIF" or is_avif_format(raw_bytes):
+        can_open_avif = False
+        try:
+            test_stream = io.BytesIO(raw_bytes)
+            with Image.open(test_stream) as test_img:
+                test_img.verify()
+                can_open_avif = True
+        except Exception:
+            can_open_avif = False
+
+        if not can_open_avif:
+            safe_avif_name = sanitize_image_filename(orig_name, extension=".avif")
+            logger.info("Preserving native AVIF image '%s' -> '%s' (Pillow native AVIF codec not present)", orig_name, safe_avif_name)
+            cf = ContentFile(raw_bytes, name=safe_avif_name)
+            cf.content_type = "image/avif"
+            cf._is_webp_optimized = True
+            return cf
+
     safe_webp_name = sanitize_image_filename(orig_name, extension=".webp")
 
     # Process with Pillow
-    byte_stream = io.BytesIO(raw_bytes)
-    with Image.open(byte_stream) as img:
-        # Respect EXIF orientation tags if present (e.g. photos from mobile cameras)
-        try:
-            img = ImageOps.exif_transpose(img)
-        except Exception:
-            pass
+    try:
+        byte_stream = io.BytesIO(raw_bytes)
+        with Image.open(byte_stream) as img:
+            # Respect EXIF orientation tags if present (e.g. photos from mobile cameras)
+            try:
+                img = ImageOps.exif_transpose(img)
+            except Exception:
+                pass
 
-        # Color Space & Channel Normalization
-        has_alpha = False
-        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
-            img = img.convert("RGBA")
-            has_alpha = True
-        elif img.mode == "CMYK":
-            # Convert CMYK to RGB
-            img = img.convert("RGB")
-        elif img.mode != "RGB":
-            img = img.convert("RGB")
+            # Color Space & Channel Normalization
+            has_alpha = False
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                img = img.convert("RGBA")
+                has_alpha = True
+            elif img.mode == "CMYK":
+                # Convert CMYK to RGB
+                img = img.convert("RGB")
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
 
-        # Proportional Resizing (Preserving Aspect Ratio, No Upscaling)
-        orig_w, orig_h = img.size
-        if max(orig_w, orig_h) > max_dimension and max_dimension > 0:
-            if orig_w >= orig_h:
-                new_w = max_dimension
-                new_h = max(1, int(round(orig_h * (max_dimension / orig_w))))
+            # Proportional Resizing (Preserving Aspect Ratio, No Upscaling)
+            orig_w, orig_h = img.size
+            if max(orig_w, orig_h) > max_dimension and max_dimension > 0:
+                if orig_w >= orig_h:
+                    new_w = max_dimension
+                    new_h = max(1, int(round(orig_h * (max_dimension / orig_w))))
+                else:
+                    new_h = max_dimension
+                    new_w = max(1, int(round(orig_w * (max_dimension / orig_h))))
+
+                logger.info(
+                    "Downscaling image '%s' from %dx%d to %dx%d (max_dim=%d)",
+                    orig_name, orig_w, orig_h, new_w, new_h, max_dimension
+                )
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
             else:
-                new_h = max_dimension
-                new_w = max(1, int(round(orig_w * (max_dimension / orig_h))))
+                logger.debug("Image '%s' (%dx%d) within max dimension %d. Keeping original size.", orig_name, orig_w, orig_h, max_dimension)
 
-            logger.info(
-                "Downscaling image '%s' from %dx%d to %dx%d (max_dim=%d)",
-                orig_name, orig_w, orig_h, new_w, new_h, max_dimension
-            )
-            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        else:
-            logger.debug("Image '%s' (%dx%d) within max dimension %d. Keeping original size.", orig_name, orig_w, orig_h, max_dimension)
+            # Encode to WebP
+            output_buffer = io.BytesIO()
+            save_kwargs = {
+                "format": "WEBP",
+                "quality": quality,
+                "method": 6,  # Highest quality compression effort
+            }
+            if has_alpha:
+                save_kwargs["lossless"] = False  # Lossy WebP with alpha transparency channel
 
-        # Encode to WebP
-        output_buffer = io.BytesIO()
-        save_kwargs = {
-            "format": "WEBP",
-            "quality": quality,
-            "method": 6,  # Highest quality compression effort
-        }
-        if has_alpha:
-            save_kwargs["lossless"] = False  # Lossy WebP with alpha transparency channel
+            img.save(output_buffer, **save_kwargs)
+            webp_bytes = output_buffer.getvalue()
 
-        img.save(output_buffer, **save_kwargs)
-        webp_bytes = output_buffer.getvalue()
+        original_size = len(raw_bytes)
+        webp_size = len(webp_bytes)
+        reduction = ((original_size - webp_size) / original_size * 100) if original_size > 0 else 0
+        logger.info(
+            "Optimized image '%s' -> '%s' (Original: %.1f KB, WebP: %.1f KB, Change: %.1f%%)",
+            orig_name, safe_webp_name, original_size / 1024, webp_size / 1024, -reduction
+        )
 
-    original_size = len(raw_bytes)
-    webp_size = len(webp_bytes)
-    reduction = ((original_size - webp_size) / original_size * 100) if original_size > 0 else 0
-    logger.info(
-        "Optimized image '%s' -> '%s' (Original: %.1f KB, WebP: %.1f KB, Change: %.1f%%)",
-        orig_name, safe_webp_name, original_size / 1024, webp_size / 1024, -reduction
-    )
+        content_file = ContentFile(webp_bytes, name=safe_webp_name)
+        content_file.content_type = "image/webp"
+        return content_file
 
-    content_file = ContentFile(webp_bytes, name=safe_webp_name)
-    content_file.content_type = "image/webp"
-    return content_file
+    except Exception as exc:
+        logger.warning("Pillow transcoding failed for '%s' (%s). Saving original bytes safely.", orig_name, exc)
+        _, ext = os.path.splitext(orig_name)
+        fallback_name = sanitize_image_filename(orig_name, extension=ext or ".jpg")
+        fallback_file = ContentFile(raw_bytes, name=fallback_name)
+        fallback_file._is_webp_optimized = True
+        return fallback_file
 
 
 class OptimizedImageField(models.ImageField):

@@ -150,7 +150,7 @@ const SupportPage: React.FC = () => {
         subtitle="Manage customer queries, product enquiries, and order business escalations."
         actions={
           <button
-            onClick={() => { fetchData(); toast.success('Queue refreshed.'); }}
+            onClick={async () => { await fetchData(); toast.success('Queue refreshed.'); }}
             className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all cursor-pointer bg-white"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh Tickets

@@ -121,9 +121,18 @@ class JWTService:
             user_id = old_token.get("user_id")
 
             try:
-                user = User.objects.get(pk=user_id)
+                user = User.objects.select_related("profile").get(pk=user_id)
             except User.DoesNotExist:
                 return False, None, "User associated with token does not exist."
+
+            # Enforce account status checks on refresh so blocked/deactivated/deleted/locked users cannot renew
+            if not user.is_active:
+                return False, None, "Account is deactivated."
+            if getattr(user, "is_locked", False):
+                return False, None, "Account is temporarily locked."
+            profile = getattr(user, "profile", None)
+            if profile and (getattr(profile, "is_blocked", False) or getattr(profile, "is_deleted", False)):
+                return False, None, "Account is blocked or deleted."
 
             # Check if matching session exists and is active
             session = DeviceSession.objects.filter(session_key=jti).first()
@@ -178,6 +187,8 @@ class JWTService:
             new_refresh["email"] = user.email
             new_refresh["role"] = user.role
             new_refresh["full_name"] = user.full_name
+            new_refresh["is_staff"] = user.is_staff
+            new_refresh["is_superuser"] = user.is_superuser
             new_jti = str(new_refresh.get("jti", ""))
 
             # Blacklist old token
@@ -319,4 +330,9 @@ class JWTService:
     def blacklist_all_user_tokens(cls, user) -> Tuple[bool, str]:
         """Alias method to revoke all device sessions and blacklist all outstanding tokens."""
         return cls.logout_all_devices(user)
+
+    @classmethod
+    def blacklist_refresh_token(cls, refresh_token_str: str) -> Tuple[bool, str]:
+        """Blacklist a single refresh token and revoke its DeviceSession (used by v1 LogoutView)."""
+        return cls.logout_single_device(refresh_token_str)
 

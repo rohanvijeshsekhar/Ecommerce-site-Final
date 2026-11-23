@@ -266,7 +266,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                   {/* Top: Image Area */}
                   <div className="w-full h-[130px] bg-[#F5FBFB]/20 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.11)_0%,transparent_65%)] flex items-center justify-center overflow-hidden relative">
                     <img
-                      src={cat.image}
+                      src={cat.image || '/images/category_materials.png'}
                       alt={cat.title}
                       className="w-full h-full object-cover"
                     />

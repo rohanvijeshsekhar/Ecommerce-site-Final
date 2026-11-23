@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Compass } from
 import { homepageService, adminService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { ExploreSolution } from '../../types/admin';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
@@ -36,7 +37,7 @@ const ExploreSolutionsManager: React.FC = () => {
       category: item.category,
       heading: item.display_heading === item.category_name ? '' : item.display_heading,
       is_visible: item.is_visible,
-      image: item.image_url || null,
+      image: item.image_url || (item as any).image || null,
     });
     setShowForm(true);
   };
@@ -91,7 +92,7 @@ const ExploreSolutionsManager: React.FC = () => {
             <div key={item.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group">
               <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
               <div className="w-14 h-14 bg-slate-200 rounded-xl overflow-hidden flex-shrink-0">
-                {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover" alt={item.display_heading} /> : <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No img</div>}
+                {item.image_url || (item as any).image ? <img src={getAbsoluteImageUrl(item.image_url || (item as any).image)} className="w-full h-full object-cover" alt={item.display_heading} /> : <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No img</div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{item.display_heading}</p>
@@ -129,7 +130,7 @@ const ExploreSolutionsManager: React.FC = () => {
                 <ImageUploader
                   label="Card Image"
                   aspectRatio={280 / 380}
-                  currentUrl={form.image instanceof File ? URL.createObjectURL(form.image) : form.image}
+                  currentUrl={form.image instanceof File ? URL.createObjectURL(form.image) : (form.image ? getAbsoluteImageUrl(form.image) : null)}
                   onUpload={(file) => setForm(f => ({ ...f, image: file }))}
                   onRemove={() => setForm(f => ({ ...f, image: null }))}
                 />

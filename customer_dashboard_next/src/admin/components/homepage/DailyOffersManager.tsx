@@ -15,6 +15,7 @@ import { useToast } from '../Toast';
 import ConfirmDialog from '../ConfirmDialog';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 import { BANNER_FONTS } from '@/lib/bannerFonts';
+import { getAbsoluteImageUrl } from '@/lib/api';
 
 export const THEME_PRESETS = [
   {
@@ -80,11 +81,11 @@ export const THEME_PRESETS = [
 ];
 
 const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
-  title: 'Big Savings Today',
-  badge_text: '🔥 DAILY DEALS',
-  subheading: 'Limited-time deals on selected clinical products.',
-  offer_text: 'UP TO 40% OFF',
-  secondary_text: 'Special clinical pricing while stocks last',
+  title: '',
+  badge_text: '',
+  subheading: '',
+  offer_text: '',
+  secondary_text: '',
   font_family: 'Inter',
   offer_type: 'percentage',
   theme: 'teal_premium',
@@ -104,10 +105,10 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   horizontal_alignment: 'left',
   vertical_alignment: 'center',
   content_width: 'large',
-  image_position: 'right', // 'right' | 'left' = Split Layout; 'center' = Full Background
+  image_position: 'center', // 'center' = Full Background
   image_fit: 'cover',
-  overlay_opacity: 60,
-  desktop_image_url: '/images/featured_digital_equipment.jpg',
+  overlay_opacity: 0,
+  desktop_image_url: '',
   mobile_image_url: '',
   countdown_enabled: true,
   countdown_position: 'left',
@@ -193,11 +194,16 @@ export const DailyOffersManager: React.FC = () => {
 
   const openCreateStudio = () => {
     setEditOffer(null);
-    setForm(DEFAULT_OFFER_FORM);
+    setForm({
+      ...DEFAULT_OFFER_FORM,
+      desktop_image_url: '',
+      mobile_image_url: '',
+      items: [],
+    });
     setDesktopImageFile(null);
     setMobileImageFile(null);
     setCtaProductSearchQuery('');
-    setActiveTab('content');
+    setActiveTab('artwork');
     setShowStudio(true);
   };
 
@@ -440,9 +446,13 @@ export const DailyOffersManager: React.FC = () => {
       // Append images
       if (desktopImageFile) {
         fd.append('desktop_image', desktopImageFile);
+      } else if (!form.desktop_image_url) {
+        fd.append('desktop_image', '');
       }
       if (mobileImageFile) {
         fd.append('mobile_image', mobileImageFile);
+      } else if (!form.mobile_image_url) {
+        fd.append('mobile_image', '');
       }
 
       let res;
@@ -598,11 +608,11 @@ export const DailyOffersManager: React.FC = () => {
                   <div className="flex items-start gap-4">
                     {/* Theme / Image Thumbnail */}
                     <div className="w-16 h-16 rounded-xl shadow-inner shrink-0 relative overflow-hidden border border-slate-200 bg-teal-900">
-                      <Image
-                        src={offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url!}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getAbsoluteImageUrl(offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url!)}
                         alt={offer.title || 'Daily Offer Banner'}
-                        fill
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
 
@@ -617,13 +627,12 @@ export const DailyOffersManager: React.FC = () => {
                           </span>
                         )}
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                            offer.status === 'live' && offer.is_active
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${offer.status === 'live' && offer.is_active
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : offer.status === 'scheduled'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
                         >
                           {offer.status}
                         </span>
@@ -646,11 +655,10 @@ export const DailyOffersManager: React.FC = () => {
                     {/* Quick Active Toggle */}
                     <button
                       onClick={() => handleToggleActive(offer)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        offer.is_active
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${offer.is_active
                           ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
+                        }`}
                     >
                       {offer.is_active ? 'Active' : 'Inactive'}
                     </button>
@@ -712,9 +720,8 @@ export const DailyOffersManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPreviewDevice('desktop')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    previewDevice === 'desktop' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${previewDevice === 'desktop' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   <Monitor className="w-3.5 h-3.5" />
                   <span>Desktop</span>
@@ -722,9 +729,8 @@ export const DailyOffersManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPreviewDevice('mobile')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    previewDevice === 'mobile' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${previewDevice === 'mobile' ? 'bg-[#006670] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>Mobile (375px)</span>
@@ -774,11 +780,10 @@ export const DailyOffersManager: React.FC = () => {
                       key={t.id}
                       type="button"
                       onClick={() => setActiveTab(t.id as StudioTab)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                        isActive
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
                           ? 'bg-white text-[#006670] shadow-2xs border border-slate-200/80'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                      }`}
+                        }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
                       <span>{t.label}</span>
@@ -896,11 +901,10 @@ export const DailyOffersManager: React.FC = () => {
                             key={font.id}
                             type="button"
                             onClick={() => setForm({ ...form, font_family: font.id })}
-                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                              (form.font_family || 'Inter') === font.id
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${(form.font_family || 'Inter') === font.id
                                 ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20 shadow-xs'
                                 : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                            }`}
+                              }`}
                           >
                             <span
                               className="text-xs font-black block text-slate-900 truncate"
@@ -939,11 +943,10 @@ export const DailyOffersManager: React.FC = () => {
                             key={pos.id}
                             type="button"
                             onClick={() => setForm({ ...form, image_position: pos.id as any })}
-                            className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                              (form.image_position || 'right') === pos.id
+                            className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${(form.image_position || 'right') === pos.id
                                 ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
                                 : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             {pos.label}
                           </button>
@@ -970,7 +973,7 @@ export const DailyOffersManager: React.FC = () => {
                             <div className="w-16 h-16 rounded-xl bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src={form.desktop_image_url}
+                                src={getAbsoluteImageUrl(form.desktop_image_url)}
                                 alt="Banner Artwork"
                                 className="w-full h-full object-cover"
                               />
@@ -1045,7 +1048,7 @@ export const DailyOffersManager: React.FC = () => {
                             <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src={form.mobile_image_url}
+                                src={getAbsoluteImageUrl(form.mobile_image_url)}
                                 alt="Mobile Banner Artwork"
                                 className="w-full h-full object-cover"
                               />
@@ -1097,11 +1100,10 @@ export const DailyOffersManager: React.FC = () => {
                               key={fit}
                               type="button"
                               onClick={() => setForm({ ...form, image_fit: fit as any })}
-                              className={`py-1.5 px-3 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
-                                (form.image_fit || 'cover') === fit
+                              className={`py-1.5 px-3 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.image_fit || 'cover') === fit
                                   ? 'border-[#006670] bg-teal-50 text-[#006670]'
                                   : 'border-slate-200 text-slate-600'
-                              }`}
+                                }`}
                             >
                               {fit}
                             </button>
@@ -1167,11 +1169,10 @@ export const DailyOffersManager: React.FC = () => {
                                 key={pos.id}
                                 type="button"
                                 onClick={() => setForm({ ...form, countdown_position: pos.id as any })}
-                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
-                                  (form.countdown_position || 'left') === pos.id
+                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.countdown_position || 'left') === pos.id
                                     ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 {pos.label}
                               </button>
@@ -1303,11 +1304,10 @@ export const DailyOffersManager: React.FC = () => {
                                 key={pos.id}
                                 type="button"
                                 onClick={() => setForm({ ...form, cta_position: pos.id as any })}
-                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
-                                  (form.cta_position || 'left') === pos.id
+                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.cta_position || 'left') === pos.id
                                     ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 {pos.label}
                               </button>
@@ -1556,11 +1556,10 @@ export const DailyOffersManager: React.FC = () => {
                                 key={h}
                                 type="button"
                                 onClick={() => setForm({ ...form, horizontal_alignment: h as any })}
-                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
-                                  (form.horizontal_alignment || 'left') === h
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.horizontal_alignment || 'left') === h
                                     ? 'border-[#006670] bg-teal-50 text-[#006670]'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 {h}
                               </button>
@@ -1576,11 +1575,10 @@ export const DailyOffersManager: React.FC = () => {
                                 key={v}
                                 type="button"
                                 onClick={() => setForm({ ...form, vertical_alignment: v as any })}
-                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${
-                                  (form.vertical_alignment || 'center') === v
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.vertical_alignment || 'center') === v
                                     ? 'border-[#006670] bg-teal-50 text-[#006670]'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 {v}
                               </button>
@@ -1602,11 +1600,10 @@ export const DailyOffersManager: React.FC = () => {
                               key={w.id}
                               type="button"
                               onClick={() => setForm({ ...form, content_width: w.id as any })}
-                              className={`py-1 px-2 rounded-lg border text-xs font-bold cursor-pointer ${
-                                (form.content_width || 'large') === w.id
+                              className={`py-1 px-2 rounded-lg border text-xs font-bold cursor-pointer ${(form.content_width || 'large') === w.id
                                   ? 'border-[#006670] bg-teal-50 text-[#006670]'
                                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               {w.label}
                             </button>
@@ -1642,11 +1639,10 @@ export const DailyOffersManager: React.FC = () => {
                                 countdown_text_color: th.countdown_text_color,
                               })
                             }
-                            className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
-                              form.theme === th.id
+                            className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${form.theme === th.id
                                 ? 'border-[#006670] ring-2 ring-teal-500/20 shadow-xs'
                                 : 'border-slate-200 hover:border-slate-300'
-                            }`}
+                              }`}
                           >
                             <span className="text-xs font-black block text-slate-900">{th.name}</span>
                             <div className="flex items-center gap-1.5 mt-1.5">
@@ -1795,9 +1791,8 @@ export const DailyOffersManager: React.FC = () => {
                                   type="button"
                                   disabled={isAdded}
                                   onClick={() => handleAddProduct(p)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
-                                    isAdded ? 'bg-slate-100 text-slate-400' : 'bg-[#006670] text-white hover:bg-[#004d54]'
-                                  }`}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${isAdded ? 'bg-slate-100 text-slate-400' : 'bg-[#006670] text-white hover:bg-[#004d54]'
+                                    }`}
                                 >
                                   {isAdded ? 'Added' : '+ Add'}
                                 </button>
@@ -1920,9 +1915,8 @@ export const DailyOffersManager: React.FC = () => {
 
               {/* Canvas Viewport */}
               <div
-                className={`transition-all duration-300 overflow-hidden ${
-                  previewDevice === 'mobile' ? 'w-[375px] shadow-2xl' : 'w-full'
-                }`}
+                className={`transition-all duration-300 overflow-hidden ${previewDevice === 'mobile' ? 'w-[375px] shadow-2xl' : 'w-full'
+                  }`}
               >
                 <DailyOffersSection
                   previewOffer={livePreviewOffer}

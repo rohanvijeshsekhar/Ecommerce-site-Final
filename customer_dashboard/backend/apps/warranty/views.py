@@ -392,6 +392,15 @@ class AdminWarrantyRegistrationListView(APIView):
         if status_val:
             registrations = registrations.filter(warranty_status=status_val)
 
+        reg_id = request.query_params.get("id")
+        if reg_id:
+            try:
+                import uuid as _uuid
+                _uuid.UUID(str(reg_id))
+                registrations = registrations.filter(pk=reg_id)
+            except (ValueError, TypeError):
+                registrations = registrations.none()
+
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
         if start_date:
@@ -400,8 +409,14 @@ class AdminWarrantyRegistrationListView(APIView):
             registrations = registrations.filter(purchase_date__lte=end_date)
 
         # Pagination
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", 10))
+        try:
+            page = max(1, int(request.query_params.get("page", 1)))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            page_size = max(1, min(100, int(request.query_params.get("page_size", 10))))
+        except (ValueError, TypeError):
+            page_size = 10
         total = registrations.count()
 
         start = (page - 1) * page_size

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/contexts/StoreContext';
+import { getAbsoluteImageUrl } from '@/lib/api';
 import dynamic from 'next/dynamic';
 import Hero from '@/components/store/Hero';
 import CategoryList from '@/components/store/CategoryList';
@@ -79,7 +80,7 @@ export default function HomeClient({
     return {
       id: c.category_slug ?? c.category,
       title: c.display_title,
-      image: c.card_image_url || getCategoryFallbackImage(slug),
+      image: getAbsoluteImageUrl(c.card_image_url) || getCategoryFallbackImage(slug),
     };
   });
 
@@ -96,7 +97,7 @@ export default function HomeClient({
       price:    price,
       rating:   rating,
       reviews:  reviews,
-      image:    b.display_image_url || '/images/nsk_handpiece_portrait.png',
+      image:    getAbsoluteImageUrl(b.display_image_url) || '/images/nsk_handpiece_portrait.png',
     };
   });
 
@@ -120,7 +121,7 @@ export default function HomeClient({
       reviews:      reviews && reviews > 0 ? reviews : undefined,
       price:        price,
       originalPrice: mrp && mrp > price ? mrp : undefined,
-      image:        item.primary_image || (item.images && item.images[0]?.image) || item.image || '',
+      image:        getAbsoluteImageUrl(item.primary_image || (item.images && item.images[0]?.image) || item.image || ''),
       discount:     discountStr,
     };
   });

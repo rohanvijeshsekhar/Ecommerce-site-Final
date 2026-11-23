@@ -7,21 +7,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
+from apps.common.permissions import IsAdmin
 from apps.common.responses import success_response, error_response
 from apps.common.reports_services import ReportsAnalyticsService
 
 
-class IsAdminUserPermission(permissions.BasePermission):
-    """Allows access to superusers, staff, or users with role='admin'."""
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
-            return True
-        role = getattr(user, 'role', None)
-        role_name = getattr(role, 'name', None) or str(role)
-        return role_name == 'admin'
+class IsAdminUserPermission(IsAdmin):
+    """Canonical admin permission delegating to apps.common.permissions.IsAdmin."""
+    pass
 
 
 class ReportsOverviewView(APIView):

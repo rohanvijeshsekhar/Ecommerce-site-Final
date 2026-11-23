@@ -228,6 +228,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       if (result.otp_required && result.phone) {
         // Account NOT created yet — waiting for OTP verification
         setOtpSentTarget(result.phone);
+        setOtpCode('');
         setOtpCooldown(60);
         setSuccessMessage(`OTP sent to ${result.phone}. Enter the 6-digit code to complete registration.`);
         setMode('otp-verify');
@@ -266,8 +267,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     if (otpCooldown > 0) return;
     setIsSubmitting(true); setApiError(null); setSuccessMessage(null);
     try {
-      await resendOTP({ target: otpSentTarget, purpose: 'registration' });
+      await authService.otpResend({ target: otpSentTarget, purpose: 'registration' });
       setOtpCooldown(60);
+      setOtpCode('');
       setSuccessMessage('A new 6-digit OTP code has been sent.');
     } catch (err: any) {
       setApiError(err.response?.data?.message || err.message || 'Failed to resend OTP.');

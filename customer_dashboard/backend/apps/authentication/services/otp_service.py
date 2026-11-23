@@ -116,13 +116,21 @@ class OTPService:
         )
 
         # 6. Dispatch via appropriate provider
-        if cls.is_mobile_number(target):
-            dispatched = get_sms_provider().send_otp(target, otp_code, purpose)
-        else:
-            dispatched = EmailOTPProvider().send_otp(target, otp_code, purpose, user=user)
+        try:
+            if cls.is_mobile_number(target):
+                sms_provider = get_sms_provider()
+                dispatched = sms_provider.send_otp(target, otp_code, purpose)
+                err_detail = getattr(sms_provider, "last_error", None)
+            else:
+                dispatched = EmailOTPProvider().send_otp(target, otp_code, purpose, user=user)
+                err_detail = None
+        except Exception as exc:
+            logger.error("[OTPService] SMS Dispatch exception for %s: %s", target, exc, exc_info=True)
+            return False, f"SMS Dispatch Error: {exc}"
 
         if not dispatched:
-            return False, "Failed to dispatch OTP. Please try again."
+            msg = f"Failed to dispatch SMS: {err_detail}" if err_detail else "Failed to dispatch OTP. Please check SMS provider configuration."
+            return False, msg
 
         AuditService.log_event(
             action="OTP_SENT",

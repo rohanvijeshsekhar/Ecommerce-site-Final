@@ -459,7 +459,9 @@ class CustomerAdminViewSet(BaseModelViewSet):
     @action(detail=False, methods=["get"])
     def stats(self, request):
         from django.utils import timezone
+        from django.db.models import Sum, Count
         from datetime import timedelta
+        from apps.orders.models import Order, OrderStatus
 
         total_customers = User.objects.filter(role="customer", profile__is_deleted=False).count()
         active_customers = User.objects.filter(role="customer", is_active=True, profile__is_blocked=False, profile__is_deleted=False).count()
@@ -469,6 +471,25 @@ class CustomerAdminViewSet(BaseModelViewSet):
         thirty_days_ago = timezone.now() - timedelta(days=30)
         new_customers = User.objects.filter(role="customer", date_joined__gte=thirty_days_ago, profile__is_deleted=False).count()
 
+        valid_statuses = [
+            OrderStatus.PROCESSING,
+            OrderStatus.PACKED,
+            OrderStatus.SHIPPED,
+            OrderStatus.DELIVERED,
+        ]
+        valid_customer_orders = Order.objects.filter(
+            user__role="customer",
+            user__profile__is_deleted=False,
+            status__in=valid_statuses,
+        )
+        total_revenue = float(valid_customer_orders.aggregate(total=Sum("total_amount"))["total"] or 0.0)
+        repeat_customers = (
+            valid_customer_orders.values("user_id")
+            .annotate(order_cnt=Count("id"))
+            .filter(order_cnt__gte=2)
+            .count()
+        )
+
         return Response({
             "success": True,
             "data": {
@@ -476,8 +497,8 @@ class CustomerAdminViewSet(BaseModelViewSet):
                 "active_customers": active_customers,
                 "blocked_customers": blocked_customers,
                 "new_customers_this_month": new_customers,
-                "total_revenue": 0,
-                "repeat_customers": 0
+                "total_revenue": round(total_revenue, 2),
+                "repeat_customers": repeat_customers,
             }
         })
 

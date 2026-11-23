@@ -47,13 +47,37 @@ function DataTable<T extends { id: string | number }>({
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      setSortDir((prev) => (prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'));
-      if (sortDir === 'desc') setSortKey(null);
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        setSortKey(null);
+        setSortDir(null);
+      }
     } else {
       setSortKey(key);
       setSortDir('asc');
     }
   };
+
+  const sortedData = React.useMemo(() => {
+    if (!sortKey || !sortDir) return data;
+    return [...data].sort((a, b) => {
+      const aVal = (a as Record<string, unknown>)[sortKey];
+      const bVal = (b as Record<string, unknown>)[sortKey];
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      let cmp = 0;
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aVal !== '' && bVal !== '') {
+        cmp = aNum - bNum;
+      } else {
+        cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: 'base' });
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortDir]);
 
   const allSelected = data.length > 0 && data.every((r) => selectedIds.has(r.id));
   const someSelected = data.some((r) => selectedIds.has(r.id));
@@ -177,7 +201,7 @@ function DataTable<T extends { id: string | number }>({
 
           {/* Body */}
           <tbody>
-            {data.length === 0 ? (
+            {sortedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (selectable ? 1 : 0)} className="py-12 text-center">
                   {emptyState ?? (
@@ -186,7 +210,7 @@ function DataTable<T extends { id: string | number }>({
                 </td>
               </tr>
             ) : (
-              data.map((row, idx) => (
+              sortedData.map((row, idx) => (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
@@ -251,13 +275,10 @@ function DataTable<T extends { id: string | number }>({
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let p = i + 1;
-              if (totalPages > 5) {
-                if (page > 3) p = page - 2 + i;
-                if (p > totalPages) p = totalPages - (4 - i);
-              }
-              return (
+            {(() => {
+              const count = Math.min(totalPages, 5);
+              const startPage = Math.max(1, Math.min(page - 2, totalPages - count + 1));
+              return Array.from({ length: count }, (_, i) => startPage + i).map((p) => (
                 <button
                   key={p}
                   onClick={() => onPageChange(p)}
@@ -268,8 +289,8 @@ function DataTable<T extends { id: string | number }>({
                 >
                   {p}
                 </button>
-              );
-            })}
+              ));
+            })()}
 
             <button
               disabled={page >= totalPages}

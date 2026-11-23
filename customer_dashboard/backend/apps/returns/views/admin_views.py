@@ -32,17 +32,27 @@ from apps.returns.services.logistics import ReturnShippingService
 from apps.returns.services.qc_service import QCService
 from apps.returns.services.replacement_service import ReplacementService
 
+from apps.common.permissions import IsAdmin
+
 logger = logging.getLogger("faazo.returns")
 
 
-class IsAdminUserPermission(permissions.BasePermission):
-    """Permission check ensuring user is an authenticated Admin."""
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and (getattr(request.user, "is_staff", False) or getattr(request.user, "role", "") == "admin")
-        )
+def _parse_bool(value, default: bool = True) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    s = str(value).strip().lower()
+    if s in ("false", "0", "no", "off", ""):
+        return False
+    if s in ("true", "1", "yes", "on"):
+        return True
+    return default
+
+
+class IsAdminUserPermission(IsAdmin):
+    """Permission check ensuring user is an authenticated Admin (delegates to canonical IsAdmin)."""
+    pass
 
 
 class AdminReturnListFilterView(APIView):
@@ -78,8 +88,7 @@ class AdminReturnListFilterView(APIView):
             qs = qs.filter(
                 Q(order__order_number__icontains=search_query) |
                 Q(customer__email__icontains=search_query) |
-                Q(customer__first_name__icontains=search_query) |
-                Q(customer__last_name__icontains=search_query) |
+                Q(customer__full_name__icontains=search_query) |
                 Q(shipment__awb_number__icontains=search_query) |
                 Q(id__icontains=search_query)
             )
@@ -203,7 +212,7 @@ class AdminReturnVerificationView(APIView):
         failure_reason = request.data.get("failure_reason", "").strip()
         notes = request.data.get("notes", "").strip()
         evidence_file = request.FILES.get("evidence_file")
-        is_restockable = bool(request.data.get("is_restockable", True))
+        is_restockable = _parse_bool(request.data.get("is_restockable"), default=True)
 
         if not status_val:
             return error_response("status ('PASS' or 'FAIL') is required.", status_code=status.HTTP_400_BAD_REQUEST)
@@ -314,7 +323,7 @@ class AdminReturnQCView(APIView):
 
     def post(self, request, pk):
         qc_result = request.data.get("qc_result", "").strip()
-        is_restockable = bool(request.data.get("is_restockable", True))
+        is_restockable = _parse_bool(request.data.get("is_restockable"), default=True)
         notes = request.data.get("notes", "").strip()
 
         if not qc_result:

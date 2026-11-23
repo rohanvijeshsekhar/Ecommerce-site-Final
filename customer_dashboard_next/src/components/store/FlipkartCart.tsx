@@ -65,12 +65,18 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
   }, [isAuthenticated, cartItems]);
 
   // Calculations
-  const totalOriginalPrice = backendCart ? backendCart.mrp_subtotal : cartItems.reduce((acc, item) => {
-    const orig = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
-    return acc + orig * item.qty;
-  }, 0);
+  const totalOriginalPrice =
+    backendCart && backendCart.mrp_subtotal > 0
+      ? backendCart.mrp_subtotal
+      : cartItems.reduce((acc, item) => {
+          const orig = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
+          return acc + orig * item.qty;
+        }, 0);
 
-  const cartTotal = backendCart ? backendCart.total_amount : cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const cartTotal =
+    backendCart && backendCart.total_amount > 0
+      ? backendCart.total_amount
+      : cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const discountTotal = backendCart ? backendCart.savings : Math.max(0, totalOriginalPrice - cartTotal);
   const gstAmount = backendCart ? backendCart.gst_amount : 0;
 

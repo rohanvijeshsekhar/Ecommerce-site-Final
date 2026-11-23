@@ -419,6 +419,8 @@ const ProductsPage: React.FC = () => {
     }
   };
 
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const editSlug = searchParams.get('edit');
     const tabParam = searchParams.get('tab');
@@ -426,6 +428,7 @@ const ProductsPage: React.FC = () => {
 
     if (isNew) {
       setViewMode('create');
+      router.replace('/admin/products');
     } else if (editSlug && products.length > 0) {
       const found = products.find(p => p.slug === editSlug);
       if (found) {
@@ -434,10 +437,11 @@ const ProductsPage: React.FC = () => {
             setActiveTab(tabParam);
             localStorage.setItem('faazo_product_wizard_active_step', tabParam);
           }
+          router.replace('/admin/products');
         });
       }
     }
-  }, [searchParams, products]);
+  }, [searchParams, products, router]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -1050,6 +1054,10 @@ const ProductsPage: React.FC = () => {
             />
           </div>
         )}
+        <ConfirmDialog isOpen={!!deleteTarget} title="Delete Product"
+          message={`Delete "${deleteTarget?.name}" (${deleteTarget?.sku})? This action soft-deletes the product — historical orders remain intact.`}
+          confirmLabel="Delete" variant="danger" loading={deleting}
+          onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />
       </div>
     );
   }
@@ -1097,7 +1105,7 @@ const ProductsPage: React.FC = () => {
               Archive
             </button>
             <button
-              onClick={() => handleBulkAction('delete')}
+              onClick={() => setBulkDeleteConfirm(true)}
               disabled={bulkActionLoading}
               className="px-3 py-1.5 bg-rose-500 text-white rounded-lg text-xs font-bold hover:bg-rose-600 disabled:opacity-50 transition-all cursor-pointer"
             >
@@ -1265,6 +1273,12 @@ const ProductsPage: React.FC = () => {
         message={`Delete "${deleteTarget?.name}" (${deleteTarget?.sku})? This action soft-deletes the product — historical orders remain intact.`}
         confirmLabel="Delete" variant="danger" loading={deleting}
         onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />
+
+      <ConfirmDialog isOpen={bulkDeleteConfirm} title="Delete Selected Products"
+        message={`Delete ${selectedIds.length} selected product(s)? This action soft-deletes the products — historical orders remain intact.`}
+        confirmLabel="Delete Selected" variant="danger" loading={bulkActionLoading}
+        onConfirm={async () => { setBulkDeleteConfirm(false); await handleBulkAction('delete'); }}
+        onClose={() => setBulkDeleteConfirm(false)} />
     </div>
   );
 };

@@ -362,17 +362,24 @@ class ProductViewSet(BaseModelViewSet):
             status_code=status.HTTP_201_CREATED,
         )
 
-    @action(detail=True, methods=["delete"], url_path=r"images/(?P<image_id>[^/.]+)",
+    @action(detail=True, methods=["patch", "delete"], url_path=r"images/(?P<image_id>[^/.]+)",
             permission_classes=[IsAuthenticated, IsAdmin])
-    def delete_image(self, request, slug=None, image_id=None):
-        """DELETE /api/v1/products/{slug}/images/{id}/"""
+    def manage_image(self, request, slug=None, image_id=None):
+        """PATCH/DELETE /api/v1/products/{slug}/images/{image_id}/"""
         product = self.get_object()
         try:
             image = product.images.get(id=image_id)
         except ProductImage.DoesNotExist:
             return error_response("Image not found.", status_code=status.HTTP_404_NOT_FOUND)
-        image.delete()
-        return success_response(message="Image deleted.")
+
+        if request.method == "DELETE":
+            image.delete()
+            return success_response(message="Image deleted.")
+
+        serializer = ProductImageSerializer(image, data=request.data, partial=True, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return success_response(data=serializer.data, message="Image updated.")
 
     @action(detail=True, methods=["patch"], url_path=r"images/(?P<image_id>[^/.]+)/primary",
             permission_classes=[IsAuthenticated, IsAdmin])
@@ -439,21 +446,6 @@ class ProductViewSet(BaseModelViewSet):
         }
         return success_response(data=data)
 
-    @action(detail=True, methods=["patch"], url_path=r"images/(?P<image_id>[^/.]+)",
-            permission_classes=[IsAuthenticated, IsAdmin])
-    def update_image(self, request, slug=None, image_id=None):
-        """PATCH /api/v1/products/{slug}/images/{image_id}/ — update alt text or sort order."""
-        product = self.get_object()
-        try:
-            image = product.images.get(id=image_id)
-        except ProductImage.DoesNotExist:
-            return error_response("Image not found.", status_code=status.HTTP_404_NOT_FOUND)
-        
-        serializer = ProductImageSerializer(image, data=request.data, partial=True, context=self.get_serializer_context())
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return success_response(data=serializer.data, message="Image updated.")
-
     @action(detail=True, methods=["patch"], url_path="images-reorder",
             permission_classes=[IsAuthenticated, IsAdmin])
     def reorder_images(self, request, slug=None):
@@ -499,6 +491,7 @@ class ProductViewSet(BaseModelViewSet):
     @action(detail=True, methods=["delete"], url_path=r"documents/(?P<doc_id>[^/.]+)",
             permission_classes=[IsAuthenticated, IsAdmin])
     def delete_document(self, request, slug=None, doc_id=None):
+        product = self.get_object()
         try:
             doc = product.documents.get(id=doc_id)
         except ProductDocument.DoesNotExist:

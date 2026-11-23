@@ -201,10 +201,9 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
       .then(() => {
         fetchSolutions();
       })
-      .catch(() => {
-        setSolutions((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s))
-        );
+      .catch((err: any) => {
+        console.error('Failed to toggle solution status:', err);
+        window.alert(err?.response?.data?.message || 'Failed to update solution status. Please try again.');
       });
   };
 
@@ -214,8 +213,9 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
       .then(() => {
         fetchSolutions();
       })
-      .catch(() => {
-        setSolutions((prev) => prev.filter((s) => s.id !== id));
+      .catch((err: any) => {
+        console.error('Failed to delete solution:', err);
+        window.alert(err?.response?.data?.message || 'Failed to delete clinical solution. Please try again.');
       });
   };
 
@@ -285,14 +285,8 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
       data.append('thumbnail_image', '');
     }
 
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    };
-
     if (editingId) {
-      api.put(`solutions/admin/${editingId}/`, data, config)
+      api.put(`solutions/admin/${editingId}/`, data)
         .then(() => {
           setIsModalOpen(false);
           fetchSolutions();
@@ -301,7 +295,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
           alert('Error saving solution: ' + JSON.stringify(err.response?.data || err.message));
         });
     } else {
-      api.post('solutions/admin/list/', data, config)
+      api.post('solutions/admin/list/', data)
         .then(() => {
           setIsModalOpen(false);
           fetchSolutions();
@@ -602,7 +596,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
                           setFormData((prev) => ({
                             ...prev,
                             title: val,
-                            slug: prev.slug || val.toLowerCase().replace(/[^a-z0-0]+/g, '-').replace(/(^-|-$)/g, '')
+                            slug: prev.slug || val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
                           }));
                         }}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:border-[#005F63]"

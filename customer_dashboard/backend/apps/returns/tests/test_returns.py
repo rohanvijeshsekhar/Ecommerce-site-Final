@@ -133,6 +133,7 @@ class ReturnsModuleTestCase(APITestCase):
         # Captured Payment for Order
         self.payment = Payment.objects.create(
             user=self.customer_a,
+            order=self.delivered_order,
             razorpay_order_id="order_mock_test_123",
             razorpay_payment_id="pay_mock_test_123",
             amount=Decimal("14160.00"),

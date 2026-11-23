@@ -440,7 +440,7 @@ class ReportsAnalyticsService:
         p_start = date_info['prev_start_date']
         p_end = date_info['prev_end_date']
 
-        dealers = DealerApplication.objects.filter(status=DealerStatus.APPROVED).select_related('user')[:10]
+        dealers = DealerApplication.objects.filter(status=DealerStatus.APPROVED).select_related('user')
 
         dealer_list = []
         for idx, d in enumerate(dealers):
@@ -473,6 +473,7 @@ class ReportsAnalyticsService:
             })
 
         dealer_list.sort(key=lambda x: x['revenue'], reverse=True)
+        dealer_list = dealer_list[:10]
         for idx, item in enumerate(dealer_list):
             item['rank'] = idx + 1
 
@@ -488,14 +489,17 @@ class ReportsAnalyticsService:
         total_customers = all_customers.count()
         new_customers = all_customers.filter(created_at__gte=start, created_at__lte=end).count()
 
-        # Repeat customers (users with > 1 order)
-        repeat_customers_cnt = Order.objects.filter(user__role='customer').values('user').annotate(cnt=Count('id')).filter(cnt__gt=1).count()
+        valid_statuses = [OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+        valid_cust_orders = Order.objects.filter(user__role='customer', status__in=valid_statuses)
+
+        # Repeat customers (users with > 1 valid order)
+        repeat_customers_cnt = valid_cust_orders.values('user').annotate(cnt=Count('id')).filter(cnt__gt=1).count()
         repeat_rate = round((repeat_customers_cnt / max(1, total_customers)) * 100.0, 1) if total_customers > 0 else 0.0
 
         # LTV calculation
-        total_customer_rev = float(Order.objects.filter(user__role='customer', status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED]).aggregate(total=Sum('total_amount'))['total'] or 0.0)
+        total_customer_rev = float(valid_cust_orders.aggregate(total=Sum('total_amount'))['total'] or 0.0)
         cltv = round(total_customer_rev / max(1, total_customers), 2) if total_customers > 0 else 0.0
-        avg_orders_per_customer = round(Order.objects.filter(user__role='customer').count() / max(1, total_customers), 1) if total_customers > 0 else 0.0
+        avg_orders_per_customer = round(valid_cust_orders.count() / max(1, total_customers), 1) if total_customers > 0 else 0.0
 
         return {
             'total_customers': total_customers,
@@ -535,7 +539,7 @@ class ReportsAnalyticsService:
     @classmethod
     def get_inventory_intelligence(cls):
         """Section 8: Inventory Intelligence - 100% Real DB Query."""
-        inventories = ProductInventory.objects.select_related('product', 'product__pricing')
+        inventories = ProductInventory.objects.filter(product__is_deleted=False).select_related('product', 'product__pricing')
 
         total_value = 0.0
         healthy_cnt = 0
@@ -557,13 +561,15 @@ class ReportsAnalyticsService:
 
         total_skus = inventories.count()
 
-        # Real Recent Movements from OrderItem Dispatches
-        recent_items = OrderItem.objects.select_related('product', 'order').order_by('-created_at')[:5]
+        # Real Recent Movements from Dispatched OrderItems
+        recent_items = OrderItem.objects.filter(
+            order__status__in=[OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+        ).select_related('product', 'order').order_by('-created_at')[:5]
         recent_movements = []
         for item in recent_items:
             recent_movements.append({
                 'type': 'Dispatched',
-                'product': item.product.name,
+                'product': item.product.name if item.product else (item.product_name or 'Product'),
                 'quantity': f"-{item.quantity} units",
                 'time': item.created_at.strftime('%b %d, %H:%M')
             })
@@ -580,15 +586,18 @@ class ReportsAnalyticsService:
 
     @classmethod
     def get_payment_analytics(cls, date_info: dict):
-        """Section 9: Payment Analytics - 100% Real DB Query."""
-        payments = Payment.objects.all()
+        """Section 9: Payment Analytics - 100% Real DB Query (date-filtered, successful revenue only)."""
+        start = date_info['start_date']
+        end = date_info['end_date']
+        payments = Payment.objects.filter(created_at__gte=start, created_at__lte=end)
 
         total_payments = payments.count()
-        successful = payments.filter(status__in=[PaymentStatus.CAPTURED, PaymentStatus.AUTHORIZED]).count()
+        successful_qs = payments.filter(status__in=[PaymentStatus.CAPTURED, PaymentStatus.AUTHORIZED])
+        successful = successful_qs.count()
         failed = payments.filter(status=PaymentStatus.FAILED).count()
         pending = payments.filter(status=PaymentStatus.CREATED).count()
 
-        methods_qs = payments.values('payment_method').annotate(
+        methods_qs = successful_qs.values('payment_method').annotate(
             count=Count('id'),
             revenue=Sum('amount')
         )

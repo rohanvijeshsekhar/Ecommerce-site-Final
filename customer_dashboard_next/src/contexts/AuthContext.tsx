@@ -20,7 +20,7 @@ export interface AuthContextType {
   isLoading: boolean;
   pendingAction: PendingAction | null;
   setPendingAction: (action: PendingAction | null) => void;
-  login: (payload: any) => Promise<void>;
+  login: (payload: any) => Promise<UserMinimal | undefined>;
   register: (payload: any) => Promise<void>;
   dealerRegister: (formData: FormData) => Promise<void>;
   logout: () => Promise<void>;
@@ -102,9 +102,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               setProfile(profileRes.data);
             }
           }
+        } else if (cachedUser) {
+          // Refresh cookie expired, revoked, or spoofed localStorage — clear stale identity
+          // BEFORE ending loading state so protected layouts (e.g. AdminLayout) never render with stale/spoofed state.
+          setAccessToken(null);
+          localStorage.removeItem('faazo_user');
+          setUser(null);
+          setProfile(null);
         }
       } catch {
-        // Silently handled
+        if (cachedUser) {
+          setAccessToken(null);
+          localStorage.removeItem('faazo_user');
+          setUser(null);
+          setProfile(null);
+        }
       }
 
       setIsLoading(false);
@@ -174,10 +186,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (payload: any) => {
+  const login = async (payload: any): Promise<UserMinimal | undefined> => {
     const res = await authService.login(payload);
     if (res.success && res.data) {
       await handleAuthSuccess(res.data);
+      return res.data.user;
     } else {
       throw new Error(res.message || 'Login failed.');
     }
@@ -280,8 +293,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout all failed:', e);
     }
     setAccessToken(null);
-    localStorage.removeItem('faazo_session_key');
-    localStorage.removeItem('faazo_user');
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
     setUser(null);
     setProfile(null);
   };
