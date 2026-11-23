@@ -51,6 +51,11 @@ class Command(BaseCommand):
             help="Explicit filesystem path to the source media directory (e.g. /var/lib/faazo/media).",
         )
         parser.add_argument(
+            "--sync-disk",
+            action="store_true",
+            help="Upload all existing physical files in /var/lib/faazo/media and link them to homepage records.",
+        )
+        parser.add_argument(
             "--app",
             type=str,
             help="Limit migration to a specific app label (e.g. 'homepage' or 'products').",
@@ -206,6 +211,68 @@ class Command(BaseCommand):
                     except Exception as exc:
                         self.stdout.write(self.style.ERROR(f" FAILED: {exc}"))
                         total_errors += 1
+
+        if options.get("sync_disk"):
+            self.stdout.write(self.style.HTTP_INFO("\n--- Scanning physical disk media to rescue broken homepage references ---"))
+            for root in media_roots:
+                homepage_dir = os.path.join(root, "homepage")
+                if not os.path.isdir(homepage_dir):
+                    continue
+
+                for dirpath, _, filenames in os.walk(homepage_dir):
+                    for fn in filenames:
+                        if not any(fn.lower().endswith(ext) for ext in [".webp", ".jpg", ".png", ".jpeg"]):
+                            continue
+                        full_p = os.path.join(dirpath, fn)
+                        rel_from_root = os.path.relpath(full_p, root).replace("\\", "/")
+                        stem, _ = os.path.splitext(rel_from_root)
+                        target_pub = f"media/{stem}"
+
+                        self.stdout.write(f"  [DISK UPLOAD] {rel_from_root} -> {target_pub} ...", ending="")
+                        try:
+                            res = cloudinary.uploader.upload(
+                                full_p,
+                                public_id=target_pub,
+                                overwrite=True,
+                                resource_type="image",
+                            )
+                            self.stdout.write(self.style.SUCCESS(f" OK"))
+
+                            if "hero/desktop" in rel_from_root:
+                                try:
+                                    from apps.homepage.models import HeroSlide
+                                    slide = HeroSlide.objects.filter(is_active=True).first()
+                                    if slide:
+                                        slide.desktop_image = rel_from_root
+                                        slide.save(update_fields=["desktop_image"])
+                                        self.stdout.write(self.style.SUCCESS(f"    -> Linked desktop banner to HeroSlide id={slide.pk}"))
+                                except Exception as e:
+                                    self.stdout.write(self.style.WARNING(f"    -> Hero desktop link failed: {e}"))
+
+                            elif "hero/mobile" in rel_from_root:
+                                try:
+                                    from apps.homepage.models import HeroSlide
+                                    slide = HeroSlide.objects.filter(is_active=True).first()
+                                    if slide:
+                                        slide.mobile_image = rel_from_root
+                                        slide.save(update_fields=["mobile_image"])
+                                        self.stdout.write(self.style.SUCCESS(f"    -> Linked mobile banner to HeroSlide id={slide.pk}"))
+                                except Exception as e:
+                                    self.stdout.write(self.style.WARNING(f"    -> Hero mobile link failed: {e}"))
+
+                            elif "categories" in rel_from_root:
+                                try:
+                                    from apps.homepage.models import HomepageCategory
+                                    hcat = HomepageCategory.objects.first()
+                                    if hcat:
+                                        hcat.card_image = rel_from_root
+                                        hcat.save(update_fields=["card_image"])
+                                        self.stdout.write(self.style.SUCCESS(f"    -> Linked category card to HomepageCategory id={hcat.pk}"))
+                                except Exception as e:
+                                    self.stdout.write(self.style.WARNING(f"    -> Category link failed: {e}"))
+
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f" FAILED: {e}"))
 
         self.stdout.write("\n" + self.style.MIGRATE_HEADING("=== Migration Summary ==="))
         self.stdout.write(f"Total files scanned:  {total_scanned}")
