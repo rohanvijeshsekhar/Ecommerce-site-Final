@@ -13,6 +13,7 @@ Domain models for returns management:
 from django.conf import settings
 from django.db import models
 from apps.common.mixins import BaseModel
+from apps.common.storage import PrivateFileField
 from apps.orders.models import Order, OrderItem
 from apps.payments.models import Payment
 
@@ -232,7 +233,7 @@ class ReturnEvidence(BaseModel):
         related_name="evidence",
         verbose_name="Return Request",
     )
-    file = models.FileField(
+    file = PrivateFileField(
         upload_to="returns/evidence/%Y/%m/",
         verbose_name="Evidence File",
     )
@@ -525,7 +526,7 @@ class ReturnVerification(BaseModel):
         default="",
         verbose_name="Verification Notes",
     )
-    evidence_file = models.FileField(
+    evidence_file = PrivateFileField(
         upload_to="returns/verification/%Y/%m/",
         null=True,
         blank=True,

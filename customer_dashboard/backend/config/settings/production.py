@@ -68,15 +68,22 @@ REFRESH_COOKIE_SAMESITE = "Strict"
 
 
 # ============================================================
-# Persistent Local VPS Disk Storage
+# Dual Storage Configuration (Public Cloudinary CDN + Private VPS Disk)
 # Inherits MEDIA_URL and MEDIA_ROOT (env-configurable) from base.py
 # ============================================================
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage" if USE_CLOUDINARY else "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+    },
+    "private": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {
+            "location": str(MEDIA_ROOT / "private"),
+            "base_url": "/media/private/",
+        },
     },
 }
 

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from apps.common.mixins import BaseModel
+from apps.common.storage import PrivateFileField
 
 class TicketPriority(models.TextChoices):
     LOW = "low", "Low"
@@ -143,7 +144,7 @@ class SupportMessage(BaseModel):
         verbose_name="Sender"
     )
     message = models.TextField(verbose_name="Message")
-    attachment = models.FileField(
+    attachment = PrivateFileField(
         upload_to="support_attachments/%Y/%m/",
         null=True,
         blank=True,

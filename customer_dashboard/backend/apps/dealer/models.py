@@ -24,6 +24,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from apps.common.storage import PrivateFileField
 
 
 class DealerStatus(models.TextChoices):
@@ -56,7 +57,7 @@ class DealerApplication(models.Model):
         max_length=200,
         verbose_name="Company / Clinic Name",
     )
-    document = models.FileField(
+    document = PrivateFileField(
         upload_to="dealer_documents/%Y/%m/",
         verbose_name="Registration Document",
         null=True,
@@ -149,7 +150,7 @@ class DealerApplicationDocument(models.Model):
         related_name="documents",
         verbose_name="Dealer Application",
     )
-    document = models.FileField(
+    document = PrivateFileField(
         upload_to="dealer_documents/%Y/%m/",
         verbose_name="Document File",
     )

@@ -52,3 +52,8 @@ phonenumbers>=8.13.0,<10.0
 # Google Analytics Data API
 google-analytics-data>=0.23.0,<1.0
 
+# Cloudinary CDN Storage (Public Website & Product Media)
+cloudinary>=1.40.0
+django-cloudinary-storage>=0.3.0
+
+

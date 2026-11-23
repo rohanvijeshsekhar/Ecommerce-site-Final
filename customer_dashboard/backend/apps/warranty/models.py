@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from apps.common.mixins import BaseModel
+from apps.common.storage import PrivateFileField
 
 # ============================================================
 # Choices
@@ -146,7 +147,7 @@ class WarrantyRegistration(BaseModel):
         default=WarrantyRegistrationStatus.PENDING_REGISTRATION,
         verbose_name="Warranty Status"
     )
-    invoice = models.FileField(
+    invoice = PrivateFileField(
         upload_to="warranty_invoices/%Y/%m/",
         null=True,
         blank=True,
@@ -282,7 +283,7 @@ class WarrantyAttachment(BaseModel):
         related_name="attachments",
         verbose_name="Warranty Claim"
     )
-    file = models.FileField(
+    file = PrivateFileField(
         upload_to="warranty_attachments/%Y/%m/",
         validators=[validate_attachment_file],
         verbose_name="Attachment File"
