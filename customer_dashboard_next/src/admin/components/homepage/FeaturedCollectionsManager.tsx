@@ -154,6 +154,8 @@ const FeaturedCollectionsManager: React.FC = () => {
 
   // Form State
   const [form, setForm] = useState<BannerFormState>(DEFAULT_FORM);
+  const [imageCleared, setImageCleared] = useState(false);
+  const [mobileImageCleared, setMobileImageCleared] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -179,6 +181,8 @@ const FeaturedCollectionsManager: React.FC = () => {
   const openCreateBanner = () => {
     setEditColl(null);
     setForm(DEFAULT_FORM);
+    setImageCleared(false);
+    setMobileImageCleared(false);
     setActiveTab('content');
     setPreviewDevice('desktop');
     setShowStudio(true);
@@ -186,6 +190,8 @@ const FeaturedCollectionsManager: React.FC = () => {
 
   const openEditBanner = (c: FeaturedCollection) => {
     setEditColl(c);
+    setImageCleared(false);
+    setMobileImageCleared(false);
     setForm({
       title: c.title || '',
       description: c.description || '',
@@ -319,15 +325,15 @@ const FeaturedCollectionsManager: React.FC = () => {
       // Desktop image
       if (form.image instanceof File) {
         fd.append('image', form.image);
-      } else if (form.image === null) {
-        fd.append('image', '');
+      } else if (imageCleared) {
+        fd.append('image', '__clear__');
       }
 
       // Mobile image
       if (form.mobile_image instanceof File) {
         fd.append('mobile_image', form.mobile_image);
-      } else if (form.mobile_image === null) {
-        fd.append('mobile_image', '');
+      } else if (mobileImageCleared) {
+        fd.append('mobile_image', '__clear__');
       }
 
       const res = editColl
@@ -1092,8 +1098,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                           label="Desktop Main Image"
                           aspectRatio={4 / 3}
                           currentUrl={desktopImgUrl}
-                          onUpload={file => setForm(f => ({ ...f, image: file }))}
-                          onRemove={() => setForm(f => ({ ...f, image: null }))}
+                          onUpload={file => { setForm(f => ({ ...f, image: file })); setImageCleared(false); }}
+                          onRemove={() => { setForm(f => ({ ...f, image: null })); setImageCleared(true); }}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
                           Recommended ~1920x800 for full background, or ~1000x800 for split.
@@ -1106,8 +1112,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                           label="Mobile Art Direction Image (Optional)"
                           aspectRatio={1}
                           currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : undefined)}
-                          onUpload={file => setForm(f => ({ ...f, mobile_image: file }))}
-                          onRemove={() => setForm(f => ({ ...f, mobile_image: null }))}
+                          onUpload={file => { setForm(f => ({ ...f, mobile_image: file })); setMobileImageCleared(false); }}
+                          onRemove={() => { setForm(f => ({ ...f, mobile_image: null })); setMobileImageCleared(true); }}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
                           Optional portrait/square asset loaded strictly on mobile devices.

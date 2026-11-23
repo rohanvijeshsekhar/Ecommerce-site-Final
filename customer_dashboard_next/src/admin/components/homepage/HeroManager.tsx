@@ -52,6 +52,8 @@ const HeroManager: React.FC = () => {
   const [editSlide, setEditSlide] = useState<HeroSlide | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HeroSlide | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });
+  const [desktopImageCleared, setDesktopImageCleared] = useState(false);
+  const [mobileImageCleared, setMobileImageCleared] = useState(false);
 
   // Promo Banner state
   const [promoForm, setPromoForm] = useState({
@@ -129,6 +131,8 @@ const HeroManager: React.FC = () => {
   const openCreate = () => {
     setEditSlide(null);
     setForm({ ...BLANK_FORM });
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     setShowForm(true);
   };
 
@@ -143,6 +147,8 @@ const HeroManager: React.FC = () => {
       desktop_image: slide.desktop_image_url || null,
       mobile_image: slide.mobile_image_url || null,
     });
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     setShowForm(true);
   };
 
@@ -157,14 +163,14 @@ const HeroManager: React.FC = () => {
       fd.append('is_active', String(form.is_active));
       if (form.desktop_image instanceof File) {
         fd.append('desktop_image', form.desktop_image);
-      } else if (form.desktop_image === null) {
-        fd.append('desktop_image', ''); // Clear image
+      } else if (desktopImageCleared) {
+        fd.append('desktop_image', '__clear__'); // Explicitly clear image
       }
 
       if (form.mobile_image instanceof File) {
         fd.append('mobile_image', form.mobile_image);
-      } else if (form.mobile_image === null) {
-        fd.append('mobile_image', ''); // Clear image
+      } else if (mobileImageCleared) {
+        fd.append('mobile_image', '__clear__'); // Explicitly clear image
       }
 
       const res = editSlide
@@ -600,8 +606,8 @@ const HeroManager: React.FC = () => {
                   label="Desktop Image"
                   aspectRatio={16 / 9}
                   currentUrl={form.desktop_image instanceof File ? URL.createObjectURL(form.desktop_image) : (form.desktop_image ? getAbsoluteImageUrl(form.desktop_image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, desktop_image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, desktop_image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, desktop_image: file })); setDesktopImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, desktop_image: null })); setDesktopImageCleared(true); }}
                 />
 
                 {/* Mobile Image */}
@@ -609,8 +615,8 @@ const HeroManager: React.FC = () => {
                   label="Mobile Image"
                   aspectRatio={3 / 4}
                   currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, mobile_image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, mobile_image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, mobile_image: file })); setMobileImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, mobile_image: null })); setMobileImageCleared(true); }}
                 />
               </div>
 

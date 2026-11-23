@@ -68,6 +68,7 @@ const CategoriesPage: React.FC = () => {
   const [saving, setSaving]             = useState(false);
   const [imageFile, setImageFile]       = useState<File | null>(null);
   const [imageUrl, setImageUrl]         = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [deleting, setDeleting]         = useState(false);
@@ -129,14 +130,14 @@ const CategoriesPage: React.FC = () => {
   const openCreate = (parentId?: string) => {
     setEditCat(null);
     setForm({ ...emptyForm, parent: parentId || '' });
-    setImageFile(null); setImageUrl(null);
+    setImageFile(null); setImageUrl(null); setImageCleared(false);
     setDrawerOpen(true);
   };
 
   const openEdit = (cat: Category) => {
     setEditCat(cat);
     setForm({ name: cat.name, parent: cat.parent || '', sort_order: cat.sort_order, description: cat.description || '', is_active: cat.is_active });
-    setImageFile(null); setImageUrl(cat.image || null);
+    setImageFile(null); setImageUrl(cat.image || null); setImageCleared(false);
     setDrawerOpen(true);
   };
 
@@ -151,7 +152,7 @@ const CategoriesPage: React.FC = () => {
       fd.append('description', form.description.trim());
       fd.append('is_active',   String(form.is_active));
       if (imageFile)          fd.append('image', imageFile);
-      else if (!imageUrl)     fd.append('image', '');
+      else if (imageCleared)  fd.append('image', '');
 
       if (editCat) {
         await adminService.updateCategory(editCat.slug, fd);
@@ -442,8 +443,8 @@ const CategoriesPage: React.FC = () => {
 
           {/* Image */}
           <ImageUploader label="Category Image" currentUrl={imageUrl}
-            onUpload={file => { setImageFile(file); setImageUrl(URL.createObjectURL(file)); }}
-            onRemove={() => { setImageFile(null); setImageUrl(null); }} />
+            onUpload={file => { setImageFile(file); setImageUrl(URL.createObjectURL(file)); setImageCleared(false); }}
+            onRemove={() => { setImageFile(null); setImageUrl(null); setImageCleared(true); }} />
 
           {/* Sort order + Active */}
           <div className="grid grid-cols-2 gap-4">

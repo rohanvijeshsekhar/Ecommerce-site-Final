@@ -19,6 +19,7 @@ const BestSellersManager: React.FC = () => {
   const [editItem, setEditItem] = useState<BestSeller | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BestSeller | null>(null);
   const [form, setForm] = useState({ product: '', custom_heading: '', short_description: '', is_visible: true, display_image: null as File | string | null });
+  const [imageCleared, setImageCleared] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -34,9 +35,10 @@ const BestSellersManager: React.FC = () => {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ product: '', custom_heading: '', short_description: '', is_visible: true, display_image: null }); setShowForm(true); };
+  const openCreate = () => { setEditItem(null); setForm({ product: '', custom_heading: '', short_description: '', is_visible: true, display_image: null }); setImageCleared(false); setShowForm(true); };
   const openEdit = (item: BestSeller) => {
     setEditItem(item);
+    setImageCleared(false);
     setForm({
       product: item.product,
       custom_heading: item.display_heading === item.product_name ? '' : item.display_heading,
@@ -58,8 +60,8 @@ const BestSellersManager: React.FC = () => {
       fd.append('is_visible', String(form.is_visible));
       if (form.display_image instanceof File) {
         fd.append('display_image', form.display_image);
-      } else if (form.display_image === null) {
-        fd.append('display_image', ''); // Clear override
+      } else if (imageCleared) {
+        fd.append('display_image', '__clear__'); // Clear override
       }
       const res = editItem ? await homepageService.updateBestSeller(editItem.id, fd) : await homepageService.createBestSeller(fd);
       if (res.success) { showToast({ variant: 'success', title: editItem ? 'Updated' : 'Added to Best Sellers' }); setShowForm(false); load(); }
@@ -148,8 +150,8 @@ const BestSellersManager: React.FC = () => {
                   label="Display Image (override)"
                   aspectRatio={1}
                   currentUrl={form.display_image instanceof File ? URL.createObjectURL(form.display_image) : (form.display_image ? getAbsoluteImageUrl(form.display_image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, display_image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, display_image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, display_image: file })); setImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, display_image: null })); setImageCleared(true); }}
                 />
               </div>
               <div>

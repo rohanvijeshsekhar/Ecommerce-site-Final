@@ -20,13 +20,15 @@ const LimitedOffersManager: React.FC = () => {
   const [editItem, setEditItem] = useState<LimitedTimeOffer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LimitedTimeOffer | null>(null);
   const [form, setForm] = useState({ ...BLANK });
+  const [bannerImageCleared, setBannerImageCleared] = useState(false);
 
   const load = async () => { setLoading(true); try { const r = await homepageService.getOffers(); if (r.success && r.data) setItems(r.data); } finally { setLoading(false); } };
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ ...BLANK }); setShowForm(true); };
+  const openCreate = () => { setEditItem(null); setForm({ ...BLANK }); setBannerImageCleared(false); setShowForm(true); };
   const openEdit = (item: LimitedTimeOffer) => {
     setEditItem(item);
+    setBannerImageCleared(false);
     setForm({
       heading: item.heading,
       description: item.description,
@@ -51,8 +53,8 @@ const LimitedOffersManager: React.FC = () => {
       fd.append('is_active', String(form.is_active));
       if (form.banner_image instanceof File) {
         fd.append('banner_image', form.banner_image);
-      } else if (form.banner_image === null) {
-        fd.append('banner_image', ''); // Clear banner image
+      } else if (bannerImageCleared) {
+        fd.append('banner_image', '__clear__'); // Clear banner image
       }
       const res = editItem ? await homepageService.updateOffer(editItem.id, fd) : await homepageService.createOffer(fd);
       if (res.success) { showToast({ variant: 'success', title: editItem ? 'Updated' : 'Created' }); setShowForm(false); load(); }
@@ -125,8 +127,8 @@ const LimitedOffersManager: React.FC = () => {
                   label="Banner Image"
                   aspectRatio={16 / 9}
                   currentUrl={form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : (form.banner_image ? getAbsoluteImageUrl(form.banner_image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, banner_image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, banner_image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, banner_image: file })); setBannerImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, banner_image: null })); setBannerImageCleared(true); }}
                 />
               </div>
               <div>

@@ -105,6 +105,8 @@ const BrandDealsManager: React.FC = () => {
 
   // Form state
   const [form, setForm] = useState({ ...BLANK_FORM });
+  const [desktopImageCleared, setDesktopImageCleared] = useState(false);
+  const [mobileImageCleared, setMobileImageCleared] = useState(false);
   const [draftProducts, setDraftProducts] = useState<DealProductDraft[]>([]);
   const [productSearch, setProductSearch] = useState('');
 
@@ -198,6 +200,8 @@ const BrandDealsManager: React.FC = () => {
   const handleOpenCreate = () => {
     setEditDeal(null);
     setForm({ ...BLANK_FORM });
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     setDraftProducts([]);
     setActiveStep(1);
     setShowModal(true);
@@ -206,6 +210,8 @@ const BrandDealsManager: React.FC = () => {
   // Open Edit Modal
   const handleOpenEdit = (deal: BrandDeal) => {
     setEditDeal(deal);
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     const brandId =
       typeof deal.brand === 'object' && deal.brand !== null
         ? (deal.brand as any).id
@@ -583,18 +589,18 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
         fd.append('end_datetime', '');
       }
 
-      // Append image if new File upload. If explicitly cleared (null), send empty string.
-      // If it's an existing URL string, omit it so backend preserves existing image.
+      // Append image if new File upload. If explicitly cleared, send '__clear__'.
+      // If it's an existing URL string or unchanged, omit it so backend preserves existing image.
       if (form.desktop_image instanceof File) {
         fd.append('desktop_image', form.desktop_image);
-      } else if (form.desktop_image === null) {
-        fd.append('desktop_image', '');
+      } else if (desktopImageCleared) {
+        fd.append('desktop_image', '__clear__');
       }
 
       if (form.mobile_image instanceof File) {
         fd.append('mobile_image', form.mobile_image);
-      } else if (form.mobile_image === null) {
-        fd.append('mobile_image', '');
+      } else if (mobileImageCleared) {
+        fd.append('mobile_image', '__clear__');
       }
 
       // Products Payload — always send valid JSON array string
@@ -1502,8 +1508,8 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                       </label>
                       <ImageUploader
                         currentUrl={getPreviewSrc(form.desktop_image)}
-                        onUpload={(file) => setForm({ ...form, desktop_image: file })}
-                        onRemove={() => setForm({ ...form, desktop_image: null })}
+                        onUpload={(file) => { setForm(prev => ({ ...prev, desktop_image: file })); setDesktopImageCleared(false); }}
+                        onRemove={() => { setForm(prev => ({ ...prev, desktop_image: null })); setDesktopImageCleared(true); }}
                         label="Desktop Banner"
                         aspectRatio={3 / 1}
                       />
@@ -1515,8 +1521,8 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                       </label>
                       <ImageUploader
                         currentUrl={getPreviewSrc(form.mobile_image)}
-                        onUpload={(file) => setForm({ ...form, mobile_image: file })}
-                        onRemove={() => setForm({ ...form, mobile_image: null })}
+                        onUpload={(file) => { setForm(prev => ({ ...prev, mobile_image: file })); setMobileImageCleared(false); }}
+                        onRemove={() => { setForm(prev => ({ ...prev, mobile_image: null })); setMobileImageCleared(true); }}
                         label="Mobile Banner"
                         aspectRatio={1.5 / 1}
                       />

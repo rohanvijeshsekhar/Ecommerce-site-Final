@@ -19,6 +19,7 @@ const ExploreSolutionsManager: React.FC = () => {
   const [editItem, setEditItem] = useState<ExploreSolution | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExploreSolution | null>(null);
   const [form, setForm] = useState({ category: '', heading: '', is_visible: true, image: null as File | string | null });
+  const [imageCleared, setImageCleared] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -30,9 +31,10 @@ const ExploreSolutionsManager: React.FC = () => {
   };
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ category: '', heading: '', is_visible: true, image: null }); setShowForm(true); };
+  const openCreate = () => { setEditItem(null); setForm({ category: '', heading: '', is_visible: true, image: null }); setImageCleared(false); setShowForm(true); };
   const openEdit = (item: ExploreSolution) => {
     setEditItem(item);
+    setImageCleared(false);
     setForm({
       category: item.category,
       heading: item.display_heading === item.category_name ? '' : item.display_heading,
@@ -52,8 +54,8 @@ const ExploreSolutionsManager: React.FC = () => {
       fd.append('is_visible', String(form.is_visible));
       if (form.image instanceof File) {
         fd.append('image', form.image);
-      } else if (form.image === null) {
-        fd.append('image', ''); // Clear image
+      } else if (imageCleared) {
+        fd.append('image', '__clear__'); // Clear image
       }
       const res = editItem ? await homepageService.updateExploreSolution(editItem.id, fd) : await homepageService.createExploreSolution(fd);
       if (res.success) { showToast({ variant: 'success', title: editItem ? 'Updated' : 'Created' }); setShowForm(false); load(); }
@@ -131,8 +133,8 @@ const ExploreSolutionsManager: React.FC = () => {
                   label="Card Image"
                   aspectRatio={280 / 380}
                   currentUrl={form.image instanceof File ? URL.createObjectURL(form.image) : (form.image ? getAbsoluteImageUrl(form.image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, image: file })); setImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, image: null })); setImageCleared(true); }}
                 />
               </div>
               <div>

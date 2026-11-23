@@ -22,6 +22,10 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = "DENY"
 
+# Reverse Proxy Security & Host Resolution (Faazo Live Nginx)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 
 # ============================================================
 # Production Database (PostgreSQL)

@@ -55,6 +55,7 @@ const CategoryShowcaseManager: React.FC = () => {
   const [editItem, setEditItem] = useState<HomepageCategory | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HomepageCategory | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });
+  const [cardImageCleared, setCardImageCleared] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -72,9 +73,10 @@ const CategoryShowcaseManager: React.FC = () => {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ ...BLANK_FORM }); setShowForm(true); };
+  const openCreate = () => { setEditItem(null); setForm({ ...BLANK_FORM }); setCardImageCleared(false); setShowForm(true); };
   const openEdit = (item: HomepageCategory) => {
     setEditItem(item);
+    setCardImageCleared(false);
     setForm({
       category: item.category,
       title_override: item.display_title === item.category_name ? '' : item.display_title,
@@ -96,8 +98,8 @@ const CategoryShowcaseManager: React.FC = () => {
       fd.append('is_visible', String(form.is_visible));
       if (form.card_image instanceof File) {
         fd.append('card_image', form.card_image);
-      } else if (form.card_image === null) {
-        fd.append('card_image', ''); // Clear override
+      } else if (cardImageCleared) {
+        fd.append('card_image', '__clear__'); // Clear override
       }
       const res = editItem
         ? await homepageService.updateHomepageCategory(editItem.id, fd)
@@ -197,8 +199,8 @@ const CategoryShowcaseManager: React.FC = () => {
                   label="Card Image"
                   aspectRatio={280 / 250}
                   currentUrl={form.card_image instanceof File ? URL.createObjectURL(form.card_image) : (form.card_image ? getAbsoluteImageUrl(form.card_image) : null)}
-                  onUpload={(file) => setForm(f => ({ ...f, card_image: file }))}
-                  onRemove={() => setForm(f => ({ ...f, card_image: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, card_image: file })); setCardImageCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, card_image: null })); setCardImageCleared(true); }}
                 />
               </div>
               {/* Title override */}

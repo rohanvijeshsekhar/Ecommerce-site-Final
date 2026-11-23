@@ -49,14 +49,26 @@ class FlexibleImageField(serializers.FileField):
     1. UploadedFile: standard file upload validated (JPEG, PNG, WEBP, AVIF, GIF, SVG, BMP, TIFF).
     2. String URL or path (e.g. 'http://...', '/media/...', 'homepage/...'):
        Treated as existing image — raises SkipField so DRF preserves instance image.
-    3. Empty string (''), 'null', 'undefined', False, or None:
-       Clears the image by returning None if nullable, or skips if not.
+    3. Explicit clear sentinel ('__clear__', '__delete__'):
+       Explicitly clears the image field by returning None.
+    4. Empty string (''), 'null', 'undefined', False, or None:
+       During partial/update requests: raises SkipField so existing image is NEVER wiped.
+       During initial create: returns None if nullable.
     """
     def to_internal_value(self, data):
+        if data in ('__clear__', '__delete__'):
+            return None
+
+        is_update = bool(self.parent and getattr(self.parent, 'instance', None))
+        is_partial = bool(self.parent and getattr(self.parent, 'partial', False))
+
         if data in ('', 'null', 'undefined', None, False):
+            if is_update or is_partial:
+                raise SkipField()
             if self.allow_null:
                 return None
             raise SkipField()
+
         if isinstance(data, str) and not hasattr(data, 'read'):
             raise SkipField()
         
@@ -69,10 +81,19 @@ class FlexibleImageField(serializers.FileField):
         return file_obj
 
     def run_validation(self, data=serializers.empty):
+        if data in ('__clear__', '__delete__'):
+            return None
+
+        is_update = bool(self.parent and getattr(self.parent, 'instance', None))
+        is_partial = bool(self.parent and getattr(self.parent, 'partial', False))
+
         if data in ('', 'null', 'undefined', None, False):
+            if is_update or is_partial:
+                raise SkipField()
             if self.allow_null:
                 return None
             raise SkipField()
+
         if isinstance(data, str) and not hasattr(data, 'read'):
             raise SkipField()
         return super().run_validation(data)
@@ -391,7 +412,18 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
         elif isinstance(data, dict):
             data = dict(data)
         
-        for field in ("image", "mobile_image", "start_date", "end_date"):
+        for field in ("image", "mobile_image"):
+            if field in data:
+                val = data[field]
+                if val in ("__clear__", "__delete__"):
+                    data[field] = None
+                elif val in ("", "null", "undefined", False, None) or (isinstance(val, str) and not hasattr(val, "read")):
+                    if self.instance and getattr(self.instance, field, None):
+                        del data[field]
+                    else:
+                        data[field] = None
+
+        for field in ("start_date", "end_date"):
             if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
                 data[field] = None
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
@@ -968,7 +1000,18 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
         elif isinstance(data, dict):
             data = dict(data)
         
-        for field in ("desktop_image", "mobile_image", "start_date", "end_date"):
+        for field in ("desktop_image", "mobile_image"):
+            if field in data:
+                val = data[field]
+                if val in ("__clear__", "__delete__"):
+                    data[field] = None
+                elif val in ("", "null", "undefined", False, None) or (isinstance(val, str) and not hasattr(val, "read")):
+                    if self.instance and getattr(self.instance, field, None):
+                        del data[field]
+                    else:
+                        data[field] = None
+
+        for field in ("start_date", "end_date"):
             if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
                 data[field] = None
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
@@ -1346,16 +1389,18 @@ class BrandDealWriteSerializer(serializers.ModelSerializer):
         elif isinstance(data, dict):
             data = dict(data)
 
-        # Image fields: if an existing URL string is sent (not a new file), remove the field
-        # so the existing image is preserved. If empty/null, set to None to clear.
+        # Image fields: only clear if explicitly set to '__clear__'.
+        # If empty or an existing URL string is sent, preserve instance image.
         for field in ("desktop_image", "mobile_image"):
             if field in data:
                 val = data[field]
-                if val in ("", "null", False, None):
+                if val in ("__clear__", "__delete__"):
                     data[field] = None
-                elif isinstance(val, str) and not hasattr(val, "read"):
-                    # It's an existing URL string, not a new File — preserve existing image
-                    del data[field]
+                elif val in ("", "null", "undefined", False, None) or (isinstance(val, str) and not hasattr(val, "read")):
+                    if self.instance and getattr(self.instance, field, None):
+                        del data[field]
+                    else:
+                        data[field] = None
 
         # Datetime fields: if empty/null, set to None; valid ISO strings are passed through
         for field in ("start_datetime", "end_datetime"):

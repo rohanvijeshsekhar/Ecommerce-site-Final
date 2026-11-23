@@ -145,6 +145,8 @@ export const DailyOffersManager: React.FC = () => {
   const [form, setForm] = useState<Partial<DailyOffer>>(DEFAULT_OFFER_FORM);
   const [desktopImageFile, setDesktopImageFile] = useState<File | null>(null);
   const [mobileImageFile, setMobileImageFile] = useState<File | null>(null);
+  const [desktopImageCleared, setDesktopImageCleared] = useState(false);
+  const [mobileImageCleared, setMobileImageCleared] = useState(false);
 
   // Product Selection States
   const [allProducts, setAllProducts] = useState<any[]>([]);
@@ -202,6 +204,8 @@ export const DailyOffersManager: React.FC = () => {
     });
     setDesktopImageFile(null);
     setMobileImageFile(null);
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     setCtaProductSearchQuery('');
     setActiveTab('artwork');
     setShowStudio(true);
@@ -232,6 +236,8 @@ export const DailyOffersManager: React.FC = () => {
     });
     setDesktopImageFile(null);
     setMobileImageFile(null);
+    setDesktopImageCleared(false);
+    setMobileImageCleared(false);
     setCtaProductSearchQuery('');
     setActiveTab('content');
     setShowStudio(true);
@@ -352,6 +358,7 @@ export const DailyOffersManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setDesktopImageFile(file);
+      setDesktopImageCleared(false);
       const previewUrl = URL.createObjectURL(file);
       setForm((prev) => ({ ...prev, desktop_image_url: previewUrl }));
     }
@@ -361,6 +368,7 @@ export const DailyOffersManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setMobileImageFile(file);
+      setMobileImageCleared(false);
       const previewUrl = URL.createObjectURL(file);
       setForm((prev) => ({ ...prev, mobile_image_url: previewUrl }));
     }
@@ -368,6 +376,7 @@ export const DailyOffersManager: React.FC = () => {
 
   const handleRemoveDesktopImage = () => {
     setDesktopImageFile(null);
+    setDesktopImageCleared(true);
     setForm((prev) => ({
       ...prev,
       desktop_image_url: '',
@@ -380,6 +389,7 @@ export const DailyOffersManager: React.FC = () => {
 
   const handleRemoveMobileImage = () => {
     setMobileImageFile(null);
+    setMobileImageCleared(true);
     setForm((prev) => ({
       ...prev,
       mobile_image_url: '',
@@ -446,13 +456,13 @@ export const DailyOffersManager: React.FC = () => {
       // Append images
       if (desktopImageFile) {
         fd.append('desktop_image', desktopImageFile);
-      } else if (!form.desktop_image_url) {
-        fd.append('desktop_image', '');
+      } else if (desktopImageCleared) {
+        fd.append('desktop_image', '__clear__');
       }
       if (mobileImageFile) {
         fd.append('mobile_image', mobileImageFile);
-      } else if (!form.mobile_image_url) {
-        fd.append('mobile_image', '');
+      } else if (mobileImageCleared) {
+        fd.append('mobile_image', '__clear__');
       }
 
       let res;

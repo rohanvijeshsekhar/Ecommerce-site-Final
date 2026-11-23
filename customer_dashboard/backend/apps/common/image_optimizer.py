@@ -66,15 +66,18 @@ def get_optimizer_setting(name: str, default: Union[int, bool]) -> Union[int, bo
 
 def sanitize_image_filename(original_name: Optional[str], extension: str = ".webp") -> str:
     """
-    Generate a sanitized, directory-traversal-safe filename with .webp extension.
+    Generate a sanitized, directory-traversal-safe filename with guaranteed valid extension.
     Example:
       "../../My Product Photo (1).jpg" -> "my_product_photo_1_a1b2c3d4.webp"
     """
-    if not extension.startswith("."):
-        extension = f".{extension}"
+    ext = (extension or "").strip().lower()
+    if not ext or ext == ".":
+        ext = ".webp"
+    elif not ext.startswith("."):
+        ext = f".{ext}"
 
     if not original_name:
-        return f"img_{uuid.uuid4().hex[:12]}{extension}"
+        return f"img_{uuid.uuid4().hex[:12]}{ext}"
 
     # Extract base name and strip path traversal characters
     clean_base = os.path.basename(original_name)
@@ -92,7 +95,7 @@ def sanitize_image_filename(original_name: Optional[str], extension: str = ".web
 
     # Append a short unique entropy suffix to prevent cache-busting collisions
     entropy = uuid.uuid4().hex[:8]
-    return f"{stem_clean}_{entropy}{extension}"
+    return f"{stem_clean}_{entropy}{ext}"
 
 
 def validate_image_file(
@@ -307,8 +310,11 @@ def optimize_image_to_webp(
 
     except Exception as exc:
         logger.warning("Pillow transcoding failed for '%s' (%s). Saving original bytes safely.", orig_name, exc)
-        _, ext = os.path.splitext(orig_name)
-        fallback_name = sanitize_image_filename(orig_name, extension=ext or ".jpg")
+        _, ext = os.path.splitext(orig_name or "")
+        ext = (ext or "").lower().strip()
+        if not ext or ext in (".tmp", ".bin"):
+            ext = ".jpg"
+        fallback_name = sanitize_image_filename(orig_name, extension=ext)
         fallback_file = ContentFile(raw_bytes, name=fallback_name)
         fallback_file._is_webp_optimized = True
         return fallback_file
@@ -371,6 +377,9 @@ class OptimizedImageField(models.ImageField):
                     target_name = self.generate_filename(model_instance, optimized_file.name)
                     # Persist WebP binary to storage
                     saved_path = self.storage.save(target_name, optimized_file)
+                    if saved_path and not os.path.splitext(saved_path)[1]:
+                        target_ext = os.path.splitext(optimized_file.name)[1] or ".webp"
+                        saved_path = f"{saved_path}{target_ext}"
 
                     # Update FieldFile references
                     file.name = saved_path

@@ -20,13 +20,15 @@ const TestimonialsManager: React.FC = () => {
   const [editItem, setEditItem] = useState<Testimonial | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Testimonial | null>(null);
   const [form, setForm] = useState({ ...BLANK });
+  const [photoCleared, setPhotoCleared] = useState(false);
 
   const load = async () => { setLoading(true); try { const r = await homepageService.getTestimonials(); if (r.success && r.data) setItems(r.data); } finally { setLoading(false); } };
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ ...BLANK }); setShowForm(true); };
+  const openCreate = () => { setEditItem(null); setForm({ ...BLANK }); setPhotoCleared(false); setShowForm(true); };
   const openEdit = (item: Testimonial) => {
     setEditItem(item);
+    setPhotoCleared(false);
     setForm({
       customer_name: item.customer_name,
       clinic_name: item.clinic_name,
@@ -53,8 +55,8 @@ const TestimonialsManager: React.FC = () => {
       fd.append('is_active', String(form.is_active));
       if (form.photo instanceof File) {
         fd.append('photo', form.photo);
-      } else if (form.photo === null || form.photo === '') {
-        fd.append('photo', ''); // Clear photo
+      } else if (photoCleared) {
+        fd.append('photo', '__clear__'); // Clear photo
       }
       const res = editItem ? await homepageService.updateTestimonial(editItem.id, fd) : await homepageService.createTestimonial(fd);
       if (res.success) { showToast({ variant: 'success', title: editItem ? 'Updated' : 'Added' }); setShowForm(false); load(); }
@@ -132,8 +134,8 @@ const TestimonialsManager: React.FC = () => {
                   aspectRatio={1}
                   className="flex-shrink-0"
                   currentUrl={form.photo instanceof File ? URL.createObjectURL(form.photo) : (form.photo ? getAbsoluteImageUrl(form.photo) : undefined)}
-                  onUpload={(file) => setForm(f => ({ ...f, photo: file }))}
-                  onRemove={() => setForm(f => ({ ...f, photo: null }))}
+                  onUpload={(file) => { setForm(f => ({ ...f, photo: file })); setPhotoCleared(false); }}
+                  onRemove={() => { setForm(f => ({ ...f, photo: null })); setPhotoCleared(true); }}
                 />
                 <div className="flex-1 space-y-3">
                   <div>
