@@ -46,6 +46,11 @@ class Command(BaseCommand):
             help="Re-upload files even if they already exist on Cloudinary.",
         )
         parser.add_argument(
+            "--media-root",
+            type=str,
+            help="Explicit filesystem path to the source media directory (e.g. /var/lib/faazo/media).",
+        )
+        parser.add_argument(
             "--app",
             type=str,
             help="Limit migration to a specific app label (e.g. 'homepage' or 'products').",
@@ -78,8 +83,22 @@ class Command(BaseCommand):
         import cloudinary
         import cloudinary.uploader
 
-        media_root = str(settings.MEDIA_ROOT)
-        self.stdout.write(f"Source MEDIA_ROOT: {media_root}")
+        media_roots_to_try = []
+        if options.get("media_root"):
+            media_roots_to_try.append(options["media_root"])
+        if os.path.isdir("/var/lib/faazo/media"):
+            media_roots_to_try.append("/var/lib/faazo/media")
+        media_roots_to_try.append(str(settings.MEDIA_ROOT))
+        # Deduplicate while preserving order
+        seen_roots = set()
+        media_roots = []
+        for r in media_roots_to_try:
+            norm = os.path.normpath(r)
+            if norm not in seen_roots and os.path.isdir(norm):
+                seen_roots.add(norm)
+                media_roots.append(norm)
+
+        self.stdout.write(f"Source media directories: {', '.join(media_roots)}")
         self.stdout.write(f"Target Cloudinary Cloud: {settings.CLOUDINARY_STORAGE.get('CLOUD_NAME')}\n")
 
         total_scanned = 0
@@ -132,16 +151,21 @@ class Command(BaseCommand):
                     else:
                         rel_path = clean_path
 
-                    # Find physical file on disk
-                    candidate_paths = [
-                        os.path.join(media_root, rel_path.replace("/", os.sep)),
-                        os.path.join(media_root, clean_path.replace("/", os.sep)),
-                    ]
-
+                    # Find physical file on disk across all known media root locations
                     physical_file = None
-                    for cp in candidate_paths:
-                        if os.path.isfile(cp):
-                            physical_file = cp
+                    common_exts = ["", ".webp", ".jpg", ".jpeg", ".png", ".svg", ".gif"]
+                    
+                    for root in media_roots:
+                        for sub_path in [rel_path, clean_path]:
+                            base_cand = os.path.join(root, sub_path.replace("/", os.sep))
+                            for ext in common_exts:
+                                test_cand = base_cand + ext if ext else base_cand
+                                if os.path.isfile(test_cand):
+                                    physical_file = test_cand
+                                    break
+                            if physical_file:
+                                break
+                        if physical_file:
                             break
 
                     if not physical_file:
