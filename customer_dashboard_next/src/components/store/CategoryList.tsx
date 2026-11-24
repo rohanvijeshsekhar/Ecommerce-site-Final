@@ -197,6 +197,12 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                       fill
                       sizes="280px"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (target && !target.src.includes('category_materials.png')) {
+                          target.src = '/images/category_materials.png';
+                        }
+                      }}
                     />
                   </div>
 
@@ -269,6 +275,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                       src={cat.image || '/images/category_materials.png'}
                       alt={cat.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/images/category_materials.png';
+                      }}
                     />
                   </div>
 

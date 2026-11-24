@@ -186,6 +186,12 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                         priority={idx === 0}
                         sizes="100vw"
                         className="object-cover object-center z-0 select-none md:hidden"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target && !target.src.includes('hero_ecommerce.png')) {
+                            target.src = '/images/hero_ecommerce.png';
+                          }
+                        }}
                       />
                       {/* Desktop view image */}
                       <Image
@@ -195,6 +201,12 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                         priority={idx === 0}
                         sizes="100vw"
                         className="object-cover md:object-center z-0 select-none hidden md:block"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target && !target.src.includes('hero_ecommerce.png')) {
+                            target.src = '/images/hero_ecommerce.png';
+                          }
+                        }}
                       />
                     </>
                   ) : (
@@ -205,6 +217,12 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                       priority={idx === 0}
                       sizes="100vw"
                       className="object-cover object-[center_right] md:object-center z-0 select-none"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (target && !target.src.includes('hero_ecommerce.png')) {
+                          target.src = '/images/hero_ecommerce.png';
+                        }
+                      }}
                     />
                   )}
                 </div>
