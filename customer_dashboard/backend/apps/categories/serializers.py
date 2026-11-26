@@ -84,10 +84,33 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
 class CategoryWriteSerializer(serializers.ModelSerializer):
     """Serializer for create / update including re-parenting."""
 
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Category
         fields = ["id", "slug", "name", "parent", "description", "image", "sort_order", "is_active"]
         read_only_fields = ["id", "slug"]
+
+    def to_internal_value(self, data):
+        # Gracefully handle multipart FormData strings
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = dict(data)
+        
+        # Empty string parent means root category (parent=None)
+        if 'parent' in data and data['parent'] in ('', 'null', 'undefined', None):
+            data['parent'] = None
+
+        # Empty string image means no file uploaded or clear
+        if 'image' in data and data['image'] in ('', 'null', 'undefined'):
+            data.pop('image', None)
+
+        return super().to_internal_value(data)
 
     def validate_parent(self, value):
         """Prevent circular references — a category cannot be its own ancestor."""

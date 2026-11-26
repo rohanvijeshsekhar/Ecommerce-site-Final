@@ -199,6 +199,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onCategoryClick, initialCat
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
+                        target.srcset = '';
                         if (target && !target.src.includes('category_materials.png')) {
                           target.src = '/images/category_materials.png';
                         }

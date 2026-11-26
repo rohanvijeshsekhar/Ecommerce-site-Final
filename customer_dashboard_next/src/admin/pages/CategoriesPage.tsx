@@ -147,12 +147,15 @@ const CategoriesPage: React.FC = () => {
     try {
       const fd = new FormData();
       fd.append('name',        form.name.trim());
-      fd.append('parent',      form.parent);
+      if (form.parent) {
+        fd.append('parent',    form.parent);
+      }
       fd.append('sort_order',  String(form.sort_order));
-      fd.append('description', form.description.trim());
+      if (form.description.trim()) {
+        fd.append('description', form.description.trim());
+      }
       fd.append('is_active',   String(form.is_active));
-      if (imageFile)          fd.append('image', imageFile);
-      else if (imageCleared)  fd.append('image', '');
+      if (imageFile)           fd.append('image', imageFile);
 
       if (editCat) {
         await adminService.updateCategory(editCat.slug, fd);
@@ -166,7 +169,15 @@ const CategoriesPage: React.FC = () => {
         fetchCategories(res.data?.id);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.name?.[0] || err.response?.data?.message || err.message || 'Failed to save.';
+      const errData = err.response?.data;
+      const msg =
+        errData?.error?.message ||
+        errData?.error?.details?.[0]?.issue ||
+        (Array.isArray(errData?.name) ? errData.name[0] : null) ||
+        (Array.isArray(errData?.parent) ? errData.parent[0] : null) ||
+        errData?.message ||
+        err.message ||
+        'Failed to save.';
       toast.error(msg);
     } finally {
       setSaving(false);
