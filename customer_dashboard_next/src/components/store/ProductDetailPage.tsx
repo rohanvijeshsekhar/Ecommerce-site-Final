@@ -595,7 +595,8 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Right Side: Main Stage Aspect-Square Container (Perfect 1:1 Square, White Background, Soft Shadow, No Border) */}
               <div
                 onClick={() => setIsFullscreenOpen(true)}
-                className="w-full aspect-square rounded-[28px] overflow-hidden flex items-center justify-center group relative cursor-zoom-in transition-all duration-300 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-0"
+                className="w-full aspect-square rounded-[28px] overflow-hidden flex items-center justify-center group relative cursor-zoom-in transition-all duration-300 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-0 border-0"
+                style={{ padding: 0, margin: 0, border: 'none', outline: 'none', overflow: 'hidden' }}
               >
                 {/* Flipkart Inspired Action Buttons (Wishlist & Share) */}
                 <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 pointer-events-auto">
@@ -634,7 +635,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
 
                 {/* Seamless Stacked Image Layers (Zero Blinking / Instant Crossfade like Flipkart/Myntra) */}
-                <div className="relative w-full h-full overflow-hidden rounded-[28px]">
+                <div className="relative w-full h-full overflow-hidden rounded-[28px]" style={{ padding: 0, margin: 0, overflow: 'hidden' }}>
                   {productImages.map((img: any, idx: number) => {
                     const isActive = activeImageIndex === idx;
                     return (
@@ -643,11 +644,22 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         src={img.src || '/images/nsk_handpiece_portrait.png'}
                         alt={img.alt || ''}
                         loading="eager"
-                        className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-all duration-250 ease-out scale-[1.02]
+                        className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-all duration-250 ease-out
                           ${isActive
                             ? 'opacity-100 z-10'
                             : 'opacity-0 scale-[1.04] z-0 pointer-events-none'
                           }`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center',
+                          transform: 'scale(1.03)',
+                          transformOrigin: 'center center',
+                          display: 'block',
+                          margin: 0,
+                          padding: 0
+                        }}
                       />
                     );
                   })}
@@ -682,7 +694,10 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="block md:hidden w-full">
 
               {/* Main Swiper Stage - 4:5 Aspect Ratio, White Background, Rounded 24px */}
-              <div className="w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.015)] p-0 border-0">
+              <div
+                className="w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.015)] p-0 border-0"
+                style={{ padding: 0, margin: 0, border: 'none', outline: 'none', overflow: 'hidden' }}
+              >
                 {/* Floating Mobile Back Button (Ajio style) */}
                 <button
                   onClick={onBackToHome}
@@ -744,17 +759,30 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   pagination={{ clickable: true, el: '.gallery-mobile-pagination' }}
                   onSlideChange={(swiper) => setActiveImageIndex(swiper.activeIndex)}
                   className="w-full h-full"
+                  style={{ width: '100%', height: '100%', padding: 0, margin: 0, overflow: 'hidden' }}
                 >
                   {productImages.map((img: any, idx: number) => (
-                    <SwiperSlide key={idx} className="w-full h-full">
+                    <SwiperSlide key={idx} className="w-full h-full" style={{ width: '100%', height: '100%', padding: 0, margin: 0 }}>
                       <div
                         onClick={() => setIsFullscreenOpen(true)}
                         className="w-full h-full flex items-center justify-center cursor-zoom-in transition-all duration-300 relative p-0 overflow-hidden rounded-[24px]"
+                        style={{ width: '100%', height: '100%', padding: 0, margin: 0, overflow: 'hidden' }}
                       >
                         <img
                           src={img.src}
                           alt={img.alt}
-                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover object-center scale-[1.02]"
+                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover object-center"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: 'center',
+                            transform: 'scale(1.03)',
+                            transformOrigin: 'center center',
+                            display: 'block',
+                            margin: 0,
+                            padding: 0
+                          }}
                         />
                       </div>
                     </SwiperSlide>
