@@ -362,45 +362,26 @@ export default function BestSellersClient() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[144px] select-none text-left font-sans text-slate-800">
       
-      {/* ── TOP HERO BANNER ── */}
-      {banner && banner.is_active && (
-        <div className="w-full relative overflow-hidden h-[240px] sm:h-[320px] md:h-[400px] bg-slate-950 border-b border-slate-200/50 shadow-md">
-          <img
-            src={banner.banner_image_url || '/images/brands_hero_bg.png'}
-            alt={banner.title || 'Best Sellers Banner'}
-            loading="eager"
-            className="w-full h-full object-cover opacity-90 brightness-[0.95]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/75 to-transparent/30 flex items-center px-6 sm:px-12 lg:px-20">
-            <div className="max-w-4xl w-full space-y-2.5 sm:space-y-4">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#006670] text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full w-fit shadow-md">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Admin Curated Selection
-              </span>
-              {banner.title && (
-                <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
-                  {banner.title}
-                </h2>
-              )}
-              {banner.subtitle && (
-                <p className="text-slate-200 text-xs sm:text-base md:text-lg max-w-xl line-clamp-2 font-medium leading-relaxed">
-                  {banner.subtitle}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6" id="bestsellers-grid">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6" id="bestsellers-grid">
         
         {/* Breadcrumbs */}
-        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500 mb-6">
+        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500 mb-4 sm:mb-6">
           <Link href="/" className="hover:text-[#006670] transition-colors font-medium">
             Home
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           <span className="font-bold text-slate-900">Best Sellers</span>
         </nav>
+
+        {/* Clean Page Title Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight font-display">
+            Best Sellers
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            Shop our highest rated dental equipment trusted by thousands of practitioners across India.
+          </p>
+        </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">

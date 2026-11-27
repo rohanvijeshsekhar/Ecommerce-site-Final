@@ -131,56 +131,30 @@ export default function BrandsClient() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-[108px] lg:pt-[144px]">
       
-      {/* ── TOP HERO BANNER (Full width edge-to-edge) ── */}
-      {banner && banner.is_active && (
-        <div className="w-full relative overflow-hidden group h-[220px] sm:h-[300px] md:h-[360px] bg-slate-950 border-b border-slate-200/50 shadow-md">
-          <img
-            src={banner?.banner_image_url || '/images/brands_hero_bg.png'}
-            alt={banner?.title || 'Our Trusted Brands'}
-            loading="eager"
-            className="w-full h-full object-cover opacity-90 brightness-[0.95]"
-          />
-
-          {/* Glassmorphism Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-transparent/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20">
-            <div className="max-w-4xl w-full space-y-2 sm:space-y-3.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#006670] text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full w-fit shadow-md">
-                <Award className="w-3.5 h-3.5 text-amber-300" /> Authorized Partners & Manufacturers
-              </span>
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-md">
-                {banner.title}
-              </h1>
-              <p className="text-slate-200 text-xs sm:text-base max-w-2xl line-clamp-2 font-medium leading-relaxed">
-                {banner.subtitle}
-              </p>
-              {banner.button_text && (
-                <a
-                  href={banner.button_link || '#brands-grid'}
-                  className="inline-flex items-center gap-2 mt-2 sm:mt-4 px-5 py-2.5 bg-[#006670] hover:bg-[#00525a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 w-fit cursor-pointer"
-                >
-                  <span>{banner.button_text}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div id="brands-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div id="brands-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         
         {/* ── Breadcrumb & Results Count ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
           <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500">
             <Link href="/" className="hover:text-[#006670] transition-colors font-medium">
               Home
             </Link>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-bold text-slate-900">Brand Directory</span>
+            <span className="font-bold text-slate-900">Brands</span>
           </nav>
           <div className="text-xs font-semibold text-slate-500">
             Showing <span className="font-bold text-slate-900">{filteredBrands.length}</span> Verified Dental Brands
           </div>
+        </div>
+
+        {/* Clean Page Title Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight font-display">
+            Brands
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            Explore authentic clinical dental equipment and supplies from verified global manufacturers.
+          </p>
         </div>
 
         {/* ── Compact Standard Search Bar ── */}
