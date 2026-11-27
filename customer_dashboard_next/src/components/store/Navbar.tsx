@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CategoryMegaMenu from './CategoryMegaMenu';
@@ -31,8 +31,8 @@ import { api } from '../../lib/api';
 import NotificationBell from './NotificationBell';
 
 // FAAZO logo component
-export const FaazoLogo: React.FC<{ 
-  className?: string; 
+export const FaazoLogo: React.FC<{
+  className?: string;
   style?: React.CSSProperties;
   onlyIcon?: boolean;
 }> = ({ className = "", style, onlyIcon = false }) => {
@@ -221,7 +221,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           setDynamicSearchResults([...productsMapped, ...combosMapped]);
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -258,7 +258,8 @@ const Navbar: React.FC<NavbarProps> = ({
   // Debounce ref for menu close delays
   const closeTimeoutRef = useRef<number | null>(null);
 
-  const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const safeCartItems = useMemo(() => (Array.isArray(cartItems) ? cartItems.filter(Boolean) : []), [cartItems]);
+  const cartTotal = safeCartItems.reduce((acc, item) => acc + (Number(item?.price) || 0) * (Number(item?.qty) || 1), 0);
 
   // Handles scroll listener for the shrink effect, click outside, and Escape key
   useEffect(() => {
@@ -449,7 +450,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center w-full h-[44px] px-4.5 rounded-full border border-[#006670]/25 bg-white hover:border-[#006670]/50 focus-within:border-[#006670]/60 hover:shadow-[0_1px_8px_rgba(0,102,112,0.08)] focus-within:shadow-[0_1px_8px_rgba(0,102,112,0.12)] transition-all duration-200 gap-3.5 relative">
                 {/* Left Magnifying Glass */}
                 <Search className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-                
+
                 <input
                   type="search"
                   name="site_search"
@@ -510,9 +511,8 @@ const Navbar: React.FC<NavbarProps> = ({
                     type="button"
                     aria-label={`Account menu for ${user.full_name || 'User'}`}
                     aria-expanded={isAccountOpen}
-                    className={`group flex items-center gap-2.5 pl-1.5 pr-2.5 py-1 rounded-xl transition-all duration-150 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[#006670] focus-visible:ring-offset-1 border border-slate-200/80 bg-white hover:bg-slate-50/90 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
-                      isAccountOpen ? 'bg-slate-50 border-[#006670]/40 ring-1 ring-[#006670]/20' : ''
-                    }`}
+                    className={`group flex items-center gap-2.5 pl-1.5 pr-2.5 py-1 rounded-xl transition-all duration-150 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[#006670] focus-visible:ring-offset-1 border border-slate-200/80 bg-white hover:bg-slate-50/90 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${isAccountOpen ? 'bg-slate-50 border-[#006670]/40 ring-1 ring-[#006670]/20' : ''
+                      }`}
                   >
                     {/* 36px circular avatar with subtle FAAZO teal background, clean white initials, subtle border, soft shadow */}
                     <div className="w-[36px] h-[36px] rounded-full bg-[#005B63] text-white font-bold text-xs tracking-wider flex items-center justify-center shrink-0 border border-[#005B63]/20 shadow-[0_1px_3px_rgba(0,91,99,0.18)] transition-transform duration-150 group-hover:scale-[1.02]">
@@ -531,16 +531,15 @@ const Navbar: React.FC<NavbarProps> = ({
                         {user.role === 'dealer'
                           ? 'B2B Dealer'
                           : user.role === 'admin'
-                          ? 'Administrator'
-                          : 'Clinic Account'}
+                            ? 'Administrator'
+                            : 'Clinic Account'}
                       </p>
                     </div>
 
                     {/* Small dropdown indicator icon */}
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-150 shrink-0 ${
-                        isAccountOpen ? 'rotate-180 text-[#006670]' : ''
-                      }`}
+                      className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-150 shrink-0 ${isAccountOpen ? 'rotate-180 text-[#006670]' : ''
+                        }`}
                     />
                   </button>
                 ) : (
@@ -575,8 +574,8 @@ const Navbar: React.FC<NavbarProps> = ({
                             {user.role === 'dealer'
                               ? 'B2B Dealer'
                               : user.role === 'admin'
-                              ? 'Administrator'
-                              : 'Clinic Account'}
+                                ? 'Administrator'
+                                : 'Clinic Account'}
                           </span>
                         </div>
                       </div>
@@ -604,13 +603,12 @@ const Navbar: React.FC<NavbarProps> = ({
                               <span>Dealer Portal</span>
                             </div>
                             <span
-                              className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                user.dealer_status === 'approved'
+                              className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${user.dealer_status === 'approved'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : user.dealer_status === 'rejected'
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
+                                    ? 'bg-rose-100 text-rose-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
                             >
                               {user.dealer_status ?? 'pending'}
                             </span>
@@ -749,7 +747,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <div className="relative">
                   <ShoppingCart className="w-[20px] h-[20px] stroke-[1.8] mb-0.5" />
                   <span suppressHydrationWarning className="absolute -top-1.5 -right-2.5 bg-[#004d54] text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
-                    {cartItems.length}
+                    {safeCartItems.length}
                   </span>
                 </div>
                 <span className="text-[10px] font-bold tracking-wider uppercase leading-none mt-0.5">CART</span>
@@ -773,7 +771,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center w-full h-[36px] px-3.5 rounded-full border border-[#006670]/25 bg-white hover:border-[#006670]/50 focus-within:border-[#006670]/60 hover:shadow-[0_1px_8px_rgba(0,102,112,0.08)] focus-within:shadow-[0_1px_8px_rgba(0,102,112,0.12)] transition-all duration-200 gap-2 relative">
               {/* Left Magnifying Glass */}
               <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              
+
               <input
                 type="search"
                 name="mobile_site_search"
@@ -894,7 +892,7 @@ const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Notification Bell Icon Trigger & Dropdown */}
-            <div 
+            <div
               className="relative"
               onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsAccountOpen(false); }}
             >
@@ -920,8 +918,8 @@ const Navbar: React.FC<NavbarProps> = ({
                       <h4 className="text-sm font-bold text-slate-800">Notifications</h4>
                     </div>
                     {notifications.some(n => !n.read) && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); markAllAsRead(); }} 
+                      <button
+                        onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
                         className="text-[9px] font-extrabold uppercase text-[#006670] hover:underline cursor-pointer"
                       >
                         Mark Read
@@ -931,7 +929,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
                   <div className="space-y-3 max-h-64 overflow-y-auto no-scrollbar">
                     {notifications.map(n => (
-                      <div 
+                      <div
                         key={n.id}
                         onClick={() => {
                           setIsNotificationsOpen(false);
@@ -968,9 +966,8 @@ const Navbar: React.FC<NavbarProps> = ({
                   e.preventDefault();
                   setActiveMenu((prev) => (prev === 'categories' ? null : 'categories'));
                 }}
-                className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${
-                  activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'
-                }`}
+                className={`flex items-center gap-2 text-white text-[12px] font-extrabold uppercase tracking-widest px-5 py-2.5 rounded-sm cursor-pointer transition-colors ${activeMenu === 'categories' ? 'bg-[#006670]' : 'bg-[#004d54] hover:bg-[#006670]'
+                  }`}
               >
                 <Menu className="w-4 h-4" />
                 <span>Categories</span>
@@ -1248,7 +1245,7 @@ const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
           ) : (
-            cartItems.map((item) => (
+            safeCartItems.map((item) => (
               <div key={item.id} className="flex gap-4 p-3 border border-slate-100 rounded-xl hover:shadow-[0_4px_15px_rgba(0,0,0,0.02)] transition-shadow">
                 <div className="w-16 h-16 bg-[#F7FAF9] rounded-lg p-2 flex items-center justify-center flex-shrink-0 border border-slate-50">
                   <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
@@ -1256,14 +1253,14 @@ const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex-grow text-left flex flex-col justify-between py-0.5">
                   <div>
                     <span className="text-[9px] font-extrabold tracking-wider text-slate-400 uppercase font-sans">{item.category}</span>
-                    <h4 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1 cursor-pointer hover:text-[#006670]" onClick={() => { setIsCartOpen(false); setActiveProductId('nsk-handpiece'); setCurrentView('detail'); }}>{item.name}</h4>
+                    <h4 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1 cursor-pointer hover:text-[#006670]" onClick={() => { setIsCartOpen(false); setActiveProductId(item.id); setCurrentView('detail'); }}>{item.name}</h4>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-[#0F2D30] font-display">₹ {item.price.toLocaleString('en-IN')}</span>
+                    <span className="text-xs font-black text-[#0F2D30] font-display">₹ {Number(item.price || 0).toLocaleString('en-IN')}</span>
                     <div className="flex items-center gap-2.5 border border-slate-100 rounded-full px-2 py-0.5 bg-slate-50">
                       <button
                         onClick={() => {
-                          setCartItems(prev => prev.map(c => c.id === item.id ? { ...c, qty: Math.max(1, c.qty - 1) } : c));
+                          setCartItems(prev => (Array.isArray(prev) ? prev : []).map(c => c.id === item.id ? { ...c, qty: Math.max(1, (Number(c.qty) || 1) - 1) } : c));
                         }}
                         className="text-xs font-bold text-slate-400 hover:text-slate-700 px-1 cursor-pointer"
                       >
@@ -1272,7 +1269,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       <span className="text-xs font-bold text-slate-700 font-sans">{item.qty}</span>
                       <button
                         onClick={() => {
-                          setCartItems(prev => prev.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c));
+                          setCartItems(prev => (Array.isArray(prev) ? prev : []).map(c => c.id === item.id ? { ...c, qty: (Number(c.qty) || 1) + 1 } : c));
                         }}
                         className="text-xs font-bold text-slate-400 hover:text-slate-700 px-1 cursor-pointer"
                       >
@@ -1282,7 +1279,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => setCartItems(prev => prev.filter(c => c.id !== item.id))}
+                  onClick={() => setCartItems(prev => (Array.isArray(prev) ? prev.filter(c => c && c.id !== item.id) : []))}
                   className="text-xs text-slate-300 hover:text-rose-500 p-1 self-start transition-colors cursor-pointer"
                   title="Remove item"
                 >
@@ -1294,12 +1291,12 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Drawer Footer */}
-        {cartItems.length > 0 && (
+        {safeCartItems.length > 0 && (
           <div className="p-6 border-t border-slate-100 bg-[#F7FAF9]">
             <div className="space-y-2 mb-4 text-left">
               <div className="flex justify-between text-xs font-bold text-slate-500 font-sans">
                 <span>Items Subtotal</span>
-                <span>₹ {cartTotal.toLocaleString('en-IN')}</span>
+                <span>₹ {Number(cartTotal || 0).toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-xs font-bold text-slate-500 font-sans">
                 <span>Shipping & Setup</span>
@@ -1307,7 +1304,7 @@ const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="border-t border-slate-200/50 pt-2 flex justify-between text-sm font-black text-slate-800">
                 <span>Total Procurement Cost</span>
-                <span className="text-[#006670] font-display">₹ {cartTotal.toLocaleString('en-IN')}</span>
+                <span className="text-[#006670] font-display">₹ {Number(cartTotal || 0).toLocaleString('en-IN')}</span>
               </div>
             </div>
 

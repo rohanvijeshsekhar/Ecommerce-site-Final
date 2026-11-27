@@ -92,11 +92,10 @@ export default function StoreShell({ children }: StoreShellProps) {
       />
 
       {hasWarning && (
-        <div className={`fixed left-0 right-0 z-40 bg-amber-50 border-b border-amber-100 px-4 py-2.5 text-center text-xs font-bold text-amber-800 flex items-center justify-center gap-2 select-none shadow-xs transition-all duration-300 ${
-          scrolled 
-            ? 'top-[-100px] opacity-0 pointer-events-none' 
+        <div className={`fixed left-0 right-0 z-40 bg-amber-50 border-b border-amber-100 px-4 py-2.5 text-center text-xs font-bold text-amber-800 flex items-center justify-center gap-2 select-none shadow-xs transition-all duration-300 ${scrolled
+            ? 'top-[-100px] opacity-0 pointer-events-none'
             : 'top-[60px] lg:top-[124px] opacity-100'
-        }`}>
+          }`}>
           <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
           <span>
             {user.dealer_status === 'rejected'
@@ -174,7 +173,7 @@ export default function StoreShell({ children }: StoreShellProps) {
             >
               <div className="relative">
                 <ShoppingBag className={`w-[20px] h-[20px] transition-all duration-150 ${pathname === '/cart' || pathname === '/checkout' || pathname === '/order-success' ? 'text-[#006670] stroke-[2.2]' : 'text-slate-400 stroke-[1.6]'}`} />
-                {store.cartItems.length > 0 && (
+                {Array.isArray(store.cartItems) && store.cartItems.length > 0 && (
                   <span className="absolute -top-1.5 -right-2 bg-rose-600 text-white text-[8px] font-black rounded-full w-[14px] h-[14px] flex items-center justify-center border border-white">
                     {store.cartItems.length}
                   </span>
@@ -189,16 +188,15 @@ export default function StoreShell({ children }: StoreShellProps) {
       {/* Toast Notification */}
       {store.toastMessage && (
         <div className="fixed top-24 sm:top-6 inset-x-0 z-[99999] pointer-events-none flex justify-center px-4">
-          <div className={`pointer-events-auto text-white text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-toast-in border max-w-md w-auto ${
-            store.toastMessage.toLowerCase().includes('disabled') || 
-            store.toastMessage.toLowerCase().includes('pending') || 
-            store.toastMessage.toLowerCase().includes('rejected')
-              ? 'bg-amber-950 border-amber-500/30' 
+          <div className={`pointer-events-auto text-white text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-toast-in border max-w-md w-auto ${store.toastMessage.toLowerCase().includes('disabled') ||
+              store.toastMessage.toLowerCase().includes('pending') ||
+              store.toastMessage.toLowerCase().includes('rejected')
+              ? 'bg-amber-950 border-amber-500/30'
               : 'bg-[#004e56] border-[#006670]/30'
-          }`}>
-            {store.toastMessage.toLowerCase().includes('disabled') || 
-            store.toastMessage.toLowerCase().includes('pending') || 
-            store.toastMessage.toLowerCase().includes('rejected') ? (
+            }`}>
+            {store.toastMessage.toLowerCase().includes('disabled') ||
+              store.toastMessage.toLowerCase().includes('pending') ||
+              store.toastMessage.toLowerCase().includes('rejected') ? (
               <AlertTriangle className="w-4 h-4 text-amber-400 stroke-[2] shrink-0" />
             ) : (
               <Check className="w-4 h-4 text-emerald-400 stroke-[3] shrink-0" />

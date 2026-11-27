@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Trash2, Plus, Minus, MapPin, Shield, ArrowLeft, ShoppingBag, Lock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Trash2, Plus, Minus, MapPin, Shield, ArrowLeft, ShoppingBag, Lock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getAbsoluteImageUrl } from '../../lib/api';
 
@@ -16,7 +16,7 @@ interface MockCartItem {
 }
 
 interface FlipkartCartProps {
-  cartItems: MockCartItem[];
+  cartItems?: MockCartItem[];
   setCartItems: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
   savedForLaterItems?: MockCartItem[];
   setSavedForLaterItems?: React.Dispatch<React.SetStateAction<MockCartItem[]>>;
@@ -28,7 +28,7 @@ interface FlipkartCartProps {
 }
 
 const FlipkartCart: React.FC<FlipkartCartProps> = ({
-  cartItems,
+  cartItems = [],
   setCartItems,
   setCurrentView,
   onProductClick,
@@ -42,6 +42,12 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
   const [pinInput, setPinInput] = useState('400001');
   const [showPriceDetailsModal, setShowPriceDetailsModal] = useState(false);
 
+  // Filter valid cart items defensively to eliminate null or malformed entries
+  const validCartItems = useMemo(() => {
+    if (!Array.isArray(cartItems)) return [];
+    return cartItems.filter((item): item is MockCartItem => Boolean(item && (item.id || item.name)));
+  }, [cartItems]);
+
   // Backend cart calculations cache
   const [backendCart, setBackendCart] = useState<any>(null);
 
@@ -51,7 +57,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
         try {
           const { cartService } = await import('../../lib/services/cart');
           const res = await cartService.get();
-          if (res.success && res.data) {
+          if (res?.success && res?.data) {
             setBackendCart(res.data);
           }
         } catch (e) {
@@ -62,34 +68,35 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
     } else {
       setBackendCart(null);
     }
-  }, [isAuthenticated, cartItems]);
+  }, [isAuthenticated, validCartItems.length]);
 
   // Calculations
   const totalOriginalPrice =
-    backendCart && backendCart.mrp_subtotal > 0
-      ? backendCart.mrp_subtotal
-      : cartItems.reduce((acc, item) => {
-          const orig = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
-          return acc + orig * item.qty;
-        }, 0);
+    backendCart && Number(backendCart.mrp_subtotal) > 0
+      ? Number(backendCart.mrp_subtotal)
+      : validCartItems.reduce((acc, item) => {
+        const itemPrice = Number(item.price) || 0;
+        const orig = item.originalPrice && Number(item.originalPrice) > itemPrice ? Number(item.originalPrice) : itemPrice;
+        return acc + orig * (Number(item.qty) || 1);
+      }, 0);
 
   const cartTotal =
-    backendCart && backendCart.total_amount > 0
-      ? backendCart.total_amount
-      : cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const discountTotal = backendCart ? backendCart.savings : Math.max(0, totalOriginalPrice - cartTotal);
-  const gstAmount = backendCart ? backendCart.gst_amount : 0;
+    backendCart && Number(backendCart.total_amount) > 0
+      ? Number(backendCart.total_amount)
+      : validCartItems.reduce((acc, item) => acc + (Number(item.price) || 0) * (Number(item.qty) || 1), 0);
+  const discountTotal = backendCart ? Math.max(0, Number(backendCart.savings) || 0) : Math.max(0, totalOriginalPrice - cartTotal);
+  const gstAmount = backendCart ? (Number(backendCart.gst_amount) || 0) : 0;
 
   const handleQtyChange = (id: string, delta: number) => {
     setCartItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
+      (Array.isArray(prev) ? prev : []).map(item =>
+        item.id === id ? { ...item, qty: Math.max(1, (Number(item.qty) || 1) + delta) } : item
       )
     );
   };
 
   const handleRemoveItem = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems(prev => (Array.isArray(prev) ? prev.filter(item => item && item.id !== id) : []));
     if (showToast) showToast('Item removed from cart');
   };
 
@@ -141,7 +148,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
 
             {/* Left Column: Cart items & Saved for Later */}
             <div className="lg:col-span-8 space-y-3">
-              
+
               {/* Delivery Address Block (FAAZO Style) */}
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-3.5 sm:p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -150,10 +157,10 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                   </div>
                   {isEditingPin ? (
                     <form onSubmit={handlePinSubmit} className="flex gap-2 items-center flex-wrap">
-                      <input 
-                        type="text" 
-                        value={pinInput} 
-                        onChange={(e) => setPinInput(e.target.value)} 
+                      <input
+                        type="text"
+                        value={pinInput}
+                        onChange={(e) => setPinInput(e.target.value)}
                         maxLength={6}
                         className="border border-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold focus:outline-none focus:border-[#006670] w-28 bg-white"
                         placeholder="Pincode"
@@ -172,8 +179,8 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                   )}
                 </div>
                 {!isEditingPin && (
-                  <button 
-                    onClick={() => setIsEditingPin(true)} 
+                  <button
+                    onClick={() => setIsEditingPin(true)}
                     className="text-xs font-bold text-[#006670] hover:text-white hover:bg-[#006670] border border-[#006670]/40 px-3.5 py-1.5 rounded-xl transition-all shrink-0 cursor-pointer shadow-2xs"
                   >
                     Change
@@ -182,7 +189,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
               </div>
 
               {/* Cart Items Container */}
-              {(loading || authLoading) && cartItems.length === 0 ? (
+              {(loading || authLoading) && validCartItems.length === 0 ? (
                 <div className="space-y-3">
                   {[1, 2].map((i) => (
                     <div key={i} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 animate-pulse">
@@ -201,7 +208,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                     </div>
                   ))}
                 </div>
-              ) : cartItems.length === 0 ? (
+              ) : validCartItems.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs py-14 px-6 text-center flex flex-col items-center justify-center">
                   <div className="w-20 h-20 rounded-full bg-[#E6F2F2] flex items-center justify-center text-[#006670] mb-4">
                     <ShoppingBag className="w-9 h-9" />
@@ -220,54 +227,59 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
               ) : (
                 <div className="space-y-3">
                   {/* Stock Warnings Banner */}
-                  {backendCart?.stock_warnings && backendCart.stock_warnings.length > 0 && (
+                  {Array.isArray(backendCart?.stock_warnings) && backendCart.stock_warnings.length > 0 && (
                     <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700">
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                       <div className="space-y-1">
                         <p className="font-bold text-rose-900">Inventory Alert</p>
-                        {backendCart.stock_warnings.map((msg: string, idx: number) => (
-                          <p key={idx} className="font-medium">{msg}</p>
-                        ))}
+                        {backendCart.stock_warnings.map((msg: any, idx: number) => {
+                          const warningText = typeof msg === 'string' ? msg : (msg?.message || msg?.product_name ? `${msg.product_name || 'Item'}: ${msg.message || 'unavailable'}` : 'An item in your cart is currently unavailable');
+                          return (
+                            <p key={idx} className="font-medium">{warningText}</p>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
 
                   {/* Individual Product Cards (FAAZO Style) */}
-                  {cartItems.map((item) => {
-                    const originalPrice = item.originalPrice && item.originalPrice > item.price ? item.originalPrice : item.price;
-                    const discountPercent = originalPrice > item.price ? Math.round(((originalPrice - item.price) / originalPrice) * 100) : 0;
+                  {validCartItems.map((item) => {
+                    const itemPrice = Number(item.price) || 0;
+                    const itemQty = Math.max(1, Number(item.qty) || 1);
+                    const originalPrice = item.originalPrice && Number(item.originalPrice) > itemPrice ? Number(item.originalPrice) : itemPrice;
+                    const discountPercent = originalPrice > itemPrice ? Math.round(((originalPrice - itemPrice) / originalPrice) * 100) : 0;
 
                     // Cross-reference with live backend cart item
-                    const backendItem = backendCart?.items?.find((bi: any) => 
-                      bi.product?.slug === item.id || String(bi.product?.id) === item.id
-                    );
+                    const backendItem = Array.isArray(backendCart?.items)
+                      ? backendCart.items.find((bi: any) => bi?.product?.slug === item.id || String(bi?.product?.id) === item.id)
+                      : null;
                     const hasStockIssue = backendItem && !backendItem.has_sufficient_stock;
 
                     return (
                       <div key={item.id} className={`bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-colors ${hasStockIssue ? 'border-rose-200 bg-rose-50/10' : ''}`}>
-                        
+
                         {/* Upper Details: Image on Left, Details on Right */}
                         <div className="p-3.5 sm:p-4 flex gap-3.5 sm:gap-4 items-start">
                           {/* Product Thumbnail */}
-                          <div 
+                          <div
                             className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50 border border-slate-100 rounded-xl p-2 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden"
                             onClick={() => onProductClick(item.id)}
                           >
-                            <img 
-                              src={getAbsoluteImageUrl(item.image)} 
-                              alt={item.name} 
-                              className="max-h-full max-w-full object-contain hover:scale-105 transition-transform" 
+                            <img
+                              src={getAbsoluteImageUrl(typeof item.image === 'string' ? item.image : '')}
+                              alt={item.name || 'Clinical Product'}
+                              className="max-h-full max-w-full object-contain hover:scale-105 transition-transform"
                             />
                           </div>
 
                           {/* Product Details */}
                           <div className="flex-1 min-w-0 flex flex-col justify-between">
                             <div>
-                              <h4 
+                              <h4
                                 onClick={() => onProductClick(item.id)}
                                 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 hover:text-[#006670] transition-colors leading-snug cursor-pointer"
                               >
-                                {item.name}
+                                {item.name || 'Clinical Product'}
                               </h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1">
                                 {item.category && <span className="uppercase font-semibold tracking-wider text-[#006670]">{item.category} • </span>}
@@ -279,7 +291,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[10px] font-bold text-rose-600 mt-1">
                                   <AlertTriangle className="w-3 h-3 shrink-0" />
                                   <span>
-                                    {backendItem.stock_available <= 0
+                                    {Number(backendItem.stock_available) <= 0
                                       ? 'Out of Stock'
                                       : `Only ${backendItem.stock_available} available`}
                                   </span>
@@ -289,11 +301,11 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                               {/* Pricing Block */}
                               <div className="flex items-baseline gap-2 pt-1.5 flex-wrap">
                                 <span className="text-sm sm:text-base font-black text-slate-900 font-display">
-                                  ₹{Number(item.price * item.qty).toLocaleString('en-IN')}
+                                  ₹{Number(itemPrice * itemQty).toLocaleString('en-IN')}
                                 </span>
-                                {originalPrice > item.price && (
+                                {originalPrice > itemPrice && (
                                   <span className="text-xs text-slate-400 line-through">
-                                    ₹{Number(originalPrice * item.qty).toLocaleString('en-IN')}
+                                    ₹{Number(originalPrice * itemQty).toLocaleString('en-IN')}
                                   </span>
                                 )}
                                 {discountPercent > 0 && (
@@ -317,14 +329,14 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                             <span className="text-[11px] font-bold text-slate-500 mr-1 hidden sm:inline">Qty:</span>
                             <button
                               onClick={() => handleQtyChange(item.id, -1)}
-                              disabled={item.qty <= 1}
-                              className={`w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center font-bold text-slate-700 hover:bg-[#E6F2F2] hover:text-[#006670] hover:border-[#006670]/30 transition-colors cursor-pointer active:scale-95 ${item.qty <= 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                              disabled={itemQty <= 1}
+                              className={`w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center font-bold text-slate-700 hover:bg-[#E6F2F2] hover:text-[#006670] hover:border-[#006670]/30 transition-colors cursor-pointer active:scale-95 ${itemQty <= 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                               aria-label="Decrease quantity"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
                             <span className="w-8 h-7 border border-slate-200 bg-white rounded-lg flex items-center justify-center text-xs font-bold text-slate-900">
-                              {item.qty}
+                              {itemQty}
                             </span>
                             <button
                               onClick={() => handleQtyChange(item.id, 1)}
@@ -354,7 +366,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                   {/* Desktop Place Order Box */}
                   <div className="hidden lg:flex bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 items-center justify-between">
                     <p className="text-xs text-slate-500">
-                      Order confirmation will be sent to <span className="font-bold text-slate-700">{user?.email}</span>
+                      Order confirmation will be sent to <span className="font-bold text-slate-700">{user?.email || 'your registered email'}</span>
                     </p>
                     <button
                       onClick={() => {
@@ -366,11 +378,10 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                         window.scrollTo(0, 0);
                       }}
                       disabled={backendCart ? !backendCart.is_checkout_allowed : false}
-                      className={`px-8 py-3.5 rounded-xl text-xs tracking-wider font-extrabold uppercase transition-all ${
-                        backendCart && !backendCart.is_checkout_allowed
+                      className={`px-8 py-3.5 rounded-xl text-xs tracking-wider font-extrabold uppercase transition-all ${backendCart && !backendCart.is_checkout_allowed
                           ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                           : 'bg-[#006670] hover:bg-[#004e56] text-white shadow-md shadow-[#006670]/20 cursor-pointer'
-                      }`}
+                        }`}
                     >
                       Place Order
                     </button>
@@ -386,18 +397,18 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                 <h3 className="text-xs font-extrabold text-[#006670] uppercase tracking-wider border-b border-slate-100 pb-3 mb-3.5">
                   Price Details
                 </h3>
-                
+
                 <div className="space-y-3 font-sans text-xs sm:text-sm text-slate-700">
                   <div className="flex justify-between">
-                    <span>Price ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})</span>
+                    <span>Price ({validCartItems.length} {validCartItems.length === 1 ? 'item' : 'items'})</span>
                     <span className="font-semibold text-slate-900">₹{Number(totalOriginalPrice).toLocaleString('en-IN')}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span>Discount</span>
                     <span className="font-bold text-[#006670]">− ₹{Number(discountTotal).toLocaleString('en-IN')}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span>Delivery Charges</span>
                     <span className="text-[#006670] font-bold">FREE</span>
@@ -440,7 +451,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
       </div>
 
       {/* Mobile Sticky Action Bar — FAAZO Style */}
-      {isAuthenticated && cartItems.length > 0 && (
+      {isAuthenticated && validCartItems.length > 0 && (
         <>
           <div className="fixed bottom-[52px] md:bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/80 px-4 py-3 flex items-center justify-between lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
             <div className="text-left flex flex-col justify-center">
@@ -454,7 +465,7 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                   </span>
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setShowPriceDetailsModal(true)}
                 className="text-[11px] text-[#006670] font-bold hover:underline text-left mt-0.5 cursor-pointer flex items-center gap-0.5"
               >
@@ -480,19 +491,19 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
           {/* Mobile Price Breakdown Modal / Sheet */}
           {showPriceDetailsModal && (
             <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end justify-center lg:hidden" onClick={() => setShowPriceDetailsModal(false)}>
-              <div 
+              <div
                 className="bg-white w-full rounded-t-3xl p-5 border-t border-slate-200 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-200 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                   <h3 className="text-sm font-extrabold text-[#006670] uppercase tracking-wider">
-                    Price Details ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})
+                    Price Details ({validCartItems.length} {validCartItems.length === 1 ? 'item' : 'items'})
                   </h3>
-                  <button 
+                  <button
                     onClick={() => setShowPriceDetailsModal(false)}
                     className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-slate-200"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -501,12 +512,12 @@ const FlipkartCart: React.FC<FlipkartCartProps> = ({
                     <span>Total MRP</span>
                     <span className="font-semibold text-slate-900">₹{Number(totalOriginalPrice).toLocaleString('en-IN')}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span>Discount on MRP</span>
                     <span className="font-bold text-[#006670]">− ₹{Number(discountTotal).toLocaleString('en-IN')}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span>Delivery Charges</span>
                     <span className="text-[#006670] font-bold">FREE</span>

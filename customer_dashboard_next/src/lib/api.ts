@@ -249,7 +249,7 @@ api.interceptors.response.use(
 
 
 export const getAbsoluteImageUrl = (url: string | null | undefined): string => {
-  if (!url) return '';
+  if (!url || typeof url !== 'string') return '';
   // Blob and Data URLs are local client-side objects and must never be prefixed with backend URL
   if (url.startsWith('blob:') || url.startsWith('data:')) return url;
 

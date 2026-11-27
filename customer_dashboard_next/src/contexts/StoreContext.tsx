@@ -138,38 +138,48 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const openLoginModal = () => setIsLoginModalOpen(true);
 
   const mapBackendCartToFrontend = (backendCart: any): CartItem[] => {
-    if (!backendCart || !backendCart.items) return [];
-    return backendCart.items.map((item: any) => ({
-      id: item.product.slug,
-      name: item.product.name,
-      category: item.product.category_name,
-      price: item.price,
-      qty: item.quantity,
-      image: item.product.image_url || '',
-      originalPrice: item.original_price,
-      cartItemId: item.id,
-    }));
+    if (!backendCart || !Array.isArray(backendCart.items)) return [];
+    return backendCart.items
+      .filter((item: any) => item && (item.product || item.product_id))
+      .map((item: any) => {
+        const prod = item.product || {};
+        return {
+          id: prod.slug || String(prod.id || item.product_id || item.id),
+          name: prod.name || 'Clinical Product',
+          category: prod.category_name || '',
+          price: Number(item.price) || 0,
+          qty: Math.max(1, Number(item.quantity) || 1),
+          image: typeof prod.image_url === 'string' ? prod.image_url : '',
+          originalPrice: Number(item.original_price) || Number(item.price) || 0,
+          cartItemId: item.id,
+        };
+      });
   };
 
   const mapBackendSavedToFrontend = (backendCart: any): CartItem[] => {
-    if (!backendCart || !backendCart.saved_items) return [];
-    return backendCart.saved_items.map((item: any) => ({
-      id: item.product.slug,
-      name: item.product.name,
-      category: item.product.category_name,
-      price: item.price,
-      qty: item.quantity,
-      image: item.product.image_url || '',
-      originalPrice: item.original_price,
-      cartItemId: item.id,
-    }));
+    if (!backendCart || !Array.isArray(backendCart.saved_items)) return [];
+    return backendCart.saved_items
+      .filter((item: any) => item && (item.product || item.product_id))
+      .map((item: any) => {
+        const prod = item.product || {};
+        return {
+          id: prod.slug || String(prod.id || item.product_id || item.id),
+          name: prod.name || 'Clinical Product',
+          category: prod.category_name || '',
+          price: Number(item.price) || 0,
+          qty: Math.max(1, Number(item.quantity) || 1),
+          image: typeof prod.image_url === 'string' ? prod.image_url : '',
+          originalPrice: Number(item.original_price) || Number(item.price) || 0,
+          cartItemId: item.id,
+        };
+      });
   };
 
   const updateAuthCartCache = (items: CartItem[]) => {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('faazo_auth_cart_cache', JSON.stringify(items));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -187,7 +197,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setCartItemsState(mapped);
             try {
               localStorage.setItem('faazo_auth_cart_cache', JSON.stringify(mapped));
-            } catch {}
+            } catch { }
             setSavedForLaterItems(mapBackendSavedToFrontend(res.data));
           }
         } catch (e: any) {
@@ -231,10 +241,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [isAuthenticated, localCart, setLocalCart]);
 
   const setCartItems = async (val: React.SetStateAction<CartItem[]>) => {
+    const currentList = Array.isArray(cartItems) ? cartItems.filter(Boolean) : [];
+    const resolvedCart = typeof val === 'function' ? (val as Function)(currentList) : val;
+    const newCart = Array.isArray(resolvedCart) ? resolvedCart.filter(Boolean) : [];
+
     if (user?.can_purchase === false) {
-      const newCart = typeof val === 'function' ? (val as Function)(cartItems) : val;
-      const oldQty = cartItems.reduce((acc, item) => acc + (item.qty || 1), 0);
-      const newQty = newCart.reduce((acc: number, item: any) => acc + (item.qty || 1), 0);
+      const oldQty = currentList.reduce((acc, item) => acc + (Number(item?.qty) || 1), 0);
+      const newQty = newCart.reduce((acc: number, item: any) => acc + (Number(item?.qty) || 1), 0);
       if (newQty > oldQty) {
         showToast('Purchasing is disabled until your dealer application is approved.');
         return;
@@ -242,11 +255,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     if (!isAuthenticated) {
-      setLocalCart(val);
+      setLocalCart(newCart);
       return;
     }
-
-    const newCart = typeof val === 'function' ? (val as Function)(cartItems) : val;
 
     if (newCart.length === 0) {
       try {
@@ -265,8 +276,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const { cartService } = await import('../lib/services/cart');
 
-    if (newCart.length < cartItems.length) {
-      const removed = cartItems.filter((item) => !newCart.some((n: any) => n.id === item.id));
+    if (newCart.length < currentList.length) {
+      const removed = currentList.filter((item) => !newCart.some((n: any) => n.id === item.id));
       for (const item of removed) {
         const cartItemId = (item as any).cartItemId;
         if (cartItemId) {
@@ -286,7 +297,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     for (const newItem of newCart) {
-      const oldItem = cartItems.find((item) => item.id === newItem.id);
+      const oldItem = currentList.find((item) => item.id === newItem.id);
       if (!oldItem) {
         try {
           const res = await cartService.add(newItem.id, newItem.qty);
@@ -429,30 +440,30 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
 const defaultStoreContext: StoreContextType = {
   cartItems: [],
-  setCartItems: async () => {},
+  setCartItems: async () => { },
   cartLoading: false,
   wishlistItems: [],
-  setWishlistItems: () => {},
+  setWishlistItems: () => { },
   savedForLaterItems: [],
-  setSavedForLaterItems: () => {},
+  setSavedForLaterItems: () => { },
   toastMessage: null,
-  showToast: () => {},
+  showToast: () => { },
   isLoginModalOpen: false,
-  setIsLoginModalOpen: () => {},
-  openLoginModal: () => {},
+  setIsLoginModalOpen: () => { },
+  openLoginModal: () => { },
   checkoutSource: 'cart',
-  setCheckoutSource: () => {},
+  setCheckoutSource: () => { },
   buyNowItem: null,
-  setBuyNowItem: () => {},
+  setBuyNowItem: () => { },
   completedOrderData: null,
-  setCompletedOrderData: () => {},
+  setCompletedOrderData: () => { },
   orders: [],
-  setOrders: () => {},
-  addItemToCart: () => {},
-  addItemToWishlist: () => {},
-  handleBuyNowDirect: () => {},
+  setOrders: () => { },
+  addItemToCart: () => { },
+  addItemToWishlist: () => { },
+  handleBuyNowDirect: () => { },
   dashboardSection: 'dashboard',
-  setDashboardSection: () => {},
+  setDashboardSection: () => { },
 };
 
 export const useStore = () => {
