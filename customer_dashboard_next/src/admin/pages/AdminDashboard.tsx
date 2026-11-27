@@ -8,7 +8,7 @@ import {
   IndianRupee, Package, Users, Layers,
   Calendar, Activity,
   Handshake, Tag, Award, Sparkles, PlusCircle,
-  CheckCircle2, AlertTriangle, XCircle, RotateCcw
+  CheckCircle2, AlertTriangle, XCircle, RotateCcw, AlertCircle
 } from 'lucide-react';
 import { useBreadcrumbSync } from '../contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -110,7 +110,7 @@ const AdminDashboard: React.FC = () => {
   });
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaPath = points.length > 0 
+  const areaPath = points.length > 0
     ? `${linePath} L ${points[points.length - 1].x} ${svgHeight - paddingY} L ${points[0].x} ${svgHeight - paddingY} Z`
     : '';
 
@@ -159,7 +159,7 @@ const AdminDashboard: React.FC = () => {
       )}
       {error && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-semibold flex items-center justify-between">
-          <span>⚠️ {error}</span>
+          <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-amber-600 inline" /> {error}</span>
           <button onClick={() => loadData(analyticsPeriod)} className="underline hover:text-amber-950 font-bold">Retry</button>
         </div>
       )}
@@ -226,11 +226,10 @@ const AdminDashboard: React.FC = () => {
                 <div className={`w-9.5 h-9.5 rounded-full flex items-center justify-center ${kpi.iconColor}`}>
                   <Icon className="w-4.5 h-4.5" />
                 </div>
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-0.5 leading-none ${
-                  kpi.trendType === 'down'
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-0.5 leading-none ${kpi.trendType === 'down'
                     ? 'text-rose-700 bg-rose-500/15 border border-rose-500/30 font-bold'
                     : kpi.trendColor
-                }`}>
+                  }`}>
                   {kpi.trend} {kpi.trendType === 'down' ? '↘' : (kpi.title === 'Revenue' || kpi.title === 'Orders' ? '↗' : '')}
                 </span>
               </div>
@@ -279,11 +278,10 @@ const AdminDashboard: React.FC = () => {
                     <button
                       key={metric}
                       onClick={() => setAnalyticsMetric(metric)}
-                      className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                        analyticsMetric === metric 
-                          ? 'bg-white text-[#005F63] shadow-2xs font-extrabold' 
+                      className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all ${analyticsMetric === metric
+                          ? 'bg-white text-[#005F63] shadow-2xs font-extrabold'
                           : 'text-slate-500 hover:text-slate-800'
-                      }`}
+                        }`}
                     >
                       {metric}
                     </button>
@@ -296,11 +294,10 @@ const AdminDashboard: React.FC = () => {
                     <button
                       key={period}
                       onClick={() => setAnalyticsPeriod(period)}
-                      className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                        analyticsPeriod === period 
-                          ? 'bg-white text-[#005F63] shadow-2xs font-extrabold' 
+                      className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all ${analyticsPeriod === period
+                          ? 'bg-white text-[#005F63] shadow-2xs font-extrabold'
                           : 'text-slate-500 hover:text-slate-800'
-                      }`}
+                        }`}
                     >
                       {period}
                     </button>
@@ -367,12 +364,12 @@ const AdminDashboard: React.FC = () => {
                   <path d={areaPath} fill="url(#chartGrad)" />
 
                   {/* Line path */}
-                  <path 
-                    d={linePath} 
-                    fill="none" 
-                    stroke="#005F63" 
-                    strokeWidth={3} 
-                    strokeLinecap="round" 
+                  <path
+                    d={linePath}
+                    fill="none"
+                    stroke="#005F63"
+                    strokeWidth={3}
+                    strokeLinecap="round"
                     strokeLinejoin="round"
                   />
 
@@ -402,10 +399,10 @@ const AdminDashboard: React.FC = () => {
 
                 {/* Interactive Tooltip Card (clamped within bounds) */}
                 {hoveredPoint && (
-                  <div 
+                  <div
                     className="absolute bg-slate-900/95 backdrop-blur-xs text-white rounded-xl p-2.5 shadow-xl border border-slate-800 z-10 flex flex-col pointer-events-none transition-all duration-100"
-                    style={{ 
-                      left: `${Math.min(88, Math.max(12, (hoveredPoint.x / svgWidth) * 100))}%`, 
+                    style={{
+                      left: `${Math.min(88, Math.max(12, (hoveredPoint.x / svgWidth) * 100))}%`,
                       top: `${Math.max(4, (hoveredPoint.y / svgHeight) * 100 - 24)}%`,
                       transform: 'translateX(-50%)'
                     }}
@@ -472,7 +469,7 @@ const AdminDashboard: React.FC = () => {
                 </h3>
                 <p className="text-[12.5px] text-slate-500 font-medium mt-1">The latest live orders processed through the platform</p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/admin/orders')}
                 className="text-[11px] font-bold text-[#005F63] hover:text-[#0B7C80] flex items-center gap-1 bg-[#005F63]/8 hover:bg-[#005F63]/15 px-3.5 py-1.5 rounded-xl transition-all duration-200 border border-[#005F63]/20 shadow-2xs cursor-pointer"
               >
@@ -500,8 +497,8 @@ const AdminDashboard: React.FC = () => {
                     </tr>
                   ) : (
                     overviewData.recent_orders.map((ord: any, i: number) => (
-                      <tr 
-                        key={i} 
+                      <tr
+                        key={i}
                         onClick={() => navigate(ord.raw_id ? `/admin/orders/${ord.raw_id}` : '/admin/orders')}
                         className="hover:bg-[#005F63]/[0.03] transition-all duration-200 text-xs font-semibold text-slate-700 cursor-pointer group"
                       >
@@ -526,17 +523,17 @@ const AdminDashboard: React.FC = () => {
                             const pillClass = isSuccess
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
                               : isInfo
-                              ? 'bg-sky-50 text-sky-700 border border-sky-200/80'
-                              : isDanger
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200/80';
+                                ? 'bg-sky-50 text-sky-700 border border-sky-200/80'
+                                : isDanger
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200/80';
                             const dotClass = isSuccess
                               ? 'bg-emerald-500'
                               : isInfo
-                              ? 'bg-sky-500'
-                              : isDanger
-                              ? 'bg-rose-500'
-                              : 'bg-amber-500';
+                                ? 'bg-sky-500'
+                                : isDanger
+                                  ? 'bg-rose-500'
+                                  : 'bg-amber-500';
                             return (
                               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-bold shadow-2xs transition-all ${pillClass}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
@@ -582,26 +579,26 @@ const AdminDashboard: React.FC = () => {
 
             <div className="space-y-3 relative z-10">
               {[
-                { 
-                  label: 'In stock', 
-                  count: overviewData?.inventory_health?.in_stock?.count ?? 0, 
-                  pct: overviewData?.inventory_health?.in_stock?.pct ?? 0, 
+                {
+                  label: 'In stock',
+                  count: overviewData?.inventory_health?.in_stock?.count ?? 0,
+                  pct: overviewData?.inventory_health?.in_stock?.pct ?? 0,
                   color: 'from-[#005F63] to-teal-500',
                   bgColor: 'bg-teal-50/80 text-teal-700 border-teal-200/60',
                   icon: CheckCircle2
                 },
-                { 
-                  label: 'Low stock', 
-                  count: overviewData?.inventory_health?.low_stock?.count ?? 0, 
-                  pct: overviewData?.inventory_health?.low_stock?.pct ?? 0, 
+                {
+                  label: 'Low stock',
+                  count: overviewData?.inventory_health?.low_stock?.count ?? 0,
+                  pct: overviewData?.inventory_health?.low_stock?.pct ?? 0,
                   color: 'from-amber-400 to-orange-400',
                   bgColor: 'bg-amber-50/80 text-amber-700 border-amber-200/60',
                   icon: AlertTriangle
                 },
-                { 
-                  label: 'Out of stock', 
-                  count: overviewData?.inventory_health?.out_of_stock?.count ?? 0, 
-                  pct: overviewData?.inventory_health?.out_of_stock?.pct ?? 0, 
+                {
+                  label: 'Out of stock',
+                  count: overviewData?.inventory_health?.out_of_stock?.count ?? 0,
+                  pct: overviewData?.inventory_health?.out_of_stock?.pct ?? 0,
                   color: 'from-rose-500 to-red-500',
                   bgColor: 'bg-rose-50/80 text-rose-700 border-rose-200/60',
                   icon: XCircle
@@ -625,9 +622,9 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="h-2 w-full bg-slate-100 border border-slate-200/60 rounded-full overflow-hidden shadow-2xs">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-700 ease-out`} 
-                        style={{ width: `${item.pct}%` }} 
+                      <div
+                        className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-700 ease-out`}
+                        style={{ width: `${item.pct}%` }}
                       />
                     </div>
                   </div>
@@ -709,8 +706,8 @@ const AdminDashboard: React.FC = () => {
                   const style = cardPastelStyles[idx % cardPastelStyles.length];
 
                   return (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       onClick={() => navigate('/admin/products')}
                       className={`relative overflow-hidden p-4 rounded-[20px] bg-gradient-to-br ${style.bg} backdrop-blur-xl border ${style.border} ${style.shadow} hover:shadow-xl hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 space-y-2.5 cursor-pointer group`}
                     >
@@ -733,13 +730,12 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border shrink-0 shadow-2xs ${
-                          product.stock_status === 'In Stock' 
-                            ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/80' 
-                            : product.stock_status === 'Low Stock' 
-                            ? 'bg-amber-50/90 text-amber-700 border-amber-200/80' 
-                            : 'bg-rose-50/90 text-rose-700 border-rose-200/80'
-                        }`}>
+                        <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border shrink-0 shadow-2xs ${product.stock_status === 'In Stock'
+                            ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/80'
+                            : product.stock_status === 'Low Stock'
+                              ? 'bg-amber-50/90 text-amber-700 border-amber-200/80'
+                              : 'bg-rose-50/90 text-rose-700 border-rose-200/80'
+                          }`}>
                           {product.stock_status}
                         </span>
                       </div>
@@ -793,8 +789,8 @@ const AdminDashboard: React.FC = () => {
                   const isApproved = dealer.status === 'Approved';
                   const isRejected = dealer.status === 'Rejected';
                   return (
-                    <div 
-                      key={dealer.id || idx} 
+                    <div
+                      key={dealer.id || idx}
                       onClick={() => navigate(dealer.id ? `/admin/dealers/${dealer.id}` : '/admin/dealers')}
                       className="p-3.5 rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-md hover:bg-white hover:border-sky-500/40 hover:shadow-md hover:scale-[1.015] transition-all duration-300 space-y-2.5 cursor-pointer group"
                     >
@@ -810,13 +806,12 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border shrink-0 shadow-2xs ${
-                          isApproved 
-                            ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/80' 
+                        <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border shrink-0 shadow-2xs ${isApproved
+                            ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/80'
                             : isRejected
-                            ? 'bg-rose-50/90 text-rose-700 border-rose-200/80'
-                            : 'bg-amber-50/90 text-amber-700 border-amber-200/80'
-                        }`}>
+                              ? 'bg-rose-50/90 text-rose-700 border-rose-200/80'
+                              : 'bg-amber-50/90 text-amber-700 border-amber-200/80'
+                          }`}>
                           {dealer.status}
                         </span>
                       </div>

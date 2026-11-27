@@ -256,7 +256,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     try {
       // OTP-first flow: verifyAndRegister creates the account
       await verifyAndRegister(otpSentTarget, otpCode);
-      setSuccessMessage('Phone verified! Your account has been created. Welcome to FAAZO! 🎉');
+      setSuccessMessage('Phone verified! Your account has been created. Welcome to FAAZO!');
       setTimeout(() => { onClose(); resetForm(); }, 2000);
     } catch (err: any) {
       setApiError(err.response?.data?.message || err.message || 'OTP verification failed. Please check your code.');
@@ -296,7 +296,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       });
       if (phoneNumber) formData.append('phone_number', phoneNumber);
       await dealerRegister(formData);
-      
+
       if (phoneNumber) {
         setOtpSentTarget(phoneNumber);
         try {
@@ -428,11 +428,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   // ─── Title map for right panel ──────────────────────────────────────────
   const titles: Record<ModalMode, { heading: string; sub: string }> = {
-    'login': { heading: 'Welcome Back! 👋', sub: 'Sign in to continue to FAAZO' },
+    'login': { heading: 'Welcome Back!', sub: 'Sign in to continue to FAAZO' },
     'register': { heading: 'Create your account', sub: '' },
-    'dealer-register': { heading: 'Dealer Application 🏢', sub: 'Apply for a FAAZO B2B dealer account' },
-    'forgot-password': { heading: 'Reset Password 🔐', sub: 'Enter your email to receive a verification code' },
-    'otp-verify': { heading: 'Verify Mobile OTP 📱', sub: 'Enter the 6-digit code sent to your phone' },
+    'dealer-register': { heading: 'Dealer Application', sub: 'Apply for a FAAZO B2B dealer account' },
+    'forgot-password': { heading: 'Reset Password', sub: 'Enter your email to receive a verification code' },
+    'otp-verify': { heading: 'Verify Mobile OTP', sub: 'Enter the 6-digit code sent to your phone' },
   };
 
   const getHeadingAndSub = () => {
@@ -442,13 +442,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     if (mode === 'forgot-password') {
       switch (forgotStep) {
         case 'email':
-          return { heading: 'Forgot Password? 🔐', sub: 'Enter your registered email to receive a verification code' };
+          return { heading: 'Forgot Password?', sub: 'Enter your registered email to receive a verification code' };
         case 'otp':
-          return { heading: 'Verify Email OTP 📩', sub: `Enter the 6-digit code sent to ${maskEmail(forgotEmail)}` };
+          return { heading: 'Verify Email OTP', sub: `Enter the 6-digit code sent to ${maskEmail(forgotEmail)}` };
         case 'new-password':
-          return { heading: 'Create New Password 🛡️', sub: 'Set a strong, unique password for your account' };
+          return { heading: 'Create New Password', sub: 'Set a strong, unique password for your account' };
         case 'success':
-          return { heading: 'Password Reset Complete! 🎉', sub: 'Your password has been changed successfully' };
+          return { heading: 'Password Reset Complete!', sub: 'Your password has been changed successfully' };
       }
     }
     return titles[mode];

@@ -33,7 +33,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: 'dental-handpieces',
     slug: 'dental-handpieces',
-    icon: '📁',
+    icon: '',
     label: 'Dental Handpieces',
     subCategories: [
       {
@@ -73,7 +73,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: 'intraoral-cameras',
     slug: 'intraoral-cameras',
-    icon: '📁',
+    icon: '',
     label: 'Intraoral Cameras',
     subCategories: [
       {
@@ -101,7 +101,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: 'led-light-cure-units',
     slug: 'led-light-cure-units',
-    icon: '📁',
+    icon: '',
     label: 'LED Light Cure Units',
     subCategories: [
       {
@@ -129,7 +129,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: 'dental-chairs',
     slug: 'dental-chairs',
-    icon: '📁',
+    icon: '',
     label: 'Dental Chairs & Units',
     subCategories: [
       {
@@ -157,7 +157,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: '3d-oral-scanners',
     slug: '3d-oral-scanners',
-    icon: '📁',
+    icon: '',
     label: '3D Oral Scanners',
     subCategories: [
       {
@@ -175,7 +175,7 @@ const DEFAULT_STATIC_CATEGORIES: Category[] = [
   {
     id: 'dental-air-compressors',
     slug: 'dental-air-compressors',
-    icon: '📁',
+    icon: '',
     label: 'Dental Air Compressors & Suctions',
     subCategories: [
       {

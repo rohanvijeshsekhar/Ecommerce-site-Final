@@ -7,7 +7,7 @@ import {
   Eye, Monitor, Smartphone, Sparkles, Clock, Calendar, ArrowRight,
   Layout, Type, ShoppingCart, Image as ImageIcon, Save,
   Search, X, ExternalLink, Zap, RefreshCw, AlertCircle, Upload, CheckCircle2,
-  Sliders, Palette
+  Sliders, Palette, Info
 } from 'lucide-react';
 import type { DailyOffer, DailyOfferProduct } from '../../types/admin';
 import { homepageService, adminService } from '../../services/adminService';
@@ -638,10 +638,10 @@ export const DailyOffersManager: React.FC = () => {
                         )}
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${offer.status === 'live' && offer.is_active
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : offer.status === 'scheduled'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'bg-slate-100 text-slate-600'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : offer.status === 'scheduled'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-slate-100 text-slate-600'
                             }`}
                         >
                           {offer.status}
@@ -666,8 +666,8 @@ export const DailyOffersManager: React.FC = () => {
                     <button
                       onClick={() => handleToggleActive(offer)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${offer.is_active
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                     >
                       {offer.is_active ? 'Active' : 'Inactive'}
@@ -791,8 +791,8 @@ export const DailyOffersManager: React.FC = () => {
                       type="button"
                       onClick={() => setActiveTab(t.id as StudioTab)}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
-                          ? 'bg-white text-[#006670] shadow-2xs border border-slate-200/80'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                        ? 'bg-white text-[#006670] shadow-2xs border border-slate-200/80'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                         }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -809,7 +809,7 @@ export const DailyOffersManager: React.FC = () => {
                   <div className="space-y-4">
                     {/* Informative Guidance Banner */}
                     <div className="p-3 bg-teal-50 border border-teal-200/80 rounded-xl text-xs text-[#004D54] flex items-start gap-2.5">
-                      <span className="text-base leading-none shrink-0">💡</span>
+                      <Info className="w-4 h-4 text-[#004D54] shrink-0 mt-0.5" />
                       <div>
                         <strong className="block font-bold">Content fields are completely optional:</strong>
                         If your uploaded banner artwork already contains the headline, discount percentages, timeline, and promo details, leave these fields blank. The image will render cleanly without duplicate text overlays.
@@ -844,7 +844,7 @@ export const DailyOffersManager: React.FC = () => {
                           type="text"
                           value={form.badge_text || ''}
                           onChange={(e) => setForm({ ...form, badge_text: e.target.value })}
-                          placeholder="🔥 DAILY DEALS"
+                          placeholder="DAILY DEALS"
                           className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                         />
                       </div>
@@ -912,8 +912,8 @@ export const DailyOffersManager: React.FC = () => {
                             type="button"
                             onClick={() => setForm({ ...form, font_family: font.id })}
                             className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${(form.font_family || 'Inter') === font.id
-                                ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20 shadow-xs'
-                                : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'border-[#006670] bg-teal-50/70 ring-2 ring-teal-500/20 shadow-xs'
+                              : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                               }`}
                           >
                             <span
@@ -954,8 +954,8 @@ export const DailyOffersManager: React.FC = () => {
                             type="button"
                             onClick={() => setForm({ ...form, image_position: pos.id as any })}
                             className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${(form.image_position || 'right') === pos.id
-                                ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                              ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                               }`}
                           >
                             {pos.label}
@@ -1111,8 +1111,8 @@ export const DailyOffersManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm({ ...form, image_fit: fit as any })}
                               className={`py-1.5 px-3 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.image_fit || 'cover') === fit
-                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
-                                  : 'border-slate-200 text-slate-600'
+                                ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                : 'border-slate-200 text-slate-600'
                                 }`}
                             >
                               {fit}
@@ -1180,8 +1180,8 @@ export const DailyOffersManager: React.FC = () => {
                                 type="button"
                                 onClick={() => setForm({ ...form, countdown_position: pos.id as any })}
                                 className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.countdown_position || 'left') === pos.id
-                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                                   }`}
                               >
                                 {pos.label}
@@ -1315,8 +1315,8 @@ export const DailyOffersManager: React.FC = () => {
                                 type="button"
                                 onClick={() => setForm({ ...form, cta_position: pos.id as any })}
                                 className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.cta_position || 'left') === pos.id
-                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                                   }`}
                               >
                                 {pos.label}
@@ -1567,8 +1567,8 @@ export const DailyOffersManager: React.FC = () => {
                                 type="button"
                                 onClick={() => setForm({ ...form, horizontal_alignment: h as any })}
                                 className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.horizontal_alignment || 'left') === h
-                                    ? 'border-[#006670] bg-teal-50 text-[#006670]'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                                   }`}
                               >
                                 {h}
@@ -1586,8 +1586,8 @@ export const DailyOffersManager: React.FC = () => {
                                 type="button"
                                 onClick={() => setForm({ ...form, vertical_alignment: v as any })}
                                 className={`py-1.5 px-2 rounded-lg border text-xs font-bold capitalize cursor-pointer ${(form.vertical_alignment || 'center') === v
-                                    ? 'border-[#006670] bg-teal-50 text-[#006670]'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                                   }`}
                               >
                                 {v}
@@ -1611,8 +1611,8 @@ export const DailyOffersManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm({ ...form, content_width: w.id as any })}
                               className={`py-1 px-2 rounded-lg border text-xs font-bold cursor-pointer ${(form.content_width || 'large') === w.id
-                                  ? 'border-[#006670] bg-teal-50 text-[#006670]'
-                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-teal-50 text-[#006670]'
+                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                                 }`}
                             >
                               {w.label}
@@ -1650,8 +1650,8 @@ export const DailyOffersManager: React.FC = () => {
                               })
                             }
                             className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${form.theme === th.id
-                                ? 'border-[#006670] ring-2 ring-teal-500/20 shadow-xs'
-                                : 'border-slate-200 hover:border-slate-300'
+                              ? 'border-[#006670] ring-2 ring-teal-500/20 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300'
                               }`}
                           >
                             <span className="text-xs font-black block text-slate-900">{th.name}</span>

@@ -190,7 +190,7 @@ const AdminLogin: React.FC = () => {
             {/* Banner Text */}
             <div className="relative z-10">
               <h2 className="text-[#004e56] text-lg font-black leading-tight tracking-tight max-w-[280px]">
-                Welcome Back! 👋
+                Welcome Back!
               </h2>
               <p className="text-[#006670] text-[11px] mt-1 font-semibold max-w-[280px]">
                 Sign in to continue to FAAZO Admin
@@ -222,7 +222,7 @@ const AdminLogin: React.FC = () => {
 
               {/* Desktop View Title Card */}
               <div className="hidden md:block">
-                <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mb-0.5">Welcome Back! 👋</h1>
+                <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mb-0.5">Welcome Back!</h1>
                 <p className="text-[11px] md:text-xs text-slate-500 font-medium">Sign in to continue to FAAZO Admin</p>
               </div>
             </div>

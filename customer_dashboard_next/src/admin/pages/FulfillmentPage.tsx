@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Truck, Package, RefreshCw, Search, Filter, Eye,
-  Clock, CheckCircle2, AlertTriangle,
+  Clock, CheckCircle2, AlertTriangle, AlertCircle,
   Calendar, ChevronRight, RotateCcw,
   CheckSquare
 } from 'lucide-react';
@@ -24,17 +24,17 @@ import { ShipmentDetailsDrawer } from '../components/shipping/ShipmentDetailsDra
 
 const getShipmentVariant = (status: ShipmentStatus): 'success' | 'info' | 'warning' | 'error' | 'purple' | 'neutral' => {
   switch (status) {
-    case 'delivered':        return 'success';
+    case 'delivered': return 'success';
     case 'out_for_delivery': return 'info';
-    case 'in_transit':       return 'info';
-    case 'picked_up':        return 'purple';
+    case 'in_transit': return 'info';
+    case 'picked_up': return 'purple';
     case 'pickup_scheduled': return 'warning';
-    case 'created':          return 'warning';
-    case 'failed_delivery':  return 'error';
-    case 'cancelled':        return 'error';
-    case 'rto_initiated':    return 'error';
-    case 'not_created':      return 'neutral';
-    default:                 return 'neutral';
+    case 'created': return 'warning';
+    case 'failed_delivery': return 'error';
+    case 'cancelled': return 'error';
+    case 'rto_initiated': return 'error';
+    case 'not_created': return 'neutral';
+    default: return 'neutral';
   }
 };
 
@@ -191,8 +191,9 @@ const FulfillmentPage: React.FC = () => {
             {row.shipment_number || row.order_number}
           </p>
           {row.needs_review && (
-            <span className="inline-flex items-center gap-0.5 mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300">
-              ⚠ Review
+            <span className="inline-flex items-center gap-1 mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300">
+              <AlertCircle className="w-2.5 h-2.5" />
+              <span>Review</span>
             </span>
           )}
         </div>
@@ -299,97 +300,97 @@ const FulfillmentPage: React.FC = () => {
   // ── Stats Cards ─────────────────────────────────────────────────────────────
   const statCards = stats
     ? [
-        {
-          label: 'Total Shipments',
-          value: stats.total_shipments,
-          icon: <Truck className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#f8fafc]/95 via-[#f1f5f9]/70 to-[#e2e8f0]/60 border-slate-200/90 shadow-xs shadow-slate-100/50',
-          textColor: 'text-slate-800',
-          labelColor: 'text-slate-500',
-          iconStyle: 'bg-white/90 border border-slate-200/80 text-slate-700',
-        },
-        {
-          label: 'Pending Packing',
-          value: stats.pending_packing,
-          icon: <Package className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#fffbeb]/95 via-[#fef3c7]/70 to-[#fde68a]/50 border-amber-200/90 shadow-xs shadow-amber-100/50',
-          textColor: 'text-amber-900',
-          labelColor: 'text-amber-700/80',
-          iconStyle: 'bg-white/90 border border-amber-200/80 text-amber-600',
-        },
-        {
-          label: 'Awaiting Courier',
-          value: stats.not_created ?? 0,
-          icon: <Package className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#f1f5f9]/95 via-[#e2e8f0]/70 to-[#cbd5e1]/50 border-slate-300/90 shadow-xs shadow-slate-100/50',
-          textColor: 'text-slate-700',
-          labelColor: 'text-slate-500/80',
-          iconStyle: 'bg-white/90 border border-slate-200/80 text-slate-500',
-        },
-        {
-          label: 'Ready for Courier',
-          value: stats.ready_for_pickup_count ?? 0,
-          icon: <CheckSquare className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#f0fdf4]/95 via-[#dcfce7]/70 to-[#bbf7d0]/50 border-green-200/90 shadow-xs shadow-green-100/50',
-          textColor: 'text-green-800',
-          labelColor: 'text-green-600/80',
-          iconStyle: 'bg-white/90 border border-green-200/80 text-green-600',
-        },
-        {
-          label: 'Pickup Pending',
-          value: (stats.pickup_scheduled || 0) + (stats.created || 0),
-          icon: <Clock className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#eff6ff]/95 via-[#dbeafe]/70 to-[#bfdbfe]/50 border-blue-200/90 shadow-xs shadow-blue-100/50',
-          textColor: 'text-blue-900',
-          labelColor: 'text-blue-700/80',
-          iconStyle: 'bg-white/90 border border-blue-200/80 text-blue-600',
-        },
-        {
-          label: 'In Transit',
-          value: stats.in_transit + (stats.picked_up || 0) + (stats.reached_hub || 0),
-          icon: <ChevronRight className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#faf5ff]/95 via-[#f3e8ff]/70 to-[#e9d5ff]/50 border-purple-200/90 shadow-xs shadow-purple-100/50',
-          textColor: 'text-purple-900',
-          labelColor: 'text-purple-700/80',
-          iconStyle: 'bg-white/90 border border-purple-200/80 text-purple-600',
-        },
-        {
-          label: 'Out for Delivery',
-          value: stats.out_for_delivery,
-          icon: <Truck className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#f0fdfa]/95 via-[#ccfbf1]/70 to-[#99f6e4]/50 border-teal-200/90 shadow-xs shadow-teal-100/50',
-          textColor: 'text-teal-900',
-          labelColor: 'text-teal-700/80',
-          iconStyle: 'bg-white/90 border border-teal-200/80 text-teal-600',
-        },
-        {
-          label: 'Delivered',
-          value: stats.delivered,
-          icon: <CheckCircle2 className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#ecfdf5]/95 via-[#d1fae5]/70 to-[#a7f3d0]/50 border-emerald-200/90 shadow-xs shadow-emerald-100/50',
-          textColor: 'text-emerald-900',
-          labelColor: 'text-emerald-700/80',
-          iconStyle: 'bg-white/90 border border-emerald-200/80 text-emerald-600',
-        },
-        {
-          label: 'Failed Delivery',
-          value: stats.failed_delivery,
-          icon: <AlertTriangle className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#fff7ed]/95 via-[#ffedd5]/70 to-[#fed7aa]/50 border-orange-200/90 shadow-xs shadow-orange-100/50',
-          textColor: 'text-orange-900',
-          labelColor: 'text-orange-700/80',
-          iconStyle: 'bg-white/90 border border-orange-200/80 text-orange-600',
-        },
-        {
-          label: 'RTO / Cancelled',
-          value: stats.rto_initiated + stats.cancelled,
-          icon: <RotateCcw className="w-4 h-4" />,
-          cardStyle: 'bg-gradient-to-br from-[#fff1f2]/95 via-[#ffe4e6]/70 to-[#fecdd3]/50 border-rose-200/90 shadow-xs shadow-rose-100/50',
-          textColor: 'text-rose-900',
-          labelColor: 'text-rose-700/80',
-          iconStyle: 'bg-white/90 border border-rose-200/80 text-rose-600',
-        },
-      ]
+      {
+        label: 'Total Shipments',
+        value: stats.total_shipments,
+        icon: <Truck className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#f8fafc]/95 via-[#f1f5f9]/70 to-[#e2e8f0]/60 border-slate-200/90 shadow-xs shadow-slate-100/50',
+        textColor: 'text-slate-800',
+        labelColor: 'text-slate-500',
+        iconStyle: 'bg-white/90 border border-slate-200/80 text-slate-700',
+      },
+      {
+        label: 'Pending Packing',
+        value: stats.pending_packing,
+        icon: <Package className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#fffbeb]/95 via-[#fef3c7]/70 to-[#fde68a]/50 border-amber-200/90 shadow-xs shadow-amber-100/50',
+        textColor: 'text-amber-900',
+        labelColor: 'text-amber-700/80',
+        iconStyle: 'bg-white/90 border border-amber-200/80 text-amber-600',
+      },
+      {
+        label: 'Awaiting Courier',
+        value: stats.not_created ?? 0,
+        icon: <Package className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#f1f5f9]/95 via-[#e2e8f0]/70 to-[#cbd5e1]/50 border-slate-300/90 shadow-xs shadow-slate-100/50',
+        textColor: 'text-slate-700',
+        labelColor: 'text-slate-500/80',
+        iconStyle: 'bg-white/90 border border-slate-200/80 text-slate-500',
+      },
+      {
+        label: 'Ready for Courier',
+        value: stats.ready_for_pickup_count ?? 0,
+        icon: <CheckSquare className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#f0fdf4]/95 via-[#dcfce7]/70 to-[#bbf7d0]/50 border-green-200/90 shadow-xs shadow-green-100/50',
+        textColor: 'text-green-800',
+        labelColor: 'text-green-600/80',
+        iconStyle: 'bg-white/90 border border-green-200/80 text-green-600',
+      },
+      {
+        label: 'Pickup Pending',
+        value: (stats.pickup_scheduled || 0) + (stats.created || 0),
+        icon: <Clock className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#eff6ff]/95 via-[#dbeafe]/70 to-[#bfdbfe]/50 border-blue-200/90 shadow-xs shadow-blue-100/50',
+        textColor: 'text-blue-900',
+        labelColor: 'text-blue-700/80',
+        iconStyle: 'bg-white/90 border border-blue-200/80 text-blue-600',
+      },
+      {
+        label: 'In Transit',
+        value: stats.in_transit + (stats.picked_up || 0) + (stats.reached_hub || 0),
+        icon: <ChevronRight className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#faf5ff]/95 via-[#f3e8ff]/70 to-[#e9d5ff]/50 border-purple-200/90 shadow-xs shadow-purple-100/50',
+        textColor: 'text-purple-900',
+        labelColor: 'text-purple-700/80',
+        iconStyle: 'bg-white/90 border border-purple-200/80 text-purple-600',
+      },
+      {
+        label: 'Out for Delivery',
+        value: stats.out_for_delivery,
+        icon: <Truck className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#f0fdfa]/95 via-[#ccfbf1]/70 to-[#99f6e4]/50 border-teal-200/90 shadow-xs shadow-teal-100/50',
+        textColor: 'text-teal-900',
+        labelColor: 'text-teal-700/80',
+        iconStyle: 'bg-white/90 border border-teal-200/80 text-teal-600',
+      },
+      {
+        label: 'Delivered',
+        value: stats.delivered,
+        icon: <CheckCircle2 className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#ecfdf5]/95 via-[#d1fae5]/70 to-[#a7f3d0]/50 border-emerald-200/90 shadow-xs shadow-emerald-100/50',
+        textColor: 'text-emerald-900',
+        labelColor: 'text-emerald-700/80',
+        iconStyle: 'bg-white/90 border border-emerald-200/80 text-emerald-600',
+      },
+      {
+        label: 'Failed Delivery',
+        value: stats.failed_delivery,
+        icon: <AlertTriangle className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#fff7ed]/95 via-[#ffedd5]/70 to-[#fed7aa]/50 border-orange-200/90 shadow-xs shadow-orange-100/50',
+        textColor: 'text-orange-900',
+        labelColor: 'text-orange-700/80',
+        iconStyle: 'bg-white/90 border border-orange-200/80 text-orange-600',
+      },
+      {
+        label: 'RTO / Cancelled',
+        value: stats.rto_initiated + stats.cancelled,
+        icon: <RotateCcw className="w-4 h-4" />,
+        cardStyle: 'bg-gradient-to-br from-[#fff1f2]/95 via-[#ffe4e6]/70 to-[#fecdd3]/50 border-rose-200/90 shadow-xs shadow-rose-100/50',
+        textColor: 'text-rose-900',
+        labelColor: 'text-rose-700/80',
+        iconStyle: 'bg-white/90 border border-rose-200/80 text-rose-600',
+      },
+    ]
     : [];
 
   return (

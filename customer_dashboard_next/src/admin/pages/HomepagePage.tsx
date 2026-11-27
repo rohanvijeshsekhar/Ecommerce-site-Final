@@ -39,8 +39,8 @@ interface Tab {
 const TABS: Tab[] = [
   { id: 'hero', label: 'Hero', icon: <Image className="w-4 h-4" /> },
   { id: 'categories', label: 'Shop By Category', icon: <Tag className="w-4 h-4" /> },
-  { id: 'daily-offers', label: '🔥 Daily Offers / Deals', icon: <Flame className="w-4 h-4 text-red-500 fill-current" /> },
-  { id: 'brand-deals', label: '🏷️ Brand Deals & Offers', icon: <Award className="w-4 h-4 text-[#006670]" /> },
+  { id: 'daily-offers', label: 'Daily Offers / Deals', icon: <Flame className="w-4 h-4 text-red-500 fill-current" /> },
+  { id: 'brand-deals', label: 'Brand Deals & Offers', icon: <Award className="w-4 h-4 text-[#006670]" /> },
   { id: 'brands', label: 'Brand Logos', icon: <Award className="w-4 h-4" /> },
   { id: 'bestsellers', label: 'Best Sellers', icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'collections', label: 'Collections', icon: <Layers className="w-4 h-4" /> },

@@ -40,7 +40,7 @@ export const fetchCategoriesTree = () => {
         const mapped = payload.map((c: any) => ({
           id: c.id,
           slug: c.slug || c.id,
-          icon: '📁',
+          icon: '',
           label: c.name,
           subCategories: (c.children || []).map((sub: any) => ({
             id: sub.id,

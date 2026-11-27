@@ -26,7 +26,7 @@ export const shareService = {
     const url = this.getCanonicalUrl(product.slug || product.id);
     const priceStr = product.price ? `₹${Number(product.price).toLocaleString('en-IN')}` : '';
 
-    return `🔥 Check out this product on FAAZO Dental Solutions!
+    return `Check out this product on FAAZO Dental Solutions!
 
 Product:
 ${product.name}

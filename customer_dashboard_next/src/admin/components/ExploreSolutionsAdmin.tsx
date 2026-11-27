@@ -867,7 +867,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
                       }}
                     />
                     <p className="text-[11px] font-semibold text-[#005F63]/90">
-                      ⚡ This image is displayed directly as the background on the &quot;Explore by Solutions&quot; procedure cards on the customer homepage (as shown in the storefront screenshot).
+                      This image is displayed directly as the background on the &quot;Explore by Solutions&quot; procedure cards on the customer homepage (as shown in the storefront screenshot).
                     </p>
                   </div>
 

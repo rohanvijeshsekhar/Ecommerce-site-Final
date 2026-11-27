@@ -1492,7 +1492,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   {/* 6. Savings Highlight Pill */}
                   {overallSavingsVal > 0 && (
                     <div className="py-2 px-3 rounded-lg bg-emerald-50/80 border border-emerald-100 text-[11px] font-medium text-emerald-800 flex items-center gap-1.5">
-                      <span>🌱</span>
                       <span>You are saving ₹{overallSavingsVal.toLocaleString('en-IN')} on this order!</span>
                     </div>
                   )}
@@ -1596,7 +1595,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {overallSavingsVal > 0 && (
                 <div className="py-2 px-3 rounded-lg bg-emerald-50/80 border border-emerald-100 text-[11px] font-medium text-emerald-800 text-center">
-                  🌱 You save ₹{overallSavingsVal.toLocaleString('en-IN')} on this order
+                  You save ₹{overallSavingsVal.toLocaleString('en-IN')} on this order
                 </div>
               )}
             </div>

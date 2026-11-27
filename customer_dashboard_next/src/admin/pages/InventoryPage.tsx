@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Search, Edit2, Eye, Package, X
+  Search, Edit2, Eye, Package, X, AlertCircle
 } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import DataTable from '../components/DataTable';
@@ -395,7 +395,7 @@ const InventoryPage: React.FC = () => {
           {/* Reserved Stock Info Banner if items are reserved for orders */}
           {(quickEditProduct?.inventory?.reserved_stock ?? 0) > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
-              <span className="text-base">📦</span>
+              <Package className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold">
                   {quickEditProduct?.inventory?.reserved_stock} unit(s) reserved for pending orders.
@@ -403,8 +403,9 @@ const InventoryPage: React.FC = () => {
                 <p className="text-[11px] text-amber-700 mt-0.5">
                   Available for new customers: <strong className="font-extrabold">{Math.max(0, currentStock - (quickEditProduct?.inventory?.reserved_stock ?? 0))}</strong> units.
                   {!allowBackorders && currentStock < (quickEditProduct?.inventory?.reserved_stock ?? 0) && (
-                    <span className="text-rose-600 block font-semibold mt-1">
-                      ⚠️ Current stock cannot be less than reserved units without enabling &ldquo;Allow Backorders&rdquo;.
+                    <span className="text-rose-600 block font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 inline shrink-0" />
+                      <span>Current stock cannot be less than reserved units without enabling &ldquo;Allow Backorders&rdquo;.</span>
                     </span>
                   )}
                 </p>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 import { getCategoryIcon } from './CategoryMegaMenu';
 import { useCategories } from '../../hooks/useCategories';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
@@ -75,16 +75,16 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
 
   const filteredCategories = searchQuery.trim()
     ? categoriesList.filter(
-        cat =>
-          cat.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          cat.subCategories.some(
-            sub =>
-              sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              sub.subItems.some(item =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-          )
-      )
+      cat =>
+        cat.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.subCategories.some(
+          sub =>
+            sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            sub.subItems.some(item =>
+              item.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        )
+    )
     : categoriesList;
 
   // Automatically fallback active category if filter excludes current selection
@@ -145,7 +145,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
 
   const getSubcategoryItems = (sub: any) => {
     const items: any[] = [];
-    
+
     // 1. Add sub-subcategories (if any)
     if (sub.subItems && sub.subItems.length > 0) {
       sub.subItems.forEach((child: any) => {
@@ -240,7 +240,7 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
 
   const renderEmptyState = () => (
     <div className="py-10 text-center space-y-1">
-      <div className="text-[24px] text-slate-300">📦</div>
+      <Package className="w-7 h-7 text-slate-300 mx-auto mb-1" />
       <p className="text-[11px] font-extrabold text-slate-400">No products available</p>
     </div>
   );
@@ -248,15 +248,13 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
   const renderCircularImage = (imageUrl: string, altText: string) => {
     const isPlaceholder = !imageUrl || imageUrl.startsWith('/images/');
     return (
-      <div className={`w-14 h-14 rounded-full border border-slate-200/40 bg-[#f4f8f9] flex items-center justify-center overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.02)] group-active:scale-95 transition-transform duration-100 shrink-0 ${
-        isPlaceholder ? 'p-1.5' : 'p-0'
-      }`}>
+      <div className={`w-14 h-14 rounded-full border border-slate-200/40 bg-[#f4f8f9] flex items-center justify-center overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.02)] group-active:scale-95 transition-transform duration-100 shrink-0 ${isPlaceholder ? 'p-1.5' : 'p-0'
+        }`}>
         <img
           src={imageUrl || '/images/nsk_handpiece_portrait.png'}
           alt={altText}
-          className={`w-full h-full rounded-full ${
-            isPlaceholder ? 'object-contain mix-blend-multiply' : 'object-cover'
-          } filter brightness-[1.02]`}
+          className={`w-full h-full rounded-full ${isPlaceholder ? 'object-contain mix-blend-multiply' : 'object-cover'
+            } filter brightness-[1.02]`}
         />
       </div>
     );
@@ -267,11 +265,11 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
   const totalMobileItems = isLeafRoot
     ? (productCache[activeMobileCat.id] || []).length
     : activeMobileCat?.subCategories.reduce((acc, sub) => {
-        if (sub.subItems && sub.subItems.length > 0) {
-          return acc + sub.subItems.reduce((sum, child) => sum + (productCache[child.id] || []).length, 0);
-        }
-        return acc + (productCache[sub.id] || []).length;
-      }, 0);
+      if (sub.subItems && sub.subItems.length > 0) {
+        return acc + sub.subItems.reduce((sum, child) => sum + (productCache[child.id] || []).length, 0);
+      }
+      return acc + (productCache[sub.id] || []).length;
+    }, 0);
 
   return (
     <div className="fixed top-[100px] bottom-[52px] left-0 right-0 bg-white flex flex-col font-sans select-none overflow-hidden">
@@ -294,9 +292,9 @@ const ProductsLandingPage: React.FC<ProductsLandingPageProps> = ({
 
       {/* 2-Column Split View */}
       <div className="flex-grow flex overflow-hidden" style={{ minHeight: 0 }}>
-        
+
         {/* Left Column: Categories Sidebar */}
-        <div 
+        <div
           className="w-[100px] shrink-0 bg-[#f8fafb] border-r border-slate-100 overflow-y-auto no-scrollbar flex flex-col py-1 pb-16 overscroll-contain"
           style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
         >

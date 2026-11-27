@@ -343,52 +343,16 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
 
   return (
     <div className="w-full bg-slate-50 min-h-screen pb-20 select-none text-left pt-[108px] lg:pt-[144px]">
-      {/* Hero Banner Section */}
-      <div 
-        className="relative bg-[#0f172a] text-white py-14 px-6 md:px-12 overflow-hidden shadow-md"
-        style={bannerSettings.banner_image ? {
-          backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.65)), url(${getAbsoluteImageUrl(bannerSettings.banner_image)})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : {}}
-      >
-        {!bannerSettings.banner_image && (
-          <>
-            <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#006670]/10 rounded-full blur-[120px] pointer-events-none" />
-          </>
-        )}
-
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-black tracking-widest uppercase">
-              <Sparkles className="w-3.5 h-3.5" /> {bannerSettings.badge_text}
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
-              {bannerSettings.title}
-            </h1>
-            <p className="text-sm md:text-base text-slate-400 font-medium leading-relaxed">
-              {bannerSettings.description}
-            </p>
-          </div>
-
-          {/* Quick Search in Banner */}
-          <div className="w-full md:w-80">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search combo deals..."
-                value={searchQuery}
-                onChange={(e) => updateUrlParams({ q: e.target.value || null })}
-                className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-slate-400 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-400 focus:bg-white/20 transition-all"
-              />
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        {/* Clean Page Title Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight font-display">
+            {bannerSettings.title || 'Combo Deals'}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            {bannerSettings.description || 'Curated clinical equipment packages and bundle savings for dental practices.'}
+          </p>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           {/* Desktop Filter Sidebar */}
           <ListingFilterSidebar

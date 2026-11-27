@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import {
   X, Package, Truck, User, MapPin, Calendar, Clock,
   Printer, FileText, RefreshCw, Ban, CheckCircle2,
-  AlertCircle, Building2, Weight,
+  AlertCircle, Building2, Weight, Lock,
 } from 'lucide-react';
 import {
   SHIPMENT_STATUS_LABELS,
@@ -36,38 +36,38 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
   if (!isOpen || !shipment) return null;
 
   const courierSubmitted = shipment.courier_submitted ?? (shipment.shipment_status !== 'not_created');
-  const packingComplete  = shipment.packing_status === 'ready_for_pickup';
+  const packingComplete = shipment.packing_status === 'ready_for_pickup';
   const canCreateCourier = packingComplete && !courierSubmitted;
 
   const PACKING_ORDER: PackingStatus[] = ['pending', 'packing', 'packed', 'qc_passed', 'ready_for_pickup'];
   const PACKING_NEXT_LABEL: Record<PackingStatus, string> = {
-    pending:          'Start Packing',
-    packing:          'Mark Packed',
-    packed:           'Mark QC Passed',
-    qc_passed:        'Mark Ready for Pickup',
+    pending: 'Start Packing',
+    packing: 'Mark Packed',
+    packed: 'Mark QC Passed',
+    qc_passed: 'Mark Ready for Pickup',
     ready_for_pickup: 'Packing Complete ✓',
   };
 
   const getCourierStatusColor = (st: string) => {
     switch (st) {
-      case 'delivered':                                return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'delivered': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'out_for_delivery': case 'in_transit':
-      case 'reached_hub':      case 'picked_up':      return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'pickup_scheduled': case 'created':        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      case 'cancelled':        case 'failed_delivery':
-      case 'rto_initiated':    case 'rto_delivered':  return 'bg-rose-50 text-rose-700 border-rose-200';
-      case 'not_created':                             return 'bg-slate-50 text-slate-500 border-slate-200';
-      default:                                        return 'bg-slate-50 text-slate-700 border-slate-200';
+      case 'reached_hub': case 'picked_up': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'pickup_scheduled': case 'created': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'cancelled': case 'failed_delivery':
+      case 'rto_initiated': case 'rto_delivered': return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'not_created': return 'bg-slate-50 text-slate-500 border-slate-200';
+      default: return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   const getPackingColor = (st: string) => {
     switch (st) {
       case 'ready_for_pickup': return 'bg-green-50 text-green-700 border-green-200';
-      case 'qc_passed':        return 'bg-teal-50 text-teal-700 border-teal-200';
-      case 'packed':           return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'packing':          return 'bg-amber-50 text-amber-700 border-amber-200';
-      default:                 return 'bg-slate-50 text-slate-500 border-slate-200';
+      case 'qc_passed': return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'packed': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'packing': return 'bg-amber-50 text-amber-700 border-amber-200';
+      default: return 'bg-slate-50 text-slate-500 border-slate-200';
     }
   };
 
@@ -147,11 +147,13 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                 <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-900/70 text-emerald-200 border border-emerald-600/50 shadow-xs">
                   {shipment.shipment_number || 'FAAZO SHIPMENT'}
                 </span>
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-xs ${getPackingColor(shipment.packing_status)}`}>
-                  📦 {PACKING_STATUS_LABELS[shipment.packing_status] || shipment.packing_status}
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-xs flex items-center gap-1 ${getPackingColor(shipment.packing_status)}`}>
+                  <Package className="w-3 h-3 inline" />
+                  <span>{PACKING_STATUS_LABELS[shipment.packing_status] || shipment.packing_status}</span>
                 </span>
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-xs ${getCourierStatusColor(shipment.shipment_status)}`}>
-                  🚚 {SHIPMENT_STATUS_LABELS[shipment.shipment_status] || shipment.shipment_status}
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-xs flex items-center gap-1 ${getCourierStatusColor(shipment.shipment_status)}`}>
+                  <Truck className="w-3 h-3 inline" />
+                  <span>{SHIPMENT_STATUS_LABELS[shipment.shipment_status] || shipment.shipment_status}</span>
                 </span>
               </div>
               <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2 pt-1.5">
@@ -210,15 +212,14 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
               <div className="flex items-center gap-1 flex-wrap mb-3">
                 {PACKING_ORDER.map((step, i) => {
                   const currentIdx = PACKING_ORDER.indexOf(shipment.packing_status as PackingStatus);
-                  const isDone    = PACKING_ORDER.indexOf(step) < currentIdx;
+                  const isDone = PACKING_ORDER.indexOf(step) < currentIdx;
                   const isCurrent = step === shipment.packing_status;
                   return (
                     <React.Fragment key={step}>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-colors ${
-                        isCurrent ? 'bg-amber-400 text-white border-amber-400 shadow-xs'
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-colors ${isCurrent ? 'bg-amber-400 text-white border-amber-400 shadow-xs'
                           : isDone ? 'bg-green-100 text-green-700 border-green-300'
-                          : 'bg-white text-slate-400 border-slate-200'
-                      }`}>
+                            : 'bg-white text-slate-400 border-slate-200'
+                        }`}>
                         {isDone ? '✓ ' : ''}{PACKING_STATUS_LABELS[step]}
                       </span>
                       {i < PACKING_ORDER.length - 1 && (
@@ -259,7 +260,7 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
               {/* LOCKED — packing not complete */}
               {!courierSubmitted && !packingComplete && (
                 <div className="flex items-center gap-3 text-xs text-slate-500 p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-2xl">🔒</span>
+                  <Lock className="w-6 h-6 text-slate-400 shrink-0" />
                   <div>
                     <p className="font-semibold text-slate-700">Courier actions locked</p>
                     <p className="text-slate-500 mt-0.5">
@@ -274,8 +275,9 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
               {/* READY — show Create Courier Shipment CTA */}
               {canCreateCourier && (
                 <div className="space-y-2">
-                  <p className="text-xs text-green-700 font-medium">
-                    ✅ Packing complete. You can now create the Shiprocket courier shipment.
+                  <p className="text-xs text-green-700 font-medium flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 inline shrink-0" />
+                    <span>Packing complete. You can now create the Shiprocket courier shipment.</span>
                   </p>
                   <button
                     onClick={handleCreateCourier}
@@ -452,14 +454,18 @@ export const ShipmentDetailsDrawer: React.FC<ShipmentDetailsDrawerProps> = ({
                   <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                     {shipment.tracking_events.map((evt, idx) => (
                       <div key={evt.id || idx} className="relative text-xs">
-                        <div className={`absolute -left-6 top-0.5 w-3 h-3 rounded-full border-2 bg-white ${
-                          idx === 0 ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
-                        }`} />
+                        <div className={`absolute -left-6 top-0.5 w-3 h-3 rounded-full border-2 bg-white ${idx === 0 ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                          }`} />
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-bold text-slate-800">{evt.event_label}</p>
                             {evt.description && <p className="text-slate-600 mt-0.5 leading-relaxed">{evt.description}</p>}
-                            {evt.location && <p className="text-[11px] text-slate-400 mt-0.5">📍 {evt.location}</p>}
+                            {evt.location && (
+                              <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 inline shrink-0" />
+                                <span>{evt.location}</span>
+                              </p>
+                            )}
                           </div>
                           <div className="text-right flex-shrink-0 ml-3">
                             <span className="text-[11px] font-mono text-slate-400 block">

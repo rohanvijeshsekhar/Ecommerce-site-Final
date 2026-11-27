@@ -17,6 +17,7 @@ import {
   ReceiptText,
   Copy,
   Check,
+  Phone,
 } from 'lucide-react';
 import { ordersService } from '../../lib/services/ordersService';
 import { useStore } from '../../contexts/StoreContext';
@@ -381,7 +382,7 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
                     </div>
                     {pricing.savings > 0 && (
                       <div className="bg-emerald-50 text-emerald-700 rounded-lg p-2 text-[11px] font-semibold text-center mt-1">
-                        🎉 You saved ₹{pricing.savings.toLocaleString('en-IN')} on this order
+                        You saved ₹{pricing.savings.toLocaleString('en-IN')} on this order
                       </div>
                     )}
                   </div>
@@ -417,7 +418,10 @@ const OrderSuccessPage: React.FC<OrderSuccessPageProps> = ({
                     </p>
                   )}
                   {address.phone && (
-                    <p className="text-[#006670] font-medium pt-1">📞 {address.phone}</p>
+                    <p className="text-[#006670] font-medium pt-1 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>{address.phone}</span>
+                    </p>
                   )}
                 </div>
               </div>
