@@ -95,7 +95,11 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to upload document.");
+      const errData = err.response?.data;
+      const detailMsg = errData?.error?.details?.[0]?.issue
+        ? `${errData.error.details[0].field ? errData.error.details[0].field + ': ' : ''}${errData.error.details[0].issue}`
+        : null;
+      setError(detailMsg || errData?.error?.message || errData?.message || "Failed to upload document.");
     } finally {
       setUploading(false);
     }

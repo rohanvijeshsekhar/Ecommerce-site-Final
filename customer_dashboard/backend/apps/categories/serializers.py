@@ -107,8 +107,15 @@ class CategoryWriteSerializer(serializers.ModelSerializer):
             data['parent'] = None
 
         # Empty string image means no file uploaded or clear
-        if 'image' in data and data['image'] in ('', 'null', 'undefined'):
-            data.pop('image', None)
+        if 'image' in data:
+            img = data['image']
+            if img in ('', 'null', 'undefined', None):
+                data.pop('image', None)
+            elif hasattr(img, 'name') and len(img.name) > 60:
+                import os, uuid
+                base, ext = os.path.splitext(img.name)
+                ext = ext[:10] if ext else '.jpg'
+                img.name = f"{base[:30]}_{uuid.uuid4().hex[:8]}{ext}"
 
         return super().to_internal_value(data)
 

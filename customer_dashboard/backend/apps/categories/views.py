@@ -60,24 +60,29 @@ class CategoryViewSet(BaseModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """
-        Soft delete — only if no active products or children are attached.
+        Permanently delete category — safely reassigns products, re-parents children,
+        and cleans up homepage references so deletion never fails with ProtectedError.
         """
         category = self.get_object()
-        if category.children.filter(is_active=True).exists():
-            return error_response(
-                "Cannot delete a category that has active subcategories. "
-                "Delete or deactivate child categories first.",
-                status_code=status.HTTP_409_CONFLICT,
-            )
-        if category.products.filter(is_deleted=False).exists():
-            return error_response(
-                "Cannot delete a category that has products. "
-                "Reassign or archive all products first.",
-                status_code=status.HTTP_409_CONFLICT,
-            )
-        category.is_active = False
-        category.save(update_fields=["is_active"])
-        return success_response(message="Category deactivated.")
+        category_name = category.name
+
+        # 1. Reassign attached products (including soft-deleted) to parent or fallback category
+        from apps.products.models import Product
+        target_cat = category.parent or Category.objects.exclude(pk=category.pk).filter(is_active=True).first()
+        if not target_cat:
+            target_cat = Category.objects.create(name="General Dental Equipment", is_active=True)
+        Product._base_manager.filter(category=category).update(category=target_cat)
+
+        # 2. Promote child subcategories to the deleted category's parent
+        category.children.all().update(parent=category.parent)
+
+        # 3. Remove from HomepageCategory showcases
+        from apps.homepage.models import HomepageCategory
+        HomepageCategory.objects.filter(category=category).delete()
+
+        # 4. Permanently delete the category
+        category.delete()
+        return success_response(message=f"Category '{category_name}' permanently deleted.")
 
     @action(detail=False, methods=["get"], url_path="tree",
             permission_classes=[AllowAny])

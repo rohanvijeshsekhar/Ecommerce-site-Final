@@ -595,18 +595,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Right Side: Main Stage Aspect-Square Container (Perfect 1:1 Square, White Background, Soft Shadow, No Border) */}
               <div
                 onClick={() => setIsFullscreenOpen(true)}
-                className={`w-full aspect-square rounded-[28px] overflow-hidden flex items-center justify-center group relative cursor-zoom-in transition-all duration-300
-                  ${productImages[activeImageIndex]?.isLifestyle
-                    ? 'bg-transparent shadow-[0_20px_50px_rgba(0,0,0,0.06)] p-0'
-                    : 'bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-4'
-                  }`}
+                className="w-full aspect-square rounded-[28px] overflow-hidden flex items-center justify-center group relative cursor-zoom-in transition-all duration-300 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-0"
               >
-                <div className={`absolute inset-0 pointer-events-none z-20 rounded-[28px] transition-all duration-300
-                  ${productImages[activeImageIndex]?.isLifestyle
-                    ? 'shadow-[inset_0_0_24px_rgba(0,0,0,0.06)]'
-                    : 'shadow-[inset_0_0_24px_rgba(0,0,0,0.04)]'
-                  }`}
-                />
+                <div className="absolute inset-0 pointer-events-none z-20 rounded-[28px] transition-all duration-300 shadow-[inset_0_0_24px_rgba(0,0,0,0.04)]" />
                 
                 {/* Flipkart Inspired Action Buttons (Wishlist & Share) */}
                 <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 pointer-events-auto">
@@ -645,7 +636,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
 
                 {/* Seamless Stacked Image Layers (Zero Blinking / Instant Crossfade like Flipkart/Myntra) */}
-                <div className="relative w-full h-full overflow-hidden rounded-[24px]">
+                <div className="relative w-full h-full overflow-hidden rounded-[28px]">
                   {productImages.map((img: any, idx: number) => {
                     const isActive = activeImageIndex === idx;
                     return (
@@ -654,7 +645,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         src={img.src || '/images/nsk_handpiece_portrait.png'}
                         alt={img.alt || ''}
                         loading="eager"
-                        className={`absolute inset-0 w-full h-full object-cover select-none transition-all duration-250 ease-out
+                        className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-all duration-250 ease-out
                           ${isActive
                             ? 'opacity-100 scale-100 z-10'
                             : 'opacity-0 scale-[1.01] z-0 pointer-events-none'
@@ -693,11 +684,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="block md:hidden w-full">
 
               {/* Main Swiper Stage - 4:5 Aspect Ratio, White Background, Rounded 24px */}
-              <div className={`w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300
-                ${productImages[activeImageIndex].isLifestyle
-                  ? 'bg-transparent shadow-[0_4px_20px_rgba(0,0,0,0.03)]'
-                  : 'bg-white border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.015)]'
-                }`}>
+              <div className="w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300 bg-white border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.015)] p-0">
                 {/* Floating Mobile Back Button (Ajio style) */}
                 <button
                   onClick={onBackToHome}
@@ -764,20 +751,14 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     <SwiperSlide key={idx} className="w-full h-full">
                       <div
                         onClick={() => setIsFullscreenOpen(true)}
-                        className={`w-full h-full flex items-center justify-center cursor-zoom-in transition-all duration-300 relative
-                          ${img.isLifestyle ? 'p-0' : 'p-4 bg-white'}`}
+                        className="w-full h-full flex items-center justify-center cursor-zoom-in transition-all duration-300 relative p-0 overflow-hidden rounded-[24px]"
                       >
                         <img
                           src={img.src}
                           alt={img.alt}
-                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover"
+                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover object-center"
                         />
-                        <div className={`absolute inset-0 pointer-events-none z-10 rounded-[24px] transition-all duration-300
-                          ${img.isLifestyle
-                            ? 'shadow-[inset_0_0_20px_rgba(0,0,0,0.05)]'
-                            : 'shadow-[inset_0_0_20px_rgba(0,0,0,0.03)]'
-                          }`}
-                        />
+                        <div className="absolute inset-0 pointer-events-none z-10 rounded-[24px] transition-all duration-300 shadow-[inset_0_0_20px_rgba(0,0,0,0.03)]" />
                       </div>
                     </SwiperSlide>
                   ))}
@@ -1591,11 +1572,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 maxHeight: '100%',
                 maxWidth: '100%'
               }}
-              className={`object-contain select-none rounded-3xl transition-transform duration-300
-                ${productImages[activeImageIndex]?.isLifestyle
-                  ? 'p-0 shadow-[0_24px_70px_rgba(0,0,0,0.6)]'
-                  : 'bg-white p-8 shadow-[0_24px_70px_rgba(0,0,0,0.5)]'
-                }`}
+              className="object-contain select-none rounded-3xl transition-transform duration-300 p-0 shadow-[0_24px_70px_rgba(0,0,0,0.6)]"
             />
           </div>
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/50 bg-white/5 px-4.5 py-2 rounded-full backdrop-blur-sm pointer-events-none">

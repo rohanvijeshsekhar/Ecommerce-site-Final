@@ -76,6 +76,7 @@ class Category(BaseModel):
 
     image = OptimizedImageField(
         upload_to="categories/images/",
+        max_length=500,
         null=True,
         blank=True,
         verbose_name="Category Image",

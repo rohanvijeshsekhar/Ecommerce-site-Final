@@ -69,7 +69,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleCropSave = (croppedBlob: Blob) => {
-    const fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
+    let fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
+    if (fileName.length > 50) {
+      const parts = fileName.split('.');
+      const ext = parts.pop() || 'jpg';
+      fileName = `${parts.join('.').slice(0, 30)}_${Date.now().toString().slice(-6)}.${ext}`;
+    }
     const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
     onUpload(croppedFile);
     setIsCropModalOpen(false);

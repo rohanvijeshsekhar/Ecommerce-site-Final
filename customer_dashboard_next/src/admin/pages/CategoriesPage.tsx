@@ -193,7 +193,9 @@ const CategoriesPage: React.FC = () => {
       setDeleteTarget(null);
       fetchCategories();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete.');
+      const errData = err.response?.data;
+      const msg = errData?.error?.message || errData?.message || err.message || 'Failed to delete.';
+      toast.error(msg);
     } finally {
       setDeleting(false);
     }

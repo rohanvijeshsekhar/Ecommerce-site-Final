@@ -150,6 +150,65 @@ class BrandWriteSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "slug"]
 
+    def to_internal_value(self, data):
+        # Allow mutable copy
+        data = data.dict() if hasattr(data, "dict") else dict(data)
+
+        # 1. Sanitize empty string integer fields to avoid DRF validation failure
+        for int_field in ("service_turnaround_days",):
+            val = data.get(int_field)
+            if val in ("", "null", "undefined", None):
+                data[int_field] = None
+
+        for int_default_field, default_val in [("warranty_months_default", 12), ("display_order", 0)]:
+            val = data.get(int_default_field)
+            if val in ("", "null", "undefined", None):
+                data[int_default_field] = default_val
+
+        # 2. Parse certifications JSON string if passed via FormData
+        certs = data.get("certifications")
+        if isinstance(certs, str):
+            import json
+            try:
+                data["certifications"] = json.loads(certs)
+            except Exception:
+                data["certifications"] = []
+        elif certs is None:
+            data["certifications"] = []
+
+        # 3. Sanitize URL fields (ensure http/https protocol or empty string)
+        for url_field in ("website_url", "documentation_url"):
+            u = data.get(url_field)
+            if isinstance(u, str):
+                u = u.strip()
+                if not u or u.lower() in ("null", "undefined"):
+                    data[url_field] = ""
+                elif not u.lower().startswith(("http://", "https://")):
+                    data[url_field] = f"https://{u}"
+
+        # 4. Sanitize email field
+        email = data.get("support_email")
+        if isinstance(email, str):
+            email = email.strip()
+            if not email or email.lower() in ("null", "undefined"):
+                data["support_email"] = ""
+
+        # 5. Automatically truncate uploaded logo filename if length exceeds 60
+        img = data.get("logo")
+        if img and hasattr(img, "name") and len(img.name) > 60:
+            import os, uuid
+            stem, ext = os.path.splitext(img.name)
+            img.name = f"{stem[:30]}_{uuid.uuid4().hex[:6]}{ext}"
+
+        # 6. Truncate banner_image filename if length exceeds 60
+        banner = data.get("banner_image")
+        if banner and hasattr(banner, "name") and len(banner.name) > 60:
+            import os, uuid
+            stem, ext = os.path.splitext(banner.name)
+            banner.name = f"{stem[:30]}_{uuid.uuid4().hex[:6]}{ext}"
+
+        return super().to_internal_value(data)
+
     def validate_name(self, value):
         qs = Brand.objects.filter(name__iexact=value)
         if self.instance:

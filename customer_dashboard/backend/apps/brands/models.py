@@ -85,12 +85,14 @@ class Brand(FullAuditModel):
         upload_to="brands/logos/",
         null=True,
         blank=True,
+        max_length=500,
         verbose_name="Logo",
     )
     banner_image = OptimizedImageField(
         upload_to="brands/banners/",
         null=True,
         blank=True,
+        max_length=500,
         verbose_name="Banner Image",
         help_text="Hero banner displayed on the brand detail page.",
     )
