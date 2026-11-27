@@ -163,16 +163,16 @@ const BrandLogos: React.FC = () => {
               <Link
                 key={brand.id}
                 href={`/brands/${brand.slug}`}
-                className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[116px] sm:h-[126px]"
+                className="group relative flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[124px] sm:h-[136px]"
               >
                 {/* Brand Logo / Wordmark */}
-                <div className="h-11 w-full flex items-center justify-center relative">
+                <div className="h-14 sm:h-16 w-full flex items-center justify-center relative px-2">
                   {brand.logo_url ? (
                     <img
                       src={getAbsoluteImageUrl(brand.logo_url)}
                       alt={brand.name}
                       loading="lazy"
-                      className="max-h-9 max-w-[85%] object-contain filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-200 group-hover:scale-105"
+                      className="max-h-12 sm:max-h-14 max-w-[90%] object-contain transition-transform duration-200 group-hover:scale-105"
                       onError={(e) => {
                         (e.currentTarget as HTMLElement).style.display = 'none';
                         const fallback = e.currentTarget.parentElement?.querySelector('.brand-text-fallback');
@@ -221,16 +221,16 @@ const BrandLogos: React.FC = () => {
                 <Link
                   key={brand.id}
                   href={`/brands/${brand.slug}`}
-                  className="flex-shrink-0 w-[148px] sm:w-[168px] md:w-[184px] snap-start group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[116px] sm:h-[126px]"
+                  className="flex-shrink-0 w-[152px] sm:w-[172px] md:w-[188px] snap-start group relative flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200/80 hover:border-[#005F63]/35 hover:shadow-md transition-all duration-200 text-center h-[124px] sm:h-[136px]"
                 >
                   {/* Brand Logo / Wordmark */}
-                  <div className="h-11 w-full flex items-center justify-center relative">
+                  <div className="h-14 sm:h-16 w-full flex items-center justify-center relative px-2">
                     {brand.logo_url ? (
                       <img
                         src={getAbsoluteImageUrl(brand.logo_url)}
                         alt={brand.name}
                         loading="lazy"
-                        className="max-h-9 max-w-[85%] object-contain filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-200 group-hover:scale-105"
+                        className="max-h-12 sm:max-h-14 max-w-[90%] object-contain transition-transform duration-200 group-hover:scale-105"
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';
                           const fallback = e.currentTarget.parentElement?.querySelector('.brand-text-fallback');

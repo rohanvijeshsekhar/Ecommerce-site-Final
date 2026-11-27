@@ -262,13 +262,13 @@ export default function BrandsClient() {
                   </div>
 
                   {/* Clean Image Window Area */}
-                  <div className="w-full h-28 sm:h-32 bg-[#fafcfc] rounded-xl border border-slate-100 group-hover:border-[#006670]/20 overflow-hidden flex items-center justify-center mb-3 transition-colors relative">
+                  <div className="w-full h-28 sm:h-32 bg-[#fafcfc] rounded-xl border border-slate-100 group-hover:border-[#006670]/20 overflow-hidden flex items-center justify-center mb-3 transition-colors relative p-3">
                     {logoSrc ? (
                       <img
                         src={logoSrc}
                         alt={brand.name}
                         loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
