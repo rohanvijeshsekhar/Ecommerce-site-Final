@@ -597,8 +597,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 onClick={() => setIsFullscreenOpen(true)}
                 className="w-full aspect-square rounded-[28px] overflow-hidden flex items-center justify-center group relative cursor-zoom-in transition-all duration-300 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-0"
               >
-                <div className="absolute inset-0 pointer-events-none z-20 rounded-[28px] transition-all duration-300 shadow-[inset_0_0_24px_rgba(0,0,0,0.04)]" />
-                
                 {/* Flipkart Inspired Action Buttons (Wishlist & Share) */}
                 <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 pointer-events-auto">
                   {/* Wishlist Button */}
@@ -645,10 +643,10 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         src={img.src || '/images/nsk_handpiece_portrait.png'}
                         alt={img.alt || ''}
                         loading="eager"
-                        className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-all duration-250 ease-out
+                        className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-all duration-250 ease-out scale-[1.02]
                           ${isActive
-                            ? 'opacity-100 scale-100 z-10'
-                            : 'opacity-0 scale-[1.01] z-0 pointer-events-none'
+                            ? 'opacity-100 z-10'
+                            : 'opacity-0 scale-[1.04] z-0 pointer-events-none'
                           }`}
                       />
                     );
@@ -684,7 +682,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="block md:hidden w-full">
 
               {/* Main Swiper Stage - 4:5 Aspect Ratio, White Background, Rounded 24px */}
-              <div className="w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300 bg-white border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.015)] p-0">
+              <div className="w-full aspect-[4/5] rounded-[24px] relative overflow-hidden transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.015)] p-0 border-0">
                 {/* Floating Mobile Back Button (Ajio style) */}
                 <button
                   onClick={onBackToHome}
@@ -756,9 +754,8 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         <img
                           src={img.src}
                           alt={img.alt}
-                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover object-center"
+                          className="select-none transition-all duration-300 z-0 w-full h-full object-cover object-center scale-[1.02]"
                         />
-                        <div className="absolute inset-0 pointer-events-none z-10 rounded-[24px] transition-all duration-300 shadow-[inset_0_0_20px_rgba(0,0,0,0.03)]" />
                       </div>
                     </SwiperSlide>
                   ))}
