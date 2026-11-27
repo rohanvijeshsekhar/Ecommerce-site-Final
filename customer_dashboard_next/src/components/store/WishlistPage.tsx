@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star, Share2, Zap } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Star, Share2 } from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useStore } from '@/contexts/StoreContext';
 import { getAbsoluteImageUrl } from '@/lib/api';
@@ -50,7 +50,7 @@ export const WishlistPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-left pt-[104px] lg:pt-[144px] pb-16 font-sans select-none">
       <div className="max-w-6xl mx-auto px-3.5 sm:px-6 md:px-12 space-y-4 sm:space-y-8">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-200/80 pb-3.5 sm:pb-6">
           <div>
@@ -196,7 +196,6 @@ export const WishlistPage: React.FC = () => {
                       className="w-full flex items-center justify-center gap-1 px-2 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] sm:text-xs shadow-sm transition-all cursor-pointer"
                       title="Buy Now"
                     >
-                      <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 fill-amber-400 shrink-0" />
                       <span>Buy Now</span>
                     </button>
                   </div>

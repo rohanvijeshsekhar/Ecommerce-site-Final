@@ -15,8 +15,7 @@ import {
   Sparkles,
   ShoppingBag,
   RotateCcw,
-  AlertTriangle,
-  Zap
+  AlertTriangle
 } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import { useStore } from '@/contexts/StoreContext';
@@ -199,9 +198,9 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
     fetchOffers();
   }, []);
 
-  // Compute Dynamic Featured and Hero Deals
+  // Compute Dynamic Featured and Hero Deals - ONLY display if an offer is explicitly set as featured promotion
   const featuredOffer = useMemo(() => {
-    return offersList.find(o => o.isFeatured) || (offersList.length > 0 ? offersList[0] : null);
+    return offersList.find(o => Boolean(o.isFeatured)) || null;
   }, [offersList]);
 
   // Extract available categories & brands
@@ -530,7 +529,6 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
                         onClick={() => handleBuyNow(featuredOffer)}
                         className="py-2.5 sm:px-6 sm:py-3 rounded-xl sm:rounded-full bg-[#006670] hover:bg-[#004e56] text-white font-black text-[11px] sm:text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
                         <span>Buy Now</span>
                       </button>
                     </div>
@@ -719,8 +717,7 @@ export default function OffersPage({ initialPageContent, initialOffersRaw, setCa
                           onClick={() => handleBuyNow(offer)}
                           className="py-1.5 sm:py-2 rounded-lg bg-[#006670] hover:bg-[#004e56] text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-2xs hover:shadow flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <Zap className="w-3 h-3 fill-amber-300 text-amber-300" />
-                          <span>Buy</span>
+                          <span>Buy Now</span>
                         </button>
                       </div>
                     </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ArrowLeft, Sparkles, Package, ShieldCheck, Heart, ShoppingCart, Check, Zap } from 'lucide-react';
+import { ArrowLeft, Sparkles, Package, ShieldCheck, Heart, ShoppingCart, Check } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../../../lib/api';
 import { useStore } from '@/contexts/StoreContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -611,7 +611,6 @@ export default function SolutionDetailPage() {
                                 disabled={!inStock}
                                 className="py-1.5 px-3.5 bg-[#006670] hover:bg-[#004e56] text-white text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                               >
-                                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
                                 <span>Buy Now</span>
                               </button>
                             </div>
@@ -746,7 +745,6 @@ export default function SolutionDetailPage() {
                               disabled={!inStock}
                               className="py-1.5 sm:py-2 px-1.5 sm:px-2.5 bg-[#006670] hover:bg-[#004e56] text-white text-[10px] sm:text-[11px] font-bold tracking-wider uppercase rounded-xl transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer active:scale-95 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                               <span className="truncate">Buy Now</span>
                             </button>
                           </div>

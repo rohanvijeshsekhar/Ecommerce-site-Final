@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, Heart, Zap, ShoppingBag } from 'lucide-react';
+import { ShoppingCart, Heart, ShoppingBag } from 'lucide-react';
 import type { DailyOfferProduct } from '@/admin/types/admin';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -220,8 +220,7 @@ export const DailyOfferCard: React.FC<DailyOfferCardProps> = ({
               onClick={handleBuyNow}
               className="w-full py-2.5 bg-[#005F63] hover:bg-[#004e56] text-white text-xs font-black rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
-              <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-              <span>Buy</span>
+              <span>Buy Now</span>
             </button>
           </div>
         </div>

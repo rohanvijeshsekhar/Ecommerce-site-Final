@@ -372,7 +372,6 @@ export default function BrandDealClient({ campaign }: BrandDealClientProps) {
                       onClick={(e) => handleBuyNow(item, e)}
                       className="w-full flex items-center justify-center gap-1 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
                     >
-                      <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
                       Buy Now
                     </button>
                   </div>

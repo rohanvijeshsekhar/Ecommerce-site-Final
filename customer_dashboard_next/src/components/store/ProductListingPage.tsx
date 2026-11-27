@@ -646,8 +646,7 @@ export default function ProductListingPage({
                               disabled={isOutOfStock}
                               className="px-4 py-2 bg-[#006670] hover:bg-[#004e56] text-white font-black text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                             >
-                              <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                              <span>Buy</span>
+                              <span>Buy Now</span>
                             </button>
                           </div>
                         </div>
@@ -776,8 +775,7 @@ export default function ProductListingPage({
                               disabled={isOutOfStock}
                               className="w-full py-2 bg-[#006670] hover:bg-[#004e56] text-white disabled:opacity-40 text-[11px] font-black rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer"
                             >
-                              <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                              <span>Buy</span>
+                              <span>Buy Now</span>
                             </button>
                           </div>
                         </div>

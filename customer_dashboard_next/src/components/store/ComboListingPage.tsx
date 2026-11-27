@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Sparkles, Heart, ShoppingCart, ShoppingBag, Zap, Eye, Search, Layers } from 'lucide-react';
+import { Sparkles, Heart, ShoppingCart, ShoppingBag, Eye, Search, Layers } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -509,8 +509,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                               disabled={isOutOfStock}
                               className="px-4 py-2 bg-[#006670] hover:bg-[#004e56] text-white font-black text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                             >
-                              <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                              <span>Buy</span>
+                              <span>Buy Now</span>
                             </button>
                           </div>
                         </div>
@@ -546,11 +545,10 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                             aria-label="Toggle Wishlist"
                           >
                             <Heart
-                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all ${
-                                wishlisted
+                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all ${wishlisted
                                   ? 'fill-rose-500 stroke-rose-500 text-rose-500'
                                   : 'stroke-slate-400 fill-none text-slate-400'
-                              }`}
+                                }`}
                             />
                           </button>
                         </div>
@@ -629,8 +627,7 @@ const ComboListingPage: React.FC<ComboListingPageProps> = ({
                             disabled={isOutOfStock}
                             className="py-1.5 sm:py-2 px-1.5 sm:px-2 bg-[#006670] hover:bg-[#004e56] text-white font-black text-[11px] sm:text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40"
                           >
-                            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                            <span>Buy</span>
+                            <span>Buy Now</span>
                           </button>
                         </div>
                       </div>

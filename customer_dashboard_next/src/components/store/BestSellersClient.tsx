@@ -641,7 +641,6 @@ export default function BestSellersClient() {
                               disabled={isOutOfStock}
                               className="flex-1 h-8 sm:h-9 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-40"
                             >
-                              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 stroke-none shrink-0" />
                               <span className="whitespace-nowrap font-bold text-[11px] sm:text-xs">Buy Now</span>
                             </button>
                           </div>

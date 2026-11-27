@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
-import { ArrowRight, ShoppingCart, Zap, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Heart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useStore } from '@/contexts/StoreContext';
@@ -336,8 +336,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                             disabled={combo.inventory <= 0}
                             className="py-2 px-2 bg-[#006670] hover:bg-[#004e56] text-white font-black text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                           >
-                            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                            <span>Buy</span>
+                            <span>Buy Now</span>
                           </button>
                         </div>
                       </div>
@@ -449,8 +448,7 @@ const FeaturedCombos: React.FC<FeaturedCombosProps> = ({
                       disabled={combo.inventory <= 0}
                       className="py-1.5 bg-[#006670] text-white font-black text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40 shadow-xs"
                     >
-                      <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                      <span>Buy</span>
+                      <span>Buy Now</span>
                     </button>
                   </div>
                 </div>

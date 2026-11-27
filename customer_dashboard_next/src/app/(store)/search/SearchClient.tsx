@@ -165,7 +165,7 @@ export default function SearchClient({
   // Helper to update URL query params cleanly
   const updateUrl = (updates: Record<string, string | null>) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    
+
     Object.entries(updates).forEach(([key, val]) => {
       if (val === null || val === '') {
         current.delete(key);
@@ -269,7 +269,7 @@ export default function SearchClient({
   return (
     <div className="bg-[#F8FAFC] min-h-screen pt-[115px] sm:pt-[125px] lg:pt-[144px] pb-24 font-sans text-slate-800 antialiased selection:bg-[#006670]/20 selection:text-[#006670]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        
+
         {/* Header Breadcrumb & Search Title Banner */}
         <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-8 border border-slate-200/80 shadow-xs mb-4 sm:mb-8">
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-400 font-semibold mb-1.5 sm:mb-3">
@@ -310,22 +310,20 @@ export default function SearchClient({
               <div className="hidden sm:flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-xl transition-all cursor-pointer ${
-                    viewMode === 'grid'
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${viewMode === 'grid'
                       ? 'bg-white text-[#006670] shadow-xs font-bold'
                       : 'text-slate-400 hover:text-slate-700'
-                  }`}
+                    }`}
                   title="Grid View"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-xl transition-all cursor-pointer ${
-                    viewMode === 'list'
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${viewMode === 'list'
                       ? 'bg-white text-[#006670] shadow-xs font-bold'
                       : 'text-slate-400 hover:text-slate-700'
-                  }`}
+                    }`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -373,11 +371,10 @@ export default function SearchClient({
                           updateUrl({ ordering: opt.value });
                           setIsSortOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold transition-colors cursor-pointer ${
-                          ordering === opt.value
+                        className={`w-full flex items-center justify-between px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold transition-colors cursor-pointer ${ordering === opt.value
                             ? 'bg-[#006670]/10 text-[#006670]'
                             : 'text-slate-600 hover:bg-slate-50'
-                        }`}
+                          }`}
                       >
                         <span>{opt.label}</span>
                         {ordering === opt.value && <Check className="w-3.5 h-3.5 text-[#006670]" />}
@@ -395,7 +392,7 @@ export default function SearchClient({
               <span className="font-extrabold text-slate-400 text-[11px] uppercase tracking-wider mr-1">
                 Active Filters:
               </span>
-              
+
               {selectedCategory && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-800 font-bold border border-slate-200">
                   <Tag className="w-3 h-3 text-[#006670]" />
@@ -454,7 +451,7 @@ export default function SearchClient({
 
         {/* Main Grid: Sidebar Filters (Desktop) + Product Results */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
+
           {/* Sidebar Filters — Desktop */}
           <aside className="hidden lg:block space-y-6 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit sticky lg:top-[140px]">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -484,9 +481,8 @@ export default function SearchClient({
                       setIsCategoryOpen(!isCategoryOpen);
                       setIsBrandOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
-                      isCategoryOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${isCategoryOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                      }`}
                   >
                     <span className="truncate pr-2">
                       {selectedCategory
@@ -518,11 +514,10 @@ export default function SearchClient({
                             setIsCategoryOpen(false);
                             setCategorySearchQuery('');
                           }}
-                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
-                            !selectedCategory
+                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${!selectedCategory
                               ? 'bg-[#006670]/10 text-[#006670]'
                               : 'text-slate-700 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           <span>All Categories ({categories.length})</span>
                           {!selectedCategory && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
@@ -540,11 +535,10 @@ export default function SearchClient({
                                   setIsCategoryOpen(false);
                                   setCategorySearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
-                                  isSelected
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${isSelected
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate pr-2">{c.name}</span>
                                 {isSelected && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
@@ -571,9 +565,8 @@ export default function SearchClient({
                       setIsBrandOpen(!isBrandOpen);
                       setIsCategoryOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${
-                      isBrandOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                    className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 transition-all cursor-pointer ${isBrandOpen ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                      }`}
                   >
                     <span className="truncate pr-2">
                       {selectedBrand
@@ -605,11 +598,10 @@ export default function SearchClient({
                             setIsBrandOpen(false);
                             setBrandSearchQuery('');
                           }}
-                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
-                            !selectedBrand
+                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${!selectedBrand
                               ? 'bg-[#006670]/10 text-[#006670]'
                               : 'text-slate-700 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           <span>All Brands ({brands.length})</span>
                           {!selectedBrand && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
@@ -627,11 +619,10 @@ export default function SearchClient({
                                   setIsBrandOpen(false);
                                   setBrandSearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${
-                                  isSelected
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold transition-colors cursor-pointer text-left ${isSelected
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate pr-2">{b.name}</span>
                                 {isSelected && <Check className="w-3.5 h-3.5 text-[#006670] shrink-0" />}
@@ -663,11 +654,10 @@ export default function SearchClient({
                         setInputMaxPrice(preset.max);
                         updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
                       }}
-                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
-                        isActive
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${isActive
                           ? 'bg-[#006670] text-white border-[#006670]'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
+                        }`}
                     >
                       {preset.label}
                     </button>
@@ -709,14 +699,12 @@ export default function SearchClient({
                 <button
                   type="button"
                   onClick={() => updateUrl({ in_stock: inStockOnly ? null : 'true' })}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
-                  }`}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
+                    }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                      inStockOnly ? 'translate-x-4' : 'translate-x-0'
-                    }`}
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${inStockOnly ? 'translate-x-4' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </label>
@@ -772,11 +760,10 @@ export default function SearchClient({
                             setIsMobileCategoryOpen(!isMobileCategoryOpen);
                             setIsMobileBrandOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${
-                            isMobileCategoryOpen
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${isMobileCategoryOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="truncate pr-1">
                             {selectedCategory
@@ -784,9 +771,8 @@ export default function SearchClient({
                               : `All (${categories.length})`}
                           </span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                              isMobileCategoryOpen ? 'rotate-180 text-[#006670]' : ''
-                            }`}
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isMobileCategoryOpen ? 'rotate-180 text-[#006670]' : ''
+                              }`}
                           />
                         </button>
 
@@ -812,11 +798,10 @@ export default function SearchClient({
                                   setIsMobileCategoryOpen(false);
                                   setMobileCategorySearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
-                                  !selectedCategory
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${!selectedCategory
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate">All Categories</span>
                                 {!selectedCategory && (
@@ -840,11 +825,10 @@ export default function SearchClient({
                                         setIsMobileCategoryOpen(false);
                                         setMobileCategorySearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
-                                        isSelected
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
-                                      }`}
+                                        }`}
                                     >
                                       <span className="truncate pr-1">{c.name}</span>
                                       {isSelected && (
@@ -873,11 +857,10 @@ export default function SearchClient({
                             setIsMobileBrandOpen(!isMobileBrandOpen);
                             setIsMobileCategoryOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${
-                            isMobileBrandOpen
+                          className={`w-full flex items-center justify-between bg-slate-50 border rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer ${isMobileBrandOpen
                               ? 'border-[#006670] bg-white ring-2 ring-[#006670]/10 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <span className="truncate pr-1">
                             {selectedBrand
@@ -885,9 +868,8 @@ export default function SearchClient({
                               : `All (${brands.length})`}
                           </span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                              isMobileBrandOpen ? 'rotate-180 text-[#006670]' : ''
-                            }`}
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isMobileBrandOpen ? 'rotate-180 text-[#006670]' : ''
+                              }`}
                           />
                         </button>
 
@@ -913,11 +895,10 @@ export default function SearchClient({
                                   setIsMobileBrandOpen(false);
                                   setMobileBrandSearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
-                                  !selectedBrand
+                                className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${!selectedBrand
                                     ? 'bg-[#006670]/10 text-[#006670]'
                                     : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate">All Brands</span>
                                 {!selectedBrand && (
@@ -941,11 +922,10 @@ export default function SearchClient({
                                         setIsMobileBrandOpen(false);
                                         setMobileBrandSearchQuery('');
                                       }}
-                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
-                                        isSelected
+                                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${isSelected
                                           ? 'bg-[#006670]/10 text-[#006670]'
                                           : 'text-slate-700 hover:bg-slate-50'
-                                      }`}
+                                        }`}
                                     >
                                       <span className="truncate pr-1">{b.name}</span>
                                       {isSelected && (
@@ -979,11 +959,10 @@ export default function SearchClient({
                               setInputMaxPrice(preset.max);
                               updateUrl({ min_price: preset.min || null, max_price: preset.max || null });
                             }}
-                            className={`px-3 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border truncate ${
-                              isActive
+                            className={`px-3 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border truncate ${isActive
                                 ? 'bg-[#006670] text-white border-[#006670]'
                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                            }`}
+                              }`}
                           >
                             {preset.label}
                           </button>
@@ -1025,14 +1004,12 @@ export default function SearchClient({
                       <button
                         type="button"
                         onClick={() => updateUrl({ in_stock: inStockOnly ? null : 'true' })}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
-                        }`}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${inStockOnly ? 'bg-[#006670]' : 'bg-slate-200'
+                          }`}
                       >
                         <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                            inStockOnly ? 'translate-x-5' : 'translate-x-0'
-                          }`}
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${inStockOnly ? 'translate-x-5' : 'translate-x-0'
+                            }`}
                         />
                       </button>
                     </label>
@@ -1138,11 +1115,10 @@ export default function SearchClient({
                                       {[...Array(5)].map((_, i) => (
                                         <Star
                                           key={i}
-                                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
-                                            i < Math.floor(ratingVal)
+                                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${i < Math.floor(ratingVal)
                                               ? 'fill-amber-400 stroke-amber-400'
                                               : 'text-slate-300 stroke-slate-300'
-                                          }`}
+                                            }`}
                                         />
                                       ))}
                                     </div>
@@ -1193,7 +1169,6 @@ export default function SearchClient({
                                 onClick={(e) => handleBuyNow(e, p)}
                                 className="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-2 bg-[#0F172A] hover:bg-slate-800 text-white text-[10px] sm:text-xs font-extrabold rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
                               >
-                                <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-[#FFB800] fill-[#FFB800]" />
                                 <span className="truncate">Buy Now</span>
                               </button>
                             </div>
@@ -1261,11 +1236,10 @@ export default function SearchClient({
                                       {[...Array(5)].map((_, i) => (
                                         <Star
                                           key={i}
-                                          className={`w-3 h-3 ${
-                                            i < Math.floor(ratingVal)
+                                          className={`w-3 h-3 ${i < Math.floor(ratingVal)
                                               ? 'fill-amber-400 stroke-amber-400'
                                               : 'text-slate-300 stroke-slate-300'
-                                          }`}
+                                            }`}
                                         />
                                       ))}
                                     </div>
@@ -1306,7 +1280,7 @@ export default function SearchClient({
                                 onClick={(e) => handleBuyNow(e, p)}
                                 className="w-full py-2 bg-[#F58734] hover:bg-[#e07525] text-white text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                               >
-                                <Zap className="w-3.5 h-3.5" /> Buy Now
+                                Buy Now
                               </button>
                             </div>
                           </div>

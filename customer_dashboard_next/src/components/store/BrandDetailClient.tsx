@@ -670,7 +670,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
                                 disabled={isOutOfStock}
                                 className="w-full py-2 bg-[#006670] hover:bg-[#005159] text-white disabled:opacity-50 text-[11px] font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer"
                               >
-                                <Zap className="w-3.5 h-3.5 fill-current" /> Buy
+                                Buy Now
                               </button>
                             </div>
                           </div>
