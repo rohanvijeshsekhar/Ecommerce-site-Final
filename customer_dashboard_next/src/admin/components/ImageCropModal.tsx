@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { RotateCw, ZoomIn, ZoomOut, RefreshCw, Maximize2, Minimize2, Check, FileText } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { RotateCw, ZoomIn, ZoomOut, RefreshCw, Maximize2, Minimize2, Check, FileText, Layers } from 'lucide-react';
 import AdminModal from './AdminModal';
 
 interface ImageCropModalProps {
@@ -23,7 +23,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   isOpen,
   onClose,
   imageSrc,
-  aspectRatio,
+  aspectRatio = 16 / 9,
   originalFile,
   onCropSave,
 }) => {
@@ -37,14 +37,17 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Mode: 'contain' fits entire image with white margins (letterbox); 'cover' crops edges to fill
-  const [fitMode, setFitMode] = useState<'contain' | 'cover'>('contain');
+  // Mode:
+  // 'fit-width' -> Fits 100% to left & right edges (0 side borders). Fitting is strictly at top & bottom.
+  // 'match-ratio' -> Adapts canvas to exact artwork aspect ratio (0 margins anywhere).
+  // 'cover' -> Fills frame edge-to-edge.
+  const [fitMode, setFitMode] = useState<'fit-width' | 'match-ratio' | 'cover'>('fit-width');
   const [canvasBgColor, setCanvasBgColor] = useState<string>('#FFFFFF');
 
-  // Initial load size tracker
-  const [frameSize, setFrameSize] = useState<{ w: number; h: number }>({ w: 320, h: 180 });
-  const [baseRenderSize, setBaseRenderSize] = useState<{ w: number; h: number }>({ w: 320, h: 180 });
-  const [naturalSize, setNaturalSize] = useState<{ nw: number; nh: number }>({ nw: 1, nh: 1 });
+  // Sizes tracker
+  const [frameSize, setFrameSize] = useState<{ w: number; h: number }>({ w: 340, h: 191 });
+  const [baseRenderSize, setBaseRenderSize] = useState<{ w: number; h: number }>({ w: 340, h: 191 });
+  const [naturalSize, setNaturalSize] = useState<{ nw: number; nh: number }>({ nw: 1600, nh: 900 });
 
   const memoizedImageSrc = useMemo(() => {
     if (!imageSrc) return '';
@@ -55,15 +58,21 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   }, [imageSrc]);
 
   // Compute frame boundary and base render size
-  const computeSizes = (nw: number, nh: number, mode: 'contain' | 'cover') => {
+  const computeSizes = (nw: number, nh: number, mode: 'fit-width' | 'match-ratio' | 'cover') => {
     const maxFrameW = 340;
-    const maxFrameH = 300;
+    const maxFrameH = 280;
+
+    let targetRatio = aspectRatio || (16 / 9);
+    if (mode === 'match-ratio' && nw > 0 && nh > 0) {
+      targetRatio = nw / nh;
+    }
+
     let fw = maxFrameW;
-    let fh = maxFrameW / (aspectRatio || 1);
+    let fh = maxFrameW / targetRatio;
 
     if (fh > maxFrameH) {
       fh = maxFrameH;
-      fw = maxFrameH * (aspectRatio || 1);
+      fw = maxFrameH * targetRatio;
     }
 
     setFrameSize({ w: Math.round(fw), h: Math.round(fh) });
@@ -71,14 +80,18 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     let rw = fw;
     let rh = fw * (nh / nw);
 
-    if (mode === 'contain') {
-      // Contain mode: entire image fits inside frame (letterbox/pillarbox with white margins)
-      if (rh > fh) {
-        rh = fh;
-        rw = fh * (nw / nh);
-      }
+    if (mode === 'fit-width') {
+      // 100% FIT TO LEFT AND RIGHT:
+      // Width is ALWAYS 100% of the frame (0 side borders).
+      // Any margin is placed strictly at the TOP and BOTTOM.
+      rw = fw;
+      rh = fw * (nh / nw);
+    } else if (mode === 'match-ratio') {
+      // Frame matches exact image ratio: 0 margins anywhere
+      rw = fw;
+      rh = fh;
     } else {
-      // Cover mode: fill frame edge-to-edge
+      // Cover mode: fill frame completely
       if (rh < fh) {
         rh = fh;
         rw = fh * (nw / nh);
@@ -91,8 +104,8 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   // Calculate sizes on image load
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    const nw = img.naturalWidth || 800;
-    const nh = img.naturalHeight || 600;
+    const nw = img.naturalWidth || 1600;
+    const nh = img.naturalHeight || 900;
     setNaturalSize({ nw, nh });
     computeSizes(nw, nh, fitMode);
     setPanX(0);
@@ -102,7 +115,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   };
 
   // Switch fit mode dynamically
-  const switchFitMode = (newMode: 'contain' | 'cover') => {
+  const switchFitMode = (newMode: 'fit-width' | 'match-ratio' | 'cover') => {
     setFitMode(newMode);
     if (naturalSize.nw > 1 && naturalSize.nh > 1) {
       computeSizes(naturalSize.nw, naturalSize.nh, newMode);
@@ -145,7 +158,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     setIsDragging(false);
   };
 
-  // Touch drag handlers for mobile support
+  // Touch drag handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     setIsDragging(true);
@@ -164,13 +177,18 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     setIsDragging(false);
   };
 
-  // Canvas Crop & Save
+  // Canvas Export & Save
   const handleSave = () => {
     if (!imageRef.current) return;
 
-    // High-resolution canvas output (1920px for wide banners, 1200px otherwise)
-    const targetW = aspectRatio >= 1.5 ? 1920 : (aspectRatio >= 1 ? 1400 : 1000);
-    const targetH = Math.round(targetW / (aspectRatio || 1));
+    let targetRatio = aspectRatio || (16 / 9);
+    if (fitMode === 'match-ratio' && naturalSize.nw > 0 && naturalSize.nh > 0) {
+      targetRatio = naturalSize.nw / naturalSize.nh;
+    }
+
+    // High-resolution canvas output (1920px wide)
+    const targetW = 1920;
+    const targetH = Math.round(targetW / targetRatio);
 
     const canvas = document.createElement('canvas');
     canvas.width = targetW;
@@ -183,24 +201,20 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     ctx.fillStyle = canvasBgColor;
     ctx.fillRect(0, 0, targetW, targetH);
 
-    // Scaling factor from rendering screen size to target canvas size
+    // Canvas scaling factor from screen frame to high-res canvas
     const canvasScale = targetW / (frameSize.w || 1);
 
-    // Center of the panned image on high-res canvas
-    const imgCenterX = targetW / 2 + panX * canvasScale;
-    const imgCenterY = targetH / 2 + panY * canvasScale;
+    // In 'fit-width' or 'match-ratio' mode without user pan, image starts at X=0 and spans to X=targetW.
+    // ZERO left and right borders!
+    const drawW = baseRenderSize.w * canvasScale * scale;
+    const drawH = baseRenderSize.h * canvasScale * scale;
+    const drawX = (targetW - drawW) / 2 + panX * canvasScale;
+    const drawY = (targetH - drawH) / 2 + panY * canvasScale;
 
     ctx.save();
-    ctx.translate(imgCenterX, imgCenterY);
+    ctx.translate(drawX + drawW / 2, drawY + drawH / 2);
     ctx.rotate((rotate * Math.PI) / 180);
-    ctx.scale(scale, scale);
-    ctx.translate(-imgCenterX, -imgCenterY);
-
-    const drawW = baseRenderSize.w * canvasScale;
-    const drawH = baseRenderSize.h * canvasScale;
-    const drawX = imgCenterX - drawW / 2;
-    const drawY = imgCenterY - drawH / 2;
-
+    ctx.translate(-(drawX + drawW / 2), -(drawY + drawH / 2));
     ctx.drawImage(imageRef.current, drawX, drawY, drawW, drawH);
     ctx.restore();
 
@@ -221,37 +235,50 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Fit & Position Image"
-      subtitle="Fit whole artwork with white margins, or fill the frame."
+      subtitle="Fits 100% to left and right edges. Any margins are strictly at top and bottom."
       size="md"
     >
       <div className="flex flex-col items-center gap-4">
         {/* Fit Mode Toggle Header */}
-        <div className="w-full flex items-center justify-between gap-2 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
+        <div className="w-full flex items-center justify-between gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
           <button
             type="button"
-            onClick={() => switchFitMode('contain')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              fitMode === 'contain'
+            onClick={() => switchFitMode('fit-width')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              fitMode === 'fit-width'
                 ? 'bg-white text-[#005B63] shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
-            title="Preserves entire original artwork and adds clean top/bottom or side white space"
+            title="Spans 100% of width (0 side borders). Margins only at top & bottom."
           >
             <Minimize2 className="w-3.5 h-3.5" />
-            Fit Whole Image (White Margins)
+            Fit Left & Right (Top/Bottom Margins)
+          </button>
+          <button
+            type="button"
+            onClick={() => switchFitMode('match-ratio')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              fitMode === 'match-ratio'
+                ? 'bg-white text-[#005B63] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="Adapts frame to exact artwork aspect ratio. Zero margins anywhere."
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Exact Artwork Ratio (Zero Margins)
           </button>
           <button
             type="button"
             onClick={() => switchFitMode('cover')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               fitMode === 'cover'
                 ? 'bg-white text-[#005B63] shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
-            title="Scales image to fill the frame completely, cropping edges"
+            title="Fills frame edge-to-edge"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            Fill Frame (Crop Edges)
+            Fill
           </button>
         </div>
 
@@ -262,7 +289,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           style={{
             width: '100%',
             maxWidth: '380px',
-            height: '320px',
+            height: '300px',
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -282,7 +309,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
             }}
           />
 
-          {/* Target Image */}
+          {/* Target Image (Spanning full width) */}
           <img
             ref={imageRef}
             src={memoizedImageSrc}
@@ -316,29 +343,33 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
               <div className="border-b border-dashed border-white col-span-3"></div>
               <div className="border-b border-dashed border-white col-span-3"></div>
             </div>
-            {/* Frame Aspect Badge */}
+            {/* Frame Badge */}
             <span className="absolute top-1.5 left-2 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-mono font-bold tracking-wider uppercase">
-              {fitMode === 'contain' ? 'Fit & Letterbox' : 'Fill & Crop'}
+              {fitMode === 'fit-width'
+                ? 'Fit Left & Right (0 Side Borders)'
+                : fitMode === 'match-ratio'
+                ? 'Exact Ratio (0 Margins)'
+                : 'Fill Frame'}
             </span>
           </div>
         </div>
 
         {/* Controls */}
         <div className="w-full space-y-3 px-1">
-          {/* Zoom Slider (Allows zoom-out down to 0.25 to add extra white space) */}
+          {/* Zoom Slider */}
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setScale((s) => Math.max(0.25, Number((s - 0.1).toFixed(2))))}
+              onClick={() => setScale((s) => Math.max(0.5, Number((s - 0.05).toFixed(2))))}
               className="p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              title="Zoom Out (Add more margin)"
+              title="Zoom Out"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <input
               type="range"
-              min="0.25"
-              max="3.0"
+              min="0.5"
+              max="2.5"
               step="0.02"
               value={scale}
               onChange={(e) => setScale(Number(e.target.value))}
@@ -346,7 +377,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
             />
             <button
               type="button"
-              onClick={() => setScale((s) => Math.min(3.0, Number((s + 0.1).toFixed(2))))}
+              onClick={() => setScale((s) => Math.min(2.5, Number((s + 0.05).toFixed(2))))}
               className="p-1 text-[#005B63] hover:text-[#004e56] transition-colors cursor-pointer"
               title="Zoom In"
             >
@@ -419,7 +450,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
                     onCropSave(originalFile);
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
-                  title="Upload original file without adding margins or cropping"
+                  title="Upload original file without any canvas processing"
                 >
                   <FileText className="w-3.5 h-3.5 text-slate-500" />
                   Use Original

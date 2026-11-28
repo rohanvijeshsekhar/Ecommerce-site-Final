@@ -395,18 +395,25 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           LAYOUT OPTION B: FULL BACKGROUND IMAGE
       ───────────────────────────────────────────────────────────── */}
       {layout === 'background' && (
-        <div className="w-full min-h-[480px] sm:min-h-[540px] lg:min-h-[600px] relative flex flex-col justify-stretch">
+        <div className="w-full min-h-[440px] sm:min-h-[500px] lg:min-h-[560px] relative flex flex-col justify-center overflow-hidden">
           {/* Full bleed background picture */}
-          <picture className="absolute inset-0 w-full h-full">
-            {mobileImage && mobileImage !== desktopImage && (
-              <source media="(max-width: 768px)" srcSet={mobileImage} />
-            )}
-            <img
-              src={desktopImage}
-              alt={activeCollection.title || 'Featured Collection'}
-              className={`w-full h-full ${imgFit === 'cover' ? 'object-cover' : 'object-contain'} object-center`}
-            />
-          </picture>
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden pointer-events-none">
+            <picture className="w-full flex items-center justify-center">
+              {mobileImage && mobileImage !== desktopImage && (
+                <source media="(max-width: 768px)" srcSet={mobileImage} />
+              )}
+              <img
+                src={desktopImage}
+                alt={activeCollection.title || 'Featured Collection'}
+                className={`w-full ${
+                  imgFit === 'cover'
+                    ? 'h-full object-cover'
+                    : 'h-auto max-h-none object-contain'
+                } object-center`}
+                style={{ width: '100%', minWidth: '100%' }}
+              />
+            </picture>
+          </div>
 
           {/* Configurable Overlay Gradient */}
           <div

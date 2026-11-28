@@ -1147,7 +1147,7 @@ const FeaturedCollectionsManager: React.FC = () => {
                               : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                               }`}
                           >
-                            Contain (Float / Equipment)
+                            Fit Width (Left & Right Flush)
                           </button>
                           <button
                             type="button"
@@ -1160,6 +1160,11 @@ const FeaturedCollectionsManager: React.FC = () => {
                             Cover (Edge Bleed)
                           </button>
                         </div>
+                        <p className="text-[11px] text-slate-400 mt-1.5">
+                          {form.image_fit === 'contain'
+                            ? 'Fits image 100% to left and right edges with 0 side borders. Margins are only at top and bottom.'
+                            : 'Fills the entire banner canvas edge-to-edge.'}
+                        </p>
                       </div>
 
                       {/* Background Color Presets */}
@@ -1772,13 +1777,20 @@ const FeaturedCollectionsManager: React.FC = () => {
 
                       {/* BACKGROUND IMAGE LAYOUT PREVIEW */}
                       {form.banner_layout === 'background' && (
-                        <div className="w-full min-h-[460px] relative flex flex-col justify-stretch">
+                        <div className="w-full min-h-[440px] relative flex flex-col justify-center overflow-hidden">
                           {desktopImgUrl ? (
-                            <img
-                              src={previewDevice === 'mobile' ? mobileImgUrl || desktopImgUrl : desktopImgUrl}
-                              alt="Preview"
-                              className={`absolute inset-0 w-full h-full ${form.image_fit === 'cover' ? 'object-cover' : 'object-contain'}`}
-                            />
+                            <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden pointer-events-none">
+                              <img
+                                src={previewDevice === 'mobile' ? mobileImgUrl || desktopImgUrl : desktopImgUrl}
+                                alt="Preview"
+                                className={`w-full ${
+                                  form.image_fit === 'cover'
+                                    ? 'h-full object-cover'
+                                    : 'h-auto max-h-none object-contain'
+                                } object-center`}
+                                style={{ width: '100%', minWidth: '100%' }}
+                              />
+                            </div>
                           ) : (
                             <div className="absolute inset-0 bg-slate-800" />
                           )}
