@@ -1512,6 +1512,7 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                         onRemove={() => { setForm(prev => ({ ...prev, desktop_image: null })); setDesktopImageCleared(true); }}
                         label="Desktop Banner"
                         aspectRatio={3 / 1}
+                        disableCrop={true}
                       />
                     </div>
 
@@ -1525,6 +1526,7 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                         onRemove={() => { setForm(prev => ({ ...prev, mobile_image: null })); setMobileImageCleared(true); }}
                         label="Mobile Banner"
                         aspectRatio={1.5 / 1}
+                        disableCrop={true}
                       />
                     </div>
                   </div>

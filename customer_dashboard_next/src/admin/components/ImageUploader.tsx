@@ -9,6 +9,17 @@ interface ImageUploaderProps {
   label?: string;
   className?: string;
   aspectRatio?: number;
+  disableCrop?: boolean;
+}
+
+function sanitizeFileName(file: File): File {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const baseName = file.name
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .slice(0, 30);
+  const cleanName = `${baseName || 'image'}_${Date.now().toString().slice(-6)}.${ext}`;
+  return new File([file], cleanName, { type: file.type || 'image/jpeg' });
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -18,6 +29,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   label = "Upload Image",
   className = "",
   aspectRatio,
+  disableCrop = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -52,9 +64,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       setError("Unsupported file format. Please upload JPG, PNG, WEBP, AVIF, or GIF.");
       return;
     }
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 15 * 1024 * 1024; // 15MB
     if (file.size > maxSize) {
-      setError("File is too large. Maximum size is 5MB.");
+      setError("File is too large. Maximum size is 15MB.");
+      return;
+    }
+
+    const cleanFile = sanitizeFileName(file);
+
+    // If cropping is disabled (e.g. for banners where original composition must be preserved),
+    // upload the full original image directly without opening the crop modal.
+    if (disableCrop) {
+      onUpload(cleanFile);
       return;
     }
 
@@ -62,20 +83,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       setCropImageSrc(reader.result as string);
-      setOriginalFile(file);
+      setOriginalFile(cleanFile);
       setIsCropModalOpen(true);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(cleanFile);
   };
 
   const handleCropSave = (croppedBlob: Blob) => {
+    if (croppedBlob instanceof File) {
+      onUpload(sanitizeFileName(croppedBlob));
+      setIsCropModalOpen(false);
+      return;
+    }
     let fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
     if (fileName.length > 50) {
       const parts = fileName.split('.');
       const ext = parts.pop() || 'jpg';
       fileName = `${parts.join('.').slice(0, 30)}_${Date.now().toString().slice(-6)}.${ext}`;
     }
-    const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+    const mimeType = originalFile?.type || croppedBlob.type || 'image/jpeg';
+    const croppedFile = new File([croppedBlob], fileName, { type: mimeType });
     onUpload(croppedFile);
     setIsCropModalOpen(false);
   };

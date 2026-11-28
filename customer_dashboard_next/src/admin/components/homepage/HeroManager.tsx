@@ -214,13 +214,32 @@ const HeroManager: React.FC = () => {
         ? await homepageService.updateHeroSlide(editSlide.id, fd)
         : await homepageService.createHeroSlide(fd);
 
-      if (res.success) {
+      if (res && res.success !== false) {
         showToast({ variant: 'success', title: editSlide ? 'Slide updated' : 'Slide created' });
         setShowForm(false);
         load();
+      } else {
+        const errorMsg = res?.message || 'Save failed. Please check your inputs.';
+        showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
       }
-    } catch {
-      showToast({ variant: 'error', title: 'Save failed', message: 'Please try again.' });
+    } catch (err: any) {
+      console.error('Slide save error:', err);
+      const errData = err?.response?.data;
+      let errorMsg = 'Please try again.';
+      if (errData) {
+        if (typeof errData === 'string') {
+          errorMsg = errData.includes('413') ? 'Image file size is too large for server.' : errData;
+        } else if (errData.message) {
+          errorMsg = errData.message;
+        } else if (errData.detail) {
+          errorMsg = errData.detail;
+        } else if (errData.errors) {
+          errorMsg = Object.entries(errData.errors)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+        }
+      }
+      showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
     } finally {
       setSaving(false);
     }
@@ -663,6 +682,7 @@ const HeroManager: React.FC = () => {
                   currentUrl={form.desktop_image instanceof File ? URL.createObjectURL(form.desktop_image) : (form.desktop_image ? getAbsoluteImageUrl(form.desktop_image) : null)}
                   onUpload={(file) => { setForm(f => ({ ...f, desktop_image: file })); setDesktopImageCleared(false); }}
                   onRemove={() => { setForm(f => ({ ...f, desktop_image: null })); setDesktopImageCleared(true); }}
+                  disableCrop={true}
                 />
 
                 {/* Mobile Image */}
@@ -672,6 +692,7 @@ const HeroManager: React.FC = () => {
                   currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : null)}
                   onUpload={(file) => { setForm(f => ({ ...f, mobile_image: file })); setMobileImageCleared(false); }}
                   onRemove={() => { setForm(f => ({ ...f, mobile_image: null })); setMobileImageCleared(true); }}
+                  disableCrop={true}
                 />
               </div>
 

@@ -1100,6 +1100,7 @@ const FeaturedCollectionsManager: React.FC = () => {
                           currentUrl={desktopImgUrl}
                           onUpload={file => { setForm(f => ({ ...f, image: file })); setImageCleared(false); }}
                           onRemove={() => { setForm(f => ({ ...f, image: null })); setImageCleared(true); }}
+                          disableCrop={true}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
                           Recommended ~1920x800 for full background, or ~1000x800 for split.
@@ -1114,6 +1115,7 @@ const FeaturedCollectionsManager: React.FC = () => {
                           currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : undefined)}
                           onUpload={file => { setForm(f => ({ ...f, mobile_image: file })); setMobileImageCleared(false); }}
                           onRemove={() => { setForm(f => ({ ...f, mobile_image: null })); setMobileImageCleared(true); }}
+                          disableCrop={true}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
                           Optional portrait/square asset loaded strictly on mobile devices.

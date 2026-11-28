@@ -932,6 +932,7 @@ const ComboDealsPage: React.FC = () => {
                       }}
                       label="Upload Campaign Banner"
                       aspectRatio={16 / 9}
+                      disableCrop={true}
                     />
                   </div>
                 </div>

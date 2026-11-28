@@ -77,8 +77,18 @@ const LimitedOffersManager: React.FC = () => {
         fd.append('banner_image', '__clear__'); // Clear banner image
       }
       const res = editItem ? await homepageService.updateOffer(editItem.id, fd) : await homepageService.createOffer(fd);
-      if (res.success) { showToast({ variant: 'success', title: editItem ? 'Updated' : 'Created' }); setShowForm(false); load(); }
-    } catch { showToast({ variant: 'error', title: 'Save failed' }); }
+      if (res && res.success !== false) {
+        showToast({ variant: 'success', title: editItem ? 'Updated' : 'Created' });
+        setShowForm(false);
+        load();
+      } else {
+        showToast({ variant: 'error', title: 'Save failed', message: res?.message || 'Please check form inputs.' });
+      }
+    } catch (err: any) {
+      console.error('Offer save error:', err);
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Save failed';
+      showToast({ variant: 'error', title: 'Save failed', message: msg });
+    }
     finally { setSaving(false); }
   };
 
@@ -158,6 +168,7 @@ const LimitedOffersManager: React.FC = () => {
                   currentUrl={form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : (form.banner_image ? getAbsoluteImageUrl(form.banner_image) : null)}
                   onUpload={(file) => { setForm(f => ({ ...f, banner_image: file })); setBannerImageCleared(false); }}
                   onRemove={() => { setForm(f => ({ ...f, banner_image: null })); setBannerImageCleared(true); }}
+                  disableCrop={true}
                 />
               </div>
               <div>

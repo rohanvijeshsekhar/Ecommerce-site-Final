@@ -893,6 +893,7 @@ const ExploreSolutionsAdmin: React.FC<{ onPreviewSolution?: (slug: string) => vo
                         setBannerFile(null);
                         setFormData((prev) => ({ ...prev, banner: '' }));
                       }}
+                      disableCrop={true}
                     />
                     <p className="text-[11px] font-medium text-slate-500">
                       High-resolution panoramic banner displayed across the top of the clinical solution detail page (/solutions/[slug]).

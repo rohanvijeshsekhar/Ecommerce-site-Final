@@ -251,6 +251,7 @@ const BestSellerBannerManager: React.FC = () => {
               currentUrl={form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : form.banner_image}
               onUpload={(file) => set('banner_image', file)}
               onRemove={() => set('banner_image', null)}
+              disableCrop={true}
             />
           </div>
 
