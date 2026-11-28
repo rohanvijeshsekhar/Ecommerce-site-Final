@@ -41,21 +41,128 @@ class Migration(migrations.Migration):
                 verbose_name="Visual Theme Preset",
             ),
         ),
-        migrations.AlterField(
-            model_name="universalbanner",
-            name="created_at",
-            field=models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Created At"),
+        migrations.RunSQL(
+            sql="DROP TABLE IF EXISTS homepage_universalbanner CASCADE;",
+            reverse_sql="",
+            state_operations=[
+                migrations.DeleteModel(
+                    name="UniversalBanner",
+                ),
+            ],
         ),
-        migrations.AlterField(
-            model_name="universalbanner",
-            name="id",
-            field=models.UUIDField(
-                db_index=True,
-                default=uuid.uuid4,
-                editable=False,
-                primary_key=True,
-                serialize=False,
-                verbose_name="ID",
-            ),
+        migrations.CreateModel(
+            name="UniversalBanner",
+            fields=[
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, db_index=True, verbose_name="Created At"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Updated At"),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Administrative label for identifying this banner in the editor.",
+                        max_length=200,
+                        verbose_name="Banner Internal Title",
+                    ),
+                ),
+                (
+                    "slug",
+                    models.SlugField(
+                        max_length=200,
+                        unique=True,
+                        verbose_name="Banner Identifier / Slug",
+                    ),
+                ),
+                (
+                    "banner_type",
+                    models.CharField(
+                        choices=[
+                            ("hero", "Hero Slide"),
+                            ("daily_offer", "Daily Offer"),
+                            ("limited_offer", "Limited Time Offer"),
+                            ("promo_strip", "Promotional Strip / Announcement"),
+                            ("category_promo", "Category Promotional Banner"),
+                            ("brand_promo", "Brand Promotional Banner"),
+                            ("bestseller", "Best Sellers Banner"),
+                            ("custom", "Custom Campaign Banner"),
+                        ],
+                        default="promo",
+                        max_length=50,
+                        verbose_name="Banner Type",
+                    ),
+                ),
+                (
+                    "desktop_image",
+                    models.ImageField(
+                        blank=True,
+                        null=True,
+                        upload_to="homepage/universal_banners/desktop/",
+                        verbose_name="Desktop Background Image",
+                    ),
+                ),
+                (
+                    "mobile_image",
+                    models.ImageField(
+                        blank=True,
+                        null=True,
+                        upload_to="homepage/universal_banners/mobile/",
+                        verbose_name="Mobile Background Image",
+                    ),
+                ),
+                (
+                    "bg_color",
+                    models.CharField(
+                        blank=True,
+                        default="#005F63",
+                        max_length=50,
+                        verbose_name="Fallback Background Color",
+                    ),
+                ),
+                (
+                    "visual_layout",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Responsive coordinates, typography, layers, and interactive element settings.",
+                        verbose_name="Visual Drag-and-Drop Layout Configuration",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        db_index=True,
+                        default=True,
+                        verbose_name="Is Active / Visible",
+                    ),
+                ),
+                (
+                    "sort_order",
+                    models.PositiveSmallIntegerField(
+                        db_index=True, default=0, verbose_name="Sort Order"
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "Universal Promotional Banner",
+                "verbose_name_plural": "Universal Promotional Banners",
+                "ordering": ["sort_order", "-updated_at"],
+            },
         ),
     ]

@@ -229,14 +229,17 @@ const HeroManager: React.FC = () => {
       if (errData) {
         if (typeof errData === 'string') {
           errorMsg = errData.includes('413') ? 'Image file size is too large for server.' : errData;
-        } else if (errData.message) {
+        } else if (errData.message && errData.message !== 'An error occurred.') {
           errorMsg = errData.message;
         } else if (errData.detail) {
           errorMsg = errData.detail;
-        } else if (errData.errors) {
-          errorMsg = Object.entries(errData.errors)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-            .join(' | ');
+        } else if (typeof errData === 'object') {
+          const meaningful = Object.entries(errData)
+            .filter(([k]) => k !== 'success' && k !== 'data')
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : v}`);
+          if (meaningful.length > 0) {
+            errorMsg = meaningful.join(' | ');
+          }
         }
       }
       showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
