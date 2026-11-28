@@ -37,6 +37,7 @@ from .models import (
     BrandDeal,
     BrandDealProduct,
     BrandDealStatus,
+    UniversalBanner,
 )
 from .serializers import (
     HomepagePromoBannerSerializer,
@@ -56,6 +57,7 @@ from .serializers import (
     DailyOfferProductReadSerializer, DailyOfferProductWriteSerializer,
     BrandDealReadSerializer, BrandDealWriteSerializer,
     BrandDealProductReadSerializer, BrandDealProductWriteSerializer,
+    UniversalBannerReadSerializer, UniversalBannerWriteSerializer,
 )
 
 
@@ -734,6 +736,34 @@ class BrandDealProductViewSet(BaseModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return BrandDealProductWriteSerializer
         return BrandDealProductReadSerializer
+
+
+class UniversalBannerViewSet(ReorderMixin, BaseModelViewSet):
+    """
+    CRUD ViewSet for Universal Promotional Banners with drag-and-drop visual layout.
+    Public GET list/retrieve filters for active banners.
+    Admin CRUD allows creating, editing, reordering, and saving visual layout configurations.
+    """
+    ordering = ["sort_order", "-updated_at"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        qs = UniversalBanner.objects.all()
+        if not (self.request.user.is_authenticated and
+                getattr(self.request.user, "role", None) == "admin"):
+            qs = qs.filter(is_active=True)
+        return qs
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return UniversalBannerWriteSerializer
+        return UniversalBannerReadSerializer
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdmin()]
+
 
 
 

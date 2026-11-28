@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check, Palette, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check, Palette, RotateCcw, Move } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { HeroSlide, HomepagePromoBanner } from '../../types/admin';
@@ -8,6 +8,8 @@ import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
 import ImageUploader from '../ImageUploader';
+import { UniversalBannerEditorModal } from '../banner-editor/UniversalBannerEditorModal';
+import type { UniversalBannerLayout } from '../banner-editor/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HeroManager – CRUD for homepage promo banner & hero slides
@@ -68,6 +70,41 @@ const HeroManager: React.FC = () => {
   });
   const [savingPromo, setSavingPromo] = useState(false);
   const [promoSaved, setPromoSaved] = useState(false);
+  const [visualEditorSlide, setVisualEditorSlide] = useState<HeroSlide | null>(null);
+  const [visualEditorPromo, setVisualEditorPromo] = useState<HomepagePromoBanner | null>(null);
+
+  const handleSaveSlideVisualLayout = async (layout: UniversalBannerLayout) => {
+    if (!visualEditorSlide) return;
+    try {
+      const res = await homepageService.updateHeroSlide(visualEditorSlide.id, {
+        visual_layout: layout,
+      });
+      if (res.success) {
+        showToast({ variant: 'success', title: 'Layout Published', message: 'Hero slide layout updated successfully.' });
+        load();
+      } else {
+        showToast({ variant: 'error', title: 'Failed to Save', message: 'Could not update visual layout.' });
+      }
+    } catch (err: any) {
+      showToast({ variant: 'error', title: 'Error', message: err?.message || 'Server error' });
+    }
+  };
+
+  const handleSavePromoVisualLayout = async (layout: UniversalBannerLayout) => {
+    try {
+      const res = await homepageService.updatePromoBanner({
+        visual_layout: layout,
+      });
+      if (res.success) {
+        showToast({ variant: 'success', title: 'Layout Published', message: 'Promo banner layout updated successfully.' });
+        load();
+      } else {
+        showToast({ variant: 'error', title: 'Failed to Save', message: 'Could not update visual layout.' });
+      }
+    } catch (err: any) {
+      showToast({ variant: 'error', title: 'Error', message: err?.message || 'Server error' });
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -240,7 +277,17 @@ const HeroManager: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 Live Storefront Preview
               </span>
-              <span className="text-slate-400 font-normal">Real-time preview of headline & offer</span>
+              <div className="flex items-center gap-3">
+                <span className="text-slate-400 font-normal hidden sm:inline">Real-time preview of headline & offer</span>
+                <button
+                  type="button"
+                  onClick={() => setVisualEditorPromo(promoForm as any)}
+                  className="flex items-center gap-1 text-[#005F63] hover:text-[#004D50] hover:bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200 text-xs font-bold transition-all shadow-2xs"
+                >
+                  <Move className="w-3.5 h-3.5" />
+                  <span>Visual Layout Studio</span>
+                </button>
+              </div>
             </div>
 
             <div
@@ -471,11 +518,10 @@ const HeroManager: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingPromo}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 ${
-                    promoSaved
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 ${promoSaved
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/30'
                       : 'bg-[#006670] hover:bg-[#004e56] text-white'
-                  }`}
+                    }`}
                 >
                   {savingPromo ? (
                     <>
@@ -516,71 +562,80 @@ const HeroManager: React.FC = () => {
           </button>
         </div>
 
-      {/* Slides List */}
-      {slides.length === 0 ? (
-        <EmptyState
-          icon={<Image className="w-10 h-10 text-slate-300" />}
-          title="No hero slides"
-          description="Add your first hero slide to display on the homepage carousel."
-          action={
-            <button onClick={openCreate} className="px-4 py-2 bg-[#006670] text-white rounded-lg text-sm font-semibold hover:bg-[#004e56]">
-              Add Slide
-            </button>
-          }
-        />
-      ) : (
-        <div className="space-y-3">
-          {slides.map((slide) => (
-            <div
-              key={slide.id}
-              className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group"
-            >
-              <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
+        {/* Slides List */}
+        {slides.length === 0 ? (
+          <EmptyState
+            icon={<Image className="w-10 h-10 text-slate-300" />}
+            title="No hero slides"
+            description="Add your first hero slide to display on the homepage carousel."
+            action={
+              <button onClick={openCreate} className="px-4 py-2 bg-[#006670] text-white rounded-lg text-sm font-semibold hover:bg-[#004e56]">
+                Add Slide
+              </button>
+            }
+          />
+        ) : (
+          <div className="space-y-3">
+            {slides.map((slide) => (
+              <div
+                key={slide.id}
+                className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group"
+              >
+                <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
 
-              {/* Desktop preview */}
-              <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
-                {slide.desktop_image_url || (slide as any).desktop_image ? (
-                  <img src={getAbsoluteImageUrl(slide.desktop_image_url || (slide as any).desktop_image)} alt={slide.heading} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Monitor className="w-5 h-5 text-slate-400" />
-                  </div>
-                )}
-              </div>
+                {/* Desktop preview */}
+                <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
+                  {slide.desktop_image_url || (slide as any).desktop_image ? (
+                    <img src={getAbsoluteImageUrl(slide.desktop_image_url || (slide as any).desktop_image)} alt={slide.heading} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Monitor className="w-5 h-5 text-slate-400" />
+                    </div>
+                  )}
+                </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-800 text-sm truncate">{slide.heading || '(no heading)'}</p>
-                <p className="text-xs text-slate-500 truncate">{slide.subheading}</p>
-                <p className="text-xs text-[#006670] mt-0.5">{slide.cta_text} → {slide.cta_link}</p>
-              </div>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-800 text-sm truncate">{slide.heading || '(no heading)'}</p>
+                  <p className="text-xs text-slate-500 truncate">{slide.subheading}</p>
+                  <p className="text-xs text-[#006670] mt-0.5">{slide.cta_text} → {slide.cta_link}</p>
+                </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => toggleActive(slide)}
-                  className={`p-1.5 rounded-lg transition-colors ${slide.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
-                  title={slide.is_active ? 'Hide' : 'Show'}
-                >
-                  {slide.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => openEdit(slide)}
-                  className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setDeleteTarget(slide)}
-                  className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Actions */}
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => setVisualEditorSlide(slide)}
+                    className="px-2.5 py-1 text-xs font-bold text-[#005F63] bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-all flex items-center gap-1 cursor-pointer"
+                    title="Open Universal Visual Drag-and-Drop Positioning Studio"
+                  >
+                    <Move className="w-3.5 h-3.5" />
+                    <span>Visual Layout</span>
+                  </button>
+                  <button
+                    onClick={() => toggleActive(slide)}
+                    className={`p-1.5 rounded-lg transition-colors ${slide.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
+                    title={slide.is_active ? 'Hide' : 'Show'}
+                  >
+                    {slide.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => openEdit(slide)}
+                    className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(slide)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Slide Form Panel */}
@@ -706,6 +761,28 @@ const HeroManager: React.FC = () => {
         variant="danger"
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      {/* Universal Visual Editor for Hero Slide */}
+      <UniversalBannerEditorModal
+        isOpen={visualEditorSlide !== null}
+        bannerTitle={visualEditorSlide?.heading || 'Hero Banner Slide'}
+        bannerType="hero"
+        initialLayout={visualEditorSlide?.visual_layout}
+        bannerRawData={visualEditorSlide || {}}
+        onClose={() => setVisualEditorSlide(null)}
+        onSave={handleSaveSlideVisualLayout}
+      />
+
+      {/* Universal Visual Editor for Announcement Promo Banner */}
+      <UniversalBannerEditorModal
+        isOpen={visualEditorPromo !== null}
+        bannerTitle={visualEditorPromo?.title || 'Homepage Top Promo Banner'}
+        bannerType="promo_strip"
+        initialLayout={visualEditorPromo?.visual_layout}
+        bannerRawData={visualEditorPromo || {}}
+        onClose={() => setVisualEditorPromo(null)}
+        onSave={handleSavePromoVisualLayout}
       />
     </div>
   );

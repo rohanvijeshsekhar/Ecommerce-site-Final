@@ -316,6 +316,12 @@ class BrandPageBanner(AuditedModel):
         db_index=True,
         verbose_name="Active",
     )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
+    )
 
     class Meta:
         verbose_name = "Brand Page Banner"

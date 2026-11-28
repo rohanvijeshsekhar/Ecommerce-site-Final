@@ -678,11 +678,11 @@ export const homepageService = {
     const res = await api.get('homepage/hero/');
     return res.data;
   },
-  async createHeroSlide(data: FormData): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
+  async createHeroSlide(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
     const res = await api.post('homepage/hero/', data);
     return res.data;
   },
-  async updateHeroSlide(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
+  async updateHeroSlide(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').HeroSlide>> {
     const res = await api.patch(`homepage/hero/${id}/`, data);
     return res.data;
   },
@@ -875,11 +875,11 @@ export const homepageService = {
     const res = await api.get('homepage/offers/');
     return res.data;
   },
-  async createOffer(data: FormData): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
+  async createOffer(data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
     const res = await api.post('homepage/offers/', data);
     return res.data;
   },
-  async updateOffer(id: string, data: FormData): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
+  async updateOffer(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<import('../types/admin').LimitedTimeOffer>> {
     const res = await api.patch(`homepage/offers/${id}/`, data);
     return res.data;
   },
@@ -1002,4 +1002,28 @@ export const brandDealsService = {
   updateProduct: (id: string, data: any) => homepageService.updateBrandDealProduct(id, data),
   deleteProduct: (id: string) => homepageService.deleteBrandDealProduct(id),
 };
+
+export const universalBannerService = {
+  async getBanners(): Promise<ServiceResponse<any[]>> {
+    const res = await api.get('homepage/universal-banners/');
+    return res.data;
+  },
+  async getBanner(id: string): Promise<ServiceResponse<any>> {
+    const res = await api.get(`homepage/universal-banners/${id}/`);
+    return res.data;
+  },
+  async createBanner(data: FormData | Record<string, any>): Promise<ServiceResponse<any>> {
+    const res = await api.post('homepage/universal-banners/', data);
+    return res.data;
+  },
+  async updateBanner(id: string, data: FormData | Record<string, any>): Promise<ServiceResponse<any>> {
+    const res = await api.patch(`homepage/universal-banners/${id}/`, data);
+    return res.data;
+  },
+  async deleteBanner(id: string): Promise<ServiceResponse<void>> {
+    const res = await api.delete(`homepage/universal-banners/${id}/`);
+    return res.data;
+  },
+};
+
 

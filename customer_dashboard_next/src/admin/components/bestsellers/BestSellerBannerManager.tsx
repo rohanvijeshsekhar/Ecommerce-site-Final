@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Image, Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { Image, Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2, Move } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAdmin } from '../../contexts/AdminContext';
 import ImageUploader from '../ImageUploader';
 import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
+import { UniversalBannerEditorModal } from '../banner-editor/UniversalBannerEditorModal';
+import type { UniversalBannerLayout } from '../banner-editor/types';
 
 interface Banner {
   id: number;
@@ -17,6 +19,7 @@ interface Banner {
   button_text: string;
   button_link: string;
   is_active: boolean;
+  visual_layout?: any;
   updated_at: string;
 }
 
@@ -37,8 +40,24 @@ const BestSellerBannerManager: React.FC = () => {
   const [justSaved, setJustSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showVisualEditor, setShowVisualEditor] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [isDirty, setIsDirty] = useState(false);
+
+  const handleSaveVisualLayout = async (layout: UniversalBannerLayout) => {
+    if (!banner) return;
+    try {
+      const res = await api.patch(`bestsellers/banner/${banner.id}/`, {
+        visual_layout: layout,
+      });
+      if (res.data) {
+        showToast({ variant: 'success', title: 'Layout Published', message: 'Best Seller banner visual layout updated.' });
+        load();
+      }
+    } catch (err: any) {
+      showToast({ variant: 'error', title: 'Error', message: err?.message || 'Server error' });
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -160,6 +179,18 @@ const BestSellerBannerManager: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {banner && (
+            <button
+              type="button"
+              onClick={() => setShowVisualEditor(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#005F63] bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-all cursor-pointer shadow-2xs"
+              title="Open Universal Visual Drag-and-Drop Positioning Studio"
+            >
+              <Move className="w-3.5 h-3.5" />
+              <span>Visual Layout Studio</span>
+            </button>
+          )}
+
           {banner && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
@@ -344,6 +375,18 @@ const BestSellerBannerManager: React.FC = () => {
           if (!deleting) setShowDeleteConfirm(false);
         }}
       />
+      {/* Universal Visual Positioning Editor */}
+      {banner && (
+        <UniversalBannerEditorModal
+          isOpen={showVisualEditor}
+          bannerTitle={banner.title || 'Best Sellers Hero Banner'}
+          bannerType="bestseller"
+          initialLayout={banner.visual_layout}
+          bannerRawData={banner}
+          onClose={() => setShowVisualEditor(false)}
+          onSave={handleSaveVisualLayout}
+        />
+      )}
     </div>
   );
 };

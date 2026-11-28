@@ -7,7 +7,7 @@ import {
   Eye, Monitor, Smartphone, Sparkles, Clock, Calendar, ArrowRight,
   Layout, Type, ShoppingCart, Image as ImageIcon, Save,
   Search, X, ExternalLink, Zap, RefreshCw, AlertCircle, Upload, CheckCircle2,
-  Sliders, Palette, Info
+  Sliders, Palette, Info, Move
 } from 'lucide-react';
 import type { DailyOffer, DailyOfferProduct } from '../../types/admin';
 import { homepageService, adminService } from '../../services/adminService';
@@ -16,6 +16,8 @@ import ConfirmDialog from '../ConfirmDialog';
 import DailyOffersSection from '@/components/store/daily-offers/DailyOffersSection';
 import { BANNER_FONTS } from '@/lib/bannerFonts';
 import { getAbsoluteImageUrl } from '@/lib/api';
+import { UniversalBannerEditorModal } from '../banner-editor/UniversalBannerEditorModal';
+import type { UniversalBannerLayout } from '../banner-editor/types';
 
 export const THEME_PRESETS = [
   {
@@ -153,6 +155,7 @@ export const DailyOffersManager: React.FC = () => {
   const [editOffer, setEditOffer] = useState<DailyOffer | null>(null);
   const [activeTab, setActiveTab] = useState<StudioTab>('content');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [visualEditorOffer, setVisualEditorOffer] = useState<DailyOffer | null>(null);
 
   // Form State
   const [form, setForm] = useState<Partial<DailyOffer>>(DEFAULT_OFFER_FORM);
@@ -544,6 +547,27 @@ export const DailyOffersManager: React.FC = () => {
     }
   };
 
+  // Visual Drag-and-Drop Positioning Editor Save
+  const handleSaveVisualLayout = async (layout: UniversalBannerLayout) => {
+    if (!visualEditorOffer) return;
+    try {
+      const res = await homepageService.updateDailyOffer(visualEditorOffer.id, {
+        visual_layout: layout,
+      });
+      if (res.success) {
+        toast.success('Universal visual banner layout published successfully!');
+        if (editOffer && editOffer.id === visualEditorOffer.id) {
+          setForm((prev) => ({ ...prev, visual_layout: layout }));
+        }
+        await loadData();
+      } else {
+        toast.error('Failed to save visual layout');
+      }
+    } catch (err: any) {
+      toast.error('Error saving visual layout: ' + (err?.message || 'Server error'));
+    }
+  };
+
   // Filtered searchable products for modal/selector
   const filteredProducts = useMemo(() => {
     if (!productSearchQuery.trim()) return allProducts.slice(0, 15);
@@ -709,6 +733,15 @@ export const DailyOffersManager: React.FC = () => {
                     </button>
 
                     <button
+                      onClick={() => setVisualEditorOffer(offer)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#005F63] border border-teal-200 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                      title="Open Drag-and-Drop Visual Positioning Studio"
+                    >
+                      <Move className="w-3.5 h-3.5" />
+                      <span>Visual Layout</span>
+                    </button>
+
+                    <button
                       onClick={() => openEditStudio(offer)}
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-[#006670] text-white text-xs font-bold transition-colors cursor-pointer"
                     >
@@ -773,6 +806,16 @@ export const DailyOffersManager: React.FC = () => {
                   <span>Mobile (375px)</span>
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setVisualEditorOffer((editOffer || form) as DailyOffer)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                title="Open Universal Visual Drag-and-Drop Positioning Studio"
+              >
+                <Move className="w-3.5 h-3.5" />
+                <span>Visual Drag & Drop Studio</span>
+              </button>
 
               <button
                 type="button"
@@ -2277,6 +2320,16 @@ export const DailyOffersManager: React.FC = () => {
         onClose={() => {
           if (!deleting) setDeleteTarget(null);
         }}
+      />
+      {/* Universal Drag-and-Drop Visual Positioning Editor Studio */}
+      <UniversalBannerEditorModal
+        isOpen={visualEditorOffer !== null}
+        bannerTitle={visualEditorOffer?.title || 'Daily Offer Promotional Banner'}
+        bannerType="daily_offer"
+        initialLayout={visualEditorOffer?.visual_layout}
+        bannerRawData={visualEditorOffer || form}
+        onClose={() => setVisualEditorOffer(null)}
+        onSave={handleSaveVisualLayout}
       />
     </div>
   );

@@ -44,12 +44,13 @@ def _resolve_logo_url(brand_obj, request):
 
 class BrandPageBannerSerializer(serializers.ModelSerializer):
     banner_image_url = serializers.SerializerMethodField()
+    visual_layout = serializers.JSONField(required=False, default=dict)
 
     class Meta:
         model = BrandPageBanner
         fields = [
             "id", "title", "subtitle", "banner_image",
-            "banner_image_url", "button_text", "button_link", "is_active",
+            "banner_image_url", "button_text", "button_link", "visual_layout", "is_active",
         ]
 
     def get_banner_image_url(self, obj):

@@ -9,6 +9,7 @@ import { api, getAbsoluteImageUrl } from '@/lib/api';
 import DailyOfferCountdown from './DailyOfferCountdown';
 import DailyOfferCta from './DailyOfferCta';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
+import { UniversalBannerRenderer } from '../banner/UniversalBannerRenderer';
 
 interface DailyOffersSectionProps {
   initialOffers?: DailyOffer[];
@@ -254,6 +255,25 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
   // Overlay opacity: 0 if no dynamic overlay (clean image banner), or configured opacity if text exists
   const effectiveOverlayOpacity = hasAnyDynamicOverlay ? (activeOffer.overlay_opacity ?? 60) : 0;
+
+  // Check for custom Universal Visual Layout
+  const hasCustomVisualLayout = Boolean(
+    activeOffer.visual_layout &&
+    activeOffer.visual_layout.enabled &&
+    activeOffer.visual_layout.elements &&
+    activeOffer.visual_layout.elements.length > 0
+  );
+
+  if (hasCustomVisualLayout) {
+    return (
+      <section
+        onClick={handleNavigate}
+        className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 cursor-pointer group hover:shadow-[0_20px_50px_rgba(0,102,112,0.22)] rounded-2xl ${isLivePreview ? 'border border-slate-200 cursor-default' : ''}`}
+      >
+        <UniversalBannerRenderer layout={activeOffer.visual_layout} />
+      </section>
+    );
+  }
 
   return (
     <section

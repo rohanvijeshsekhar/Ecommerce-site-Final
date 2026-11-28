@@ -86,6 +86,12 @@ class HomepagePromoBanner(BaseModel):
         verbose_name="Border Color",
         help_text="Hex color for optional border, e.g. #005F63",
     )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
+    )
 
     @classmethod
     def get_instance(cls):
@@ -170,6 +176,12 @@ class HeroSlide(BaseModel):
         default=True,
         db_index=True,
         verbose_name="Active",
+    )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
     )
 
     def __str__(self):
@@ -774,6 +786,12 @@ class LimitedTimeOffer(BaseModel):
         default=True,
         db_index=True,
         verbose_name="Active",
+    )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
     )
 
     def __str__(self):
@@ -1420,6 +1438,12 @@ class DailyOffer(BaseModel):
         db_index=True,
         verbose_name="Sort Order",
     )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
+    )
 
     def __str__(self):
         return f"Daily Offer: {self.title} ({self.status})"
@@ -1737,6 +1761,86 @@ def get_active_brand_deal_price(product):
     if deal_item and deal_item.deal_price is not None:
         return deal_item.deal_price
     return None
+
+
+# ============================================================
+# Universal Promotional Banners (Visual Drag-and-Drop Editor)
+# ============================================================
+
+class UniversalBanner(BaseModel):
+    """
+    Universal reusable promotional banner supporting full drag-and-drop element positioning,
+    multi-device breakpoints (Desktop, Tablet, Mobile), countdowns, CTAs, and layers.
+    Can be linked anywhere across the storefront or served by slug.
+    """
+    class Meta:
+        verbose_name = "Universal Promotional Banner"
+        verbose_name_plural = "Universal Promotional Banners"
+        ordering = ["sort_order", "-updated_at"]
+
+    name = models.CharField(
+        max_length=200,
+        verbose_name="Banner Internal Title",
+        help_text="Administrative label for identifying this banner in the editor.",
+    )
+    slug = models.SlugField(
+        max_length=200,
+        unique=True,
+        verbose_name="Banner Identifier / Slug",
+    )
+    banner_type = models.CharField(
+        max_length=50,
+        default="promo",
+        choices=[
+            ("hero", "Hero Slide"),
+            ("daily_offer", "Daily Offer"),
+            ("limited_offer", "Limited Time Offer"),
+            ("promo_strip", "Promotional Strip / Announcement"),
+            ("category_promo", "Category Promotional Banner"),
+            ("brand_promo", "Brand Promotional Banner"),
+            ("bestseller", "Best Sellers Banner"),
+            ("custom", "Custom Campaign Banner"),
+        ],
+        verbose_name="Banner Type",
+    )
+    desktop_image = OptimizedImageField(
+        upload_to="homepage/universal_banners/desktop/",
+        null=True,
+        blank=True,
+        verbose_name="Desktop Background Image",
+    )
+    mobile_image = OptimizedImageField(
+        upload_to="homepage/universal_banners/mobile/",
+        null=True,
+        blank=True,
+        verbose_name="Mobile Background Image",
+    )
+    bg_color = models.CharField(
+        max_length=50,
+        default="#005F63",
+        blank=True,
+        verbose_name="Fallback Background Color",
+    )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Responsive coordinates, typography, layers, and interactive element settings.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Is Active / Visible",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Sort Order",
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.banner_type})"
+
 
 
 

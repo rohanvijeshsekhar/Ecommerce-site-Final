@@ -45,6 +45,12 @@ class BestSellerBanner(models.Model):
         verbose_name="Is Active",
         help_text="Enable or disable banner display on the storefront without deleting",
     )
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
 

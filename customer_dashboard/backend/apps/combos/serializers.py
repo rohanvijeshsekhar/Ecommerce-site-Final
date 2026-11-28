@@ -157,10 +157,11 @@ class ComboDealBannerSettingSerializer(serializers.ModelSerializer):
 
     # Writable ImageField — required=False so a PATCH without an image works fine.
     banner_image = serializers.ImageField(required=False, allow_null=True, allow_empty_file=False)
+    visual_layout = serializers.JSONField(required=False, default=dict)
 
     class Meta:
         model = ComboDealBannerSetting
-        fields = ["badge_text", "title", "description", "banner_image"]
+        fields = ["badge_text", "title", "description", "banner_image", "visual_layout"]
 
     def to_representation(self, instance):
         """Return absolute URL for banner_image instead of a raw path."""

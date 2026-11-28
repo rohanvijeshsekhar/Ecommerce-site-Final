@@ -404,6 +404,7 @@ export interface HomepagePromoBanner {
   tagline_color?: string;
   text_color?: string;
   border_color?: string;
+  visual_layout?: any;
   updated_at?: string;
 }
 
@@ -417,6 +418,7 @@ export interface HeroSlide {
   mobile_image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  visual_layout?: any;
 }
 
 export interface HomepageCategory {
@@ -595,6 +597,7 @@ export interface DailyOffer {
   status: 'draft' | 'scheduled' | 'live' | 'expired' | 'disabled';
   is_active: boolean;
   sort_order: number;
+  visual_layout?: any;
   created_at?: string;
   updated_at?: string;
   items?: DailyOfferProduct[];
@@ -613,6 +616,7 @@ export interface LimitedTimeOffer {
   cta_link: string;
   sort_order: number;
   is_active: boolean;
+  visual_layout?: any;
 }
 
 export interface ExploreSolution {

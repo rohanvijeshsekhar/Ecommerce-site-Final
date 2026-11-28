@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Eye, EyeOff, X, Save, Calendar, Tag } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, EyeOff, X, Save, Calendar, Tag, Move } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { LimitedTimeOffer } from '../../types/admin';
@@ -8,6 +8,8 @@ import LoadingOverlay from '../LoadingOverlay';
 import ConfirmDialog from '../ConfirmDialog';
 import EmptyState from '../EmptyState';
 import ImageUploader from '../ImageUploader';
+import { UniversalBannerEditorModal } from '../banner-editor/UniversalBannerEditorModal';
+import type { UniversalBannerLayout } from '../banner-editor/types';
 
 const BLANK = { heading: '', description: '', offer_text: '', start_date: '', end_date: '', cta_text: 'Shop Now', cta_link: '', is_active: true, banner_image: null as File | string | null };
 
@@ -21,6 +23,24 @@ const LimitedOffersManager: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<LimitedTimeOffer | null>(null);
   const [form, setForm] = useState({ ...BLANK });
   const [bannerImageCleared, setBannerImageCleared] = useState(false);
+  const [visualEditorItem, setVisualEditorItem] = useState<LimitedTimeOffer | null>(null);
+
+  const handleSaveVisualLayout = async (layout: UniversalBannerLayout) => {
+    if (!visualEditorItem) return;
+    try {
+      const res = await homepageService.updateOffer(visualEditorItem.id, {
+        visual_layout: layout,
+      });
+      if (res.success) {
+        showToast({ variant: 'success', title: 'Layout Published', message: 'Offer visual layout updated successfully.' });
+        load();
+      } else {
+        showToast({ variant: 'error', title: 'Failed to Save', message: 'Could not update layout.' });
+      }
+    } catch (err: any) {
+      showToast({ variant: 'error', title: 'Error', message: err?.message || 'Server error' });
+    }
+  };
 
   const load = async () => { setLoading(true); try { const r = await homepageService.getOffers(); if (r.success && r.data) setItems(r.data); } finally { setLoading(false); } };
   useEffect(() => { load(); }, []);
@@ -103,6 +123,15 @@ const LimitedOffersManager: React.FC = () => {
                 {item.end_date && <p className="text-xs text-slate-400 mt-0.5">Ends: {new Date(item.end_date).toLocaleDateString()}</p>}
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => setVisualEditorItem(item)}
+                  className="px-2.5 py-1 text-xs font-bold text-[#005F63] bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-all flex items-center gap-1 cursor-pointer"
+                  title="Open Universal Visual Drag-and-Drop Positioning Studio"
+                >
+                  <Move className="w-3.5 h-3.5" />
+                  <span>Visual Layout</span>
+                </button>
                 <button onClick={() => toggleActive(item)} className={`p-1.5 rounded-lg ${item.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}>
                   {item.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
@@ -180,6 +209,17 @@ const LimitedOffersManager: React.FC = () => {
         </div>
       )}
       <ConfirmDialog isOpen={!!deleteTarget} title="Delete Offer" message={`Delete "${deleteTarget?.heading}"?`} confirmLabel="Delete" variant="danger" onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />
+
+      {/* Universal Visual Editor for Limited Time Offer */}
+      <UniversalBannerEditorModal
+        isOpen={visualEditorItem !== null}
+        bannerTitle={visualEditorItem?.heading || 'Limited Time Offer Banner'}
+        bannerType="limited_offer"
+        initialLayout={visualEditorItem?.visual_layout}
+        bannerRawData={visualEditorItem || {}}
+        onClose={() => setVisualEditorItem(null)}
+        onSave={handleSaveVisualLayout}
+      />
     </div>
   );
 };

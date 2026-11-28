@@ -20,6 +20,7 @@ from .models import (
     RecommendedProduct,
     DailyOffer,
     DailyOfferProduct,
+    UniversalBanner,
 )
 
 
@@ -110,4 +111,13 @@ class DailyOfferAdmin(admin.ModelAdmin):
     list_editable = ["status", "is_active", "sort_order"]
     inlines = [DailyOfferProductInline]
     ordering = ["sort_order"]
+
+
+@admin.register(UniversalBanner)
+class UniversalBannerAdmin(admin.ModelAdmin):
+    list_display = ["name", "slug", "banner_type", "is_active", "sort_order", "updated_at"]
+    list_editable = ["is_active", "sort_order"]
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ["sort_order", "-updated_at"]
+
 

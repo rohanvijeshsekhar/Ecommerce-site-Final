@@ -5,6 +5,7 @@ from .models import BestSellerBanner, BestSellerProduct
 
 class BestSellerBannerSerializer(serializers.ModelSerializer):
     banner_image_url = serializers.SerializerMethodField()
+    visual_layout = serializers.JSONField(required=False, default=dict)
 
     class Meta:
         model = BestSellerBanner
@@ -16,6 +17,7 @@ class BestSellerBannerSerializer(serializers.ModelSerializer):
             "banner_image_url",
             "button_text",
             "button_link",
+            "visual_layout",
             "is_active",
             "created_at",
             "updated_at",

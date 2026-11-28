@@ -215,6 +215,12 @@ class ComboDealBannerSetting(models.Model):
         verbose_name="Description"
     )
     banner_image = OptimizedImageField(upload_to="combos/banner/", null=True, blank=True, verbose_name="Banner Image")
+    visual_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Visual Drag-and-Drop Layout Configuration",
+        help_text="Custom positioning, typography, and responsive element coordinates",
+    )
 
 
     class Meta:

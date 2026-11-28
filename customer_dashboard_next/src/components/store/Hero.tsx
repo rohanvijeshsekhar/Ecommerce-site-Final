@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
+import { UniversalBannerRenderer } from './banner/UniversalBannerRenderer';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -18,6 +19,7 @@ interface SlideData {
   cta_link: string;
   desktop_image_url: string | null;
   mobile_image_url: string | null;
+  visual_layout?: any;
 }
 
 interface PromoBannerData {
@@ -29,6 +31,7 @@ interface PromoBannerData {
   tagline_color?: string;
   text_color?: string;
   border_color?: string;
+  visual_layout?: any;
 }
 
 interface HeroProps {
@@ -66,7 +69,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     if (initialSlides && initialSlides.length > 0) return;
     api.get('homepage/hero/')
@@ -76,7 +79,7 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
           setSlides(data);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [initialSlides]);
 
   // Provide static fallbacks if backend configuration is empty
@@ -126,180 +129,188 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
     <div className="relative w-full bg-transparent pt-[108px] lg:pt-[144px] px-0 md:px-8">
       <div className="max-w-[1440px] mx-auto w-full overflow-hidden rounded-none md:rounded-[24px] shadow-none md:shadow-[0_8px_30px_rgba(0,95,99,0.04)] border-b md:border border-[#E2E8F0] bg-white">
         {/* Promo Banner */}
-        {promoBanner.is_active && (promoBanner.title || promoBanner.subtitle) && (
-          promoBanner.link_url ? (
-            <a
-              href={promoBanner.link_url}
-              style={{
-                backgroundColor: promoBanner.bg_color || '#005F63',
-                borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
-              }}
-              className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b hover:brightness-105 transition-all group block"
-            >
-              {renderPromoContent()}
-            </a>
-          ) : (
-            <div
-              style={{
-                backgroundColor: promoBanner.bg_color || '#005F63',
-                borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
-              }}
-              className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b"
-            >
-              {renderPromoContent()}
-            </div>
-          )
+        {promoBanner.is_active && (
+          promoBanner.visual_layout?.enabled && promoBanner.visual_layout?.elements?.length > 0 ? (
+            <UniversalBannerRenderer layout={promoBanner.visual_layout} />
+          ) : (promoBanner.title || promoBanner.subtitle) ? (
+            promoBanner.link_url ? (
+              <a
+                href={promoBanner.link_url}
+                style={{
+                  backgroundColor: promoBanner.bg_color || '#005F63',
+                  borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
+                }}
+                className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b hover:brightness-105 transition-all group block"
+              >
+                {renderPromoContent()}
+              </a>
+            ) : (
+              <div
+                style={{
+                  backgroundColor: promoBanner.bg_color || '#005F63',
+                  borderColor: promoBanner.border_color || promoBanner.bg_color || '#005F63',
+                }}
+                className="w-full text-center py-2.5 px-4 flex flex-col items-center justify-center select-none border-b"
+              >
+                {renderPromoContent()}
+              </div>
+            )
+          ) : null
         )}
         {/* Swiper Slider */}
-      <Swiper
-        modules={[Navigation, Pagination, Autoplay]}
-        navigation={{
-          prevEl: '.hero-swiper-prev',
-          nextEl: '.hero-swiper-next',
-        }}
-        pagination={{
-          clickable: true,
-          el: '.hero-swiper-pagination',
-        }}
-        autoplay={{
-          delay: 5000,
-          disableOnInteraction: false,
-        }}
-        loop={true}
-        className="w-full relative"
-      >
-        {displaySlides.map((slide, idx) => {
-          // Keep design layout, classes, overlays exactly as original
-          const isSecondSlide = idx === 1;
-          return (
-            <SwiperSlide key={slide.id}>
-              <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] overflow-hidden">
-                {/* Background image */}
-                <div className="absolute inset-0 w-full h-full z-0 select-none">
-                  {slide.mobile_image_url ? (
-                    <>
-                      {/* Mobile view image (exact 3:3.7 ratio from admin panel) */}
-                      <Image
-                        src={getAbsoluteImageUrl(slide.mobile_image_url)}
-                        alt={slide.heading || 'FAAZO Hero Slide'}
-                        fill
-                        priority={idx === 0}
-                        sizes="100vw"
-                        className="object-cover object-center z-0 select-none md:hidden"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          if (target && !target.src.includes('hero_ecommerce.png')) {
-                            target.src = '/images/hero_ecommerce.png';
-                          }
-                        }}
-                      />
-                      {/* Desktop view image */}
-                      <Image
-                        src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
-                        alt={slide.heading || 'FAAZO Hero Slide'}
-                        fill
-                        priority={idx === 0}
-                        sizes="100vw"
-                        className="object-cover md:object-center z-0 select-none hidden md:block"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          if (target && !target.src.includes('hero_ecommerce.png')) {
-                            target.src = '/images/hero_ecommerce.png';
-                          }
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <Image
-                      src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
-                      alt={slide.heading || 'FAAZO Hero Slide'}
-                      fill
-                      priority={idx === 0}
-                      sizes="100vw"
-                      className="object-cover object-[center_right] md:object-center z-0 select-none"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target && !target.src.includes('hero_ecommerce.png')) {
-                          target.src = '/images/hero_ecommerce.png';
-                        }
-                      }}
-                    />
-                  )}
-                </div>
+        <Swiper
+          modules={[Navigation, Pagination, Autoplay]}
+          navigation={{
+            prevEl: '.hero-swiper-prev',
+            nextEl: '.hero-swiper-next',
+          }}
+          pagination={{
+            clickable: true,
+            el: '.hero-swiper-pagination',
+          }}
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+          }}
+          loop={true}
+          className="w-full relative"
+        >
+          {displaySlides.map((slide, idx) => {
+            // Keep design layout, classes, overlays exactly as original
+            const isSecondSlide = idx === 1;
+            return (
+              <SwiperSlide key={slide.id}>
+                {slide.visual_layout?.enabled && slide.visual_layout?.elements?.length > 0 ? (
+                  <UniversalBannerRenderer layout={slide.visual_layout} priority={idx === 0} />
+                ) : (
+                  <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] overflow-hidden">
+                    {/* Background image */}
+                    <div className="absolute inset-0 w-full h-full z-0 select-none">
+                      {slide.mobile_image_url ? (
+                        <>
+                          {/* Mobile view image (exact 3:3.7 ratio from admin panel) */}
+                          <Image
+                            src={getAbsoluteImageUrl(slide.mobile_image_url)}
+                            alt={slide.heading || 'FAAZO Hero Slide'}
+                            fill
+                            priority={idx === 0}
+                            sizes="100vw"
+                            className="object-cover object-center z-0 select-none md:hidden"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (target && !target.src.includes('hero_ecommerce.png')) {
+                                target.src = '/images/hero_ecommerce.png';
+                              }
+                            }}
+                          />
+                          {/* Desktop view image */}
+                          <Image
+                            src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
+                            alt={slide.heading || 'FAAZO Hero Slide'}
+                            fill
+                            priority={idx === 0}
+                            sizes="100vw"
+                            className="object-cover md:object-center z-0 select-none hidden md:block"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (target && !target.src.includes('hero_ecommerce.png')) {
+                                target.src = '/images/hero_ecommerce.png';
+                              }
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <Image
+                          src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
+                          alt={slide.heading || 'FAAZO Hero Slide'}
+                          fill
+                          priority={idx === 0}
+                          sizes="100vw"
+                          className="object-cover object-[center_right] md:object-center z-0 select-none"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (target && !target.src.includes('hero_ecommerce.png')) {
+                              target.src = '/images/hero_ecommerce.png';
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
 
-                {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
-                <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
-                  <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
-                    {slide.heading && slide.heading.trim().length > 0 && (
-                      <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
-                        {isSecondSlide ? (
-                          <>
-                            <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
-                            {slide.heading.includes(' engineered ') && (
+                    {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
+                    <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
+                      <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
+                        {slide.heading && slide.heading.trim().length > 0 && (
+                          <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
+                            {isSecondSlide ? (
                               <>
-                                <span className="text-[#005F63]">engineered for</span>
-                                <span>{slide.heading.split(' engineered ')[1] || ''}</span>
+                                <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
+                                {slide.heading.includes(' engineered ') && (
+                                  <>
+                                    <span className="text-[#005F63]">engineered for</span>
+                                    <span>{slide.heading.split(' engineered ')[1] || ''}</span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span>{slide.heading.split(' ')[0] || ''}</span>
+                                {slide.heading.split(' ')[1] && (
+                                  <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
+                                )}
+                                {slide.heading.split(' ').length > 2 && (
+                                  <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
+                                )}
                               </>
                             )}
-                          </>
-                        ) : (
-                          <>
-                            <span>{slide.heading.split(' ')[0] || ''}</span>
-                            {slide.heading.split(' ')[1] && (
-                              <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
-                            )}
-                            {slide.heading.split(' ').length > 2 && (
-                              <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
-                            )}
-                          </>
+                          </h1>
                         )}
-                      </h1>
-                    )}
 
-                    {slide.subheading && (
-                      <p className="text-[13px] sm:text-[14px] md:text-sm text-slate-600 font-medium mb-3 md:mb-4 line-clamp-2 max-w-xs md:max-w-md">
-                        {slide.subheading}
-                      </p>
-                    )}
-                  </div>
+                        {slide.subheading && (
+                          <p className="text-[13px] sm:text-[14px] md:text-sm text-slate-600 font-medium mb-3 md:mb-4 line-clamp-2 max-w-xs md:max-w-md">
+                            {slide.subheading}
+                          </p>
+                        )}
+                      </div>
 
-                  {slide.cta_text && (
-                    <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
-                      <a
-                        href={slide.cta_link || '#products'}
-                        className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
-                      >
-                        <span>{slide.cta_text}</span>
-                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
-                      </a>
+                      {slide.cta_text && (
+                        <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
+                          <a
+                            href={slide.cta_link || '#products'}
+                            className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                          >
+                            <span>{slide.cta_text}</span>
+                            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
+                          </a>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </SwiperSlide>
-          );
-        })}
+                  </div>
+                )}
+              </SwiperSlide>
+            );
+          })}
 
-        {/* Circular Slider Navigation Controls */}
-        <button
-          className="hero-swiper-prev absolute left-3 md:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
-        </button>
-        <button
-          className="hero-swiper-next absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
-        </button>
-      </Swiper>
+          {/* Circular Slider Navigation Controls */}
+          <button
+            className="hero-swiper-prev absolute left-3 md:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
+          </button>
+          <button
+            className="hero-swiper-next absolute right-3 md:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-11 md:h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-[#005F63] hover:text-white transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer transition-opacity duration-300"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
+          </button>
+        </Swiper>
 
 
-      {/* Pagination bullets */}
-      <div className="relative md:absolute md:bottom-3 left-0 right-0 z-20 flex justify-center py-3.5 md:py-0 bg-white md:bg-transparent border-b md:border-b-0 border-slate-100">
-        <div className="hero-swiper-pagination flex justify-center items-center gap-1.5" />
-      </div>
+        {/* Pagination bullets */}
+        <div className="relative md:absolute md:bottom-3 left-0 right-0 z-20 flex justify-center py-3.5 md:py-0 bg-white md:bg-transparent border-b md:border-b-0 border-slate-100">
+          <div className="hero-swiper-pagination flex justify-center items-center gap-1.5" />
+        </div>
 
 
       </div>

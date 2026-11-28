@@ -28,6 +28,7 @@ from .models import (
     DailyOfferProduct,
     BrandDeal,
     BrandDealProduct,
+    UniversalBanner,
 )
 
 
@@ -99,11 +100,27 @@ class FlexibleImageField(serializers.FileField):
         return super().run_validation(data)
 
 
+class FlexibleJSONField(serializers.JSONField):
+    """
+    Robust JSONField that handles stringified JSON from multipart FormData or dicts from JSON body.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            try:
+                import json
+                data = json.loads(data)
+            except Exception:
+                pass
+        return super().to_internal_value(data)
+
+
 # ============================================================
 # 0. Homepage Promo / Announcement Banner
 # ============================================================
 
 class HomepagePromoBannerSerializer(serializers.ModelSerializer):
+    visual_layout = FlexibleJSONField(required=False, default=dict)
+
     class Meta:
         model = HomepagePromoBanner
         fields = [
@@ -116,6 +133,7 @@ class HomepagePromoBannerSerializer(serializers.ModelSerializer):
             "tagline_color",
             "text_color",
             "border_color",
+            "visual_layout",
             "created_at",
             "updated_at",
         ]
@@ -135,6 +153,7 @@ class HeroSlideReadSerializer(serializers.ModelSerializer):
             "id", "heading", "subheading",
             "cta_text", "cta_link",
             "desktop_image_url", "mobile_image_url",
+            "visual_layout",
             "sort_order", "is_active",
         ]
 
@@ -152,6 +171,7 @@ class HeroSlideWriteSerializer(serializers.ModelSerializer):
     cta_link = serializers.CharField(required=False, allow_blank=True)
     desktop_image = FlexibleImageField(required=False, allow_null=True)
     mobile_image  = FlexibleImageField(required=False, allow_null=True)
+    visual_layout = FlexibleJSONField(required=False, default=dict)
 
     class Meta:
         model  = HeroSlide
@@ -159,6 +179,7 @@ class HeroSlideWriteSerializer(serializers.ModelSerializer):
             "id", "heading", "subheading",
             "cta_text", "cta_link",
             "desktop_image", "mobile_image",
+            "visual_layout",
             "sort_order", "is_active",
         ]
         read_only_fields = ["id"]
@@ -485,6 +506,7 @@ class LimitedTimeOfferReadSerializer(serializers.ModelSerializer):
             "savings_text", "validity_text", "image_url", "banner_image_url",
             "image", "offer_text", "start_date", "end_date",
             "cta_text", "cta_link", "sort_order", "is_featured", "is_active",
+            "visual_layout",
             "pricing", "inventory", "created_at",
         ]
 
@@ -604,6 +626,7 @@ class LimitedTimeOfferWriteSerializer(serializers.ModelSerializer):
     banner_image = FlexibleImageField(required=False, allow_null=True)
     start_date = NullableDateTimeField(allow_null=True, required=False)
     end_date = NullableDateTimeField(allow_null=True, required=False)
+    visual_layout = FlexibleJSONField(required=False, default=dict)
 
     class Meta:
         model  = LimitedTimeOffer
@@ -612,6 +635,7 @@ class LimitedTimeOfferWriteSerializer(serializers.ModelSerializer):
             "description", "original_price", "discounted_price",
             "validity_text", "image_url", "offer_text", "start_date", "end_date",
             "cta_text", "cta_link", "sort_order", "is_featured", "is_active",
+            "visual_layout",
         ]
         read_only_fields = ["id"]
 
@@ -930,6 +954,7 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
             "countdown_enabled", "countdown_template", "countdown_size", "countdown_position", "start_date", "end_date", "expired_behavior",
             "cta_enabled", "cta_template", "cta_size", "cta_border_radius", "cta_show_arrow", "cta_open_in_new_tab", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "visual_layout",
             "status", "is_active", "sort_order", "created_at", "updated_at",
             "items",
         ]
@@ -981,6 +1006,7 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
     start_date = serializers.DateTimeField(required=False, allow_null=True)
     end_date = serializers.DateTimeField(required=False, allow_null=True)
     cta_target_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    visual_layout = FlexibleJSONField(required=False, default=dict)
     items_data = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
 
     class Meta:
@@ -997,6 +1023,7 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
             "countdown_enabled", "countdown_template", "countdown_size", "countdown_position", "start_date", "end_date", "expired_behavior",
             "cta_enabled", "cta_template", "cta_size", "cta_border_radius", "cta_show_arrow", "cta_open_in_new_tab", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "visual_layout",
             "status", "is_active", "sort_order", "items_data",
         ]
         read_only_fields = ["id", "desktop_image_url", "mobile_image_url"]
@@ -1486,6 +1513,56 @@ class BrandDealWriteSerializer(serializers.ModelSerializer):
                 )
             except Product.DoesNotExist:
                 continue
+
+
+# ============================================================
+# 9. Universal Promotional Banner Serializers
+# ============================================================
+
+class UniversalBannerReadSerializer(serializers.ModelSerializer):
+    desktop_image_url = serializers.SerializerMethodField()
+    mobile_image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UniversalBanner
+        fields = [
+            "id", "name", "slug", "banner_type",
+            "desktop_image", "desktop_image_url",
+            "mobile_image", "mobile_image_url",
+            "bg_color", "visual_layout", "is_active", "sort_order",
+            "created_at", "updated_at",
+        ]
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
+
+class UniversalBannerWriteSerializer(serializers.ModelSerializer):
+    desktop_image = FlexibleImageField(required=False, allow_null=True)
+    desktop_image_url = serializers.SerializerMethodField(read_only=True)
+    mobile_image = FlexibleImageField(required=False, allow_null=True)
+    mobile_image_url = serializers.SerializerMethodField(read_only=True)
+    visual_layout = FlexibleJSONField(required=False, default=dict)
+
+    class Meta:
+        model = UniversalBanner
+        fields = [
+            "id", "name", "slug", "banner_type",
+            "desktop_image", "desktop_image_url",
+            "mobile_image", "mobile_image_url",
+            "bg_color", "visual_layout", "is_active", "sort_order",
+        ]
+        read_only_fields = ["id", "desktop_image_url", "mobile_image_url"]
+
+    def get_desktop_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.desktop_image)
+
+    def get_mobile_image_url(self, obj):
+        return abs_image_url(self.context.get("request"), obj.mobile_image)
+
 
 
 
