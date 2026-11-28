@@ -304,22 +304,14 @@ const FeaturedCollectionsManager: React.FC = () => {
         const d = new Date(form.start_date);
         if (!isNaN(d.getTime())) {
           fd.append('start_date', d.toISOString());
-        } else {
-          fd.append('start_date', '');
         }
-      } else {
-        fd.append('start_date', '');
       }
 
       if (form.end_date && form.end_date.trim()) {
         const d = new Date(form.end_date);
         if (!isNaN(d.getTime())) {
           fd.append('end_date', d.toISOString());
-        } else {
-          fd.append('end_date', '');
         }
-      } else {
-        fd.append('end_date', '');
       }
 
       // Desktop image
@@ -340,7 +332,7 @@ const FeaturedCollectionsManager: React.FC = () => {
         ? await homepageService.updateFeaturedCollection(editColl.id, fd)
         : await homepageService.createFeaturedCollection(fd);
 
-      if (res.success) {
+      if (res && res.success !== false) {
         showToast({
           variant: 'success',
           title: editColl ? 'Promotional banner updated successfully' : 'Promotional banner created successfully',
@@ -352,26 +344,43 @@ const FeaturedCollectionsManager: React.FC = () => {
         }
         load();
       } else {
-        showToast({ variant: 'error', title: res.message || 'Save failed' });
+        const errorMsg = res?.message || 'Save failed. Please check your inputs.';
+        showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
       }
     } catch (err: any) {
       console.error('Failed to save promotional banner:', err);
       let errorMsg = 'Save failed';
-      const responseData = err.response?.data;
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        showToast({ variant: 'error', title: 'Session Expired', message: 'Admin session expired. Please log in again.' });
+        setTimeout(() => { window.location.href = '/admin/login'; }, 1500);
+        return;
+      }
+
+      const responseData = err?.response?.data;
       if (responseData) {
         if (responseData.error?.message) {
           errorMsg = responseData.error.message;
+          if (Array.isArray(responseData.error.details) && responseData.error.details.length > 0) {
+            const firstDetail = responseData.error.details[0];
+            const issue = firstDetail?.issue || firstDetail?.message || '';
+            const field = firstDetail?.field || '';
+            errorMsg = field ? `${field}: ${issue}` : (issue || errorMsg);
+          }
         } else if (responseData.message) {
           errorMsg = responseData.message;
         } else if (typeof responseData === 'object') {
-          const firstKey = Object.keys(responseData)[0];
-          const val = responseData[firstKey];
-          errorMsg = `${firstKey}: ${Array.isArray(val) ? val[0] : val}`;
+          const meaningful = Object.entries(responseData)
+            .filter(([k]) => k !== 'success' && k !== 'data')
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : v}`);
+          if (meaningful.length > 0) {
+            errorMsg = meaningful.join(' | ');
+          }
         }
-      } else if (err.message) {
+      } else if (err?.message) {
         errorMsg = err.message;
       }
-      showToast({ variant: 'error', title: errorMsg });
+      showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
     } finally {
       setSaving(false);
     }

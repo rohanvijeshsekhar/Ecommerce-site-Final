@@ -114,6 +114,25 @@ class FlexibleJSONField(serializers.JSONField):
         return super().to_internal_value(data)
 
 
+class EmptySafeDateTimeField(serializers.DateTimeField):
+    """
+    Robust DateTimeField that converts empty strings, 'null', 'undefined',
+    'None', False, and None to Python None when allow_null=True.
+    Prevents QueryDict 'None' string conversion from causing datetime format errors.
+    """
+    def to_internal_value(self, value):
+        if value in ("", "null", "undefined", "None", None, False):
+            return None
+        return super().to_internal_value(value)
+
+    def run_validation(self, data=serializers.empty):
+        if data in ("", "null", "undefined", "None", None, False):
+            if self.allow_null:
+                return None
+            raise serializers.ValidationError("This field may not be blank.")
+        return super().run_validation(data)
+
+
 # ============================================================
 # 0. Homepage Promo / Announcement Banner
 # ============================================================
@@ -402,8 +421,8 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField(read_only=True)
     mobile_image = FlexibleImageField(required=False, allow_null=True)
     mobile_image_url = serializers.SerializerMethodField(read_only=True)
-    start_date = serializers.DateTimeField(required=False, allow_null=True)
-    end_date = serializers.DateTimeField(required=False, allow_null=True)
+    start_date = EmptySafeDateTimeField(required=False, allow_null=True)
+    end_date = EmptySafeDateTimeField(required=False, allow_null=True)
     cta_target_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
@@ -445,8 +464,11 @@ class FeaturedCollectionWriteSerializer(serializers.ModelSerializer):
                         data[field] = None
 
         for field in ("start_date", "end_date"):
-            if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
-                data[field] = None
+            if field in data and (data[field] in ("", "null", "undefined", "None", False, None)):
+                if hasattr(data, "setlist"):
+                    data.setlist(field, [])
+                else:
+                    data[field] = None
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
             data["cta_target_id"] = ""
         return super().to_internal_value(data)
@@ -1003,8 +1025,8 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
     desktop_image_url = serializers.SerializerMethodField(read_only=True)
     mobile_image = FlexibleImageField(required=False, allow_null=True)
     mobile_image_url = serializers.SerializerMethodField(read_only=True)
-    start_date = serializers.DateTimeField(required=False, allow_null=True)
-    end_date = serializers.DateTimeField(required=False, allow_null=True)
+    start_date = EmptySafeDateTimeField(required=False, allow_null=True)
+    end_date = EmptySafeDateTimeField(required=False, allow_null=True)
     cta_target_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     visual_layout = FlexibleJSONField(required=False, default=dict)
     items_data = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
@@ -1052,8 +1074,11 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
                         data[field] = None
 
         for field in ("start_date", "end_date"):
-            if field in data and (data[field] == "" or data[field] == "null" or data[field] is False):
-                data[field] = None
+            if field in data and (data[field] in ("", "null", "undefined", "None", False, None)):
+                if hasattr(data, "setlist"):
+                    data.setlist(field, [])
+                else:
+                    data[field] = None
         if "cta_target_id" in data and (data["cta_target_id"] is None or data["cta_target_id"] == "null"):
             data["cta_target_id"] = ""
 
@@ -1376,6 +1401,8 @@ class BrandDealWriteSerializer(serializers.ModelSerializer):
     mobile_image_url = serializers.SerializerMethodField()
     banner_desktop = serializers.SerializerMethodField()
     banner_mobile = serializers.SerializerMethodField()
+    start_datetime = EmptySafeDateTimeField(required=False, allow_null=True)
+    end_datetime = EmptySafeDateTimeField(required=False, allow_null=True)
     products_data = ProductsDataField(required=False, write_only=True)
 
     class Meta:

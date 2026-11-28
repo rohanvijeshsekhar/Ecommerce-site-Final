@@ -126,7 +126,10 @@ export function resolveElementTransform(
   element: BannerElement,
   breakpoint: DeviceBreakpoint
 ): ResponsiveElementTransform {
-  const desktop = element.desktop;
+  if (!element) {
+    return { x: 0, y: 0, width: 'auto', height: 'auto', visible: false };
+  }
+  const desktop = element.desktop || { x: 0, y: 0, width: 'auto', height: 'auto', visible: true };
   if (breakpoint === 'desktop') {
     return desktop;
   }
@@ -136,8 +139,8 @@ export function resolveElementTransform(
     if (breakpoint === 'mobile') {
       return {
         ...desktop,
-        x: Math.max(4, Math.min(desktop.x, 90)),
-        y: Math.max(4, Math.min(desktop.y, 90)),
+        x: Math.max(4, Math.min(desktop.x ?? 0, 90)),
+        y: Math.max(4, Math.min(desktop.y ?? 0, 90)),
         width: typeof desktop.width === 'number' ? Math.min(92, Math.max(desktop.width * 1.3, 40)) : 'auto',
         fontSize: desktop.fontSize ? Math.max(12, Math.round(desktop.fontSize * 0.72)) : undefined,
       };
@@ -149,10 +152,10 @@ export function resolveElementTransform(
   }
 
   return {
-    x: override.x ?? desktop.x,
-    y: override.y ?? desktop.y,
-    width: override.width ?? desktop.width,
-    height: override.height ?? desktop.height,
+    x: override.x ?? desktop.x ?? 0,
+    y: override.y ?? desktop.y ?? 0,
+    width: override.width ?? desktop.width ?? 'auto',
+    height: override.height ?? desktop.height ?? 'auto',
     rotation: override.rotation ?? desktop.rotation ?? 0,
     fontSize: override.fontSize ?? (breakpoint === 'mobile' && desktop.fontSize ? Math.round(desktop.fontSize * 0.75) : desktop.fontSize),
     textAlign: override.textAlign ?? desktop.textAlign ?? 'left',

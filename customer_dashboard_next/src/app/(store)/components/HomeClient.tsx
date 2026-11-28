@@ -65,11 +65,29 @@ export default function HomeClient({
     router.push(`/combo-deals/${slug}`);
   };
 
+  // Safeguards ensuring array inputs even if backend returns pagination envelopes or errors
+  const safeCategories = Array.isArray(initialCategories)
+    ? initialCategories
+    : (initialCategories as any)?.data || (initialCategories as any)?.results || [];
+  const safeBestSellers = Array.isArray(initialBestSellers)
+    ? initialBestSellers
+    : (initialBestSellers as any)?.data || (initialBestSellers as any)?.results || [];
+  const safeRecommended = Array.isArray(initialRecommended)
+    ? initialRecommended
+    : (initialRecommended as any)?.data || (initialRecommended as any)?.results || [];
+  const safeSlides = Array.isArray(initialSlides) ? initialSlides : (initialSlides as any)?.data || [];
+  const safeCombos = Array.isArray(initialCombos) ? initialCombos : (initialCombos as any)?.data || [];
+  const safeCollections = Array.isArray(initialCollections) ? initialCollections : (initialCollections as any)?.data || [];
+  const safeSolutions = Array.isArray(initialSolutions) ? initialSolutions : (initialSolutions as any)?.data || [];
+  const safeDailyOffers = Array.isArray(initialDailyOffers) ? initialDailyOffers : (initialDailyOffers as any)?.data || [];
+  const safeBrandDeals = Array.isArray(initialBrandDeals) ? initialBrandDeals : (initialBrandDeals as any)?.data || [];
+
   // Maps the categories backend structure to initialCategories props format
-  const mappedCategories = initialCategories.map((c: any) => {
+  const mappedCategories = safeCategories.map((c: any) => {
+    if (!c) return null;
     const slug = c.category_slug ?? c.category ?? '';
     const getCategoryFallbackImage = (sSlug: string): string => {
-      const s = sSlug.toLowerCase();
+      const s = String(sSlug || '').toLowerCase();
       if (s.includes('handpiece')) return '/images/category_handpieces.png';
       if (s.includes('camera') || s.includes('scan') || s.includes('imaging') || s.includes('x-ray')) return '/images/category_imaging.png';
       if (s.includes('instrument')) return '/images/category_instruments.png';
@@ -79,12 +97,13 @@ export default function HomeClient({
     };
     return {
       id: c.category_slug ?? c.category,
-      title: c.display_title,
+      title: c.display_title || c.title || 'Category',
       image: getAbsoluteImageUrl(c.card_image_url) || getCategoryFallbackImage(slug),
     };
-  });
+  }).filter(Boolean);
 
-  const mappedBestSellers = initialBestSellers.map((b: any) => {
+  const mappedBestSellers = safeBestSellers.map((b: any) => {
+    if (!b) return null;
     const price = b.pricing ? parseFloat(b.pricing.effective_price || b.pricing.selling_price || '0') : 0;
     const rawRating = b.average_rating ?? b.avg_rating ?? b.rating;
     const rating = rawRating !== undefined && rawRating !== null ? parseFloat(String(rawRating)) : 0;
@@ -92,16 +111,17 @@ export default function HomeClient({
     const reviews = rawReviews !== undefined && rawReviews !== null ? parseInt(String(rawReviews), 10) : 0;
     return {
       id:       b.product_slug ?? b.product,
-      title:    b.display_heading || b.product_name,
+      title:    b.display_heading || b.product_name || 'Featured Product',
       subtitle: b.display_short_description || '',
       price:    price,
       rating:   rating,
       reviews:  reviews,
       image:    getAbsoluteImageUrl(b.display_image_url) || '/images/nsk_handpiece_portrait.png',
     };
-  });
+  }).filter(Boolean);
 
-  const mappedRecommended = initialRecommended.map((item: any) => {
+  const mappedRecommended = safeRecommended.map((item: any) => {
+    if (!item) return null;
     const price = item.pricing ? parseFloat(item.pricing.effective_price || item.pricing.selling_price || '0') : (item.price ? parseFloat(item.price) : 0);
     const mrp = item.pricing ? parseFloat(item.pricing.mrp || '0') : (item.originalPrice || item.original_price ? parseFloat(item.originalPrice || item.original_price) : undefined);
     const discountPct = item.pricing?.discount_percentage;
@@ -124,13 +144,13 @@ export default function HomeClient({
       image:        getAbsoluteImageUrl(item.primary_image || (item.images && item.images[0]?.image) || item.image || ''),
       discount:     discountStr,
     };
-  });
+  }).filter(Boolean);
 
   return (
     <>
-      <Hero initialSlides={initialSlides} />
+      <Hero initialSlides={safeSlides} />
       <CategoryList onCategoryClick={handleCategoryClick} initialCategories={mappedCategories} />
-      <DailyOffersSection initialOffers={initialDailyOffers} />
+      <DailyOffersSection initialOffers={safeDailyOffers} />
       <BestSellers
         onProductClick={handleProductClick}
         onOpenLoginModal={store.openLoginModal}
@@ -140,7 +160,7 @@ export default function HomeClient({
         showToast={store.showToast}
         initialProducts={mappedBestSellers}
       />
-      <FeaturedCollection initialCollections={initialCollections} />
+      <FeaturedCollection initialCollections={safeCollections} />
       <BrandLogos />
       <WhyChooseBanner />
       <FeaturedCombos
@@ -151,11 +171,11 @@ export default function HomeClient({
         setWishlistItems={store.setWishlistItems}
         showToast={store.showToast}
         onOpenLoginModal={store.openLoginModal}
-        initialCombos={initialCombos}
+        initialCombos={safeCombos}
       />
-      <ExploreSolutions initialSolutions={initialSolutions} />
+      <ExploreSolutions initialSolutions={safeSolutions} />
       <WhyChoosePanel />
-      <BrandDealsSection initialBrandDeals={initialBrandDeals} />
+      <BrandDealsSection initialBrandDeals={safeBrandDeals} />
       <Testimonials />
       <Recommended
         onProductClick={handleProductClick}
