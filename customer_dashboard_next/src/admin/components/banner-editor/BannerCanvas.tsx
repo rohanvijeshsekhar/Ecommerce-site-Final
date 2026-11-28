@@ -75,7 +75,7 @@ export const BannerCanvas: React.FC<BannerCanvasProps> = ({
         return;
       }
 
-      const el = layout.elements.find((item) => item.id === selectedElementId);
+      const el = layout?.elements?.find((item) => item.id === selectedElementId);
       if (!el || el.locked) return;
 
       const step = e.shiftKey ? 3 : 0.5;
@@ -331,7 +331,7 @@ export const BannerCanvas: React.FC<BannerCanvasProps> = ({
         )}
 
         {/* Overlay Elements Loop */}
-        {layout.elements.map((el) => {
+        {(layout?.elements || []).map((el) => {
           const t = resolveElementTransform(el, activeBreakpoint);
           if (!t.visible && isPreviewMode) return null;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Image, Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2, Move } from 'lucide-react';
+import { Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2, Move } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAdmin } from '../../contexts/AdminContext';
 import ImageUploader from '../ImageUploader';

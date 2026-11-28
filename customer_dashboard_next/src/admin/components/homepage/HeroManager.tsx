@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image, Megaphone, Sparkles, ExternalLink, Check, Palette, RotateCcw, Move } from 'lucide-react';
+import { Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, X, Save, Monitor, Image as ImageIcon, Megaphone, Sparkles, ExternalLink, Check, Palette, RotateCcw, Move } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { HeroSlide, HomepagePromoBanner } from '../../types/admin';
@@ -110,11 +110,26 @@ const HeroManager: React.FC = () => {
     setLoading(true);
     try {
       const [heroRes, promoRes] = await Promise.all([
-        homepageService.getHeroSlides(),
-        homepageService.getPromoBanner(),
+        homepageService.getHeroSlides().catch((err) => {
+          console.error('Failed to load hero slides:', err);
+          return { success: false, data: [] };
+        }),
+        homepageService.getPromoBanner().catch((err) => {
+          console.error('Failed to load promo banner:', err);
+          return { success: false, data: null };
+        }),
       ]);
-      if (heroRes.success && heroRes.data) setSlides(heroRes.data);
-      if (promoRes.success && promoRes.data) {
+      if (heroRes?.data) {
+        const slidesList = Array.isArray(heroRes.data)
+          ? heroRes.data
+          : Array.isArray((heroRes.data as any)?.results)
+          ? (heroRes.data as any).results
+          : [];
+        setSlides(slidesList);
+      } else {
+        setSlides([]);
+      }
+      if (promoRes?.success && promoRes?.data) {
         setPromoForm({
           title: promoRes.data.title || '',
           subtitle: promoRes.data.subtitle || '',
@@ -126,6 +141,8 @@ const HeroManager: React.FC = () => {
           border_color: promoRes.data.border_color || DEFAULT_BANNER_COLORS.border_color,
         });
       }
+    } catch (err) {
+      console.error('Error loading hero manager data:', err);
     } finally {
       setLoading(false);
     }
@@ -151,15 +168,36 @@ const HeroManager: React.FC = () => {
     setPromoSaved(false);
     try {
       const res = await homepageService.updatePromoBanner(promoForm);
-      if (res.success) {
+      if (res && res.success !== false) {
         setPromoSaved(true);
         setTimeout(() => setPromoSaved(false), 3500);
         showToast({ variant: 'success', title: 'Promo banner updated', message: 'Homepage top announcement is now live.' });
       } else {
-        showToast({ variant: 'error', title: 'Update failed', message: res.message || 'Please try again.' });
+        showToast({ variant: 'error', title: 'Update failed', message: res?.message || 'Please try again.' });
       }
-    } catch {
-      showToast({ variant: 'error', title: 'Update failed', message: 'Failed to save announcement banner.' });
+    } catch (err: any) {
+      console.error('Promo banner save error:', err);
+      const errData = err?.response?.data;
+      let errorMsg = 'Failed to save announcement banner.';
+      if (errData) {
+        if (typeof errData === 'string') {
+          errorMsg = errData;
+        } else if (errData.message && errData.message !== 'An error occurred.') {
+          errorMsg = errData.message;
+        } else if (errData.detail) {
+          errorMsg = errData.detail;
+        } else if (typeof errData === 'object') {
+          const meaningful = Object.entries(errData)
+            .filter(([k]) => k !== 'success' && k !== 'data')
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : v}`);
+          if (meaningful.length > 0) {
+            errorMsg = meaningful.join(' | ');
+          }
+        }
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+      showToast({ variant: 'error', title: 'Update failed', message: errorMsg });
     } finally {
       setSavingPromo(false);
     }
@@ -241,6 +279,8 @@ const HeroManager: React.FC = () => {
             errorMsg = meaningful.join(' | ');
           }
         }
+      } else if (err?.message) {
+        errorMsg = err.message;
       }
       showToast({ variant: 'error', title: 'Save failed', message: errorMsg });
     } finally {
@@ -585,9 +625,9 @@ const HeroManager: React.FC = () => {
         </div>
 
         {/* Slides List */}
-        {slides.length === 0 ? (
+        {(!Array.isArray(slides) || slides.length === 0) ? (
           <EmptyState
-            icon={<Image className="w-10 h-10 text-slate-300" />}
+            icon={<ImageIcon className="w-10 h-10 text-slate-300" />}
             title="No hero slides"
             description="Add your first hero slide to display on the homepage carousel."
             action={
@@ -598,7 +638,7 @@ const HeroManager: React.FC = () => {
           />
         ) : (
           <div className="space-y-3">
-            {slides.map((slide) => (
+            {slides.filter(Boolean).map((slide) => (
               <div
                 key={slide.id}
                 className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group"

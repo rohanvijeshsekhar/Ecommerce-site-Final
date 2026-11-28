@@ -299,6 +299,8 @@ export const UniversalBannerEditorModal: React.FC<UniversalBannerEditorModalProp
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-2 sm:p-4">
       <div className="w-full h-full max-w-[1720px] max-h-[96vh] bg-slate-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-300">
