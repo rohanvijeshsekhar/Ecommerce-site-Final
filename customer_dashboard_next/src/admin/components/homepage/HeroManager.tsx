@@ -584,9 +584,9 @@ const HeroManager: React.FC = () => {
                 <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
 
                 {/* Desktop preview */}
-                <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-20 h-12 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
                   {slide.desktop_image_url || (slide as any).desktop_image ? (
-                    <img src={getAbsoluteImageUrl(slide.desktop_image_url || (slide as any).desktop_image)} alt={slide.heading} className="w-full h-full object-cover" />
+                    <img src={getAbsoluteImageUrl(slide.desktop_image_url || (slide as any).desktop_image)} alt={slide.heading} className="w-full h-full object-contain" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Monitor className="w-5 h-5 text-slate-400" />

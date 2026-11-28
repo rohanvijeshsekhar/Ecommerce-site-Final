@@ -635,8 +635,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                     onClick={() => toggleVisible(coll)}
                     title={coll.is_visible ? 'Deactivate banner' : 'Activate banner'}
                     className={`p-2 rounded-xl transition-all cursor-pointer ${coll.is_visible
-                        ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
-                        : 'text-slate-400 hover:bg-slate-100'
+                      ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                      : 'text-slate-400 hover:bg-slate-100'
                       }`}
                   >
                     {coll.is_visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -790,8 +790,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                     type="button"
                     onClick={() => setPreviewDevice('desktop')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${previewDevice === 'desktop'
-                        ? 'bg-[#006670] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#006670] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                   >
                     <Monitor className="w-3.5 h-3.5" />
@@ -801,8 +801,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                     type="button"
                     onClick={() => setPreviewDevice('mobile')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${previewDevice === 'mobile'
-                        ? 'bg-[#006670] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#006670] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
@@ -976,8 +976,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, banner_layout: item.id as any }))}
                               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${form.banner_layout === item.id
-                                  ? 'border-[#006670] bg-[#006670]/5 ring-1 ring-[#006670]'
-                                  : 'border-slate-200 hover:border-slate-300'
+                                ? 'border-[#006670] bg-[#006670]/5 ring-1 ring-[#006670]'
+                                : 'border-slate-200 hover:border-slate-300'
                                 }`}
                             >
                               <p className="font-bold text-xs text-slate-800">{item.label}</p>
@@ -997,8 +997,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, image_position: 'left' }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.image_position === 'left'
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               Image on Left
@@ -1007,8 +1007,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, image_position: 'right' }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.image_position === 'right'
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               Image on Right
@@ -1028,8 +1028,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, horizontal_alignment: align }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${form.horizontal_alignment === align
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {align}
@@ -1049,8 +1049,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, vertical_alignment: vAlign }))}
                               className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${form.vertical_alignment === vAlign
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {vAlign}
@@ -1075,8 +1075,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, content_width: w.id as any }))}
                               className={`py-2 px-2 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.content_width === w.id
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {w.label}
@@ -1130,8 +1130,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                             type="button"
                             onClick={() => setForm(f => ({ ...f, image_fit: 'contain' }))}
                             className={`py-2.5 px-3 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.image_fit === 'contain'
-                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                              ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                               }`}
                           >
                             Contain (Float / Equipment)
@@ -1140,8 +1140,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                             type="button"
                             onClick={() => setForm(f => ({ ...f, image_fit: 'cover' }))}
                             className={`py-2.5 px-3 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.image_fit === 'cover'
-                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                              ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                               }`}
                           >
                             Cover (Edge Bleed)
@@ -1161,8 +1161,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, bg_color: c.hex }))}
                               className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-semibold cursor-pointer ${form.bg_color === c.hex
-                                  ? 'border-[#006670] ring-1 ring-[#006670]'
-                                  : 'border-slate-200 hover:border-slate-300'
+                                ? 'border-[#006670] ring-1 ring-[#006670]'
+                                : 'border-slate-200 hover:border-slate-300'
                                 }`}
                             >
                               <span
@@ -1202,8 +1202,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                                 type="button"
                                 onClick={() => setForm(f => ({ ...f, overlay_gradient: grad }))}
                                 className={`py-1.5 px-2 rounded-lg border text-[11px] font-semibold capitalize text-center cursor-pointer ${form.overlay_gradient === grad
-                                    ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                   }`}
                               >
                                 {grad}
@@ -1246,8 +1246,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, heading_size: size }))}
                               className={`py-2 rounded-xl border text-xs font-semibold uppercase text-center cursor-pointer ${form.heading_size === size
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {size}
@@ -1267,8 +1267,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, heading_weight: weight }))}
                               className={`py-2 rounded-xl border text-xs font-semibold capitalize text-center cursor-pointer ${form.heading_weight === weight
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {weight}
@@ -1391,8 +1391,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, cta_action_type: t.id as any }))}
                               className={`py-2 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.cta_action_type === t.id
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {t.label}
@@ -1465,8 +1465,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                               type="button"
                               onClick={() => setForm(f => ({ ...f, cta_style: s.id as any }))}
                               className={`py-2 rounded-xl border text-xs font-semibold text-center cursor-pointer ${form.cta_style === s.id
-                                  ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
-                                  : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                ? 'border-[#006670] bg-[#006670]/5 text-[#006670]'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
                               {s.label}
@@ -1643,24 +1643,24 @@ const FeaturedCollectionsManager: React.FC = () => {
                       {form.banner_layout === 'split' && (
                         <div
                           className={`w-full ${previewDevice === 'desktop'
-                              ? 'grid grid-cols-12 min-h-[440px] items-stretch'
-                              : 'flex flex-col min-h-[460px] p-6'
+                            ? 'grid grid-cols-12 min-h-[440px] items-stretch'
+                            : 'flex flex-col min-h-[460px] p-6'
                             }`}
                         >
                           {/* Content Column */}
                           <div
                             className={`flex flex-col ${previewDevice === 'desktop'
-                                ? `col-span-6 px-10 ${canvasVAlignClass} ${form.image_position === 'left' ? 'order-2' : 'order-1'
-                                }`
-                                : 'order-1 items-start text-left mb-6'
+                              ? `col-span-6 px-10 ${canvasVAlignClass} ${form.image_position === 'left' ? 'order-2' : 'order-1'
+                              }`
+                              : 'order-1 items-start text-left mb-6'
                               }`}
                           >
                             <div
                               className={`w-full flex flex-col ${canvasWidthClass} ${canvasHAlign === 'center'
-                                  ? 'text-center items-center mx-auto'
-                                  : canvasHAlign === 'right'
-                                    ? 'text-right items-end ml-auto'
-                                    : 'text-left items-start mr-auto'
+                                ? 'text-center items-center mx-auto'
+                                : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
                                 }`}
                             >
                               <div
@@ -1736,8 +1736,8 @@ const FeaturedCollectionsManager: React.FC = () => {
                           {/* Image Column */}
                           <div
                             className={`relative flex items-center justify-center overflow-hidden ${previewDevice === 'desktop'
-                                ? `col-span-6 min-h-[360px] ${form.image_position === 'left' ? 'order-1' : 'order-2'}`
-                                : 'order-2 min-h-[220px] w-full'
+                              ? `col-span-6 min-h-[360px] ${form.image_position === 'left' ? 'order-1' : 'order-2'}`
+                              : 'order-2 min-h-[220px] w-full'
                               }`}
                           >
                             {desktopImgUrl ? (
@@ -1764,7 +1764,7 @@ const FeaturedCollectionsManager: React.FC = () => {
                             <img
                               src={previewDevice === 'mobile' ? mobileImgUrl || desktopImgUrl : desktopImgUrl}
                               alt="Preview"
-                              className="absolute inset-0 w-full h-full object-cover"
+                              className="absolute inset-0 w-full h-full object-contain"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-slate-800" />
@@ -1777,10 +1777,10 @@ const FeaturedCollectionsManager: React.FC = () => {
                           <div className={`w-full h-full min-h-[460px] relative z-10 px-8 flex flex-col ${canvasVAlignClass}`}>
                             <div
                               className={`w-full flex flex-col ${canvasWidthClass} ${canvasHAlign === 'center'
-                                  ? 'text-center items-center mx-auto'
-                                  : canvasHAlign === 'right'
-                                    ? 'text-right items-end ml-auto'
-                                    : 'text-left items-start mr-auto'
+                                ? 'text-center items-center mx-auto'
+                                : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
                                 }`}
                             >
                               {/* Badge & Offer Pill */}
@@ -1862,10 +1862,10 @@ const FeaturedCollectionsManager: React.FC = () => {
                           <div className={`w-full h-full min-h-[380px] flex flex-col ${canvasVAlignClass} z-10`}>
                             <div
                               className={`w-full flex flex-col ${canvasWidthClass} ${canvasHAlign === 'center'
-                                  ? 'text-center items-center mx-auto'
-                                  : canvasHAlign === 'right'
-                                    ? 'text-right items-end ml-auto'
-                                    : 'text-left items-start mr-auto'
+                                ? 'text-center items-center mx-auto'
+                                : canvasHAlign === 'right'
+                                  ? 'text-right items-end ml-auto'
+                                  : 'text-left items-start mr-auto'
                                 }`}
                             >
                               <div

@@ -668,12 +668,12 @@ export const DailyOffersManager: React.FC = () => {
                 >
                   <div className="flex items-start gap-4">
                     {/* Theme / Image Thumbnail */}
-                    <div className="w-16 h-16 rounded-xl shadow-inner shrink-0 relative overflow-hidden border border-slate-200 bg-teal-900">
+                    <div className="w-16 h-16 rounded-xl shadow-inner shrink-0 relative overflow-hidden border border-slate-200 bg-teal-900 flex items-center justify-center p-1">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={getAbsoluteImageUrl(offer.desktop_image_url || offer.desktop_image || DEFAULT_OFFER_FORM.desktop_image_url!)}
                         alt={offer.title || 'Daily Offer Banner'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     </div>
 
@@ -1050,12 +1050,12 @@ export const DailyOffersManager: React.FC = () => {
 
                         {form.desktop_image_url ? (
                           <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3">
-                            <div className="w-16 h-16 rounded-xl bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
+                            <div className="w-16 h-16 rounded-xl bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300 flex items-center justify-center p-1">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={getAbsoluteImageUrl(form.desktop_image_url)}
                                 alt="Banner Artwork"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1125,12 +1125,12 @@ export const DailyOffersManager: React.FC = () => {
 
                         {form.mobile_image_url ? (
                           <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300">
+                            <div className="w-12 h-12 rounded-lg bg-teal-950 shrink-0 relative overflow-hidden border border-slate-300 flex items-center justify-center p-1">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={getAbsoluteImageUrl(form.mobile_image_url)}
                                 alt="Mobile Banner Artwork"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                               />
                             </div>
                             <div className="flex-1 min-w-0">

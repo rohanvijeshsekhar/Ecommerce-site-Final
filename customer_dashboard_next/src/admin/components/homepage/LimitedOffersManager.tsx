@@ -114,8 +114,8 @@ const LimitedOffersManager: React.FC = () => {
         <div className="space-y-3">
           {items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 group">
-              <div className="w-20 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0">
-                {item.banner_image_url || (item as any).banner_image || (item as any).image ? <img src={getAbsoluteImageUrl(item.banner_image_url || (item as any).banner_image || (item as any).image)} className="w-full h-full object-cover" alt={item.heading} /> : <div className="w-full h-full flex items-center justify-center"><Calendar className="w-5 h-5 text-slate-400" /></div>}
+              <div className="w-20 h-12 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+                {item.banner_image_url || (item as any).banner_image || (item as any).image ? <img src={getAbsoluteImageUrl(item.banner_image_url || (item as any).banner_image || (item as any).image)} className="w-full h-full object-contain" alt={item.heading} /> : <div className="w-full h-full flex items-center justify-center"><Calendar className="w-5 h-5 text-slate-400" /></div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm truncate">{item.heading}</p>

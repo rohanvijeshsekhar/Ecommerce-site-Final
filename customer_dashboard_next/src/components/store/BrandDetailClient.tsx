@@ -350,7 +350,7 @@ export default function BrandDetailClient({ slug }: BrandDetailClientProps) {
             src={bannerSrc || '/images/brands_hero_bg.png'}
             alt={brand.name}
             loading="eager"
-            className="w-full h-[240px] sm:h-[320px] md:h-[360px] object-cover opacity-85 brightness-[0.95]"
+            className="w-full h-auto min-h-[220px] max-h-[380px] object-contain opacity-85 brightness-[0.95]"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/85 to-slate-950/40 backdrop-blur-[2px] flex items-center px-6 sm:px-12 lg:px-20 py-6">

@@ -7,6 +7,7 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { api, getAbsoluteImageUrl } from '../../lib/api';
 import { UniversalBannerRenderer } from './banner/UniversalBannerRenderer';
+import { PreservedBannerImage } from './banner/PreservedBannerImage';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -183,109 +184,66 @@ const Hero: React.FC<HeroProps> = ({ initialSlides }) => {
                 {slide.visual_layout?.enabled && slide.visual_layout?.elements?.length > 0 ? (
                   <UniversalBannerRenderer layout={slide.visual_layout} priority={idx === 0} />
                 ) : (
-                  <div className="relative w-full aspect-[3/3.7] sm:aspect-[16/9] md:aspect-[3/1] overflow-hidden">
-                    {/* Background image */}
-                    <div className="absolute inset-0 w-full h-full z-0 select-none">
-                      {slide.mobile_image_url ? (
-                        <>
-                          {/* Mobile view image (exact 3:3.7 ratio from admin panel) */}
-                          <Image
-                            src={getAbsoluteImageUrl(slide.mobile_image_url)}
-                            alt={slide.heading || 'FAAZO Hero Slide'}
-                            fill
-                            priority={idx === 0}
-                            sizes="100vw"
-                            className="object-cover object-center z-0 select-none md:hidden"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              if (target && !target.src.includes('hero_ecommerce.png')) {
-                                target.src = '/images/hero_ecommerce.png';
-                              }
-                            }}
-                          />
-                          {/* Desktop view image */}
-                          <Image
-                            src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
-                            alt={slide.heading || 'FAAZO Hero Slide'}
-                            fill
-                            priority={idx === 0}
-                            sizes="100vw"
-                            className="object-cover md:object-center z-0 select-none hidden md:block"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              if (target && !target.src.includes('hero_ecommerce.png')) {
-                                target.src = '/images/hero_ecommerce.png';
-                              }
-                            }}
-                          />
-                        </>
-                      ) : (
-                        <Image
-                          src={getAbsoluteImageUrl(slide.desktop_image_url) || '/images/hero_ecommerce.png'}
-                          alt={slide.heading || 'FAAZO Hero Slide'}
-                          fill
-                          priority={idx === 0}
-                          sizes="100vw"
-                          className="object-cover object-[center_right] md:object-center z-0 select-none"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            if (target && !target.src.includes('hero_ecommerce.png')) {
-                              target.src = '/images/hero_ecommerce.png';
-                            }
-                          }}
-                        />
-                      )}
-                    </div>
+                  <PreservedBannerImage
+                    src={slide.desktop_image_url || '/images/hero_ecommerce.png'}
+                    mobileSrc={slide.mobile_image_url}
+                    alt={slide.heading || 'FAAZO Hero Slide'}
+                    aspectRatioFallback="2048/762"
+                    priority={idx === 0}
+                    objectFit="contain"
+                    containerClassName="w-full bg-[#005F63]"
+                  >
+                    {/* Responsive Content Overlay (Mobile, Tablet & Desktop) - Rendered only when content exists */}
+                    {(slide.heading || slide.subheading || slide.cta_text) && (
+                      <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
+                        <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
+                          {slide.heading && slide.heading.trim().length > 0 && (
+                            <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
+                              {isSecondSlide ? (
+                                <>
+                                  <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
+                                  {slide.heading.includes(' engineered ') && (
+                                    <>
+                                      <span className="text-[#005F63]">engineered for</span>
+                                      <span>{slide.heading.split(' engineered ')[1] || ''}</span>
+                                    </>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <span>{slide.heading.split(' ')[0] || ''}</span>
+                                  {slide.heading.split(' ')[1] && (
+                                    <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
+                                  )}
+                                  {slide.heading.split(' ').length > 2 && (
+                                    <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
+                                  )}
+                                </>
+                              )}
+                            </h1>
+                          )}
 
-                    {/* Responsive Content Overlay (Mobile, Tablet & Desktop) */}
-                    <div className="absolute inset-0 z-10 max-w-7xl mx-auto w-full px-5 sm:px-8 md:px-14 lg:px-20 flex flex-col justify-between pt-6 pb-12 sm:pt-8 sm:pb-12 md:pt-10 md:pb-10 lg:pt-12 lg:pb-12 pointer-events-none">
-                      <div className="text-left select-none pointer-events-auto max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[640px]">
-                        {slide.heading && slide.heading.trim().length > 0 && (
-                          <h1 className="text-[24px] sm:text-[34px] md:text-[42px] xl:text-[52px] 2xl:text-[60px] font-black text-slate-800 tracking-tight leading-[1.1] md:leading-[1.08] mb-2 md:mb-3 flex flex-col font-display text-left">
-                            {isSecondSlide ? (
-                              <>
-                                <span>{slide.heading.split(' engineered ')[0] || slide.heading}</span>
-                                {slide.heading.includes(' engineered ') && (
-                                  <>
-                                    <span className="text-[#005F63]">engineered for</span>
-                                    <span>{slide.heading.split(' engineered ')[1] || ''}</span>
-                                  </>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <span>{slide.heading.split(' ')[0] || ''}</span>
-                                {slide.heading.split(' ')[1] && (
-                                  <span className="text-[#005F63]">{slide.heading.split(' ')[1]}</span>
-                                )}
-                                {slide.heading.split(' ').length > 2 && (
-                                  <span>{slide.heading.split(' ').slice(2).join(' ')}</span>
-                                )}
-                              </>
-                            )}
-                          </h1>
-                        )}
+                          {slide.subheading && (
+                            <p className="text-[13px] sm:text-[14px] md:text-sm text-slate-600 font-medium mb-3 md:mb-4 line-clamp-2 max-w-xs md:max-w-md">
+                              {slide.subheading}
+                            </p>
+                          )}
+                        </div>
 
-                        {slide.subheading && (
-                          <p className="text-[13px] sm:text-[14px] md:text-sm text-slate-600 font-medium mb-3 md:mb-4 line-clamp-2 max-w-xs md:max-w-md">
-                            {slide.subheading}
-                          </p>
+                        {slide.cta_text && (
+                          <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
+                            <a
+                              href={slide.cta_link || '#products'}
+                              className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
+                            >
+                              <span>{slide.cta_text}</span>
+                              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
+                            </a>
+                          </div>
                         )}
                       </div>
-
-                      {slide.cta_text && (
-                        <div className="flex justify-start pointer-events-auto mt-auto pb-2 sm:pb-0">
-                          <a
-                            href={slide.cta_link || '#products'}
-                            className="group inline-flex items-center gap-2 sm:gap-2.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 hover:bg-[#005F63] text-[#005F63] hover:text-white text-[12px] sm:text-sm font-extrabold shadow-[0_6px_20px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_25px_rgba(0,95,99,0.3)] backdrop-blur-md border border-white/80 transition-all duration-300 cursor-pointer tracking-wide active:scale-95"
-                          >
-                            <span>{slide.cta_text}</span>
-                            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    )}
+                  </PreservedBannerImage>
                 )}
               </SwiperSlide>
             );

@@ -10,6 +10,7 @@ import DailyOfferCountdown from './DailyOfferCountdown';
 import DailyOfferCta from './DailyOfferCta';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 import { UniversalBannerRenderer } from '../banner/UniversalBannerRenderer';
+import { useNaturalAspectRatio } from '../banner/PreservedBannerImage';
 
 interface DailyOffersSectionProps {
   initialOffers?: DailyOffer[];
@@ -180,11 +181,17 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   const imagePos = activeOffer.image_position || 'right'; // 'left' | 'right' | 'center'
   const isBackgroundMode = imagePos === 'center';
   const isImageLeft = imagePos === 'left';
-  const imageFit = activeOffer.image_fit || 'cover';
+  const imageFit = activeOffer.image_fit || 'contain';
 
   // Preview device mode
   const isMobilePreview = previewDevice === 'mobile';
   const effectivePreviewImage = isMobilePreview && mobileBannerImage ? mobileBannerImage : bannerImage;
+
+  // Natural aspect ratio detection for zero-cropping banner scaling
+  const { aspectRatio: naturalRatio } = useNaturalAspectRatio(
+    effectivePreviewImage || bannerImage,
+    '2048/762'
+  );
 
   // Font resolution
   const bannerFontFamily = getFontFamilyCss(activeOffer.font_family);
@@ -282,18 +289,19 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${!hasAnyDynamicOverlay && isBackgroundMode
-          ? isMobilePreview
-            ? 'h-[220px]'
-            : 'h-[280px] sm:h-[380px] md:h-[460px] lg:h-[520px]'
+      className={`w-full relative overflow-hidden my-8 sm:my-12 transition-all duration-500 select-none ${
+        !hasAnyDynamicOverlay && isBackgroundMode
+          ? 'w-full'
           : 'min-h-[320px]'
-        } ${isLivePreview
+      } ${
+        isLivePreview
           ? 'rounded-2xl border border-slate-200 cursor-default'
           : 'cursor-pointer group hover:shadow-[0_20px_50px_rgba(0,102,112,0.22)]'
-        }`}
+      }`}
       style={{
         background: bgGradient || bgColor,
         fontFamily: bannerFontFamily,
+        aspectRatio: isBackgroundMode ? naturalRatio : undefined,
       }}
       aria-label="Daily Offers & Hot Deals"
     >

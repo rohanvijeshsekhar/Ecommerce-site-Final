@@ -333,7 +333,8 @@ const BestSellerBannerManager: React.FC = () => {
               backgroundImage: form.banner_image
                 ? `url(${form.banner_image instanceof File ? URL.createObjectURL(form.banner_image) : form.banner_image})`
                 : undefined,
-              backgroundSize: 'cover',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
             }}
           >

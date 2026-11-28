@@ -847,7 +847,7 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                         <img
                           src={getAbsoluteImageUrl(deal.banner_desktop || (deal as any).desktop_image_url || (deal as any).desktop_image)}
                           alt={deal.name}
-                          className="w-full h-full object-cover opacity-30"
+                          className="w-full h-full object-contain opacity-30"
                         />
                       </div>
                     )}
@@ -1602,7 +1602,7 @@ function extractApiError(err: any): { message: string; fieldErrors: Record<strin
                               <img
                                 src={activePreviewSrc}
                                 alt="Live Banner Artwork"
-                                className={`w-full h-full object-cover ${
+                                className={`w-full h-full object-contain ${
                                   previewDevice === 'desktop' ? 'object-right opacity-60' : 'opacity-40'
                                 }`}
                               />

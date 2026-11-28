@@ -280,22 +280,18 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
           {/* Content Column */}
           <div
-            className={`w-full flex flex-col ${verticalAlignClass} ${
-              hAlign === 'center' ? 'text-center items-center' : hAlign === 'right' ? 'text-right items-end' : 'text-left items-start'
-            } px-6 sm:px-12 lg:px-16 xl:px-20 z-10 lg:col-span-6 ${
-              imgPos === 'left' ? 'order-1 lg:order-2' : 'order-1 lg:order-1'
-            }`}
+            className={`w-full flex flex-col ${verticalAlignClass} ${hAlign === 'center' ? 'text-center items-center' : hAlign === 'right' ? 'text-right items-end' : 'text-left items-start'
+              } px-6 sm:px-12 lg:px-16 xl:px-20 z-10 lg:col-span-6 ${imgPos === 'left' ? 'order-1 lg:order-2' : 'order-1 lg:order-1'
+              }`}
           >
             <div
-              className={`w-full flex flex-col ${contentWidthClass} ${
-                hAlign === 'center' ? 'items-center text-center mx-auto' : hAlign === 'right' ? 'items-end text-right ml-auto' : 'items-start text-left mr-auto'
-              }`}
+              className={`w-full flex flex-col ${contentWidthClass} ${hAlign === 'center' ? 'items-center text-center mx-auto' : hAlign === 'right' ? 'items-end text-right ml-auto' : 'items-start text-left mr-auto'
+                }`}
             >
               {/* Badge & Offer Pill row */}
               <div
-                className={`flex flex-wrap items-center gap-2.5 mb-4 ${
-                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex flex-wrap items-center gap-2.5 mb-4 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 {activeCollection.badge_text ? (
                   <div
@@ -325,9 +321,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Main Headline */}
               {activeCollection.title && (
                 <h2
-                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
-                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                  }`}
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                    }`}
                   style={{ color: activeCollection.heading_color || '#0F172A' }}
                 >
                   {activeCollection.title}
@@ -337,9 +332,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Description */}
               {activeCollection.description && (
                 <p
-                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${
-                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
-                  }`}
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                    }`}
                   style={{ color: activeCollection.description_color || '#334155' }}
                 >
                   {activeCollection.description}
@@ -348,9 +342,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
               {/* Call to Action */}
               <div
-                className={`flex flex-col gap-2 ${
-                  hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
-                }`}
+                className={`flex flex-col gap-2 ${hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                  }`}
               >
                 {renderCtaButton()}
                 {activeCollection.secondary_text && (
@@ -364,9 +357,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
 
           {/* Visual Column */}
           <div
-            className={`w-full relative min-h-[340px] sm:min-h-[420px] lg:min-h-full flex items-center justify-center overflow-hidden lg:col-span-6 ${
-              imgPos === 'left' ? 'order-2 lg:order-1' : 'order-2 lg:order-2'
-            }`}
+            className={`w-full relative min-h-[340px] sm:min-h-[420px] lg:min-h-full flex items-center justify-center overflow-hidden lg:col-span-6 ${imgPos === 'left' ? 'order-2 lg:order-1' : 'order-2 lg:order-2'
+              }`}
           >
             {imgFit === 'cover' ? (
               <picture className="w-full h-full absolute inset-0">
@@ -376,7 +368,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
                 <img
                   src={desktopImage}
                   alt={activeCollection.title || 'Featured Collection'}
-                  className="w-full h-full object-cover object-center transform scale-100 hover:scale-105 transition-transform duration-700 ease-out"
+                  className="w-full h-full object-contain object-center transform transition-transform duration-500"
                 />
               </picture>
             ) : (
@@ -412,7 +404,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
             <img
               src={desktopImage}
               alt={activeCollection.title || 'Featured Collection'}
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-contain object-center"
             />
           </picture>
 
@@ -425,15 +417,13 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
           {/* Content Wrapper */}
           <div className={`w-full h-full min-h-[480px] sm:min-h-[540px] lg:min-h-[600px] relative z-10 px-6 sm:px-12 lg:px-20 flex flex-col ${verticalAlignClass}`}>
             <div
-              className={`w-full flex flex-col ${contentWidthClass} ${
-                hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
-              }`}
+              className={`w-full flex flex-col ${contentWidthClass} ${hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
+                }`}
             >
               {/* Badge & Offer Pill */}
               <div
-                className={`flex flex-wrap items-center gap-2.5 mb-4 ${
-                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex flex-wrap items-center gap-2.5 mb-4 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 {activeCollection.badge_text ? (
                   <div
@@ -458,9 +448,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Main Headline */}
               {activeCollection.title && activeCollection.title.trim().length > 0 && (
                 <h2
-                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm ${
-                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                  }`}
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words drop-shadow-sm ${hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                    }`}
                   style={{ color: activeCollection.heading_color || '#FFFFFF' }}
                 >
                   {activeCollection.title}
@@ -470,9 +459,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Description */}
               {activeCollection.description && (
                 <p
-                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-95 drop-shadow-sm ${
-                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
-                  }`}
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-95 drop-shadow-sm ${hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                    }`}
                   style={{ color: activeCollection.description_color || '#F1F5F9' }}
                 >
                   {activeCollection.description}
@@ -482,9 +470,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* CTA */}
               {(activeCollection.cta_text?.trim() || activeCollection.secondary_text?.trim()) && (
                 <div
-                  className={`flex flex-col gap-2 ${
-                    hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
-                  }`}
+                  className={`flex flex-col gap-2 ${hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                    }`}
                 >
                   {renderCtaButton()}
                   {activeCollection.secondary_text && (
@@ -506,15 +493,13 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
         <div className="w-full min-h-[420px] sm:min-h-[480px] relative flex flex-col justify-stretch px-6 sm:px-12 lg:px-20">
           <div className={`w-full h-full min-h-[420px] sm:min-h-[480px] flex flex-col ${verticalAlignClass} z-10`}>
             <div
-              className={`w-full flex flex-col ${contentWidthClass} ${
-                hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
-              }`}
+              className={`w-full flex flex-col ${contentWidthClass} ${hAlign === 'center' ? 'text-center items-center mx-auto' : hAlign === 'right' ? 'text-right items-end ml-auto' : 'text-left items-start mr-auto'
+                }`}
             >
               {/* Badges */}
               <div
-                className={`flex flex-wrap items-center gap-2.5 mb-5 ${
-                  hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex flex-wrap items-center gap-2.5 mb-5 ${hAlign === 'center' ? 'justify-center' : hAlign === 'right' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 {activeCollection.badge_text && (
                   <div
@@ -538,9 +523,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Headline */}
               {activeCollection.title && activeCollection.title.trim().length > 0 && (
                 <h2
-                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${
-                    hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
-                  }`}
+                  className={`${headingSizeClass} ${headingWeightClass} tracking-tight font-display mb-4 leading-[1.08] break-words ${hAlign === 'center' ? 'text-center' : hAlign === 'right' ? 'text-right' : 'text-left'
+                    }`}
                   style={{ color: activeCollection.heading_color || '#0F172A' }}
                 >
                   {activeCollection.title}
@@ -550,9 +534,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* Description */}
               {activeCollection.description && (
                 <p
-                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${
-                    hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
-                  }`}
+                  className={`text-base sm:text-lg mb-8 leading-relaxed font-normal opacity-90 ${hAlign === 'center' ? 'text-center mx-auto' : hAlign === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'
+                    }`}
                   style={{ color: activeCollection.description_color || '#334155' }}
                 >
                   {activeCollection.description}
@@ -562,9 +545,8 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
               {/* CTA */}
               {(activeCollection.cta_text?.trim() || activeCollection.secondary_text?.trim()) && (
                 <div
-                  className={`flex flex-col gap-2 ${
-                    hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
-                  }`}
+                  className={`flex flex-col gap-2 ${hAlign === 'center' ? 'items-center' : hAlign === 'right' ? 'items-end' : 'items-start'
+                    }`}
                 >
                   {renderCtaButton()}
                   {activeCollection.secondary_text && (
@@ -611,11 +593,10 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
                 key={coll.id || idx}
                 onClick={() => setActiveIndex(idx)}
                 aria-label={`Go to slide ${idx + 1}: ${coll.title}`}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  idx === activeIndex
+                className={`transition-all duration-300 rounded-full cursor-pointer ${idx === activeIndex
                     ? 'w-7 h-2 bg-white shadow-sm'
                     : 'w-2 h-2 bg-white/50 hover:bg-white/80'
-                }`}
+                  }`}
               />
             ))}
           </div>

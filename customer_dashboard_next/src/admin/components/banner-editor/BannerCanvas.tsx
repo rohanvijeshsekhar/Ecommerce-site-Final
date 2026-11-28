@@ -6,6 +6,7 @@ import type { BannerElement, UniversalBannerLayout, DeviceBreakpoint } from './t
 import { resolveElementTransform, BREAKPOINT_CONFIGS } from './types';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 import { getAbsoluteImageUrl } from '@/lib/api';
+import { useNaturalAspectRatio } from '@/components/store/banner/PreservedBannerImage';
 
 interface BannerCanvasProps {
   layout: UniversalBannerLayout;
@@ -41,6 +42,28 @@ export const BannerCanvas: React.FC<BannerCanvasProps> = ({
     activeBreakpoint === 'mobile' && layout.mobileBackgroundImageUrl
       ? layout.mobileBackgroundImageUrl
       : layout.backgroundImageUrl;
+
+  const { aspectRatio: naturalRatio } = useNaturalAspectRatio(
+    bgImage,
+    activeBreakpoint === 'mobile'
+      ? (layout.mobileBackgroundImageUrl ? '3/3.7' : '2048/762')
+      : '2048/762'
+  );
+
+  const activeCanvasAspectRatio =
+    activeBreakpoint === 'mobile'
+      ? (layout.aspectRatio?.mobile && layout.aspectRatio?.mobile !== '3/3.7'
+          ? layout.aspectRatio.mobile
+          : layout.mobileBackgroundImageUrl
+          ? naturalRatio
+          : naturalRatio)
+      : activeBreakpoint === 'tablet'
+      ? (layout.aspectRatio?.tablet && layout.aspectRatio?.tablet !== '2/1'
+          ? layout.aspectRatio.tablet
+          : naturalRatio)
+      : (layout.aspectRatio?.desktop && layout.aspectRatio?.desktop !== '3/1'
+          ? layout.aspectRatio.desktop
+          : naturalRatio);
 
   // Keyboard navigation for nudging selected element
   useEffect(() => {
@@ -255,7 +278,7 @@ export const BannerCanvas: React.FC<BannerCanvasProps> = ({
         style={{
           width: `${bpConfig.width}px`,
           maxWidth: '100%',
-          aspectRatio: bpConfig.aspectRatio,
+          aspectRatio: activeCanvasAspectRatio,
           transform: `scale(${zoom})`,
           transformOrigin: 'center center',
           backgroundColor: layout.backgroundColor || '#005F63',
@@ -263,16 +286,16 @@ export const BannerCanvas: React.FC<BannerCanvasProps> = ({
         }}
         className="relative shadow-2xl rounded-xl overflow-hidden border border-slate-300 group"
       >
-        {/* Background Image Layer (non-draggable locked base) */}
+        {/* Background Image Layer (complete original display, zero cropping) */}
         {bgImage && (
-          <div
-            className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-            style={{
-              backgroundImage: `url(${getAbsoluteImageUrl(bgImage)})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
+          <div className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={getAbsoluteImageUrl(bgImage)}
+              alt="Banner Background"
+              className="w-full h-full object-contain object-center block select-none pointer-events-none"
+            />
+          </div>
         )}
 
         {/* Optional Overlay Gradient */}

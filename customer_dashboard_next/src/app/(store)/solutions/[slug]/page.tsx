@@ -386,7 +386,7 @@ export default function SolutionDetailPage() {
         <img
           src={getAbsoluteImageUrl(solution.banner || solution.thumbnail || '/images/hero1_ecommerce.png')}
           alt={solution.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-45 brightness-90"
+          className="absolute inset-0 w-full h-full object-contain object-right opacity-45 brightness-90"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/40" />
 

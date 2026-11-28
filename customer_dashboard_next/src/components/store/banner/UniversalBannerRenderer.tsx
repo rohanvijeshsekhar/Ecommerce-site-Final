@@ -8,6 +8,7 @@ import { resolveElementTransform } from '@/admin/components/banner-editor/types'
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 import { getAbsoluteImageUrl } from '@/lib/api';
 import { DailyOfferCountdown } from '../daily-offers/DailyOfferCountdown';
+import { useNaturalAspectRatio } from './PreservedBannerImage';
 
 interface UniversalBannerRendererProps {
   layout: UniversalBannerLayout;
@@ -43,21 +44,37 @@ export const UniversalBannerRenderer: React.FC<UniversalBannerRendererProps> = (
     return () => window.removeEventListener('resize', updateBp);
   }, []);
 
-  if (!layout || !layout.elements) return null;
-
   // Resolve responsive background image
   const bgImage =
-    breakpoint === 'mobile' && layout.mobileBackgroundImageUrl
+    breakpoint === 'mobile' && layout?.mobileBackgroundImageUrl
       ? layout.mobileBackgroundImageUrl
-      : layout.backgroundImageUrl;
+      : layout?.backgroundImageUrl;
 
+  const { aspectRatio: naturalRatio } = useNaturalAspectRatio(
+    bgImage,
+    breakpoint === 'mobile'
+      ? (layout?.mobileBackgroundImageUrl ? '3/3.7' : '2048/762')
+      : '2048/762'
+  );
+
+  if (!layout || !layout.elements) return null;
+
+  // Preserve natural image aspect ratio automatically unless explicitly overridden
   const activeAspectRatio =
     aspectRatio ||
     (breakpoint === 'mobile'
-      ? layout.aspectRatio?.mobile || '3/3.7'
+      ? (layout.aspectRatio?.mobile && layout.aspectRatio?.mobile !== '3/3.7'
+          ? layout.aspectRatio.mobile
+          : layout.mobileBackgroundImageUrl
+          ? naturalRatio
+          : naturalRatio)
       : breakpoint === 'tablet'
-      ? layout.aspectRatio?.tablet || '2/1'
-      : layout.aspectRatio?.desktop || '3/1');
+      ? (layout.aspectRatio?.tablet && layout.aspectRatio?.tablet !== '2/1'
+          ? layout.aspectRatio.tablet
+          : naturalRatio)
+      : (layout.aspectRatio?.desktop && layout.aspectRatio?.desktop !== '3/1'
+          ? layout.aspectRatio.desktop
+          : naturalRatio));
 
   return (
     <div
@@ -67,16 +84,20 @@ export const UniversalBannerRenderer: React.FC<UniversalBannerRendererProps> = (
       }}
       className={`relative w-full overflow-hidden select-none ${className}`}
     >
-      {/* Background Image */}
+      {/* Background Image - 100% Complete Original Display, Never Cropped or Zoomed */}
       {bgImage && (
-        <div
-          className="absolute inset-0 w-full h-full z-0 select-none pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAbsoluteImageUrl(bgImage)})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <picture className="absolute inset-0 w-full h-full z-0 select-none pointer-events-none">
+          {layout.mobileBackgroundImageUrl && layout.mobileBackgroundImageUrl !== bgImage && (
+            <source media="(max-width: 639px)" srcSet={getAbsoluteImageUrl(layout.mobileBackgroundImageUrl)} />
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getAbsoluteImageUrl(bgImage)}
+            alt="Promotional Banner"
+            loading={priority ? 'eager' : 'lazy'}
+            className="w-full h-full object-contain object-center block select-none pointer-events-none"
+          />
+        </picture>
       )}
 
       {/* Overlay Gradient */}

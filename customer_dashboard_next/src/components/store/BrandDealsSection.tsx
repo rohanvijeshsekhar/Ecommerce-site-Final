@@ -138,7 +138,7 @@ export default function BrandDealsSection({ initialBrandDeals = [] }: BrandDeals
               <img
                 src={getAbsoluteImageUrl(currentDeal.banner_desktop || currentDeal.desktop_image_url || currentDeal.desktop_image)}
                 alt={currentDeal.title || currentDeal.name}
-                className="w-full h-full object-cover object-right opacity-60 transition-transform duration-700 group-hover:scale-102"
+                className="w-full h-full object-contain object-right opacity-75"
               />
               <div
                 className="absolute inset-0"
@@ -156,7 +156,7 @@ export default function BrandDealsSection({ initialBrandDeals = [] }: BrandDeals
               <img
                 src={getAbsoluteImageUrl(currentDeal.banner_mobile || currentDeal.mobile_image_url || currentDeal.mobile_image || currentDeal.banner_desktop || currentDeal.desktop_image_url || currentDeal.desktop_image)}
                 alt={currentDeal.title || currentDeal.name || 'Brand Deal'}
-                className="w-full h-full object-cover opacity-65"
+                className="w-full h-full object-contain object-top opacity-75"
               />
               <div
                 className="absolute inset-0"
