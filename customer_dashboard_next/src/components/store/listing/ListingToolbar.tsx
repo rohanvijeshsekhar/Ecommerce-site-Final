@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   List,
   Check,
-  Sparkles,
 } from 'lucide-react';
 
 export interface SortOption {
@@ -88,7 +87,6 @@ export default function ListingToolbar({
         <div className="flex items-center gap-2">
           {!isLoading ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#006670]/10 text-[#006670] font-black text-xs rounded-full border border-[#006670]/20">
-              <Sparkles className="w-3.5 h-3.5" />
               <span>
                 {totalCount.toLocaleString('en-IN')}{' '}
                 {totalCount === 1 ? itemName.replace(/s$/, '') : itemName}

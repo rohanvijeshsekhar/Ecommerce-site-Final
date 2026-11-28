@@ -58,14 +58,14 @@ const BrandLogos: React.FC = () => {
 
         const hpBrands: BrandItem[] = Array.isArray(hpRaw)
           ? hpRaw
-              .filter((b: any) => b.is_visible !== false)
-              .map((b: any) => ({
-                id: String(b.id || b.brand || b.brand_slug || b.brand_name),
-                name: String(b.brand_name || b.name || '').trim(),
-                slug: String(b.brand_slug || b.slug || '').trim(),
-                logo_url: b.logo_url || null,
-              }))
-              .filter((b: BrandItem) => b.name && b.slug)
+            .filter((b: any) => b.is_visible !== false)
+            .map((b: any) => ({
+              id: String(b.id || b.brand || b.brand_slug || b.brand_name),
+              name: String(b.brand_name || b.name || '').trim(),
+              slug: String(b.brand_slug || b.slug || '').trim(),
+              logo_url: b.logo_url || null,
+            }))
+            .filter((b: BrandItem) => b.name && b.slug)
           : [];
 
         // 2. Fetch active catalog brands from existing database to ensure a complete set
@@ -77,14 +77,14 @@ const BrandLogos: React.FC = () => {
 
         const catalogBrands: BrandItem[] = Array.isArray(catalogRaw)
           ? catalogRaw
-              .filter((b: any) => b.is_active !== false)
-              .map((b: any) => ({
-                id: String(b.id || b.slug),
-                name: String(b.name || '').trim(),
-                slug: String(b.slug || '').trim(),
-                logo_url: b.logo_url || b.logo || null,
-              }))
-              .filter((b: BrandItem) => b.name && b.slug)
+            .filter((b: any) => b.is_active !== false)
+            .map((b: any) => ({
+              id: String(b.id || b.slug),
+              name: String(b.name || '').trim(),
+              slug: String(b.slug || '').trim(),
+              logo_url: b.logo_url || b.logo || null,
+            }))
+            .filter((b: BrandItem) => b.name && b.slug)
           : [];
 
         // Merge: showcase brands first, followed by active catalog brands (deduped by slug)
@@ -181,9 +181,8 @@ const BrandLogos: React.FC = () => {
                     />
                   ) : null}
                   <span
-                    className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${
-                      brand.logo_url ? 'hidden' : 'block'
-                    }`}
+                    className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${brand.logo_url ? 'hidden' : 'block'
+                      }`}
                   >
                     {brand.name}
                   </span>
@@ -239,9 +238,8 @@ const BrandLogos: React.FC = () => {
                       />
                     ) : null}
                     <span
-                      className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${
-                        brand.logo_url ? 'hidden' : 'block'
-                      }`}
+                      className={`brand-text-fallback font-extrabold text-sm sm:text-base text-slate-800 tracking-tight font-display transition-colors group-hover:text-[#005F63] px-2 truncate ${brand.logo_url ? 'hidden' : 'block'
+                        }`}
                     >
                       {brand.name}
                     </span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Eye, EyeOff, X, Save, Calendar, Zap } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, EyeOff, X, Save, Calendar, Tag } from 'lucide-react';
 import { homepageService } from '../../services/adminService';
 import { useAdmin } from '../../contexts/AdminContext';
 import type { LimitedTimeOffer } from '../../types/admin';
@@ -81,7 +81,7 @@ const LimitedOffersManager: React.FC = () => {
 
       {items.length === 0 ? (
         <EmptyState
-          icon={<Zap className="w-10 h-10 text-slate-300" />}
+          icon={<Tag className="w-10 h-10 text-slate-300" />}
           title="No offers"
           description="Create limited-time offer banners for the homepage."
           action={

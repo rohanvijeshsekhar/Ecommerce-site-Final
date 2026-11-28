@@ -167,6 +167,9 @@ const Footer: React.FC<FooterProps> = ({ onLogoClick }) => {
                 <img
                   src="/images/faazo-logo.png"
                   alt="FAAZO Logo"
+                  width={112}
+                  height={28}
+                  style={{ maxHeight: '28px', maxWidth: '120px', width: 'auto', height: 'auto', objectFit: 'contain' }}
                   className="h-7 w-auto object-contain brightness-0 invert"
                 />
               </Link>

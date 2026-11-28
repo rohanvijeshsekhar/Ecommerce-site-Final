@@ -39,14 +39,16 @@ export const FaazoLogo: React.FC<{
   if (onlyIcon) {
     return (
       <div
-        className={`w-[32px] h-[30px] flex-shrink-0 flex items-center justify-start overflow-hidden relative ${className}`}
-        style={style}
+        className={`w-[32px] h-[30px] max-w-[32px] max-h-[30px] flex-shrink-0 flex items-center justify-start overflow-hidden relative ${className}`}
+        style={{ width: 32, height: 30, maxWidth: 32, maxHeight: 30, overflow: 'hidden', ...style }}
       >
         <img
           src="/images/faazo-logo.png"
           alt="FAAZO Logo"
+          width={136}
+          height={38}
           className="h-[92%] max-w-none object-contain absolute left-0"
-          style={{ width: 'auto' }}
+          style={{ width: 'auto', maxHeight: '28px', maxWidth: 'none', objectFit: 'contain' }}
         />
       </div>
     );
@@ -54,13 +56,16 @@ export const FaazoLogo: React.FC<{
 
   return (
     <div
-      className={`w-[110px] h-[30px] lg:w-[136px] lg:h-[38px] flex-shrink-0 flex items-center justify-start ${className}`}
-      style={style}
+      className={`w-[110px] h-[30px] lg:w-[136px] lg:h-[38px] max-w-[140px] max-h-[38px] flex-shrink-0 flex items-center justify-start overflow-hidden ${className}`}
+      style={{ maxHeight: 38, maxWidth: 140, overflow: 'hidden', ...style }}
     >
       <img
         src="/images/faazo-logo.png"
         alt="FAAZO Logo"
+        width={136}
+        height={38}
         className="h-[92%] w-auto object-contain flex-shrink-0"
+        style={{ maxHeight: '36px', maxWidth: '136px', width: 'auto', height: 'auto', objectFit: 'contain' }}
       />
     </div>
   );

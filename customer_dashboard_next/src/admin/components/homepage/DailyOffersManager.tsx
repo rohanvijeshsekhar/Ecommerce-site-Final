@@ -87,6 +87,11 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   offer_text: '',
   secondary_text: '',
   font_family: 'Inter',
+  heading_font_family: 'Inter',
+  description_font_family: 'Inter',
+  countdown_font_family: 'Inter',
+  cta_font_family: 'Inter',
+  cta_font_weight: 'bold',
   offer_type: 'percentage',
   theme: 'teal_premium',
   bg_color: '#004D54',
@@ -111,12 +116,20 @@ const DEFAULT_OFFER_FORM: Partial<DailyOffer> = {
   desktop_image_url: '',
   mobile_image_url: '',
   countdown_enabled: true,
+  countdown_template: 'minimal_inline',
+  countdown_size: 'regular',
   countdown_position: 'left',
   start_date: new Date().toISOString().substring(0, 16),
   end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16),
+  expired_behavior: 'show_expired_badge',
   cta_enabled: true,
+  cta_template: 'solid',
+  cta_size: 'medium',
+  cta_border_radius: 'md',
+  cta_show_arrow: true,
+  cta_open_in_new_tab: false,
   cta_position: 'left',
-  cta_text: "Shop Today's Deals →",
+  cta_text: "Shop Today's Deals",
   cta_action_type: 'url',
   cta_target_id: '',
   cta_url: '/daily-offers',
@@ -216,10 +229,24 @@ export const DailyOffersManager: React.FC = () => {
     setForm({
       ...offer,
       font_family: offer.font_family || 'Inter',
+      heading_font_family: offer.heading_font_family || offer.font_family || 'Inter',
+      description_font_family: offer.description_font_family || offer.font_family || 'Inter',
+      countdown_font_family: offer.countdown_font_family || offer.font_family || 'Inter',
+      cta_font_family: offer.cta_font_family || offer.font_family || 'Inter',
+      cta_font_weight: offer.cta_font_weight || 'bold',
       countdown_enabled: offer.countdown_enabled !== false,
+      countdown_template: offer.countdown_template || 'minimal_inline',
+      countdown_size: offer.countdown_size || 'regular',
       countdown_position: offer.countdown_position || 'left',
+      expired_behavior: offer.expired_behavior || 'show_expired_badge',
       cta_enabled: offer.cta_enabled !== false,
+      cta_template: offer.cta_template || 'solid',
+      cta_size: offer.cta_size || 'medium',
+      cta_border_radius: offer.cta_border_radius || 'md',
+      cta_show_arrow: offer.cta_show_arrow !== false,
+      cta_open_in_new_tab: Boolean(offer.cta_open_in_new_tab),
       cta_position: offer.cta_position || 'left',
+      cta_text: (offer.cta_text || "Shop Today's Deals").replace(/[→⚡🔥✨]/g, '').trim(),
       horizontal_alignment: offer.horizontal_alignment || 'left',
       vertical_alignment: offer.vertical_alignment || 'center',
       content_width: offer.content_width || 'large',
@@ -762,7 +789,7 @@ export const DailyOffersManager: React.FC = () => {
                 onClick={() => handleSave(true)}
                 className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#006670] hover:bg-[#00525a] text-white text-xs font-black shadow-lg shadow-teal-900/20 transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
               >
-                <Zap className="w-4 h-4 fill-current" />
+                <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                 <span>{saving ? 'Publishing...' : 'Publish Live'}</span>
               </button>
             </div>
@@ -1152,7 +1179,7 @@ export const DailyOffersManager: React.FC = () => {
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <div>
                         <span className="font-bold text-xs text-slate-900 block">Enable Countdown Timer</span>
-                        <span className="text-[11px] text-slate-500">Displays real-time hours, mins, secs countdown</span>
+                        <span className="text-[11px] text-slate-500">Displays real-time countdown driven by actual expiry timestamp</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1164,6 +1191,61 @@ export const DailyOffersManager: React.FC = () => {
 
                     {form.countdown_enabled !== false && (
                       <>
+                        {/* Countdown Design Templates */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Countdown Design Template
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[
+                              { id: 'minimal_inline', name: 'Minimal Inline', desc: 'Horizontal inline units with subtle dividers' },
+                              { id: 'compact_cards', name: 'Compact Cards', desc: 'Subtle rounded card units with distinct labels' },
+                              { id: 'elegant_text', name: 'Elegant Text', desc: 'Clean typography without heavy boxes' },
+                              { id: 'outlined', name: 'Outlined', desc: 'Bordered frames with transparent background' },
+                              { id: 'dark_premium', name: 'Dark Premium', desc: 'Deep navy background with crisp teal accents' },
+                            ].map((tmpl) => (
+                              <button
+                                key={tmpl.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, countdown_template: tmpl.id as any })}
+                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${(form.countdown_template || 'minimal_inline') === tmpl.id
+                                  ? 'border-[#006670] bg-teal-50/80 ring-2 ring-teal-500/20 shadow-2xs'
+                                  : 'border-slate-200 bg-white hover:bg-slate-50'
+                                  }`}
+                              >
+                                <span className="font-bold text-xs text-slate-900 block">{tmpl.name}</span>
+                                <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">{tmpl.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Countdown Size */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Countdown Size
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'compact', label: 'Compact' },
+                              { id: 'regular', label: 'Regular' },
+                              { id: 'large', label: 'Large' },
+                            ].map((sz) => (
+                              <button
+                                key={sz.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, countdown_size: sz.id as any })}
+                                className={`py-1.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.countdown_size || 'regular') === sz.id
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                              >
+                                {sz.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         {/* Countdown Alignment */}
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -1194,7 +1276,7 @@ export const DailyOffersManager: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                              Deals End Date & Time
+                              Deals End Date & Time *
                             </label>
                             <input
                               type="datetime-local"
@@ -1202,7 +1284,7 @@ export const DailyOffersManager: React.FC = () => {
                               onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                               className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                             />
-                            <span className="text-[10px] text-slate-400 block mt-1">Timer counts down to this moment</span>
+                            <span className="text-[10px] text-slate-400 block mt-1">Timer dynamically counts down to this moment</span>
                           </div>
 
                           <div>
@@ -1218,15 +1300,42 @@ export const DailyOffersManager: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Expired Offer Behaviour */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Expired Offer Behaviour
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                              { id: 'show_expired_badge', label: 'Show Ended Badge', desc: 'Display clean expired state' },
+                              { id: 'hide_cta', label: 'Hide CTA Button', desc: 'Remove CTA when time expires' },
+                              { id: 'disable_cta', label: 'Disable CTA Button', desc: 'Gray out & prevent clicks' },
+                            ].map((beh) => (
+                              <button
+                                key={beh.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, expired_behavior: beh.id as any })}
+                                className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${(form.expired_behavior || 'show_expired_badge') === beh.id
+                                  ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                              >
+                                <span className="block text-xs font-bold">{beh.label}</span>
+                                <span className="block text-[10px] opacity-70 mt-0.5">{beh.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         {/* Countdown Styling */}
                         <div className="pt-3 border-t border-slate-200 space-y-3">
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                            Countdown Colors
+                            Countdown Colors (Overrides)
                           </label>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Box Background</span>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Box / Outline Background</span>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="color"
@@ -1244,7 +1353,7 @@ export const DailyOffersManager: React.FC = () => {
                             </div>
 
                             <div>
-                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Number / Text Color</span>
+                              <span className="block text-[11px] font-semibold text-slate-600 mb-1">Number / Accent Color</span>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="color"
@@ -1286,17 +1395,124 @@ export const DailyOffersManager: React.FC = () => {
 
                     {form.cta_enabled !== false && (
                       <>
+                        {/* CTA Design Templates */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            CTA Design Template
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[
+                              { id: 'solid', name: 'Minimal Solid', desc: 'Solid filled background with high-contrast text' },
+                              { id: 'outline', name: 'Outline', desc: 'Thin border frame with subtle hover fill' },
+                              { id: 'text_link', name: 'Text Link', desc: 'Minimal text with small animated arrow' },
+                              { id: 'soft_filled', name: 'Soft Filled', desc: 'Soft pastel background with dark teal text' },
+                              { id: 'dark_premium', name: 'Premium Dark', desc: 'Deep navy background with crisp white text' },
+                            ].map((tmpl) => (
+                              <button
+                                key={tmpl.id}
+                                type="button"
+                                onClick={() => setForm({ ...form, cta_template: tmpl.id as any })}
+                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${(form.cta_template || 'solid') === tmpl.id
+                                  ? 'border-[#006670] bg-teal-50/80 ring-2 ring-teal-500/20 shadow-2xs'
+                                  : 'border-slate-200 bg-white hover:bg-slate-50'
+                                  }`}
+                              >
+                                <span className="font-bold text-xs text-slate-900 block">{tmpl.name}</span>
+                                <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">{tmpl.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                            Button Text
+                            Button Label / Text
                           </label>
                           <input
                             type="text"
                             value={form.cta_text || ''}
                             onChange={(e) => setForm({ ...form, cta_text: e.target.value })}
-                            placeholder="Shop Today's Deals →"
+                            placeholder="Shop Today's Deals"
                             className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
                           />
+                        </div>
+
+                        {/* Button Size & Radius */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                              Button Size
+                            </label>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {[
+                                { id: 'small', label: 'Small' },
+                                { id: 'medium', label: 'Medium' },
+                                { id: 'large', label: 'Large' },
+                              ].map((sz) => (
+                                <button
+                                  key={sz.id}
+                                  type="button"
+                                  onClick={() => setForm({ ...form, cta_size: sz.id as any })}
+                                  className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all cursor-pointer ${(form.cta_size || 'medium') === sz.id
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                >
+                                  {sz.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                              Border Radius
+                            </label>
+                            <div className="grid grid-cols-5 gap-1">
+                              {[
+                                { id: 'none', label: 'None' },
+                                { id: 'sm', label: 'Sm' },
+                                { id: 'md', label: 'Md' },
+                                { id: 'lg', label: 'Lg' },
+                                { id: 'full', label: 'Pill' },
+                              ].map((r) => (
+                                <button
+                                  key={r.id}
+                                  type="button"
+                                  onClick={() => setForm({ ...form, cta_border_radius: r.id as any })}
+                                  className={`py-1.5 px-1 rounded-lg border text-xs font-bold transition-all text-center cursor-pointer ${(form.cta_border_radius || 'md') === r.id
+                                    ? 'border-[#006670] bg-teal-50 text-[#006670] ring-2 ring-teal-500/20'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                >
+                                  {r.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Icon & Target Options */}
+                        <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={form.cta_show_arrow !== false}
+                              onChange={(e) => setForm({ ...form, cta_show_arrow: e.target.checked })}
+                              className="w-4 h-4 accent-[#006670] rounded"
+                            />
+                            <span className="text-xs font-bold text-slate-800">Show Arrow Icon</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(form.cta_open_in_new_tab)}
+                              onChange={(e) => setForm({ ...form, cta_open_in_new_tab: e.target.checked })}
+                              className="w-4 h-4 accent-[#006670] rounded"
+                            />
+                            <span className="text-xs font-bold text-slate-800">Open in New Tab</span>
+                          </label>
                         </div>
 
                         {/* Button Alignment */}
@@ -1551,6 +1767,108 @@ export const DailyOffersManager: React.FC = () => {
                 {/* 5. STYLING & LAYOUT TAB */}
                 {activeTab === 'styling' && (
                   <div className="space-y-5">
+                    {/* Typography Template System */}
+                    <div className="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Typography & Font Template System
+                        </label>
+                        <span className="text-[10px] font-bold text-[#006670] bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                          Independent Font Config
+                        </span>
+                      </div>
+
+                      {/* Heading Font */}
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Offer Heading Font
+                        </span>
+                        <select
+                          value={form.heading_font_family || 'Inter'}
+                          onChange={(e) => setForm({ ...form, heading_font_family: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
+                        >
+                          {BANNER_FONTS.map((font) => (
+                            <option key={font.id} value={font.id}>
+                              {font.name} — ({font.preview})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Description Font */}
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Promotional Description Font
+                        </span>
+                        <select
+                          value={form.description_font_family || 'Inter'}
+                          onChange={(e) => setForm({ ...form, description_font_family: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
+                        >
+                          {BANNER_FONTS.map((font) => (
+                            <option key={font.id} value={font.id}>
+                              {font.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Countdown Numbers Font */}
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Countdown Numbers & Labels Font
+                        </span>
+                        <select
+                          value={form.countdown_font_family || 'Inter'}
+                          onChange={(e) => setForm({ ...form, countdown_font_family: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
+                        >
+                          {BANNER_FONTS.map((font) => (
+                            <option key={font.id} value={font.id}>
+                              {font.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* CTA Font & Weight */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            CTA Button Font
+                          </span>
+                          <select
+                            value={form.cta_font_family || 'Inter'}
+                            onChange={(e) => setForm({ ...form, cta_font_family: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
+                          >
+                            {BANNER_FONTS.map((font) => (
+                              <option key={font.id} value={font.id}>
+                                {font.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-semibold text-slate-700 mb-1">
+                            CTA Font Weight
+                          </span>
+                          <select
+                            value={form.cta_font_weight || 'bold'}
+                            onChange={(e) => setForm({ ...form, cta_font_weight: e.target.value as any })}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
+                          >
+                            <option value="normal">Normal (400)</option>
+                            <option value="medium">Medium (500)</option>
+                            <option value="semibold">Semibold (600)</option>
+                            <option value="bold">Bold (700)</option>
+                            <option value="extrabold">Extrabold (800)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                     {/* Positioning Controls */}
                     <div className="space-y-3">
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">

@@ -1232,6 +1232,24 @@ class DailyOffer(BaseModel):
         default=True,
         verbose_name="Enable Countdown Timer",
     )
+    countdown_template = models.CharField(
+        max_length=30,
+        default="minimal_inline",
+        choices=[
+            ("minimal_inline", "Minimal Inline"),
+            ("compact_cards", "Compact Cards"),
+            ("elegant_text", "Elegant Text Countdown"),
+            ("outlined", "Outlined Countdown"),
+            ("dark_premium", "Dark Premium Countdown"),
+        ],
+        verbose_name="Countdown Design Template",
+    )
+    countdown_size = models.CharField(
+        max_length=20,
+        default="regular",
+        choices=[("compact", "Compact"), ("regular", "Regular"), ("large", "Large")],
+        verbose_name="Countdown Size",
+    )
     countdown_position = models.CharField(
         max_length=20,
         default="left",
@@ -1249,11 +1267,59 @@ class DailyOffer(BaseModel):
         blank=True,
         verbose_name="End Date & Time",
     )
+    expired_behavior = models.CharField(
+        max_length=30,
+        default="show_expired_badge",
+        choices=[
+            ("show_expired_badge", "Show Expired Badge"),
+            ("hide_cta", "Hide CTA Button"),
+            ("disable_cta", "Disable CTA Button"),
+        ],
+        verbose_name="Expired Offer Behaviour",
+    )
 
     # ── Call To Action (CTA) ──
     cta_enabled = models.BooleanField(
         default=True,
         verbose_name="Enable CTA Button",
+    )
+    cta_template = models.CharField(
+        max_length=30,
+        default="solid",
+        choices=[
+            ("solid", "Minimal Solid"),
+            ("outline", "Outline"),
+            ("text_link", "Text Link"),
+            ("soft_filled", "Soft Filled"),
+            ("dark_premium", "Premium Dark"),
+        ],
+        verbose_name="CTA Design Template",
+    )
+    cta_size = models.CharField(
+        max_length=20,
+        default="medium",
+        choices=[("small", "Small"), ("medium", "Medium"), ("large", "Large")],
+        verbose_name="CTA Button Size",
+    )
+    cta_border_radius = models.CharField(
+        max_length=20,
+        default="md",
+        choices=[
+            ("none", "Square (None)"),
+            ("sm", "Subtle (Small)"),
+            ("md", "Medium Rounded"),
+            ("lg", "Large Rounded"),
+            ("full", "Pill (Full)"),
+        ],
+        verbose_name="CTA Border Radius",
+    )
+    cta_show_arrow = models.BooleanField(
+        default=True,
+        verbose_name="Show Arrow Icon on CTA",
+    )
+    cta_open_in_new_tab = models.BooleanField(
+        default=False,
+        verbose_name="Open CTA Link in New Tab",
     )
     cta_position = models.CharField(
         max_length=20,
@@ -1264,7 +1330,7 @@ class DailyOffer(BaseModel):
     )
     cta_text = models.CharField(
         max_length=100,
-        default="Shop Today's Deals →",
+        default="Shop Today's Deals",
         blank=True,
         verbose_name="CTA Button Text",
     )
@@ -1291,6 +1357,44 @@ class DailyOffer(BaseModel):
         default="/offers",
         blank=True,
         verbose_name="CTA URL",
+    )
+
+    # ── Independent Typography Configuration ──
+    heading_font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="Heading Font Family",
+    )
+    description_font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="Description Font Family",
+    )
+    countdown_font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="Countdown Font Family",
+    )
+    cta_font_family = models.CharField(
+        max_length=50,
+        default="Inter",
+        blank=True,
+        verbose_name="CTA Button Font Family",
+    )
+    cta_font_weight = models.CharField(
+        max_length=20,
+        default="bold",
+        choices=[
+            ("normal", "Normal (400)"),
+            ("medium", "Medium (500)"),
+            ("semibold", "Semibold (600)"),
+            ("bold", "Bold (700)"),
+            ("extrabold", "Extrabold (800)"),
+        ],
+        verbose_name="CTA Font Weight",
     )
 
     # ── Status & Scheduling ──

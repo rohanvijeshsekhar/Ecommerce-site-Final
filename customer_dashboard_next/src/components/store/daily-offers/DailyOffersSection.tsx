@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Flame, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyOffer } from '@/admin/types/admin';
 import { api, getAbsoluteImageUrl } from '@/lib/api';
 import DailyOfferCountdown from './DailyOfferCountdown';
+import DailyOfferCta from './DailyOfferCta';
 import { getFontFamilyCss } from '@/lib/bannerFonts';
 
 interface DailyOffersSectionProps {
@@ -30,6 +31,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   const [activeItemIndex, setActiveItemIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [isOfferExpired, setIsOfferExpired] = useState(false);
 
   const loadOffers = () => {
     api
@@ -185,6 +187,11 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
 
   // Font resolution
   const bannerFontFamily = getFontFamilyCss(activeOffer.font_family);
+  const headingFontFamily = getFontFamilyCss(activeOffer.heading_font_family || activeOffer.font_family);
+  const descFontFamily = getFontFamilyCss(activeOffer.description_font_family || activeOffer.font_family);
+  const countdownFontFamily = activeOffer.countdown_font_family || activeOffer.font_family || 'Inter';
+  const ctaFontFamily = activeOffer.cta_font_family || activeOffer.font_family || 'Inter';
+  const ctaFontWeight = (activeOffer.cta_font_weight || 'bold') as any;
 
   // Dynamic Content Presence Checks (all optional)
   const hasTitle = Boolean(activeOffer.title?.trim());
@@ -195,7 +202,9 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
   const hasAnyText = hasTitle || hasSubheading || hasBadge || hasOfferText || hasSecondaryText;
 
   const hasCountdown = Boolean(activeOffer.countdown_enabled !== false && activeOffer.end_date);
-  const hasCta = Boolean(activeOffer.cta_enabled !== false && activeOffer.cta_text?.trim());
+  const isCtaHiddenByExpiry = isOfferExpired && activeOffer.expired_behavior === 'hide_cta';
+  const isCtaDisabledByExpiry = isOfferExpired && activeOffer.expired_behavior === 'disable_cta';
+  const hasCta = Boolean(activeOffer.cta_enabled !== false && activeOffer.cta_text?.trim() && !isCtaHiddenByExpiry);
   const hasAnyDynamicOverlay = hasAnyText || hasCountdown || hasCta;
 
   // Alignment & Positioning
@@ -367,7 +376,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 <h2
                   className={`${isMobilePreview ? 'text-2xl font-black' : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black'
                     } tracking-tight leading-[1.12] mb-3.5 drop-shadow-md`}
-                  style={{ color: headingColor }}
+                  style={{ color: headingColor, fontFamily: headingFontFamily }}
                 >
                   {activeOffer.title}
                 </h2>
@@ -377,7 +386,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
               {hasSubheading && (
                 <p
                   className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-2xl mb-6 drop-shadow-sm"
-                  style={{ color: descColor }}
+                  style={{ color: descColor, fontFamily: descFontFamily }}
                 >
                   {activeOffer.subheading}
                 </p>
@@ -393,34 +402,44 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                     <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
                       <span
                         className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80"
-                        style={{ color: descColor }}
+                        style={{ color: descColor, fontFamily: descFontFamily }}
                       >
                         Deals End In:
                       </span>
                       <DailyOfferCountdown
                         endDate={activeOffer.end_date}
                         startDate={activeOffer.start_date}
+                        template={activeOffer.countdown_template || 'minimal_inline'}
+                        size={activeOffer.countdown_size || 'regular'}
+                        fontFamily={countdownFontFamily}
                         bgColor={countdownBgColor}
                         textColor={countdownTextColor}
+                        expiredBehavior={activeOffer.expired_behavior || 'show_expired_badge'}
+                        onExpire={setIsOfferExpired}
                       />
                     </div>
                   )}
 
                   {hasCta && (
                     <div className={`${ctaAlignClass} mt-2 sm:mt-0`}>
-                      <button
-                        type="button"
-                        onClick={handleNavigate}
-                        className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
-                        style={{
-                          backgroundColor: ctaBgColor,
-                          color: ctaTextColor,
-                          border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
+                      <DailyOfferCta
+                        label={activeOffer.cta_text}
+                        href={ctaDestination}
+                        template={activeOffer.cta_template || 'solid'}
+                        size={activeOffer.cta_size || 'medium'}
+                        borderRadius={activeOffer.cta_border_radius || 'md'}
+                        showArrow={activeOffer.cta_show_arrow !== false}
+                        openInNewTab={Boolean(activeOffer.cta_open_in_new_tab)}
+                        disabled={isCtaDisabledByExpiry}
+                        fontFamily={ctaFontFamily}
+                        fontWeight={ctaFontWeight}
+                        bgColor={ctaBgColor}
+                        textColor={ctaTextColor}
+                        borderColor={ctaBorderColor}
+                        onClick={(e) => {
+                          if (isLivePreview) e.preventDefault();
                         }}
-                      >
-                        <span>{activeOffer.cta_text}</span>
-                        <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
-                      </button>
+                      />
                     </div>
                   )}
                 </div>
@@ -478,7 +497,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                   <h2
                     className={`${isMobilePreview ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
                       } font-black tracking-tight leading-[1.12] mb-3.5`}
-                    style={{ color: headingColor }}
+                    style={{ color: headingColor, fontFamily: headingFontFamily }}
                   >
                     {activeOffer.title}
                   </h2>
@@ -488,7 +507,7 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                 {hasSubheading && (
                   <p
                     className="text-sm sm:text-base md:text-lg font-medium opacity-95 max-w-xl mb-6"
-                    style={{ color: descColor }}
+                    style={{ color: descColor, fontFamily: descFontFamily }}
                   >
                     {activeOffer.subheading}
                   </p>
@@ -504,34 +523,44 @@ export const DailyOffersSection: React.FC<DailyOffersSectionProps> = ({
                       <div className={`flex flex-col ${countdownAlignClass} gap-1`}>
                         <span
                           className="text-[10px] sm:text-[11px] uppercase tracking-widest font-black opacity-80"
-                          style={{ color: descColor }}
+                          style={{ color: descColor, fontFamily: descFontFamily }}
                         >
                           Deals End In:
                         </span>
                         <DailyOfferCountdown
                           endDate={activeOffer.end_date}
                           startDate={activeOffer.start_date}
+                          template={activeOffer.countdown_template || 'minimal_inline'}
+                          size={activeOffer.countdown_size || 'regular'}
+                          fontFamily={countdownFontFamily}
                           bgColor={countdownBgColor}
                           textColor={countdownTextColor}
+                          expiredBehavior={activeOffer.expired_behavior || 'show_expired_badge'}
+                          onExpire={setIsOfferExpired}
                         />
                       </div>
                     )}
 
                     {hasCta && (
                       <div className={`${ctaAlignClass} mt-2 sm:mt-0`}>
-                        <button
-                          type="button"
-                          onClick={handleNavigate}
-                          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-black text-sm sm:text-base tracking-wide shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 cursor-pointer"
-                          style={{
-                            backgroundColor: ctaBgColor,
-                            color: ctaTextColor,
-                            border: ctaBorderColor ? `2px solid ${ctaBorderColor}` : undefined,
+                        <DailyOfferCta
+                          label={activeOffer.cta_text}
+                          href={ctaDestination}
+                          template={activeOffer.cta_template || 'solid'}
+                          size={activeOffer.cta_size || 'medium'}
+                          borderRadius={activeOffer.cta_border_radius || 'md'}
+                          showArrow={activeOffer.cta_show_arrow !== false}
+                          openInNewTab={Boolean(activeOffer.cta_open_in_new_tab)}
+                          disabled={isCtaDisabledByExpiry}
+                          fontFamily={ctaFontFamily}
+                          fontWeight={ctaFontWeight}
+                          bgColor={ctaBgColor}
+                          textColor={ctaTextColor}
+                          borderColor={ctaBorderColor}
+                          onClick={(e) => {
+                            if (isLivePreview) e.preventDefault();
                           }}
-                        >
-                          <span>{activeOffer.cta_text}</span>
-                          <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
-                        </button>
+                        />
                       </div>
                     )}
                   </div>

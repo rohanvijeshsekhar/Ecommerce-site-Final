@@ -920,7 +920,7 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
         model = DailyOffer
         fields = [
             "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
-            "font_family",
+            "font_family", "heading_font_family", "description_font_family", "countdown_font_family", "cta_font_family", "cta_font_weight",
             "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
             "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
             "horizontal_alignment", "vertical_alignment", "content_width",
@@ -928,8 +928,8 @@ class DailyOfferReadSerializer(serializers.ModelSerializer):
             "badge_bg_color", "badge_text_color", "offer_color",
             "cta_bg_color", "cta_text_color", "cta_border_color",
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
-            "countdown_enabled", "countdown_position", "start_date", "end_date",
-            "cta_enabled", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "countdown_enabled", "countdown_template", "countdown_size", "countdown_position", "start_date", "end_date", "expired_behavior",
+            "cta_enabled", "cta_template", "cta_size", "cta_border_radius", "cta_show_arrow", "cta_open_in_new_tab", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
             "status", "is_active", "sort_order", "created_at", "updated_at",
             "items",
         ]
@@ -948,6 +948,11 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
     offer_text = serializers.CharField(required=False, allow_blank=True)
     secondary_text = serializers.CharField(required=False, allow_blank=True)
     font_family = serializers.CharField(required=False, allow_blank=True)
+    heading_font_family = serializers.CharField(required=False, allow_blank=True, default="Inter")
+    description_font_family = serializers.CharField(required=False, allow_blank=True, default="Inter")
+    countdown_font_family = serializers.CharField(required=False, allow_blank=True, default="Inter")
+    cta_font_family = serializers.CharField(required=False, allow_blank=True, default="Inter")
+    cta_font_weight = serializers.CharField(required=False, allow_blank=True, default="bold")
     theme = serializers.CharField(required=False, allow_blank=True, default="teal_premium")
     offer_type = serializers.CharField(required=False, allow_blank=True, default="percentage")
     image_position = serializers.CharField(required=False, allow_blank=True, default="center")
@@ -957,8 +962,16 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
     vertical_alignment = serializers.CharField(required=False, allow_blank=True, default="center")
     content_width = serializers.CharField(required=False, allow_blank=True, default="large")
     status = serializers.CharField(required=False, allow_blank=True, default="live")
+    countdown_template = serializers.CharField(required=False, allow_blank=True, default="minimal_inline")
+    countdown_size = serializers.CharField(required=False, allow_blank=True, default="regular")
     countdown_position = serializers.CharField(required=False, allow_blank=True)
+    expired_behavior = serializers.CharField(required=False, allow_blank=True, default="show_expired_badge")
     cta_enabled = serializers.BooleanField(required=False, default=True)
+    cta_template = serializers.CharField(required=False, allow_blank=True, default="solid")
+    cta_size = serializers.CharField(required=False, allow_blank=True, default="medium")
+    cta_border_radius = serializers.CharField(required=False, allow_blank=True, default="md")
+    cta_show_arrow = serializers.BooleanField(required=False, default=True)
+    cta_open_in_new_tab = serializers.BooleanField(required=False, default=False)
     cta_position = serializers.CharField(required=False, allow_blank=True)
     cta_text = serializers.CharField(required=False, allow_blank=True)
     desktop_image = FlexibleImageField(required=False, allow_null=True)
@@ -974,7 +987,7 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
         model = DailyOffer
         fields = [
             "id", "badge_text", "title", "subheading", "offer_text", "secondary_text",
-            "font_family",
+            "font_family", "heading_font_family", "description_font_family", "countdown_font_family", "cta_font_family", "cta_font_weight",
             "offer_type", "desktop_image", "desktop_image_url", "mobile_image", "mobile_image_url",
             "image_position", "image_fit", "overlay_gradient", "overlay_opacity",
             "horizontal_alignment", "vertical_alignment", "content_width",
@@ -982,8 +995,8 @@ class DailyOfferWriteSerializer(serializers.ModelSerializer):
             "badge_bg_color", "badge_text_color", "offer_color",
             "cta_bg_color", "cta_text_color", "cta_border_color",
             "countdown_bg_color", "countdown_text_color", "product_badge_color",
-            "countdown_enabled", "countdown_position", "start_date", "end_date",
-            "cta_enabled", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
+            "countdown_enabled", "countdown_template", "countdown_size", "countdown_position", "start_date", "end_date", "expired_behavior",
+            "cta_enabled", "cta_template", "cta_size", "cta_border_radius", "cta_show_arrow", "cta_open_in_new_tab", "cta_position", "cta_text", "cta_action_type", "cta_target_id", "cta_url",
             "status", "is_active", "sort_order", "items_data",
         ]
         read_only_fields = ["id", "desktop_image_url", "mobile_image_url"]
