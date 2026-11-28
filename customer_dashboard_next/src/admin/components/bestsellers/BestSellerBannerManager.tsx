@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2, Move } from 'lucide-react';
+import { Save, Trash2, ToggleLeft, ToggleRight, Plus, AlertCircle, Check, Loader2, Move, Image as ImageIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAdmin } from '../../contexts/AdminContext';
 import ImageUploader from '../ImageUploader';
@@ -326,7 +326,7 @@ const BestSellerBannerManager: React.FC = () => {
       {(form.banner_image || form.title) && (
         <div className="rounded-xl overflow-hidden border border-slate-200">
           <p className="text-xs font-semibold text-slate-500 px-4 pt-3 pb-2 border-b border-slate-100 flex items-center gap-1.5">
-            <Image className="w-3.5 h-3.5" /> Preview
+            <ImageIcon className="w-3.5 h-3.5" /> Preview
           </p>
           <div
             className="relative flex items-center justify-center min-h-[160px] bg-slate-100"
