@@ -305,6 +305,8 @@ const FeaturedCollectionsManager: React.FC = () => {
         if (!isNaN(d.getTime())) {
           fd.append('start_date', d.toISOString());
         }
+      } else if (editColl) {
+        fd.append('start_date', '');
       }
 
       if (form.end_date && form.end_date.trim()) {
@@ -312,6 +314,8 @@ const FeaturedCollectionsManager: React.FC = () => {
         if (!isNaN(d.getTime())) {
           fd.append('end_date', d.toISOString());
         }
+      } else if (editColl) {
+        fd.append('end_date', '');
       }
 
       // Desktop image
@@ -1105,14 +1109,13 @@ const FeaturedCollectionsManager: React.FC = () => {
                       <div>
                         <ImageUploader
                           label="Desktop Main Image"
-                          aspectRatio={4 / 3}
+                          aspectRatio={16 / 9}
                           currentUrl={desktopImgUrl}
                           onUpload={file => { setForm(f => ({ ...f, image: file })); setImageCleared(false); }}
                           onRemove={() => { setForm(f => ({ ...f, image: null })); setImageCleared(true); }}
-                          disableCrop={true}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
-                          Recommended ~1920x800 for full background, or ~1000x800 for split.
+                          Recommended ~1920x800 or 16:9 banner. Auto-fits whole image with clean white margins.
                         </p>
                       </div>
 
@@ -1124,7 +1127,6 @@ const FeaturedCollectionsManager: React.FC = () => {
                           currentUrl={form.mobile_image instanceof File ? URL.createObjectURL(form.mobile_image) : (form.mobile_image ? getAbsoluteImageUrl(form.mobile_image) : undefined)}
                           onUpload={file => { setForm(f => ({ ...f, mobile_image: file })); setMobileImageCleared(false); }}
                           onRemove={() => { setForm(f => ({ ...f, mobile_image: null })); setMobileImageCleared(true); }}
-                          disableCrop={true}
                         />
                         <p className="text-[11px] text-slate-400 mt-1">
                           Optional portrait/square asset loaded strictly on mobile devices.
@@ -1775,7 +1777,7 @@ const FeaturedCollectionsManager: React.FC = () => {
                             <img
                               src={previewDevice === 'mobile' ? mobileImgUrl || desktopImgUrl : desktopImgUrl}
                               alt="Preview"
-                              className="absolute inset-0 w-full h-full object-contain"
+                              className={`absolute inset-0 w-full h-full ${form.image_fit === 'cover' ? 'object-cover' : 'object-contain'}`}
                             />
                           ) : (
                             <div className="absolute inset-0 bg-slate-800" />

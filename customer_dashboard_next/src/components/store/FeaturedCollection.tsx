@@ -368,7 +368,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
                 <img
                   src={desktopImage}
                   alt={activeCollection.title || 'Featured Collection'}
-                  className="w-full h-full object-contain object-center transform transition-transform duration-500"
+                  className="w-full h-full object-cover object-center transform transition-transform duration-500"
                 />
               </picture>
             ) : (
@@ -404,7 +404,7 @@ const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({ initialCollecti
             <img
               src={desktopImage}
               alt={activeCollection.title || 'Featured Collection'}
-              className="w-full h-full object-contain object-center"
+              className={`w-full h-full ${imgFit === 'cover' ? 'object-cover' : 'object-contain'} object-center`}
             />
           </picture>
 
